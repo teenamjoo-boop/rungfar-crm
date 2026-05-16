@@ -1887,8 +1887,8 @@ function attPH(icon,title,sub,badge){
 
 function attUICheckin(){
   const now=new Date();
-  const timeStr=now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const dateStr=now.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const timeStr=now.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  const dateStr=now.toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',weekday:'long',year:'numeric',month:'long',day:'numeric'});
   return`<div class="att-checkin-card">
     <div style="font-size:12px;color:var(--g4);margin-bottom:2px">เวลาปัจจุบัน</div>
     <div class="att-clock" id="att_clock">${timeStr}</div>
@@ -1910,7 +1910,7 @@ function attStartClock(){
   att_clockTimer=setInterval(()=>{
     const el=document.getElementById('att_clock');
     if(!el){clearInterval(att_clockTimer);att_clockTimer=null;return;}
-    el.textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    el.textContent=new Date().toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   },1000);
 }
 
@@ -1980,7 +1980,31 @@ function attUIExport(){
 // ===== ATTENDANCE HELPERS (รอบ C) =====
 
 // ตัวแปร module-level สำหรับ cache ข้อมูล
-let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_isProcessing=false;
+let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_pendingLogId=null, att_isProcessing=false;
+
+// ─── Bangkok Time Helpers ───
+function attFormatThaiDateTime(date){
+  if(!date)return'—';
+  return new Date(date).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+'น.';
+}
+function attFormatThaiTime(date){
+  if(!date)return'—';
+  return new Date(date).toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false})+' น.';
+}
+function attGetThaiLogDate(date){
+  return new Date(date||Date.now()).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+}
+function attCalculateWorkMinutes(checkinTime,checkoutTime){
+  if(!checkinTime||!checkoutTime)return null;
+  return Math.round((new Date(checkoutTime)-new Date(checkinTime))/60000);
+}
+function attCalculateLateMinutes(checkinTime,normalCheckinTime,lateTolMins){
+  if(!checkinTime)return 0;
+  const s=new Date(checkinTime).toLocaleString('sv-SE',{timeZone:'Asia/Bangkok',hour12:false});
+  const[bh,bm]=s.slice(11,16).split(':').map(Number);
+  const[nh,nm]=(normalCheckinTime||'08:30:00').split(':').map(Number);
+  return Math.max(0,bh*60+bm-(nh*60+nm+(lateTolMins||0)));
+}
 
 // 1. ขอ GPS — คืน {latitude,longitude,accuracy} หรือ null ถ้าปฏิเสธ/ไม่รองรับ
 function attGetGPS(){
@@ -2048,9 +2072,10 @@ function attResizeSelfieImage(blob){
 // type='checkin'|'checkout' | checkinTime (ISO) ใช้ตอน checkout คำนวณ total_work_minutes
 function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime){
   const now=new Date();
-  const logDate=now.toISOString().slice(0,10);
+  const bkkStr=now.toLocaleString('sv-SE',{timeZone:'Asia/Bangkok',hour12:false});
+  const logDate=attGetThaiLogDate(now);
   const nowISO=now.toISOString();
-  const nowMins=now.getHours()*60+now.getMinutes();
+  const nowMins=parseInt(bkkStr.slice(11,13))*60+parseInt(bkkStr.slice(14,16));
   const allowedR=(settings&&settings.allowed_radius_meter)||200;
   let distM=null;
   if(gps&&settings&&settings.branch_latitude&&settings.branch_longitude){
@@ -2059,9 +2084,7 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
   const isOutside=distM!==null&&distM>allowedR;
 
   if(type==='checkin'){
-    const [hh,mm]=((settings&&settings.normal_checkin_time)||'08:30:00').split(':').map(Number);
-    const tol=(settings&&settings.late_tolerance_minutes)||10;
-    const lateMin=Math.max(0,nowMins-(hh*60+mm+tol));
+    const lateMin=attCalculateLateMinutes(nowISO,(settings&&settings.normal_checkin_time)||'08:30:00',(settings&&settings.late_tolerance_minutes)||10);
     return{
       employee_id:emp.id, employee_code:emp.employee_code||null,
       employee_name:emp.full_name||null, branch_id:emp.branch_id||null,
@@ -2079,7 +2102,7 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
     const [hh2,mm2]=((settings&&settings.normal_checkout_time)||'17:30:00').split(':').map(Number);
     const tol2=(settings&&settings.early_leave_tolerance_minutes)||10;
     const earlyMin=Math.max(0,(hh2*60+mm2-tol2)-nowMins);
-    const totalMins=checkinTime?Math.round((now-new Date(checkinTime))/60000):null;
+    const totalMins=attCalculateWorkMinutes(checkinTime,nowISO);
     return{
       checkout_time:nowISO,
       checkout_latitude:gps?gps.latitude:null, checkout_longitude:gps?gps.longitude:null,
@@ -2095,7 +2118,7 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
 // 6. โหลด employees + settings + today logs จาก Supabase — cache ใน att_employees / att_branchSettings
 async function attLoadAttendanceData(branchId){
   try{
-    const today=new Date().toISOString().slice(0,10);
+    const today=attGetThaiLogDate();
     const [empRes,logRes]=await Promise.all([
       dbGet('attendance_employees','?status=eq.active&order=employee_code.asc'),
       dbGet('attendance_logs',`?log_date=eq.${today}&order=employee_id.asc`)
@@ -2162,7 +2185,7 @@ function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
 
   // เวลา
   const rawTime=isIn?payload.checkin_time:payload.checkout_time;
-  const timeLabel=rawTime?new Date(rawTime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+  const timeLabel=attFormatThaiTime(rawTime);
 
   // สถานะ
   let stBadge='';
@@ -2190,11 +2213,11 @@ function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
       <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>
     </div>
-    <div style="margin-top:14px;padding:10px 14px;background:rgba(0,0,0,.05);border-radius:8px;font-size:11px;color:var(--g5);font-weight:600">⏳ รอบ E: จะเพิ่มปุ่ม "ยืนยันบันทึก" เพื่อส่งข้อมูลจริงลง Supabase</div>
+    <button onclick="attConfirmSave('${type}')" style="margin-top:14px;width:100%;padding:13px;background:${color};color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:.3px">✅ ยืนยันบันทึก${isIn?'เข้างาน':'ออกงาน'}</button>
   </div>`;
 }
 
-// Orchestrator กดปุ่ม "เข้างาน" — GPS + โหลดข้อมูล → selfie → payload → preview (ไม่บันทึก db)
+// Orchestrator กดปุ่ม "เข้างาน" — validate → GPS → selfie → preview + ปุ่มยืนยันบันทึก
 async function attDoCheckin(){
   if(att_isProcessing)return;
   const sel=document.getElementById('att_emp_sel');
@@ -2207,14 +2230,21 @@ async function attDoCheckin(){
   att_isProcessing=true; attSetBtnState(true);
   if(pv)pv.innerHTML=`<div style="text-align:center;padding:24px;color:var(--g4);font-size:13px">⏳ กำลังโหลดข้อมูลและรับ GPS...</div>`;
   try{
-    // โหลดข้อมูลและ GPS พร้อมกัน จากนั้นเปิด selfie picker
     const [data,gps]=await Promise.all([attLoadAttendanceData(emp.branch_id),attGetGPS()]);
     const settings=data.settings||att_branchSettings;
     att_todayLogs=data.todayLogs||[];
+    // ตรวจสอบเข้างานซ้ำ
+    const existLog=att_todayLogs.find(l=>l.employee_id===emp.id);
+    if(existLog&&existLog.checkin_time){
+      const t=attFormatThaiTime(existLog.checkin_time);
+      if(pv)pv.innerHTML=`<div style="background:#fff3e0;border-radius:var(--r);padding:14px;font-size:13px;color:#d97706"><strong>⚠️ เข้างานแล้ววันนี้</strong><br>บันทึกเวลา ${t} — ไม่สามารถเข้างานซ้ำได้</div>`;
+      return;
+    }
+    att_pendingLogId=null; // checkin = INSERT แถวใหม่
     if(pv)pv.innerHTML=`<div style="text-align:center;padding:16px;color:var(--g4);font-size:13px">📷 กรุณาถ่ายเซลฟี่เพื่อยืนยันตัวตน...</div>`;
     const selfieB64=await attCaptureSelfie();
     const payload=attPrepareAttendancePayload('checkin',emp,settings,gps,selfieB64);
-    att_pendingPayload=payload; // เก็บไว้ รอรอบ E บันทึกจริง
+    att_pendingPayload=payload;
     attShowResultPreview('checkin',payload,gps,selfieB64,emp,settings);
   }catch(e){
     if(pv)pv.innerHTML=`<div style="background:#fee2e2;border-radius:var(--r);padding:14px;font-size:13px;color:#dc2626"><strong>❌ เกิดข้อผิดพลาด</strong><br>${e.message||'ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง'}</div>`;
@@ -2223,7 +2253,7 @@ async function attDoCheckin(){
   }
 }
 
-// Orchestrator กดปุ่ม "ออกงาน" — GPS + โหลดข้อมูล → selfie → payload → preview (ไม่บันทึก db)
+// Orchestrator กดปุ่ม "ออกงาน" — validate → GPS → selfie → preview + ปุ่มยืนยันบันทึก
 async function attDoCheckout(){
   if(att_isProcessing)return;
   const sel=document.getElementById('att_emp_sel');
@@ -2240,13 +2270,129 @@ async function attDoCheckout(){
     const settings=data.settings||att_branchSettings;
     att_todayLogs=data.todayLogs||[];
     const todayLog=att_todayLogs.find(l=>l.employee_id===emp.id)||null;
+    // ตรวจสอบสถานะก่อนออกงาน
+    if(!todayLog||!todayLog.checkin_time){
+      if(pv)pv.innerHTML=`<div style="background:#fee2e2;border-radius:var(--r);padding:14px;font-size:13px;color:#dc2626"><strong>❌ ยังไม่ได้เข้างานวันนี้</strong><br>กรุณากดปุ่ม "เข้างาน" ก่อน</div>`;
+      return;
+    }
+    if(todayLog.checkout_time){
+      const t=attFormatThaiTime(todayLog.checkout_time);
+      if(pv)pv.innerHTML=`<div style="background:#fff3e0;border-radius:var(--r);padding:14px;font-size:13px;color:#d97706"><strong>⚠️ ออกงานแล้ววันนี้</strong><br>บันทึกเวลา ${t}</div>`;
+      return;
+    }
+    att_pendingLogId=todayLog.id; // checkout = PATCH แถวเดิม
     if(pv)pv.innerHTML=`<div style="text-align:center;padding:16px;color:var(--g4);font-size:13px">📷 กรุณาถ่ายเซลฟี่เพื่อยืนยันตัวตน...</div>`;
     const selfieB64=await attCaptureSelfie();
-    const payload=attPrepareAttendancePayload('checkout',emp,settings,gps,selfieB64,todayLog?todayLog.checkin_time:null);
-    att_pendingPayload=payload; // เก็บไว้ รอรอบ E บันทึกจริง
+    const payload=attPrepareAttendancePayload('checkout',emp,settings,gps,selfieB64,todayLog.checkin_time);
+    att_pendingPayload=payload;
     attShowResultPreview('checkout',payload,gps,selfieB64,emp,settings);
   }catch(e){
     if(pv)pv.innerHTML=`<div style="background:#fee2e2;border-radius:var(--r);padding:14px;font-size:13px;color:#dc2626"><strong>❌ เกิดข้อผิดพลาด</strong><br>${e.message||'ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง'}</div>`;
+  }finally{
+    att_isProcessing=false; attSetBtnState(false);
+  }
+}
+
+// ===== ATTENDANCE SAVE (รอบ E) =====
+
+// INSERT เข้างาน → คืน record ที่บันทึกแล้ว
+async function attSaveCheckinLog(payload){
+  const result=await dbPost('attendance_logs',payload);
+  if(!Array.isArray(result)||!result[0])throw new Error('Supabase ไม่คืนข้อมูลหลังบันทึก');
+  return result[0];
+}
+
+// UPDATE ออกงาน → คืน record ที่อัปเดตแล้ว
+async function attSaveCheckoutLog(logId,payload){
+  const result=await dbPatch('attendance_logs',logId,payload);
+  const rec=Array.isArray(result)?result[0]:result;
+  if(!rec)throw new Error('ไม่พบแถวที่ต้องการอัปเดต (id='+logId+')');
+  return rec;
+}
+
+// แสดง success card หลังบันทึกสำเร็จ
+function attShowSavedSuccess(type,payload,gps,selfieB64,emp,settings){
+  const el=document.getElementById('att_preview'); if(!el)return;
+  att_pendingSelfie=selfieB64||null;
+  const isIn=type==='checkin';
+  const color=isIn?'#15803d':'#1d4ed8', bg=isIn?'#f0fdf4':'#eff6ff';
+
+  const rawTime=isIn?payload.checkin_time:payload.checkout_time;
+  const timeLabel=attFormatThaiTime(rawTime);
+
+  let stBadge='';
+  if(isIn){
+    if(payload.checkin_status==='outside')  stBadge='<span class="att-badge-err">⚠️ นอกพื้นที่</span>';
+    else if(payload.late_minutes>0)         stBadge=`<span class="att-badge-late">⚠️ มาสาย ${payload.late_minutes} นาที</span>`;
+    else                                    stBadge='<span class="att-badge-ok">✅ ปกติ</span>';
+  } else {
+    if(payload.checkout_status==='outside')  stBadge='<span class="att-badge-err">⚠️ นอกพื้นที่</span>';
+    else if(payload.early_leave_minutes>0)   stBadge=`<span class="att-badge-late">⚠️ ออกก่อน ${payload.early_leave_minutes} นาที</span>`;
+    else                                     stBadge='<span class="att-badge-ok">✅ ปกติ</span>';
+  }
+
+  const dm=isIn?payload.checkin_distance_m:payload.checkout_distance_m;
+  const allowedR=(settings&&settings.allowed_radius_meter)||200;
+  const distBadge=dm!=null
+    ?`<strong>${dm.toLocaleString()} เมตร</strong>&nbsp;${dm<=allowedR?'<span class="att-badge-ok">✅ ในพื้นที่</span>':'<span class="att-badge-late">⚠️ นอกพื้นที่</span>'}`
+    :`<span style="color:var(--g4)">— ไม่มีข้อมูล GPS สาขา —</span>`;
+
+  const gpsBadge=gps?`<span class="att-badge-ok">✅ GPS สำเร็จ ±${gps.accuracy} ม.</span>`:'<span class="att-badge-err">❌ ไม่มี GPS</span>';
+
+  const selfieHtml=selfieB64
+    ?`<img src="${selfieB64}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--g2);cursor:pointer;flex-shrink:0" onclick="openPhotoModal(att_pendingSelfie)">`
+    :`<div style="width:72px;height:72px;border-radius:8px;border:1.5px dashed var(--g3);display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--g1);flex-shrink:0">📷</div>`;
+
+  let extraRow='';
+  if(!isIn&&payload.total_work_minutes!=null){
+    const h=Math.floor(payload.total_work_minutes/60),m=payload.total_work_minutes%60;
+    extraRow=`<div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">⏱️ รวมงาน</span><span><strong>${h} ชั่วโมง ${m} นาที</strong></span></div>`;
+  }
+
+  el.innerHTML=`<div style="background:${bg};border-radius:var(--rx);border:2px solid ${color}33;padding:18px">
+    <div style="font-size:14px;font-weight:800;color:${color};margin-bottom:14px">✅ บันทึก${isIn?'เข้างาน':'ออกงาน'}สำเร็จ</div>
+    <div style="display:grid;gap:10px;font-size:13px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${emp.full_name}</strong> <span style="color:var(--g4)">(${emp.employee_code||'—'})</span></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">🕐 เวลา</span><span><strong>${timeLabel}</strong>&nbsp;&nbsp;${stBadge}</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
+      ${extraRow}
+      <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>
+    </div>
+    <div style="margin-top:14px;padding:10px 14px;background:${color}18;border-radius:8px;font-size:12px;color:${color};font-weight:700">✅ บันทึกลง Supabase สำเร็จแล้ว</div>
+  </div>`;
+}
+
+// ยืนยันและบันทึกจริงลง Supabase — เรียกจากปุ่ม "ยืนยันบันทึก" ใน preview card
+async function attConfirmSave(type){
+  if(att_isProcessing||!att_pendingPayload)return;
+  const pv=document.getElementById('att_preview');
+  const sel=document.getElementById('att_emp_sel');
+  const emp=att_curEmployee||(sel&&att_employees.find(e=>e.id==sel.value))||null;
+  if(!emp)return;
+  att_isProcessing=true; attSetBtnState(true);
+  if(pv)pv.innerHTML=`<div style="text-align:center;padding:24px;color:var(--g4);font-size:13px">⏳ กำลังบันทึกข้อมูล...</div>`;
+  try{
+    let saved;
+    if(type==='checkin'){
+      saved=await attSaveCheckinLog(att_pendingPayload);
+      att_todayLogs=att_todayLogs.filter(l=>l.employee_id!==emp.id);
+      att_todayLogs.push(saved);
+    } else {
+      if(!att_pendingLogId)throw new Error('ไม่พบ log id สำหรับออกงาน');
+      saved=await attSaveCheckoutLog(att_pendingLogId,att_pendingPayload);
+      att_todayLogs=att_todayLogs.map(l=>l.id===att_pendingLogId?{...l,...saved}:l);
+    }
+    const gpsData=type==='checkin'
+      ?(att_pendingPayload.checkin_latitude?{latitude:att_pendingPayload.checkin_latitude,longitude:att_pendingPayload.checkin_longitude,accuracy:att_pendingPayload.checkin_accuracy}:null)
+      :(att_pendingPayload.checkout_latitude?{latitude:att_pendingPayload.checkout_latitude,longitude:att_pendingPayload.checkout_longitude,accuracy:att_pendingPayload.checkout_accuracy}:null);
+    attShowSavedSuccess(type,att_pendingPayload,gpsData,att_pendingSelfie,emp,att_branchSettings);
+    att_pendingPayload=null; att_pendingLogId=null;
+  }catch(e){
+    let msg=e.message||'ไม่ทราบสาเหตุ';
+    if(msg.includes('duplicate')||msg.includes('unique')||msg.includes('23505')||msg.includes('conflict'))
+      msg='มีข้อมูลตอกบัตรวันนี้แล้ว ไม่สามารถบันทึกซ้ำได้';
+    if(pv)pv.innerHTML=`<div style="background:#fee2e2;border-radius:var(--r);padding:14px;font-size:13px;color:#dc2626"><strong>❌ บันทึกไม่สำเร็จ</strong><br>${msg}</div>`;
   }finally{
     att_isProcessing=false; attSetBtnState(false);
   }
