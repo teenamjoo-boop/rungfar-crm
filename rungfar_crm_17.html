@@ -1875,6 +1875,8 @@ function attRender(tab){
   el.innerHTML=(map[tab]||attUICheckin)();
   if(tab==='checkin'){attStartClock();attInitCheckinView();}
   if(tab==='attsettings'){attInitSettingsView();}
+  if(tab==='history'){attInitHistoryView();}
+  if(tab==='report'){attInitReportView();}
 }
 
 function attPH(icon,title,sub,badge){
@@ -1919,29 +1921,182 @@ function attUIHistory(){
   return`<div class="twrap">
     <div class="tbar2">
       <div style="font-size:13px;font-weight:700">ประวัติตอกบัตร</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input class="si" placeholder="🔍 ค้นหาพนักงาน..." style="width:180px" disabled>
-        <select class="fi" disabled><option>ทุกสาขา</option></select>
-        <input type="date" class="fi" disabled>
-      </div>
+      <button class="btn btn-p btn-sm" onclick="attApplyHistoryFilter()">🔍 ค้นหา</button>
     </div>
-    ${attPH('📋','ยังไม่มีข้อมูลตอกบัตร','ประวัติเข้า-ออกงานทุกวันจะแสดงที่นี่<br>หลังเชื่อม Supabase ในรอบ D–E','⏳ รอบ D–E: เชื่อม attendance_logs')}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 0;align-items:center">
+      <input id="att_hist_search" class="si" placeholder="ค้นหาชื่อ/รหัสพนักงาน" style="width:175px">
+      <input id="att_hist_from" type="date" class="fi" style="width:135px">
+      <span style="color:var(--g6);font-size:13px">ถึง</span>
+      <input id="att_hist_to" type="date" class="fi" style="width:135px">
+      <select id="att_hist_status" class="fi" style="width:140px">
+        <option value="all">ทุกสถานะ</option>
+        <option value="present">✅ ปกติ</option>
+        <option value="late">⚠️ มาสาย</option>
+        <option value="absent">❌ ขาดงาน</option>
+        <option value="missing_checkout">🔴 ไม่รูดออก</option>
+        <option value="outside">📍 นอกพื้นที่</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
+          <th style="padding:8px 6px;text-align:left;white-space:nowrap">วันที่</th>
+          <th style="padding:8px 6px;text-align:left">พนักงาน</th>
+          <th style="padding:8px 6px;text-align:left">เข้างาน</th>
+          <th style="padding:8px 6px;text-align:left">ออกงาน</th>
+          <th style="padding:8px 6px;text-align:center">ชม.ทำงาน</th>
+          <th style="padding:8px 6px;text-align:center">OT</th>
+          <th style="padding:8px 6px;text-align:center">สถานะ</th>
+          <th style="padding:8px 6px;text-align:center">GPS</th>
+        </tr></thead>
+        <tbody id="att_hist_body"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">กำลังโหลด...</td></tr></tbody>
+      </table>
+    </div>
   </div>`;
 }
 
 function attUIReport(){
-  const cards=[['✅','ปกติ','#dcfce7','#15803d'],['⚠️','มาสาย','#fff3e0','#d97706'],['❌','ขาดงาน','#fee2e2','#dc2626'],['🔵','ออกงานแล้ว','#dbeafe','#1d4ed8']];
   return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:18px">
-    <div style="font-weight:700;margin-bottom:14px">📊 รายงานมาสาย / ขาดงาน</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
-      ${cards.map(([ic,lb,bg,cl])=>`<div style="padding:14px 10px;background:${bg};border-radius:var(--r);text-align:center">
-        <div style="font-size:24px">${ic}</div>
-        <div style="font-size:20px;font-weight:800;color:${cl};font-family:Arial,sans-serif;margin:4px 0">0</div>
-        <div style="font-size:11px;color:${cl};font-weight:700">${lb}</div>
-      </div>`).join('')}
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px">📊 รายงานมาสาย / OT ประจำเดือน</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input id="att_rpt_month" type="month" class="fi" style="width:150px">
+        <button class="btn btn-p btn-sm" onclick="attLoadReport()">ดูรายงาน</button>
+      </div>
     </div>
-    ${attPH('📊','รายงานจะแสดงเมื่อมีข้อมูลตอกบัตร','สรุปสถิติรายวัน รายเดือน แยกตามพนักงานและสาขา','⏳ รอบ F: เชื่อมข้อมูลจริงจาก Supabase')}
+    <div id="att_rpt_summary" style="margin-bottom:16px"></div>
+    <div id="att_rpt_table" style="overflow-x:auto"></div>
   </div>`;
+}
+
+async function attInitHistoryView(){
+  const fromDate=new Date(Date.now()-30*24*60*60*1000);
+  const toDate=new Date();
+  const fd=document.getElementById('att_hist_from');
+  const td=document.getElementById('att_hist_to');
+  if(fd)fd.value=attGetThaiLogDate(fromDate);
+  if(td)td.value=attGetThaiLogDate(toDate);
+  await attApplyHistoryFilter();
+}
+
+async function attApplyHistoryFilter(){
+  const from=document.getElementById('att_hist_from')?.value;
+  const to=document.getElementById('att_hist_to')?.value;
+  const search=(document.getElementById('att_hist_search')?.value||'').trim().toLowerCase();
+  const status=document.getElementById('att_hist_status')?.value||'all';
+  const body=document.getElementById('att_hist_body');
+  if(!body)return;
+  body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--g5)">กำลังโหลด...</td></tr>';
+  try{
+    let q='?order=log_date.desc,employee_id.asc&limit=300';
+    if(from)q+=`&log_date=gte.${from}`;
+    if(to)q+=`&log_date=lte.${to}`;
+    if(status!=='all'&&status!=='missing_checkout')q+=`&day_status=eq.${status}`;
+    let logs=await dbGet('attendance_logs',q);
+    logs=Array.isArray(logs)?logs:[];
+    if(search)logs=logs.filter(l=>(l.employee_name||'').toLowerCase().includes(search)||(l.employee_code||'').toLowerCase().includes(search));
+    if(status==='missing_checkout')logs=logs.filter(l=>l.checkin_time&&!l.checkout_time);
+    att_historyLogs=logs;
+    body.innerHTML=attRenderHistoryRows(logs);
+  }catch(e){
+    body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#dc2626">โหลดข้อมูลไม่สำเร็จ</td></tr>';
+  }
+}
+
+function attRenderHistoryRows(logs){
+  if(!logs.length)return'<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">ไม่พบข้อมูลในช่วงที่เลือก</td></tr>';
+  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+'ชม.':null,m%60?m%60+'น.':null].filter(Boolean).join(' '):'—';
+  const radius=att_branchSettings?.allowed_radius_meter||200;
+  const stMap={present:'✅ ปกติ',late:'⚠️ สาย',absent:'❌ ขาด',half_day:'🌗 ครึ่งวัน',holiday:'🎌 หยุด',leave:'🏖 ลา',outside:'📍 นอกพื้นที่'};
+  const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',outside:'#fef9c3'};
+  return logs.map(l=>{
+    const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',weekday:'short'});
+    const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'—';
+    const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):'<span style="color:#dc2626">ไม่รูด</span>';
+    const work=fmtMin(l.total_work_minutes||0);
+    const ot=l.ot_minutes>0?`<span style="color:#7c3aed">${fmtMin(l.ot_minutes)}</span>`:'—';
+    const late=l.late_minutes>0?`<br><span style="font-size:11px;color:#d97706">สาย ${l.late_minutes}น.</span>`:'';
+    const gpsOk=l.checkin_distance_m==null||l.checkin_distance_m<=radius;
+    const gps=l.checkin_distance_m!=null?`<span style="color:${gpsOk?'#15803d':'#dc2626'}">${l.checkin_distance_m}ม.</span>`:'—';
+    return`<tr style="border-bottom:1px solid var(--g2)">
+      <td style="padding:7px 6px;font-size:12px;white-space:nowrap">${dateStr}</td>
+      <td style="padding:7px 6px;font-size:12px;font-weight:600">${l.employee_name||'—'}<br><span style="font-weight:400;color:var(--g5);font-size:11px">${l.employee_code||''}</span></td>
+      <td style="padding:7px 6px;font-size:12px">${ci}${late}</td>
+      <td style="padding:7px 6px;font-size:12px">${co}</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px">${work}</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px">${ot}</td>
+      <td style="padding:7px 6px;text-align:center"><span style="background:${stBg[l.day_status]||'#f3f4f6'};padding:2px 7px;border-radius:99px;font-size:11px">${stMap[l.day_status]||l.day_status||'—'}</span></td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px">${gps}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function attInitReportView(){
+  const s=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'}).slice(0,7);
+  const m=document.getElementById('att_rpt_month');
+  if(m)m.value=s;
+  await attLoadReport();
+}
+
+async function attLoadReport(){
+  const m=document.getElementById('att_rpt_month');
+  if(!m||!m.value)return;
+  const[yr,mo]=m.value.split('-');
+  const from=`${yr}-${mo}-01`;
+  const lastDay=new Date(+yr,+mo,0).getDate();
+  const to=`${yr}-${mo}-${String(lastDay).padStart(2,'0')}`;
+  const summDiv=document.getElementById('att_rpt_summary');
+  const tableDiv=document.getElementById('att_rpt_table');
+  if(summDiv)summDiv.innerHTML='<div style="text-align:center;padding:14px;color:var(--g5)">กำลังโหลด...</div>';
+  if(tableDiv)tableDiv.innerHTML='';
+  try{
+    const logs=await dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=1000`);
+    const arr=Array.isArray(logs)?logs:[];
+    const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+'ชม.':null,m%60?m%60+'น.':null].filter(Boolean).join(' '):'0';
+    const present=arr.filter(l=>l.day_status==='present').length;
+    const late=arr.filter(l=>l.day_status==='late').length;
+    const absent=arr.filter(l=>l.day_status==='absent').length;
+    const totalOT=arr.reduce((s,l)=>s+(l.ot_minutes||0),0);
+    if(summDiv)summDiv.innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="padding:14px;background:#dcfce7;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#15803d">${present}</div><div style="font-size:11px;color:#15803d;font-weight:700">✅ ปกติ</div></div>
+        <div style="padding:14px;background:#fff3e0;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#d97706">${late}</div><div style="font-size:11px;color:#d97706;font-weight:700">⚠️ มาสาย</div></div>
+        <div style="padding:14px;background:#fee2e2;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#dc2626">${absent}</div><div style="font-size:11px;color:#dc2626;font-weight:700">❌ ขาดงาน</div></div>
+        <div style="padding:14px;background:#f3e8ff;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#7c3aed">${fmtMin(totalOT)}</div><div style="font-size:11px;color:#7c3aed;font-weight:700">⏱ OT รวม</div></div>
+      </div>`;
+    const byEmp={};
+    arr.forEach(l=>{
+      const k=l.employee_id;
+      if(!byEmp[k])byEmp[k]={name:l.employee_name||'?',code:l.employee_code||'',days:0,late:0,absent:0,ot:0,work:0};
+      byEmp[k].days++;
+      if(l.day_status==='late')byEmp[k].late++;
+      if(l.day_status==='absent')byEmp[k].absent++;
+      byEmp[k].ot+=(l.ot_minutes||0);
+      byEmp[k].work+=(l.total_work_minutes||0);
+    });
+    const rows=Object.values(byEmp).map(e=>`<tr style="border-bottom:1px solid var(--g2)">
+      <td style="padding:8px 6px;font-size:12px;font-weight:600">${e.name}<br><span style="color:var(--g5);font-weight:400;font-size:11px">${e.code}</span></td>
+      <td style="padding:8px 6px;text-align:center;font-size:13px">${e.days}</td>
+      <td style="padding:8px 6px;text-align:center;font-size:13px;color:#d97706">${e.late||'—'}</td>
+      <td style="padding:8px 6px;text-align:center;font-size:13px;color:#dc2626">${e.absent||'—'}</td>
+      <td style="padding:8px 6px;text-align:center;font-size:13px">${fmtMin(e.work)}</td>
+      <td style="padding:8px 6px;text-align:center;font-size:13px;color:#7c3aed">${e.ot>0?fmtMin(e.ot):'—'}</td>
+    </tr>`).join('');
+    if(tableDiv)tableDiv.innerHTML=rows?`
+      <table style="width:100%;border-collapse:collapse;margin-top:8px">
+        <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
+          <th style="padding:8px 6px;text-align:left;font-size:12px">พนักงาน</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">วันทำงาน</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">สาย</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">ขาด</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">ชม.รวม</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">OT</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`:'<div style="text-align:center;padding:20px;color:var(--g5)">ไม่มีข้อมูลในเดือนนี้</div>';
+  }catch(e){
+    if(summDiv)summDiv.innerHTML='<div style="color:#dc2626;text-align:center;padding:10px">โหลดข้อมูลไม่สำเร็จ</div>';
+  }
 }
 
 function attUIEmployees(){
@@ -2115,7 +2270,7 @@ function attUIExport(){
 // ===== ATTENDANCE HELPERS (รอบ C) =====
 
 // ตัวแปร module-level สำหรับ cache ข้อมูล
-let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_pendingLogId=null, att_isProcessing=false;
+let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_pendingLogId=null, att_isProcessing=false, att_historyLogs=[];
 
 // ─── Bangkok Time Helpers ───
 function attFormatThaiDateTime(date){
