@@ -1874,6 +1874,7 @@ function attRender(tab){
   const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,employees:attUIEmployees,attsettings:attUISettings,export:attUIExport};
   el.innerHTML=(map[tab]||attUICheckin)();
   if(tab==='checkin'){attStartClock();attInitCheckinView();}
+  if(tab==='attsettings'){attInitSettingsView();}
 }
 
 function attPH(icon,title,sub,badge){
@@ -1954,15 +1955,148 @@ function attUIEmployees(){
 }
 
 function attUISettings(){
-  const rows=[['สาขา','select','—'],['เวลาเข้างานปกติ','time','08:30'],['เวลาออกงานปกติ','time','17:30'],['รัศมีที่อนุญาต (เมตร)','number','200'],['วันทำงาน','text','จันทร์ – ศุกร์']];
-  return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:520px">
-    <div style="font-weight:700;margin-bottom:16px">⚙️ ตั้งค่าเวลาเข้า-ออกงาน</div>
-    <div style="display:grid;gap:10px;margin-bottom:16px">
-      ${rows.map(([lb,tp,pl])=>`<div class="fgi"><label class="fl">${lb}</label><input class="fi2" type="${tp}" placeholder="${pl}" disabled style="opacity:.5;width:100%"></div>`).join('')}
+  return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:560px">
+    <div style="font-weight:700;font-size:15px;margin-bottom:20px">⚙️ ตั้งค่าระบบตอกบัตร</div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g2)">🕐 เวลาทำงาน</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div class="fgi"><label class="fl">เวลาเข้างาน</label><input id="att_cfg_checkin" class="fi2" type="time" value="08:30"></div>
+      <div class="fgi"><label class="fl">เวลาออกงาน</label><input id="att_cfg_checkout" class="fi2" type="time" value="17:30"></div>
+      <div class="fgi"><label class="fl">อนุโลมสาย (นาที)</label><input id="att_cfg_late_tol" class="fi2" type="number" min="0" max="120" value="10"></div>
+      <div class="fgi"><label class="fl">รัศมีที่อนุญาต (เมตร)</label><input id="att_cfg_radius" class="fi2" type="number" min="50" max="5000" value="200"></div>
     </div>
-    <button class="btn btn-p" style="width:100%;opacity:.5;cursor:not-allowed" disabled>💾 บันทึกการตั้งค่า</button>
-    <div style="margin-top:14px;font-size:12px;background:var(--pp);color:var(--pd);padding:10px 14px;border-radius:8px;font-weight:600">⏳ รอบ G: เชื่อม attendance_settings + branches</div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g2)">📅 วันทำงาน</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      ${[['จ',1],['อ',2],['พ',3],['พฤ',4],['ศ',5],['ส',6],['อา',0]].map(([lb,v])=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 10px;border:1.5px solid var(--g2);border-radius:8px;user-select:none"><input type="checkbox" id="att_wd_${v}" value="${v}" style="cursor:pointer"> ${lb}</label>`).join('')}
+    </div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g2)">⌛ การทำงานล่วงเวลา (OT)</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:14px">
+      <input type="checkbox" id="att_cfg_enable_ot" onchange="attToggleOTSection()" style="width:16px;height:16px;cursor:pointer">
+      <span>เปิดใช้งานการคำนวณ OT</span>
+    </label>
+    <div id="att_ot_detail" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div class="fgi" style="grid-column:1/-1"><label class="fl">วิธีคิด OT</label>
+        <select id="att_cfg_ot_mode" class="fi2">
+          <option value="after_checkout_time">นับหลังเวลาเริ่ม OT (เช่น 18:00 น.)</option>
+          <option value="after_work_minutes">นับหลังทำงานครบเวลาปกติ</option>
+        </select>
+      </div>
+      <div class="fgi"><label class="fl">เริ่มนับ OT เวลา</label><input id="att_cfg_ot_start" class="fi2" type="time" value="18:00"></div>
+      <div class="fgi"><label class="fl">เวลาทำงานปกติ (นาที)</label><input id="att_cfg_work_mins" class="fi2" type="number" min="60" max="720" value="480" placeholder="480 = 8 ชม."></div>
+      <div class="fgi"><label class="fl">ขั้นต่ำก่อนนับ OT (นาที)</label><input id="att_cfg_ot_min" class="fi2" type="number" min="1" max="120" value="30"></div>
+      <div class="fgi"><label class="fl">ปัดเศษ OT</label>
+        <select id="att_cfg_ot_round" class="fi2">
+          <option value="none">ไม่ปัดเศษ</option>
+          <option value="30min">ปัดลงทุก 30 นาที</option>
+          <option value="1hour">ปัดลงทุก 1 ชั่วโมง</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="att_cfg_save_btn" onclick="attSaveSettings()" class="btn btn-p" style="width:100%;padding:13px;font-size:14px">💾 บันทึกการตั้งค่า</button>
+    <div id="att_cfg_msg" style="margin-top:12px;font-size:13px"></div>
   </div>`;
+}
+
+function attToggleOTSection(){
+  const enabled=document.getElementById('att_cfg_enable_ot')?.checked;
+  const sec=document.getElementById('att_ot_detail');
+  if(sec)sec.style.display=enabled?'grid':'none';
+}
+
+async function attInitSettingsView(){
+  const btn=document.getElementById('att_cfg_save_btn');
+  const msg=document.getElementById('att_cfg_msg');
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังโหลด...';}
+  if(msg)msg.innerHTML='';
+  try{
+    const res=await dbGet('attendance_settings','?limit=1');
+    const s=(Array.isArray(res)&&res[0])?res[0]:null;
+    att_branchSettings=s;
+    if(s){
+      const f=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val??'';};
+      f('att_cfg_checkin',(s.normal_checkin_time||'08:30:00').slice(0,5));
+      f('att_cfg_checkout',(s.normal_checkout_time||'17:30:00').slice(0,5));
+      f('att_cfg_late_tol',s.late_tolerance_minutes??10);
+      f('att_cfg_radius',s.allowed_radius_meter??200);
+      const days=(s.work_days||'1,2,3,4,5').split(',').map(Number);
+      [0,1,2,3,4,5,6].forEach(d=>{const cb=document.getElementById(`att_wd_${d}`);if(cb)cb.checked=days.includes(d);});
+      const ot=document.getElementById('att_cfg_enable_ot');
+      if(ot)ot.checked=!!s.enable_ot;
+      f('att_cfg_ot_mode',s.ot_calculation_mode||'after_checkout_time');
+      f('att_cfg_ot_start',(s.ot_start_time||'18:00:00').slice(0,5));
+      f('att_cfg_work_mins',s.normal_work_minutes??480);
+      f('att_cfg_ot_min',s.ot_min_minutes??30);
+      f('att_cfg_ot_round',s.ot_rounding||'none');
+    }
+    attToggleOTSection();
+  }catch(e){
+    if(msg)msg.innerHTML=`<div style="color:#dc2626;padding:10px 14px;background:#fee2e2;border-radius:8px">❌ โหลดข้อมูลไม่สำเร็จ: ${e.message}</div>`;
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='💾 บันทึกการตั้งค่า';}
+  }
+}
+
+async function attSaveSettings(){
+  const btn=document.getElementById('att_cfg_save_btn');
+  const msg=document.getElementById('att_cfg_msg');
+  if(!btn||btn.disabled)return;
+  if(msg)msg.innerHTML='';
+  const checkinTime=document.getElementById('att_cfg_checkin')?.value;
+  const checkoutTime=document.getElementById('att_cfg_checkout')?.value;
+  const lateTol=parseInt(document.getElementById('att_cfg_late_tol')?.value)||0;
+  const radius=parseInt(document.getElementById('att_cfg_radius')?.value)||200;
+  const enableOT=document.getElementById('att_cfg_enable_ot')?.checked||false;
+  const otMode=document.getElementById('att_cfg_ot_mode')?.value||'after_checkout_time';
+  const otStart=document.getElementById('att_cfg_ot_start')?.value||'';
+  const workMins=parseInt(document.getElementById('att_cfg_work_mins')?.value)||480;
+  const otMin=parseInt(document.getElementById('att_cfg_ot_min')?.value)||30;
+  const otRound=document.getElementById('att_cfg_ot_round')?.value||'none';
+  const days=[0,1,2,3,4,5,6].filter(d=>document.getElementById(`att_wd_${d}`)?.checked);
+  const err=m=>{if(msg)msg.innerHTML=`<div style="color:#dc2626;padding:10px 14px;background:#fee2e2;border-radius:8px">❌ ${m}</div>`;};
+  if(!checkinTime){err('กรุณาระบุเวลาเข้างาน');return;}
+  if(!checkoutTime){err('กรุณาระบุเวลาออกงาน');return;}
+  if(checkinTime>=checkoutTime){err('เวลาออกงานต้องหลังเวลาเข้างาน');return;}
+  if(lateTol<0||lateTol>120){err('อนุโลมสายต้องอยู่ระหว่าง 0–120 นาที');return;}
+  if(radius<50||radius>5000){err('รัศมีต้องอยู่ระหว่าง 50–5,000 เมตร');return;}
+  if(!days.length){err('กรุณาเลือกวันทำงานอย่างน้อย 1 วัน');return;}
+  if(enableOT&&otMode==='after_checkout_time'&&!otStart){err('กรุณาระบุเวลาเริ่ม OT');return;}
+  if(enableOT&&(otMin<1||otMin>120)){err('ขั้นต่ำ OT ต้องอยู่ระหว่าง 1–120 นาที');return;}
+  if(enableOT&&otMode==='after_work_minutes'&&(workMins<60||workMins>720)){err('เวลาทำงานปกติต้องอยู่ระหว่าง 60–720 นาที');return;}
+  const data={
+    normal_checkin_time:checkinTime+':00',
+    normal_checkout_time:checkoutTime+':00',
+    late_tolerance_minutes:lateTol,
+    allowed_radius_meter:radius,
+    work_days:days.join(','),
+    enable_ot:enableOT,
+    ot_calculation_mode:otMode,
+    ot_start_time:otStart?otStart+':00':null,
+    normal_work_minutes:workMins,
+    ot_min_minutes:otMin,
+    ot_rounding:otRound,
+    updated_at:new Date().toISOString()
+  };
+  btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';
+  try{
+    let saved;
+    if(att_branchSettings?.id){
+      const r=await dbPatch('attendance_settings',att_branchSettings.id,data);
+      saved=Array.isArray(r)?r[0]:r;
+    }else{
+      const r=await dbPost('attendance_settings',{...data,branch_id:1,branch_name:'สาขาหลัก'});
+      saved=Array.isArray(r)?r[0]:r;
+    }
+    if(saved)att_branchSettings={...(att_branchSettings||{}),...saved};
+    if(msg)msg.innerHTML=`<div style="color:#15803d;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-weight:600">✅ บันทึกการตั้งค่าสำเร็จ</div>`;
+    setTimeout(()=>{if(msg)msg.innerHTML='';},4000);
+  }catch(e){
+    if(msg)msg.innerHTML=`<div style="color:#dc2626;padding:10px 14px;background:#fee2e2;border-radius:8px">❌ บันทึกไม่สำเร็จ: ${e.message||'ไม่ทราบสาเหตุ'}</div>`;
+  }finally{
+    btn.disabled=false;btn.textContent='💾 บันทึกการตั้งค่า';
+  }
 }
 
 function attUIExport(){
