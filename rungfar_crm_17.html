@@ -2005,6 +2005,26 @@ function attCalculateLateMinutes(checkinTime,normalCheckinTime,lateTolMins){
   const[nh,nm]=(normalCheckinTime||'08:30:00').split(':').map(Number);
   return Math.max(0,bh*60+bm-(nh*60+nm+(lateTolMins||0)));
 }
+function attCalculateOTMinutes(checkinTime,checkoutTime,settings){
+  if(!settings||!settings.enable_ot)return 0;
+  if(!checkinTime||!checkoutTime)return 0;
+  let rawOT=0;
+  if(settings.ot_calculation_mode==='after_work_minutes'){
+    const total=attCalculateWorkMinutes(checkinTime,checkoutTime);
+    if(!total)return 0;
+    rawOT=Math.max(0,total-(settings.normal_work_minutes||480));
+  } else {
+    const[oh,om]=(settings.ot_start_time||'18:00:00').split(':').map(Number);
+    const s=new Date(checkoutTime).toLocaleString('sv-SE',{timeZone:'Asia/Bangkok',hour12:false});
+    const[bh,bm]=s.slice(11,16).split(':').map(Number);
+    rawOT=Math.max(0,bh*60+bm-(oh*60+om));
+  }
+  if(rawOT<(settings.ot_min_minutes||30))return 0;
+  const r=settings.ot_rounding||'none';
+  if(r==='30min')return Math.floor(rawOT/30)*30;
+  if(r==='1hour')return Math.floor(rawOT/60)*60;
+  return rawOT;
+}
 
 // 1. ขอ GPS — คืน {latitude,longitude,accuracy} หรือ null ถ้าปฏิเสธ/ไม่รองรับ
 function attGetGPS(){
@@ -2110,6 +2130,7 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
       checkout_distance_m:distM,
       checkout_status:isOutside?'outside':earlyMin>0?'early':'normal',
       early_leave_minutes:earlyMin, total_work_minutes:totalMins,
+      ot_minutes:attCalculateOTMinutes(checkinTime,nowISO,settings),
       updated_at:nowISO
     };
   }
@@ -2343,10 +2364,14 @@ function attShowSavedSuccess(type,payload,gps,selfieB64,emp,settings){
     ?`<img src="${selfieB64}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--g2);cursor:pointer;flex-shrink:0" onclick="openPhotoModal(att_pendingSelfie)">`
     :`<div style="width:72px;height:72px;border-radius:8px;border:1.5px dashed var(--g3);display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--g1);flex-shrink:0">📷</div>`;
 
-  let extraRow='';
+  let extraRow='',otRow='';
   if(!isIn&&payload.total_work_minutes!=null){
     const h=Math.floor(payload.total_work_minutes/60),m=payload.total_work_minutes%60;
     extraRow=`<div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">⏱️ รวมงาน</span><span><strong>${h} ชั่วโมง ${m} นาที</strong></span></div>`;
+  }
+  if(!isIn&&payload.ot_minutes>0){
+    const oh=Math.floor(payload.ot_minutes/60),om=payload.ot_minutes%60;
+    otRow=`<div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">⌛ OT</span><span><strong style="color:#7c3aed">${oh>0?oh+' ชม. ':''}${om} นาที</strong></span></div>`;
   }
 
   el.innerHTML=`<div style="background:${bg};border-radius:var(--rx);border:2px solid ${color}33;padding:18px">
@@ -2357,6 +2382,7 @@ function attShowSavedSuccess(type,payload,gps,selfieB64,emp,settings){
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
       ${extraRow}
+      ${otRow}
       <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>
     </div>
     <div style="margin-top:14px;padding:10px 14px;background:${color}18;border-radius:8px;font-size:12px;color:${color};font-weight:700">✅ บันทึกลง Supabase สำเร็จแล้ว</div>
