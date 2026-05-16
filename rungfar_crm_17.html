@@ -100,7 +100,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .sc.c2::after{background:linear-gradient(90deg,#D97706,#FBBF24)}
 .sc.c3::after{background:linear-gradient(90deg,#15803D,#22C55E)}
 .sc.c4::after{background:linear-gradient(90deg,#1D4ED8,#60A5FA)}
-.sc-num{font-size:30px;font-weight:800;font-family:var(--mono);line-height:1;color:var(--g9)}
+.sc-num{font-size:30px;font-weight:800;font-family:Arial,Helvetica,Tahoma,sans-serif;line-height:1;color:var(--g9);font-feature-settings:"zero" 0;font-variant-numeric:normal}
 .sc-lbl{font-size:11px;color:var(--g5);text-transform:uppercase;letter-spacing:.7px;margin-top:4px;font-weight:600}
 .sc-sub{font-size:11px;color:var(--g4);margin-top:5px}
 .dg2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px}
@@ -271,8 +271,8 @@ textarea.fi2{resize:vertical;min-height:65px}
 .bulk-btn.danger{background:rgba(220,38,38,.4);border-color:rgba(220,38,38,.6)}
 .bulk-btn.danger:hover{background:rgba(220,38,38,.6)}
 /* AVATAR in table */
-.c-avatar{width:32px;height:32px;border-radius:8px;object-fit:cover;border:1.5px solid var(--g2);flex-shrink:0}
-.c-avatar-placeholder{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--p),var(--pd));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
+.c-avatar{width:48px;height:48px;border-radius:8px;object-fit:cover;border:1.5px solid var(--g2);flex-shrink:0;cursor:pointer}
+.c-avatar-placeholder{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,var(--p),var(--pd));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
 
 /* MOBILE RESPONSIVE */
 @media (max-width:768px){
@@ -345,6 +345,22 @@ textarea.fi2{resize:vertical;min-height:65px}
 .lang-btn.active{background:var(--p);border-color:var(--p);color:#fff}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--g3);border-radius:10px}
+/* ===== ATTENDANCE MODULE ===== */
+.att-subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--g2)}
+.att-tab{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--g2);color:var(--g5);background:#fff;font-family:var(--font);transition:all .2s}
+.att-tab:hover{border-color:var(--p);color:var(--p)}.att-tab.att-on{background:var(--p);border-color:var(--p);color:#fff}
+.att-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--g4);text-align:center}
+.att-checkin-card{background:#fff;border-radius:var(--rx);padding:28px;border:1px solid var(--g2);box-shadow:var(--s1);text-align:center;max-width:400px;margin:0 auto}
+.att-btn-in{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:16px;width:100%;padding:20px;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--font);box-shadow:0 4px 14px rgba(22,163,74,.35);transition:all .2s;margin-bottom:12px}
+.att-btn-in:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(22,163,74,.45)}
+.att-btn-out{background:linear-gradient(135deg,#1d4ed8,#60a5fa);color:#fff;border:none;border-radius:16px;width:100%;padding:20px;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--font);box-shadow:0 4px 14px rgba(29,78,216,.3);transition:all .2s}
+.att-btn-out:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(29,78,216,.4)}
+.att-clock{font-size:42px;font-weight:800;font-family:Arial,Helvetica,sans-serif;color:var(--g9);letter-spacing:3px;margin:10px 0}
+.att-date{font-size:13px;color:var(--g5);margin-bottom:18px}
+.att-badge-ok{background:#dcfce7;color:#15803d;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.att-badge-late{background:#fff3e0;color:#d97706;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.att-badge-out{background:#dbeafe;color:#1d4ed8;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.att-badge-err{background:#fee2e2;color:#dc2626;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
 </style>
 </head>
 <body>
@@ -395,6 +411,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="ni" onclick="gv('import')"><span class="ic">📥</span>นำเข้า Excel/CSV</div>
     <div class="ni" onclick="gv('settings')"><span class="ic">⚙️</span>ตั้งค่าแจ้งเตือน</div>
     <div class="ni" id="niUsers" onclick="gv('users')"><span class="ic">👤</span>จัดการผู้ใช้</div>
+    <div class="ni" onclick="gv('attendance')"><span class="ic">📋</span>ตอกบัตรพนักงาน</div>
     <div class="ni" onclick="doLogout()"><span class="ic">🚪</span>ออกจากระบบ</div>
   </div>
   <div class="sfoot">
@@ -446,6 +463,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="view" id="view-import"><div id="importContent"></div></div>
     <div class="view" id="view-settings"><div style="max-width:560px"><div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
+    <div class="view" id="view-attendance"><div style="max-width:960px" id="att_content"></div></div>
   </div>
 </div>
 </div>
@@ -697,6 +715,12 @@ textarea.fi2{resize:vertical;min-height:65px}
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('bulkStModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="doBulkStatus()">✅ บันทึก</button></div>
 </div></div>
 
+<!-- PHOTO LIGHTBOX -->
+<div id="photoModal" style="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:none;align-items:center;justify-content:center" onclick="if(event.target===this)closePhotoModal()">
+  <img id="photoModalImg" src="" style="max-width:90vw;max-height:88vh;border-radius:12px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+  <button onclick="closePhotoModal()" style="position:fixed;top:16px;right:20px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:28px;cursor:pointer;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center">×</button>
+</div>
+
 <script>
 const SB_URL='https://magwqolbjmwymqxelizl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZ3dxb2xiam13eW1xeGVsaXpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjUyOTgsImV4cCI6MjA5NDMwMTI5OH0.DdhbYxqO208fUDqQtV06rbfz2GRPWKsjSPOdZehi58U';
@@ -711,6 +735,9 @@ let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[];
 let filtered=[],curPage=1;const PG=15;
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
+function openPhotoModal(src){document.getElementById('photoModalImg').src=src;document.getElementById('photoModal').style.display='flex';}
+function closePhotoModal(){document.getElementById('photoModal').style.display='none';document.getElementById('photoModalImg').src='';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closePhotoModal();});
 let impData=[],impCols=[],impMap={};
 let curView='dash';
 let settings={passport:90,visa:30,wp:30,next90:14,mou:60};
@@ -885,8 +912,8 @@ function applyLang(){
 
   // ===== TABLE HEADERS =====
   const ths=document.querySelectorAll('#view-customers thead th');
-  const hkeys=['','',L.name,L.type,L.nat,L.employer,L.group,L.service,L.workStatus,L.day90,L.visawp,L.manage];
-  // first 2 are checkbox+avatar, skip
+  const hkeys=['',L.name,L.type,L.nat,L.employer,L.group,L.service,L.workStatus,L.day90,L.visawp,L.manage];
+  // th[0]=checkbox, th[1]=รูป skipped (i<2); th[2]=# gets hkeys[0]='' (keep); th[3..12] get L.xxx
   ths.forEach((th,i)=>{if(i>=2&&hkeys[i-2]!==undefined)th.textContent=hkeys[i-2]||th.textContent;});
 
   // ===== BULK BAR =====
@@ -1206,7 +1233,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
   const el=document.getElementById('view-'+v);if(el)el.classList.add('on');
   curView=v;
-  const titles={dash:'แดชบอร์ด',customers:'ลูกค้าทั้งหมด',alerts:'การแจ้งเตือน',employers:'นายจ้าง / บริษัท',groups:'จัดการกลุ่ม',import:'นำเข้าข้อมูล',settings:'ตั้งค่าแจ้งเตือน',users:'จัดการผู้ใช้'};
+  const titles={dash:'แดชบอร์ด',customers:'ลูกค้าทั้งหมด',alerts:'การแจ้งเตือน',employers:'นายจ้าง / บริษัท',groups:'จัดการกลุ่ม',import:'นำเข้าข้อมูล',settings:'ตั้งค่าแจ้งเตือน',users:'จัดการผู้ใช้',attendance:'ตอกบัตรพนักงาน'};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -1243,6 +1270,7 @@ function gv(v,opts={}){
   if(v==='import')renderImport();
   if(v==='settings')renderSettings();
   if(v==='users')renderUsers();
+  if(v==='attendance')renderAttendance();
 }
 
 function renderSidebar(){
@@ -1254,7 +1282,7 @@ function renderSidebar(){
   if(nb){nb.textContent=al;nb.className='nbadge'+(al>0?'':' ok');}
   const sg=document.getElementById('sideGroups');
   if(!groups.length){sg.innerHTML='';return;}
-  sg.innerHTML='<div class="nlbl">กลุ่มงาน</div>'+groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:'${g.name}'})"><span class="gdot"></span>${g.name}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
+  sg.innerHTML='<div class="nlbl">กลุ่มงาน</div>'+groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:'${g.name}'})">${g.name}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
 }
 
 function renderDash(){
@@ -1282,7 +1310,7 @@ function renderDash(){
   else ab.style.display='none';
   document.getElementById('dbContent').innerHTML=`
   <div class="sg">
-    <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">แรงงานทั้งหมด</div><div class="sc-sub">🧑 ${customers.filter(c=>c.customer_type==='freelance').length} • 🏢 ${customers.filter(c=>c.customer_type==='company').length}</div></div>
+    <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">แรงงานทั้งหมด</div><div class="sc-sub">🧑 ${customers.filter(c=>c.customer_type==='freelance').length} &nbsp; 🏢 ${customers.filter(c=>c.customer_type==='company').length}</div></div>
     <div class="sc c2" onclick="gv('alerts')"><div class="sc-num" style="color:${al.length>0?'var(--amb)':'var(--grn)'}">${al.length}</div><div class="sc-lbl">ต้องดำเนินการ</div><div class="sc-sub" style="color:${al.length>0?'var(--red)':'var(--grn)'}">${al.length>0?'⚠️ มีรายการด่วน':'✅ ปกติดี'}</div></div>
     <div class="sc c3" onclick="gv('employers')"><div class="sc-num">${employers.length}</div><div class="sc-lbl">นายจ้าง/บริษัท</div><div class="sc-sub">ทั้งหมดในระบบ</div></div>
     <div class="sc c4"><div class="sc-num">${groups.length}</div><div class="sc-lbl">กลุ่มงาน</div><div class="sc-sub">${groups.slice(0,2).map(g=>g.name).join(', ')||'ยังไม่มีกลุ่ม'}</div></div>
@@ -1361,7 +1389,7 @@ function renderTable(){
     const svcs=(c.services||[]).slice(0,2).map(x=>`<span class="xb ${SC[x]||'xb-ot'}">${x}</span>`).join('');
     const ex=(c.services||[]).length>2?`<span class="xb xb-ot">+${(c.services||[]).length-2}</span>`:'';
     const initials=c.name?c.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'?';
-    const avatarHtml=c.photo?`<img src="${c.photo}" class="c-avatar">`:`<div class="c-avatar-placeholder">${initials}</div>`;
+    const avatarHtml=c.photo?`<img src="${c.photo}" class="c-avatar" title="คลิกดูรูปใหญ่" onclick="openPhotoModal(this.src);event.stopPropagation()">`:`<div class="c-avatar-placeholder">${initials}</div>`;
     return`<tr onclick="openDetail(${c.id})" style="cursor:pointer" id="row-${c.id}" class="${selectedIds.has(c.id)?'row-selected':''}">
       <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedIds.has(c.id)?'checked':''} onchange="toggleRow(${c.id},this.checked)"></td>
       <td onclick="event.stopPropagation()" onclick="openDetail(${c.id})">${avatarHtml}</td>
@@ -1621,6 +1649,9 @@ function renderImport(){
 }
 
 const IMP_FIELDS=[{key:'name',label:'ชื่อ'},{key:'nationality',label:'สัญชาติ'},{key:'passport_no',label:'เลขพาสปอร์ต'},{key:'alien_id',label:'เลขต่างด้าว'},{key:'phone',label:'เบอร์'},{key:'employer_name',label:'นายจ้าง'},{key:'wp_no',label:'เลขคำขอ WP'},{key:'exp_visa',label:'วันหมด VISA'},{key:'exp_wp',label:'วันหมด WP'},{key:'next_90',label:'วัน 90 วัน'},{key:'work_status',label:'สถานะ'}];
+function normImpStr(s){return String(s||'').trim().toUpperCase().replace(/\s+/g,'');}
+function makeImpKey(pp,al,name,nat,empName){const p=normImpStr(pp);if(p)return 'PP:'+p;const a=normImpStr(al);if(a)return 'AL:'+a;const n=normImpStr(name);if(n)return 'NM:'+n+'|'+normImpStr(nat)+'|'+normImpStr(empName);return null;}
+function buildExistingKeys(){const s=new Set();customers.forEach(c=>{const pp=normImpStr(c.passport_no);if(pp)s.add('PP:'+pp);const al=normImpStr(c.alien_id);if(al)s.add('AL:'+al);const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);s.add('NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:''));}});return s;}
 
 function handleImpFile(e){
   const file=e.target.files[0];if(!file)return;
@@ -1637,30 +1668,50 @@ function handleImpFile(e){
 
 function renderImpPreview(){
   if(!impData.length){document.getElementById('impPreview').innerHTML='<div style="color:var(--g5);padding:16px;text-align:center">ไม่พบข้อมูลในไฟล์</div>';return;}
-  const dupCount=impData.filter(r=>{const pp=r[impMap['passport_no']];const al=r[impMap['alien_id']];return(pp&&customers.some(c=>c.passport_no===String(pp)))||(al&&customers.some(c=>c.alien_id===String(al)));}).length;
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div class="tbar2"><div><strong>${impData.length}</strong> แถว ${dupCount>0?`<span class="eb eb-w" style="margin-left:8px">ซ้ำ ${dupCount} แถว</span>`:''}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${impData.length} รายการ</button></div>
+  const get=(row,key)=>impMap[key]!==undefined&&impMap[key]>=0?String(row[impMap[key]]||'').trim():'';
+  const existingKeys=buildExistingKeys();const seenInFile=new Set();
+  let cntDupEx=0,cntDupFile=0,cntMissing=0;
+  const rowStatus=impData.map(r=>{
+    const name=get(r,'name');if(!name){cntMissing++;return 'missing';}
+    const key=makeImpKey(get(r,'passport_no'),get(r,'alien_id'),name,get(r,'nationality'),get(r,'employer_name'));
+    if(key&&existingKeys.has(key)){cntDupEx++;return 'dup-existing';}
+    if(key&&seenInFile.has(key)){cntDupFile++;return 'dup-file';}
+    if(key)seenInFile.add(key);return 'new';
+  });
+  const cntNew=rowStatus.filter(s=>s==='new').length;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ</button></div>
   <div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value)"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
-  <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map(r=>{const pp=r[impMap['passport_no']];const al=r[impMap['alien_id']];const isDup=(pp&&customers.some(c=>c.passport_no===String(pp)))||(al&&customers.some(c=>c.alien_id===String(al)));return`<tr class="${isDup?'imp-dup':''}">${r.map(v=>`<td>${v||''}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
-  ${impData.length>5?`<div style="padding:8px 15px;font-size:11px;color:var(--g5);border-top:1px solid var(--g1)">แสดง 5 แถวแรก จาก ${impData.length} แถวทั้งหมด</div>`:''}</div>`;
+  <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map((r,i)=>{const st=rowStatus[i];return`<tr ${st==='dup-existing'||st==='dup-file'?'class="imp-dup"':st==='missing'?'style="background:#fff0f0"':''}>${r.map(v=>`<td>${v||''}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
+  ${impData.length>5?`<div style="padding:8px 15px;font-size:11px;color:var(--g5);border-top:1px solid var(--g1)">แสดง 5 แถวแรก จาก ${impData.length} แถวทั้งหมด</div>`:``}</div>`;
 }
 
 async function doImport(){
   if(!impData.length){toast('ไม่มีข้อมูล','err');return;}
-  let imported=0,skipped=0;
   const get=(row,key)=>impMap[key]!==undefined&&impMap[key]>=0?String(row[impMap[key]]||'').trim():'';
-  for(const row of impData){
-    const name=get(row,'name');if(!name)continue;
+  const existingKeys=buildExistingKeys();
+  const seenInFile=new Set();
+  let countNew=0,countDupEx=0,countDupFile=0,countMissing=0,countError=0;
+  const skippedRows=[];
+  for(let ri=0;ri<impData.length;ri++){
+    const row=impData[ri];
+    const name=get(row,'name');
+    if(!name){countMissing++;skippedRows.push({ri:ri+2,name:'—',id:'—',reason:'ไม่มีชื่อ'});continue;}
     const pp=get(row,'passport_no');const al=get(row,'alien_id');
-    const isDup=(pp&&customers.some(c=>c.passport_no===pp))||(al&&customers.some(c=>c.alien_id===al));
-    if(isDup){skipped++;continue;}
+    const nat=get(row,'nationality');const empName=get(row,'employer_name');
+    const key=makeImpKey(pp,al,name,nat,empName);
+    if(key&&existingKeys.has(key)){countDupEx++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำกับข้อมูลเดิม'});continue;}
+    if(key&&seenInFile.has(key)){countDupFile++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำในไฟล์นำเข้า'});continue;}
     try{
-      const en=get(row,'employer_name');let empId=null;
-      if(en){const ef=employers.find(x=>x.name===en);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:en});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
-      const data={name,nationality:get(row,'nationality')||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:get(row,'exp_visa')||null,exp_wp:get(row,'exp_wp')||null,next_90:get(row,'next_90')||null,work_status:get(row,'work_status')||'รับเรื่อง'};
-      const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);imported++;}
-    }catch(e){skipped++;}
+      let empId=null;
+      if(empName){const ef=employers.find(x=>x.name===empName);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
+      const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:get(row,'exp_visa')||null,exp_wp:get(row,'exp_wp')||null,next_90:get(row,'next_90')||null,work_status:get(row,'work_status')||'รับเรื่อง'};
+      const r=await dbPost('customers',data);
+      if(r&&r[0]){customers.unshift(r[0]);if(key)seenInFile.add(key);countNew++;}
+    }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'เกิดข้อผิดพลาด'});}
   }
-  toast(`นำเข้าสำเร็จ ${imported} รายการ${skipped>0?`, ข้าม ${skipped} (ซ้ำ/ผิดพลาด)`:''}`);renderDash();renderSidebar();renderImpPreview();
+  renderDash();renderSidebar();
+  const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">📊 สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
@@ -1789,6 +1840,146 @@ function doExport(){
   const b=new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`Rungfar_CRM_${new Date().toLocaleDateString('th')}.csv`;a.click();toast('Export แล้ว');
 }
+
+// ===== ATTENDANCE MODULE (รอบ B — โครง UI) =====
+let att_curTab='checkin', att_clockTimer=null;
+
+function renderAttendance(){
+  const tabs=[
+    {k:'checkin',   l:'📲 ตอกบัตรเข้า-ออก'},
+    {k:'history',   l:'📋 ประวัติตอกบัตร'},
+    {k:'report',    l:'📊 รายงาน'},
+    {k:'employees', l:'👥 จัดการพนักงาน'},
+    {k:'attsettings',l:'⚙️ ตั้งค่าเวลา'},
+    {k:'export',    l:'📤 ส่งออก Excel'},
+  ];
+  document.getElementById('att_content').innerHTML=
+    `<div style="font-size:16px;font-weight:700;margin-bottom:14px">📋 ระบบตอกบัตรพนักงาน</div>
+     <div class="att-subnav">${tabs.map(t=>`<button class="att-tab${att_curTab===t.k?' att-on':''}" onclick="attGo('${t.k}')">${t.l}</button>`).join('')}</div>
+     <div id="att_sub"></div>`;
+  attRender(att_curTab);
+}
+
+function attGo(tab){
+  att_curTab=tab;
+  document.querySelectorAll('.att-tab').forEach(b=>b.classList.remove('att-on'));
+  const btn=document.querySelector(`.att-tab[onclick="attGo('${tab}')"]`);
+  if(btn)btn.classList.add('att-on');
+  attRender(tab);
+}
+
+function attRender(tab){
+  const el=document.getElementById('att_sub'); if(!el)return;
+  if(att_clockTimer){clearInterval(att_clockTimer);att_clockTimer=null;}
+  const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,employees:attUIEmployees,attsettings:attUISettings,export:attUIExport};
+  el.innerHTML=(map[tab]||attUICheckin)();
+  if(tab==='checkin')attStartClock();
+}
+
+function attPH(icon,title,sub,badge){
+  return`<div class="att-placeholder">
+    <div style="font-size:52px;margin-bottom:14px;opacity:.45">${icon}</div>
+    <div style="font-size:15px;font-weight:700;color:var(--g6);margin-bottom:6px">${title}</div>
+    <div style="font-size:13px;color:var(--g4);max-width:340px;line-height:1.7">${sub}</div>
+    ${badge?`<div style="margin-top:16px;font-size:11px;background:var(--pp);color:var(--pd);padding:6px 16px;border-radius:8px;font-weight:600">${badge}</div>`:''}
+  </div>`;
+}
+
+function attUICheckin(){
+  const now=new Date();
+  const timeStr=now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const dateStr=now.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  return`<div class="att-checkin-card">
+    <div style="font-size:12px;color:var(--g4);margin-bottom:2px">เวลาปัจจุบัน</div>
+    <div class="att-clock" id="att_clock">${timeStr}</div>
+    <div class="att-date">${dateStr}</div>
+    <div style="background:var(--g1);border-radius:var(--r);padding:10px 14px;margin-bottom:22px;font-size:12px;color:var(--g5);line-height:1.7">
+      📍 บันทึก GPS อัตโนมัติ<br>📷 ถ่ายเซลฟี่ยืนยันตัวตน<br>✅ ตรวจสอบระยะห่างสาขา
+    </div>
+    <button class="att-btn-in" disabled style="opacity:.55;cursor:not-allowed">
+      🟢 &nbsp;เข้างาน
+      <div style="font-size:11px;font-weight:400;opacity:.8;margin-top:4px">จะเปิดใช้งานในรอบ C–E</div>
+    </button>
+    <button class="att-btn-out" disabled style="opacity:.55;cursor:not-allowed">
+      🔵 &nbsp;ออกงาน
+      <div style="font-size:11px;font-weight:400;opacity:.8;margin-top:4px">จะเปิดใช้งานในรอบ C–E</div>
+    </button>
+    <div style="margin-top:18px;font-size:11px;color:var(--g4)">⚙️ ต้องเพิ่มพนักงานและตั้งค่าสาขาก่อนใช้งาน</div>
+  </div>`;
+}
+
+function attStartClock(){
+  att_clockTimer=setInterval(()=>{
+    const el=document.getElementById('att_clock');
+    if(!el){clearInterval(att_clockTimer);att_clockTimer=null;return;}
+    el.textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  },1000);
+}
+
+function attUIHistory(){
+  return`<div class="twrap">
+    <div class="tbar2">
+      <div style="font-size:13px;font-weight:700">ประวัติตอกบัตร</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="si" placeholder="🔍 ค้นหาพนักงาน..." style="width:180px" disabled>
+        <select class="fi" disabled><option>ทุกสาขา</option></select>
+        <input type="date" class="fi" disabled>
+      </div>
+    </div>
+    ${attPH('📋','ยังไม่มีข้อมูลตอกบัตร','ประวัติเข้า-ออกงานทุกวันจะแสดงที่นี่<br>หลังเชื่อม Supabase ในรอบ D–E','⏳ รอบ D–E: เชื่อม attendance_logs')}
+  </div>`;
+}
+
+function attUIReport(){
+  const cards=[['✅','ปกติ','#dcfce7','#15803d'],['⚠️','มาสาย','#fff3e0','#d97706'],['❌','ขาดงาน','#fee2e2','#dc2626'],['🔵','ออกงานแล้ว','#dbeafe','#1d4ed8']];
+  return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:18px">
+    <div style="font-weight:700;margin-bottom:14px">📊 รายงานมาสาย / ขาดงาน</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+      ${cards.map(([ic,lb,bg,cl])=>`<div style="padding:14px 10px;background:${bg};border-radius:var(--r);text-align:center">
+        <div style="font-size:24px">${ic}</div>
+        <div style="font-size:20px;font-weight:800;color:${cl};font-family:Arial,sans-serif;margin:4px 0">0</div>
+        <div style="font-size:11px;color:${cl};font-weight:700">${lb}</div>
+      </div>`).join('')}
+    </div>
+    ${attPH('📊','รายงานจะแสดงเมื่อมีข้อมูลตอกบัตร','สรุปสถิติรายวัน รายเดือน แยกตามพนักงานและสาขา','⏳ รอบ F: เชื่อมข้อมูลจริงจาก Supabase')}
+  </div>`;
+}
+
+function attUIEmployees(){
+  return`<div class="twrap">
+    <div class="tbar2">
+      <div style="font-size:13px;font-weight:700">จัดการพนักงาน</div>
+      <button class="btn btn-p btn-sm" disabled style="opacity:.5;cursor:not-allowed">+ เพิ่มพนักงาน</button>
+    </div>
+    ${attPH('👥','ยังไม่มีข้อมูลพนักงาน','เพิ่มพนักงานเพื่อให้สามารถตอกบัตรได้<br>เชื่อมกับ Supabase table <strong>employees</strong>','⏳ รอบ G: CRUD พนักงาน + Supabase')}
+  </div>`;
+}
+
+function attUISettings(){
+  const rows=[['สาขา','select','—'],['เวลาเข้างานปกติ','time','08:30'],['เวลาออกงานปกติ','time','17:30'],['รัศมีที่อนุญาต (เมตร)','number','200'],['วันทำงาน','text','จันทร์ – ศุกร์']];
+  return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:520px">
+    <div style="font-weight:700;margin-bottom:16px">⚙️ ตั้งค่าเวลาเข้า-ออกงาน</div>
+    <div style="display:grid;gap:10px;margin-bottom:16px">
+      ${rows.map(([lb,tp,pl])=>`<div class="fgi"><label class="fl">${lb}</label><input class="fi2" type="${tp}" placeholder="${pl}" disabled style="opacity:.5;width:100%"></div>`).join('')}
+    </div>
+    <button class="btn btn-p" style="width:100%;opacity:.5;cursor:not-allowed" disabled>💾 บันทึกการตั้งค่า</button>
+    <div style="margin-top:14px;font-size:12px;background:var(--pp);color:var(--pd);padding:10px 14px;border-radius:8px;font-weight:600">⏳ รอบ G: เชื่อม attendance_settings + branches</div>
+  </div>`;
+}
+
+function attUIExport(){
+  const rows=[['สาขา','ทุกสาขา'],['เดือน','เลือกเดือน'],['พนักงาน','ทุกคน']];
+  return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:520px">
+    <div style="font-weight:700;margin-bottom:16px">📤 ส่งออกข้อมูลตอกบัตร</div>
+    <div style="display:grid;gap:10px;margin-bottom:16px">
+      ${rows.map(([lb,pl])=>`<div class="fgi"><label class="fl">${lb}</label><select class="fi2" disabled style="opacity:.5;width:100%"><option>${pl}</option></select></div>`).join('')}
+    </div>
+    <button class="btn btn-p" style="width:100%;opacity:.5;cursor:not-allowed;margin-bottom:8px" disabled>📤 ส่งออก Excel (.xlsx)</button>
+    <button class="btn btn-g" style="width:100%;opacity:.5;cursor:not-allowed" disabled>📄 ส่งออก CSV</button>
+    <div style="margin-top:14px;font-size:12px;background:var(--pp);color:var(--pd);padding:10px 14px;border-radius:8px;font-weight:600">⏳ รอบ H: export attendance_logs จริงจาก Supabase</div>
+  </div>`;
+}
+// ===== END ATTENDANCE MODULE =====
 
 // INIT
 if(checkSess()){showApp();}else{document.getElementById('loginScreen').style.display='flex';}
