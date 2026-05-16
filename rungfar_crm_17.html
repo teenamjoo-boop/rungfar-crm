@@ -1960,8 +1960,8 @@ function attUISettings(){
 
     <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g2)">🕐 เวลาทำงาน</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-      <div class="fgi"><label class="fl">เวลาเข้างาน</label><input id="att_cfg_checkin" class="fi2" type="time" value="08:30"></div>
-      <div class="fgi"><label class="fl">เวลาออกงาน</label><input id="att_cfg_checkout" class="fi2" type="time" value="17:30"></div>
+      <div class="fgi"><label class="fl">เวลาเข้างาน</label><div style="display:flex;align-items:center;gap:6px"><input id="att_cfg_checkin" class="fi2" type="text" placeholder="08:30" maxlength="5" style="width:90px"><span style="color:var(--g6);font-size:13px">น.</span></div></div>
+      <div class="fgi"><label class="fl">เวลาออกงาน</label><div style="display:flex;align-items:center;gap:6px"><input id="att_cfg_checkout" class="fi2" type="text" placeholder="17:30" maxlength="5" style="width:90px"><span style="color:var(--g6);font-size:13px">น.</span></div></div>
       <div class="fgi"><label class="fl">อนุโลมสาย (นาที)</label><input id="att_cfg_late_tol" class="fi2" type="number" min="0" max="120" value="10"></div>
       <div class="fgi"><label class="fl">รัศมีที่อนุญาต (เมตร)</label><input id="att_cfg_radius" class="fi2" type="number" min="50" max="5000" value="200"></div>
     </div>
@@ -1983,7 +1983,7 @@ function attUISettings(){
           <option value="after_work_minutes">นับหลังทำงานครบเวลาปกติ</option>
         </select>
       </div>
-      <div class="fgi"><label class="fl">เริ่มนับ OT เวลา</label><input id="att_cfg_ot_start" class="fi2" type="time" value="18:00"></div>
+      <div class="fgi"><label class="fl">เริ่มนับ OT เวลา</label><div style="display:flex;align-items:center;gap:6px"><input id="att_cfg_ot_start" class="fi2" type="text" placeholder="18:00" maxlength="5" style="width:90px"><span style="color:var(--g6);font-size:13px">น.</span></div></div>
       <div class="fgi"><label class="fl">เวลาทำงานปกติ (นาที)</label><input id="att_cfg_work_mins" class="fi2" type="number" min="60" max="720" value="480" placeholder="480 = 8 ชม."></div>
       <div class="fgi"><label class="fl">ขั้นต่ำก่อนนับ OT (นาที)</label><input id="att_cfg_ot_min" class="fi2" type="number" min="1" max="120" value="30"></div>
       <div class="fgi"><label class="fl">ปัดเศษ OT</label>
@@ -2056,13 +2056,14 @@ async function attSaveSettings(){
   const otRound=document.getElementById('att_cfg_ot_round')?.value||'none';
   const days=[0,1,2,3,4,5,6].filter(d=>document.getElementById(`att_wd_${d}`)?.checked);
   const err=m=>{if(msg)msg.innerHTML=`<div style="color:#dc2626;padding:10px 14px;background:#fee2e2;border-radius:8px">❌ ${m}</div>`;};
-  if(!checkinTime){err('กรุณาระบุเวลาเข้างาน');return;}
-  if(!checkoutTime){err('กรุณาระบุเวลาออกงาน');return;}
+  const timeRx=/^([01]\d|2[0-3]):[0-5]\d$/;
+  if(!timeRx.test(checkinTime)){err('กรุณากรอกเวลาแบบ 08:00 (เวลาเข้างาน)');return;}
+  if(!timeRx.test(checkoutTime)){err('กรุณากรอกเวลาแบบ 08:00 (เวลาออกงาน)');return;}
   if(checkinTime>=checkoutTime){err('เวลาออกงานต้องหลังเวลาเข้างาน');return;}
   if(lateTol<0||lateTol>120){err('อนุโลมสายต้องอยู่ระหว่าง 0–120 นาที');return;}
   if(radius<50||radius>5000){err('รัศมีต้องอยู่ระหว่าง 50–5,000 เมตร');return;}
   if(!days.length){err('กรุณาเลือกวันทำงานอย่างน้อย 1 วัน');return;}
-  if(enableOT&&otMode==='after_checkout_time'&&!otStart){err('กรุณาระบุเวลาเริ่ม OT');return;}
+  if(enableOT&&otMode==='after_checkout_time'&&!timeRx.test(otStart)){err('กรุณากรอกเวลาแบบ 18:00 (เวลาเริ่ม OT)');return;}
   if(enableOT&&(otMin<1||otMin>120)){err('ขั้นต่ำ OT ต้องอยู่ระหว่าง 1–120 นาที');return;}
   if(enableOT&&otMode==='after_work_minutes'&&(workMins<60||workMins>720)){err('เวลาทำงานปกติต้องอยู่ระหว่าง 60–720 นาที');return;}
   const data={
