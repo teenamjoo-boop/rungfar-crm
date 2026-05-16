@@ -1873,7 +1873,7 @@ function attRender(tab){
   if(att_clockTimer){clearInterval(att_clockTimer);att_clockTimer=null;}
   const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,employees:attUIEmployees,attsettings:attUISettings,export:attUIExport};
   el.innerHTML=(map[tab]||attUICheckin)();
-  if(tab==='checkin')attStartClock();
+  if(tab==='checkin'){attStartClock();attInitCheckinView();}
 }
 
 function attPH(icon,title,sub,badge){
@@ -1893,18 +1893,16 @@ function attUICheckin(){
     <div style="font-size:12px;color:var(--g4);margin-bottom:2px">เวลาปัจจุบัน</div>
     <div class="att-clock" id="att_clock">${timeStr}</div>
     <div class="att-date">${dateStr}</div>
-    <div style="background:var(--g1);border-radius:var(--r);padding:10px 14px;margin-bottom:22px;font-size:12px;color:var(--g5);line-height:1.7">
-      📍 บันทึก GPS อัตโนมัติ<br>📷 ถ่ายเซลฟี่ยืนยันตัวตน<br>✅ ตรวจสอบระยะห่างสาขา
+    <div style="text-align:left;margin-bottom:16px">
+      <label class="fl" style="margin-bottom:6px;display:block">👤 เลือกพนักงาน</label>
+      <select id="att_emp_sel" class="fi" style="width:100%;font-size:13px"
+        onchange="att_curEmployee=att_employees.find(e=>e.id==this.value)||null">
+        <option value="">— กำลังโหลด... —</option>
+      </select>
     </div>
-    <button class="att-btn-in" disabled style="opacity:.55;cursor:not-allowed">
-      🟢 &nbsp;เข้างาน
-      <div style="font-size:11px;font-weight:400;opacity:.8;margin-top:4px">จะเปิดใช้งานในรอบ C–E</div>
-    </button>
-    <button class="att-btn-out" disabled style="opacity:.55;cursor:not-allowed">
-      🔵 &nbsp;ออกงาน
-      <div style="font-size:11px;font-weight:400;opacity:.8;margin-top:4px">จะเปิดใช้งานในรอบ C–E</div>
-    </button>
-    <div style="margin-top:18px;font-size:11px;color:var(--g4)">⚙️ ต้องเพิ่มพนักงานและตั้งค่าสาขาก่อนใช้งาน</div>
+    <button id="att_btn_in"  class="att-btn-in"  onclick="attDoCheckin()">🟢 &nbsp;เข้างาน</button>
+    <button id="att_btn_out" class="att-btn-out" onclick="attDoCheckout()">🔵 &nbsp;ออกงาน</button>
+    <div id="att_preview" style="margin-top:16px;text-align:left"></div>
   </div>`;
 }
 
@@ -1982,7 +1980,7 @@ function attUIExport(){
 // ===== ATTENDANCE HELPERS (รอบ C) =====
 
 // ตัวแปร module-level สำหรับ cache ข้อมูล
-let att_employees=[], att_branchSettings=null;
+let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_isProcessing=false;
 
 // 1. ขอ GPS — คืน {latitude,longitude,accuracy} หรือ null ถ้าปฏิเสธ/ไม่รองรับ
 function attGetGPS(){
@@ -2110,6 +2108,147 @@ async function attLoadAttendanceData(branchId){
   }catch(e){
     console.error('[attLoadAttendanceData]',e);
     return{employees:[],settings:null,todayLogs:[]};
+  }
+}
+
+// ===== ATTENDANCE UI CONTROLLERS (รอบ D) =====
+
+// โหลดพนักงานจาก Supabase และ populate dropdown — เรียกอัตโนมัติเมื่อเข้าหน้า checkin
+async function attInitCheckinView(){
+  try{
+    const data=await attLoadAttendanceData();
+    att_todayLogs=data.todayLogs||[];
+    const sel=document.getElementById('att_emp_sel'); if(!sel)return;
+    if(!data.employees.length){
+      sel.innerHTML='<option value="">— ไม่พบข้อมูลพนักงาน (เพิ่มในเมนู จัดการพนักงาน) —</option>'; return;
+    }
+    sel.innerHTML='<option value="">— เลือกพนักงาน —</option>'+
+      data.employees.map(e=>`<option value="${e.id}">${e.full_name} (${e.employee_code||''})</option>`).join('');
+    if(data.employees.length===1){sel.value=data.employees[0].id;att_curEmployee=data.employees[0];}
+  }catch(e){
+    const sel=document.getElementById('att_emp_sel');
+    if(sel)sel.innerHTML='<option value="">— โหลดไม่สำเร็จ กรุณารีเฟรช —</option>';
+  }
+}
+
+// Toggle disabled state ปุ่มเข้า/ออก ระหว่างประมวลผล
+function attSetBtnState(loading){
+  ['att_btn_in','att_btn_out'].forEach(id=>{
+    const b=document.getElementById(id); if(!b)return;
+    b.disabled=loading; b.style.opacity=loading?'.45':''; b.style.cursor=loading?'not-allowed':'';
+  });
+}
+
+// แสดง preview ผลตรวจสอบก่อนบันทึก — ไม่ส่ง Supabase (รอรอบ E)
+function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
+  const el=document.getElementById('att_preview'); if(!el)return;
+  att_pendingSelfie=selfieB64||null;
+  const isIn=type==='checkin';
+  const color=isIn?'#15803d':'#1d4ed8', bg=isIn?'#f0fdf4':'#eff6ff', icon=isIn?'🟢':'🔵';
+
+  // GPS badge
+  const gpsBadge=gps
+    ?`<span class="att-badge-ok">✅ GPS สำเร็จ ±${gps.accuracy} ม.</span>`
+    :`<span class="att-badge-err">❌ ไม่ได้รับ GPS — กรุณาอนุญาตแล้วลองใหม่</span>`;
+
+  // ระยะห่างสาขา
+  const dm=isIn?payload.checkin_distance_m:payload.checkout_distance_m;
+  const allowedR=(settings&&settings.allowed_radius_meter)||200;
+  const distBadge=dm!=null
+    ?`<strong>${dm.toLocaleString()} เมตร</strong>&nbsp;${dm<=allowedR
+        ?'<span class="att-badge-ok">✅ ในพื้นที่</span>'
+        :'<span class="att-badge-late">⚠️ นอกพื้นที่</span>'}`
+    :`<span style="color:var(--g4)">— ยังไม่ตั้งค่า GPS สาขา —</span>`;
+
+  // เวลา
+  const rawTime=isIn?payload.checkin_time:payload.checkout_time;
+  const timeLabel=rawTime?new Date(rawTime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+
+  // สถานะ
+  let stBadge='';
+  if(isIn){
+    if(payload.checkin_status==='outside')       stBadge='<span class="att-badge-err">⚠️ นอกพื้นที่</span>';
+    else if(payload.late_minutes>0)              stBadge=`<span class="att-badge-late">⚠️ มาสาย ${payload.late_minutes} นาที</span>`;
+    else                                         stBadge='<span class="att-badge-ok">✅ ปกติ</span>';
+  } else {
+    if(payload.checkout_status==='outside')      stBadge='<span class="att-badge-err">⚠️ นอกพื้นที่</span>';
+    else if(payload.early_leave_minutes>0)       stBadge=`<span class="att-badge-late">⚠️ ออกก่อน ${payload.early_leave_minutes} นาที</span>`;
+    else                                         stBadge='<span class="att-badge-ok">✅ ปกติ</span>';
+  }
+
+  // selfie preview
+  const selfieHtml=selfieB64
+    ?`<img src="${selfieB64}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid var(--g2);cursor:pointer;flex-shrink:0" onclick="openPhotoModal(att_pendingSelfie)">`
+    :`<div style="width:72px;height:72px;border-radius:8px;border:1.5px dashed var(--g3);display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--g1);flex-shrink:0">📷</div>`;
+
+  el.innerHTML=`<div style="background:${bg};border-radius:var(--rx);border:2px solid ${color}33;padding:18px">
+    <div style="font-size:14px;font-weight:800;color:${color};margin-bottom:14px">${icon} พร้อมบันทึก${isIn?'เข้างาน':'ออกงาน'}</div>
+    <div style="display:grid;gap:10px;font-size:13px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${emp.full_name}</strong> <span style="color:var(--g4)">(${emp.employee_code||'—'})</span></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">🕐 เวลา</span><span><strong>${timeLabel}</strong>&nbsp;&nbsp;${stBadge}</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>
+    </div>
+    <div style="margin-top:14px;padding:10px 14px;background:rgba(0,0,0,.05);border-radius:8px;font-size:11px;color:var(--g5);font-weight:600">⏳ รอบ E: จะเพิ่มปุ่ม "ยืนยันบันทึก" เพื่อส่งข้อมูลจริงลง Supabase</div>
+  </div>`;
+}
+
+// Orchestrator กดปุ่ม "เข้างาน" — GPS + โหลดข้อมูล → selfie → payload → preview (ไม่บันทึก db)
+async function attDoCheckin(){
+  if(att_isProcessing)return;
+  const sel=document.getElementById('att_emp_sel');
+  const emp=att_curEmployee||(sel&&att_employees.find(e=>e.id==sel.value))||null;
+  const pv=document.getElementById('att_preview');
+  if(!emp){
+    if(pv)pv.innerHTML=`<div class="att-badge-err" style="display:block;padding:12px 14px;border-radius:var(--r);font-size:13px">❌ กรุณาเลือกพนักงานก่อนตอกบัตร</div>`;
+    return;
+  }
+  att_isProcessing=true; attSetBtnState(true);
+  if(pv)pv.innerHTML=`<div style="text-align:center;padding:24px;color:var(--g4);font-size:13px">⏳ กำลังโหลดข้อมูลและรับ GPS...</div>`;
+  try{
+    // โหลดข้อมูลและ GPS พร้อมกัน จากนั้นเปิด selfie picker
+    const [data,gps]=await Promise.all([attLoadAttendanceData(emp.branch_id),attGetGPS()]);
+    const settings=data.settings||att_branchSettings;
+    att_todayLogs=data.todayLogs||[];
+    if(pv)pv.innerHTML=`<div style="text-align:center;padding:16px;color:var(--g4);font-size:13px">📷 กรุณาถ่ายเซลฟี่เพื่อยืนยันตัวตน...</div>`;
+    const selfieB64=await attCaptureSelfie();
+    const payload=attPrepareAttendancePayload('checkin',emp,settings,gps,selfieB64);
+    att_pendingPayload=payload; // เก็บไว้ รอรอบ E บันทึกจริง
+    attShowResultPreview('checkin',payload,gps,selfieB64,emp,settings);
+  }catch(e){
+    if(pv)pv.innerHTML=`<div style="background:#fee2e2;border-radius:var(--r);padding:14px;font-size:13px;color:#dc2626"><strong>❌ เกิดข้อผิดพลาด</strong><br>${e.message||'ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง'}</div>`;
+  }finally{
+    att_isProcessing=false; attSetBtnState(false);
+  }
+}
+
+// Orchestrator กดปุ่ม "ออกงาน" — GPS + โหลดข้อมูล → selfie → payload → preview (ไม่บันทึก db)
+async function attDoCheckout(){
+  if(att_isProcessing)return;
+  const sel=document.getElementById('att_emp_sel');
+  const emp=att_curEmployee||(sel&&att_employees.find(e=>e.id==sel.value))||null;
+  const pv=document.getElementById('att_preview');
+  if(!emp){
+    if(pv)pv.innerHTML=`<div class="att-badge-err" style="display:block;padding:12px 14px;border-radius:var(--r);font-size:13px">❌ กรุณาเลือกพนักงานก่อนตอกบัตร</div>`;
+    return;
+  }
+  att_isProcessing=true; attSetBtnState(true);
+  if(pv)pv.innerHTML=`<div style="text-align:center;padding:24px;color:var(--g4);font-size:13px">⏳ กำลังโหลดข้อมูลและรับ GPS...</div>`;
+  try{
+    const [data,gps]=await Promise.all([attLoadAttendanceData(emp.branch_id),attGetGPS()]);
+    const settings=data.settings||att_branchSettings;
+    att_todayLogs=data.todayLogs||[];
+    const todayLog=att_todayLogs.find(l=>l.employee_id===emp.id)||null;
+    if(pv)pv.innerHTML=`<div style="text-align:center;padding:16px;color:var(--g4);font-size:13px">📷 กรุณาถ่ายเซลฟี่เพื่อยืนยันตัวตน...</div>`;
+    const selfieB64=await attCaptureSelfie();
+    const payload=attPrepareAttendancePayload('checkout',emp,settings,gps,selfieB64,todayLog?todayLog.checkin_time:null);
+    att_pendingPayload=payload; // เก็บไว้ รอรอบ E บันทึกจริง
+    attShowResultPreview('checkout',payload,gps,selfieB64,emp,settings);
+  }catch(e){
+    if(pv)pv.innerHTML=`<div style="background:#fee2e2;border-radius:var(--r);padding:14px;font-size:13px;color:#dc2626"><strong>❌ เกิดข้อผิดพลาด</strong><br>${e.message||'ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง'}</div>`;
+  }finally{
+    att_isProcessing=false; attSetBtnState(false);
   }
 }
 
