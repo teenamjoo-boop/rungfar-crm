@@ -1877,6 +1877,7 @@ function attRender(tab){
   if(tab==='attsettings'){attInitSettingsView();}
   if(tab==='history'){attInitHistoryView();}
   if(tab==='report'){attInitReportView();}
+  if(tab==='export'){attInitExportView();}
 }
 
 function attPH(icon,title,sub,badge){
@@ -2256,17 +2257,272 @@ async function attSaveSettings(){
 }
 
 function attUIExport(){
-  const rows=[['สาขา','ทุกสาขา'],['เดือน','เลือกเดือน'],['พนักงาน','ทุกคน']];
-  return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:520px">
-    <div style="font-weight:700;margin-bottom:16px">📤 ส่งออกข้อมูลตอกบัตร</div>
-    <div style="display:grid;gap:10px;margin-bottom:16px">
-      ${rows.map(([lb,pl])=>`<div class="fgi"><label class="fl">${lb}</label><select class="fi2" disabled style="opacity:.5;width:100%"><option>${pl}</option></select></div>`).join('')}
+  return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:16px">📤 ส่งออกรายงานเวลาทำงาน</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+      <div class="fgi" style="flex:1;min-width:150px">
+        <label class="fl">เดือน</label>
+        <input id="att_exp_month" type="month" class="fi2" style="width:100%">
+      </div>
+      <div class="fgi" style="flex:2;min-width:200px">
+        <label class="fl">ชื่อบริษัท (สำหรับหัวรายงาน)</label>
+        <input id="att_exp_company" type="text" class="fi2" placeholder="บริษัท รุ่งฟ้า จำกัด" style="width:100%">
+      </div>
+      <button class="btn btn-g btn-sm" onclick="attLoadExportPreview()" style="white-space:nowrap">🔍 ดูตัวอย่าง</button>
     </div>
-    <button class="btn btn-p" style="width:100%;opacity:.5;cursor:not-allowed;margin-bottom:8px" disabled>📤 ส่งออก Excel (.xlsx)</button>
-    <button class="btn btn-g" style="width:100%;opacity:.5;cursor:not-allowed" disabled>📄 ส่งออก CSV</button>
-    <div style="margin-top:14px;font-size:12px;background:var(--pp);color:var(--pd);padding:10px 14px;border-radius:8px;font-weight:600">⏳ รอบ H: export attendance_logs จริงจาก Supabase</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn btn-p btn-sm" onclick="attExportDetailCSV()">📄 ส่งออกรายการละเอียด (.csv)</button>
+      <button class="btn btn-g btn-sm" onclick="attExportSummaryXLS()">📊 ส่งออกรายงานสรุปประจำเดือน (.xls)</button>
+    </div>
+    <div id="att_exp_preview"></div>
   </div>`;
 }
+
+async function attInitExportView(){
+  const m=document.getElementById('att_exp_month');
+  if(m)m.value=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'}).slice(0,7);
+  const c=document.getElementById('att_exp_company');
+  if(c)c.value=localStorage.getItem('att_company_name')||'บริษัท รุ่งฟ้า จำกัด';
+}
+
+function attCountWorkDays(yr,mo,workDaysStr){
+  const allowed=(workDaysStr||'1,2,3,4,5').split(',').map(Number);
+  const lastDay=new Date(yr,mo,0).getDate();
+  let count=0;
+  for(let d=1;d<=lastDay;d++){
+    if(allowed.includes(new Date(yr,mo-1,d).getDay()))count++;
+  }
+  return count;
+}
+
+function attBuildSummary(logs,emps,yr,mo,workDaysStr){
+  const scheduled=attCountWorkDays(yr,mo,workDaysStr);
+  const byEmp={};
+  emps.forEach(e=>{
+    byEmp[e.id]={
+      id:e.id,code:e.employee_code||'',name:e.full_name||'',
+      scheduled,worked:0,absent:0,
+      late_minutes:0,early_leave_minutes:0,ot_minutes:0,
+      forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0
+    };
+  });
+  logs.forEach(l=>{
+    const k=l.employee_id;
+    if(!byEmp[k])byEmp[k]={
+      id:k,code:l.employee_code||'',name:l.employee_name||'',
+      scheduled,worked:0,absent:0,
+      late_minutes:0,early_leave_minutes:0,ot_minutes:0,
+      forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0
+    };
+    const r=byEmp[k];
+    if(l.checkin_time)r.worked++;
+    r.late_minutes+=(l.late_minutes||0);
+    r.early_leave_minutes+=(l.early_leave_minutes||0);
+    r.ot_minutes+=(l.ot_minutes||0);
+    r.total_work_minutes+=(l.total_work_minutes||0);
+    if(l.checkin_time&&!l.checkout_time)r.forgot_out++;
+    if(l.checkout_time&&!l.checkin_time)r.forgot_in++;
+    if(l.day_status==='present')r.normal_days++;
+  });
+  Object.values(byEmp).forEach(r=>{r.absent=Math.max(0,r.scheduled-r.worked);});
+  return Object.values(byEmp).filter(r=>r.name);
+}
+
+async function attLoadExportPreview(){
+  const m=document.getElementById('att_exp_month');
+  const c=document.getElementById('att_exp_company');
+  const pv=document.getElementById('att_exp_preview');
+  if(!m||!m.value){if(pv)pv.innerHTML='<div style="color:#dc2626;padding:10px">กรุณาเลือกเดือน</div>';return;}
+  if(c&&c.value.trim())localStorage.setItem('att_company_name',c.value.trim());
+  const[yr,mo]=m.value.split('-').map(Number);
+  const from=`${yr}-${String(mo).padStart(2,'0')}-01`;
+  const lastDay=new Date(yr,mo,0).getDate();
+  const to=`${yr}-${String(mo).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  if(pv)pv.innerHTML='<div style="color:var(--g5);padding:14px;text-align:center">กำลังโหลดข้อมูล...</div>';
+  try{
+    const[logs,emps]=await Promise.all([
+      dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=5000`),
+      dbGet('attendance_employees',`?status=eq.active&order=employee_code.asc`)
+    ]);
+    const logArr=Array.isArray(logs)?logs:[];
+    const empArr=Array.isArray(emps)?emps:[];
+    const wd=att_branchSettings?.work_days||'1,2,3,4,5';
+    const summary=attBuildSummary(logArr,empArr,yr,mo,wd);
+    if(pv)pv.innerHTML=attRenderExportPreview(summary,yr,mo);
+  }catch(e){
+    if(pv)pv.innerHTML=`<div style="color:#dc2626;padding:10px">โหลดข้อมูลไม่สำเร็จ: ${e.message||''}</div>`;
+  }
+}
+
+function attRenderExportPreview(summary,yr,mo){
+  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
+  const monthTH=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  if(!summary.length)return'<div style="text-align:center;padding:24px;color:var(--g5)">ไม่มีข้อมูลพนักงานในเดือนนี้</div>';
+  const tot={scheduled:0,worked:0,absent:0,late_minutes:0,early_leave_minutes:0,ot_minutes:0,forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0};
+  summary.forEach(r=>{tot.scheduled+=r.scheduled;tot.worked+=r.worked;tot.absent+=r.absent;tot.late_minutes+=r.late_minutes;tot.early_leave_minutes+=r.early_leave_minutes;tot.ot_minutes+=r.ot_minutes;tot.forgot_in+=r.forgot_in;tot.forgot_out+=r.forgot_out;tot.normal_days+=r.normal_days;tot.total_work_minutes+=r.total_work_minutes;});
+  const scheduled=summary[0]?.scheduled||0;
+  const headers=['ชื่อพนักงาน','รหัส','กำหนด','มาจริง','ขาด','สาย(น.)','ออกก่อน(น.)','OT','ลืมตอกเข้า','ลืมตอกออก','ปกติ','ชม.รวม','เข้างาน%'];
+  const rows=summary.map(r=>`<tr style="border-bottom:1px solid var(--g2)">
+    <td style="padding:6px 8px;font-size:12px">${r.name}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.code}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.scheduled}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.worked}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center;color:${r.absent>0?'#dc2626':'inherit'}">${r.absent}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center;color:${r.late_minutes>0?'#d97706':'inherit'}">${r.late_minutes||'—'}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.early_leave_minutes||'—'}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center;color:#7c3aed">${fmtMin(r.ot_minutes)}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.forgot_in||'—'}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center;color:${r.forgot_out>0?'#dc2626':'inherit'}">${r.forgot_out||'—'}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.normal_days}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${fmtMin(r.total_work_minutes)}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${scheduled>0?(r.worked/scheduled*100).toFixed(1)+'%':'—'}</td>
+  </tr>`).join('');
+  return`<div style="overflow-x:auto;margin-top:4px">
+    <div style="font-size:12px;color:var(--g5);margin-bottom:6px">📋 ตัวอย่างรายงานสรุป ${monthTH[mo]} ${yr+543} (${summary.length} คน)</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--p);color:#fff">
+        ${headers.map(h=>`<th style="padding:7px 8px;white-space:nowrap;font-weight:700">${h}</th>`).join('')}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr style="background:#f3f4f6;font-weight:700;border-top:2px solid var(--g3)">
+        <td style="padding:7px 8px;font-size:12px" colspan="2">รวมทั้งหมด</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.scheduled}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.worked}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.absent}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.late_minutes||'—'}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.early_leave_minutes||'—'}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${fmtMin(tot.ot_minutes)}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.forgot_in||'—'}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.forgot_out||'—'}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.normal_days}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${fmtMin(tot.total_work_minutes)}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.scheduled>0?(tot.worked/tot.scheduled*100).toFixed(1)+'%':'—'}</td>
+      </tr></tfoot>
+    </table>
+  </div>`;
+}
+
+async function attExportDetailCSV(){
+  const m=document.getElementById('att_exp_month');
+  if(!m||!m.value){alert('กรุณาเลือกเดือนก่อน');return;}
+  const[yr,mo]=m.value.split('-').map(Number);
+  const from=`${yr}-${String(mo).padStart(2,'0')}-01`;
+  const lastDay=new Date(yr,mo,0).getDate();
+  const to=`${yr}-${String(mo).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const stMap={present:'ปกติ',late:'มาสาย',absent:'ขาดงาน',half_day:'ครึ่งวัน',holiday:'หยุด',leave:'ลา',outside:'นอกพื้นที่'};
+  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'';
+  try{
+    const logs=await dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc,employee_id.asc&limit=5000`);
+    const arr=Array.isArray(logs)?logs:[];
+    const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""').replace(/\n/g,' ')+'"';
+    const headers=['วันที่','รหัสพนักงาน','ชื่อพนักงาน','เวลาเข้างาน','เวลาออกงาน','ชม.ทำงาน','สายกี่นาที','OT','สถานะ','GPS เข้า(ม.)','GPS ออก(ม.)','หมายเหตุ','admin note'];
+    const rows=[headers.map(esc).join(',')];
+    arr.forEach(l=>{
+      const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'';
+      const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):'';
+      rows.push([
+        l.log_date,l.employee_code||'',l.employee_name||'',ci,co,
+        fmtMin(l.total_work_minutes||0),l.late_minutes||0,fmtMin(l.ot_minutes||0),
+        stMap[l.day_status]||l.day_status||'',
+        l.checkin_distance_m??'',l.checkout_distance_m??'',
+        l.note||'',l.admin_note||''
+      ].map(esc).join(','));
+    });
+    const blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`attendance_detail_${m.value}.csv`;a.click();
+  }catch(e){alert('โหลดข้อมูลไม่สำเร็จ: '+(e.message||''));}
+}
+
+async function attExportSummaryXLS(){
+  const m=document.getElementById('att_exp_month');
+  const compEl=document.getElementById('att_exp_company');
+  if(!m||!m.value){alert('กรุณาเลือกเดือนก่อน');return;}
+  const company=(compEl?.value||localStorage.getItem('att_company_name')||'บริษัท รุ่งฟ้า จำกัด').trim();
+  if(compEl&&compEl.value.trim())localStorage.setItem('att_company_name',compEl.value.trim());
+  const[yr,mo]=m.value.split('-').map(Number);
+  const from=`${yr}-${String(mo).padStart(2,'0')}-01`;
+  const lastDay=new Date(yr,mo,0).getDate();
+  const to=`${yr}-${String(mo).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const monthTH=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
+  try{
+    const[logs,emps]=await Promise.all([
+      dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=5000`),
+      dbGet('attendance_employees',`?status=eq.active&order=employee_code.asc`)
+    ]);
+    const logArr=Array.isArray(logs)?logs:[];
+    const empArr=Array.isArray(emps)?emps:[];
+    const wd=att_branchSettings?.work_days||'1,2,3,4,5';
+    const summary=attBuildSummary(logArr,empArr,yr,mo,wd);
+    const tot={scheduled:0,worked:0,absent:0,late_minutes:0,early_leave_minutes:0,ot_minutes:0,forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0};
+    summary.forEach(r=>{tot.scheduled+=r.scheduled;tot.worked+=r.worked;tot.absent+=r.absent;tot.late_minutes+=r.late_minutes;tot.early_leave_minutes+=r.early_leave_minutes;tot.ot_minutes+=r.ot_minutes;tot.forgot_in+=r.forgot_in;tot.forgot_out+=r.forgot_out;tot.normal_days+=r.normal_days;tot.total_work_minutes+=r.total_work_minutes;});
+    const scheduled=summary[0]?.scheduled||0;
+    const printDate=new Date().toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',year:'numeric',month:'long',day:'numeric'});
+    const T='border:1px solid #000;padding:5px 8px;font-size:10pt;';
+    const TC=T+'text-align:center;';
+    const TH='border:1px solid #000;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1e3a5f;color:#fff;text-align:center;';
+    const colHeaders=['ชื่อพนักงาน','รหัสพนักงาน','วันทำงานตามกำหนด','วันมาทำงานจริง','วันขาดงาน','นาทีมาสาย','นาทีออกก่อนเวลา','ชั่วโมง OT','ลืมตอกเข้า','ลืมตอกออก','เข้างานปกติ','ชม.ลาพักร้อน','ชม.ลาป่วย','ชม.ลาอื่นๆ','ชม.ทำงานรวม','อัตราเข้างาน%'];
+    const NC=colHeaders.length;
+    const dataRows=summary.map((r,i)=>{
+      const bg=i%2===0?'#ffffff':'#f0f7ff';
+      const rate=r.scheduled>0?(r.worked/r.scheduled*100).toFixed(1)+'%':'—';
+      return`<tr style="background:${bg}">
+        <td style="${T}">${r.name}</td>
+        <td style="${TC}">${r.code}</td>
+        <td style="${TC}">${r.scheduled}</td>
+        <td style="${TC}">${r.worked}</td>
+        <td style="${TC};color:${r.absent>0?'#c00000':'#000'}">${r.absent}</td>
+        <td style="${TC};color:${r.late_minutes>0?'#c55a00':'#000'}">${r.late_minutes||0}</td>
+        <td style="${TC}">${r.early_leave_minutes||0}</td>
+        <td style="${TC};color:#7030a0">${fmtMin(r.ot_minutes)}</td>
+        <td style="${TC}">${r.forgot_in||0}</td>
+        <td style="${TC};color:${r.forgot_out>0?'#c00000':'#000'}">${r.forgot_out||0}</td>
+        <td style="${TC}">${r.normal_days}</td>
+        <td style="${TC}">0</td><td style="${TC}">0</td><td style="${TC}">0</td>
+        <td style="${TC}">${fmtMin(r.total_work_minutes)}</td>
+        <td style="${TC}">${rate}</td>
+      </tr>`;
+    }).join('');
+    const subtotalRate=tot.scheduled>0?(tot.worked/tot.scheduled*100).toFixed(1)+'%':'—';
+    const ST='border:1px solid #000;padding:6px 8px;font-size:10pt;font-weight:bold;background:#d6e4f0;text-align:center;';
+    const subtotalRow=`<tr>
+      <td style="${ST};text-align:left" colspan="2">Subtotal</td>
+      <td style="${ST}">${tot.scheduled}</td><td style="${ST}">${tot.worked}</td><td style="${ST}">${tot.absent}</td>
+      <td style="${ST}">${tot.late_minutes}</td><td style="${ST}">${tot.early_leave_minutes}</td>
+      <td style="${ST}">${fmtMin(tot.ot_minutes)}</td><td style="${ST}">${tot.forgot_in}</td>
+      <td style="${ST}">${tot.forgot_out}</td><td style="${ST}">${tot.normal_days}</td>
+      <td style="${ST}">0</td><td style="${ST}">0</td><td style="${ST}">0</td>
+      <td style="${ST}">${fmtMin(tot.total_work_minutes)}</td><td style="${ST}">${subtotalRate}</td>
+    </tr>`;
+    const TT='border:1px solid #3a5a8f;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1e3a5f;color:#fff;text-align:center;';
+    const totalRow=`<tr>
+      <td style="${TT};text-align:left" colspan="2">Total (${summary.length} คน)</td>
+      <td style="${TT}">${tot.scheduled} วัน</td><td style="${TT}">${tot.worked} วัน</td><td style="${TT}">${tot.absent} วัน</td>
+      <td style="${TT}">${tot.late_minutes} น.</td><td style="${TT}">${tot.early_leave_minutes} น.</td>
+      <td style="${TT}">${fmtMin(tot.ot_minutes)}</td><td style="${TT}">${tot.forgot_in}</td>
+      <td style="${TT}">${tot.forgot_out}</td><td style="${TT}">${tot.normal_days}</td>
+      <td style="${TT}">0</td><td style="${TT}">0</td><td style="${TT}">0</td>
+      <td style="${TT}">${fmtMin(tot.total_work_minutes)}</td><td style="${TT}">${subtotalRate}</td>
+    </tr>`;
+    const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>body{font-family:'TH Sarabun New',Tahoma,Arial,sans-serif;}table{border-collapse:collapse;width:100%;}</style>
+</head><body>
+<table>
+  <tr><td colspan="${NC}" style="background:#1e3a5f;color:#fff;font-size:14pt;font-weight:bold;text-align:center;padding:12px;border:1px solid #1e3a5f">รายงานสรุปเวลาทำงานพนักงาน</td></tr>
+  <tr><td colspan="${NC}" style="text-align:center;padding:6px;font-size:10pt;border-bottom:2px solid #1e3a5f;border-left:1px solid #ccc;border-right:1px solid #ccc">${company} | ช่วงวันที่: ${from} ถึง ${to} | เดือน${monthTH[mo]} พ.ศ.${yr+543}</td></tr>
+  <tr><td colspan="${NC}" style="padding:3px;border:none"></td></tr>
+  <tr>${colHeaders.map(h=>`<th style="${TH}">${h}</th>`).join('')}</tr>
+  ${dataRows}
+  ${subtotalRow}
+  ${totalRow}
+  <tr><td colspan="${NC}" style="padding:6px;font-size:8pt;color:#666;border:1px solid #ccc">หมายเหตุ: ลาพักร้อน/ลาป่วย/ลาอื่นๆ ยังไม่มีข้อมูลในระบบ (แสดงเป็น 0) | พิมพ์วันที่: ${printDate}</td></tr>
+</table></body></html>`;
+    const blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`attendance_summary_${m.value}.xls`;a.click();
+  }catch(e){alert('โหลดข้อมูลไม่สำเร็จ: '+(e.message||''));}
+}
+
 // ===== ATTENDANCE HELPERS (รอบ C) =====
 
 // ตัวแปร module-level สำหรับ cache ข้อมูล
