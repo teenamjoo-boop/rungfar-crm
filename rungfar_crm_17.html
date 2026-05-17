@@ -1175,10 +1175,11 @@ async function doLogin(){
       return;
     }
     const users=await res.json();
-    // verify password separately (fetch with password check)
-    const res2=await fetch(`${SB_URL}/rest/v1/app_users?username=eq.${encodeURIComponent(u)}&password_hash=eq.${encodeURIComponent(p)}&is_active=eq.true&select=id,username,full_name,role,branch_id`,{
-      method:'GET',
-      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Accept':'application/json'},
+    // SEC-E-b: verify password via RPC — password in POST body, never in URL
+    const res2=await fetch(`${SB_URL}/rest/v1/rpc/app_verify_login`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_username:u,p_password:p}),
       mode:'cors'
     });
     const found=await res2.json();
