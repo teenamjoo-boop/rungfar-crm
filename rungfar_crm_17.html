@@ -1163,7 +1163,7 @@ async function loadAll(silent=false){
       dbGet('groups','?order=name.asc'),
       dbGet('branches','?order=name.asc'),
       dbGet('employers','?order=name.asc'),
-      dbGet('app_users','?order=full_name.asc'),
+      dbGet('app_users','?order=full_name.asc&select=id,username,full_name,role,is_active'),
     ]);
     // Deduplicate customers by id (safety net)
     const seenIds=new Set();
@@ -2343,7 +2343,7 @@ async function attLoadExportPreview(){
   try{
     const[logs,emps]=await Promise.all([
       dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=5000`),
-      dbGet('attendance_employees',`?status=eq.active&order=employee_code.asc`)
+      dbGet('attendance_employees',`?status=eq.active&order=employee_code.asc&select=id,employee_code,full_name,branch_id,branch_name,status`)
     ]);
     const logArr=Array.isArray(logs)?logs:[];
     const empArr=Array.isArray(emps)?emps:[];
@@ -2449,7 +2449,7 @@ async function attExportSummaryXLS(){
   try{
     const[logs,emps]=await Promise.all([
       dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=5000`),
-      dbGet('attendance_employees',`?status=eq.active&order=employee_code.asc`)
+      dbGet('attendance_employees',`?status=eq.active&order=employee_code.asc&select=id,employee_code,full_name,branch_id,branch_name,status`)
     ]);
     const logArr=Array.isArray(logs)?logs:[];
     const empArr=Array.isArray(emps)?emps:[];
@@ -2688,7 +2688,7 @@ async function attLoadAttendanceData(branchId){
   try{
     const today=attGetThaiLogDate();
     const [empRes,logRes]=await Promise.all([
-      dbGet('attendance_employees','?status=eq.active&order=employee_code.asc'),
+      dbGet('attendance_employees','?status=eq.active&order=employee_code.asc&select=id,employee_code,full_name,branch_id,branch_name,status'),
       dbGet('attendance_logs',`?log_date=eq.${today}&order=employee_id.asc`)
     ]);
     att_employees=Array.isArray(empRes)?empRes:[];
