@@ -2005,7 +2005,7 @@ async function attApplyHistoryFilter(){
 
 function attRenderHistoryRows(logs){
   if(!logs.length)return'<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">ไม่พบข้อมูลในช่วงที่เลือก</td></tr>';
-  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+'ชม.':null,m%60?m%60+'น.':null].filter(Boolean).join(' '):'—';
+  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
   const radius=att_branchSettings?.allowed_radius_meter||200;
   const stMap={present:'✅ ปกติ',late:'⚠️ สาย',absent:'❌ ขาด',half_day:'🌗 ครึ่งวัน',holiday:'🎌 หยุด',leave:'🏖 ลา',outside:'📍 นอกพื้นที่'};
   const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',outside:'#fef9c3'};
@@ -2052,7 +2052,7 @@ async function attLoadReport(){
   try{
     const logs=await dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=1000`);
     const arr=Array.isArray(logs)?logs:[];
-    const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+'ชม.':null,m%60?m%60+'น.':null].filter(Boolean).join(' '):'0';
+    const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
     const present=arr.filter(l=>l.day_status==='present').length;
     const late=arr.filter(l=>l.day_status==='late').length;
     const absent=arr.filter(l=>l.day_status==='absent').length;
