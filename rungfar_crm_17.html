@@ -1091,12 +1091,70 @@ function closeMdocViewer(){document.getElementById('mdocViewer').classList.remov
 // Close viewer on Escape
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMdocViewer();});
 
+// ===== SEC-D: LOGIN SECURITY HELPERS =====
+function getDeviceType(){
+  const ua=navigator.userAgent||'';
+  if(/Mobi|Android|iPhone|iPod/i.test(ua))return'mobile';
+  if(/iPad|Tablet/i.test(ua))return'tablet';
+  return'desktop';
+}
+function getBrowserName(){
+  const ua=navigator.userAgent||'';
+  if(ua.includes('Edg/'))return'Edge';
+  if(ua.includes('OPR/')||ua.includes('Opera'))return'Opera';
+  if(ua.includes('Chrome/'))return'Chrome';
+  if(ua.includes('Firefox/'))return'Firefox';
+  if(ua.includes('Safari/'))return'Safari';
+  return'Unknown';
+}
+function getDeviceFingerprint(){
+  try{
+    const parts=[
+      navigator.language||'',
+      navigator.platform||'',
+      screen.width+'x'+screen.height,
+      screen.colorDepth||'',
+      new Date().getTimezoneOffset(),
+      navigator.hardwareConcurrency||'?',
+      navigator.deviceMemory||'?'
+    ];
+    const str=parts.join('|');
+    let h=0;
+    for(let i=0;i<str.length;i++){h=Math.imul(31,h)+str.charCodeAt(i)|0;}
+    return(h>>>0).toString(16);
+  }catch(e){return'unknown';}
+}
+async function logLoginActivity(payload){
+  try{
+    await fetch(`${SB_URL}/rest/v1/security_login_logs`,{
+      method:'POST',
+      headers:{
+        'apikey':SB_KEY,
+        'Authorization':`Bearer ${SB_KEY}`,
+        'Content-Type':'application/json',
+        'Accept':'application/json',
+        'Prefer':'return=minimal'
+      },
+      mode:'cors',
+      body:JSON.stringify(payload)
+    });
+  }catch(e){
+    console.warn('[SEC] Login log failed (non-critical):',e.message);
+  }
+}
+
 async function doLogin(){
   const u=document.getElementById('lu').value.trim();
   const p=document.getElementById('lp').value;
   const err=document.getElementById('lerr');
   if(!u||!p){err.textContent='กรุณากรอกข้อมูลให้ครบ';return;}
   err.innerHTML='<span style="color:var(--p)">⏳ กำลังเชื่อมต่อ...</span>';
+  const devInfo={
+    user_agent:navigator.userAgent||null,
+    device_type:getDeviceType(),
+    browser_name:getBrowserName(),
+    device_fingerprint:getDeviceFingerprint()
+  };
   try{
     const res=await fetch(`${SB_URL}/rest/v1/app_users?username=eq.${encodeURIComponent(u)}&is_active=eq.true&select=id,username,full_name,role,branch_id`,{
       method:'GET',
@@ -1125,13 +1183,19 @@ async function doLogin(){
     if(!found||!found.length){
       err.textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
       document.getElementById('lp').value='';
+      // SEC-D: log failed login (fire-and-forget — ไม่ await ไม่ทำให้ login พัง)
+      logLoginActivity({...devInfo,username:u,login_status:'failed',fail_reason:users.length===0?'user_not_found':'wrong_password'});
       return;
     }
     curUser=found[0];
     localStorage.setItem('crm_sess',JSON.stringify({user:curUser,exp:Date.now()+8*3600000}));
+    // SEC-D: log successful login (fire-and-forget)
+    logLoginActivity({...devInfo,user_id:curUser.id,username:curUser.username,full_name:curUser.full_name,role:curUser.role,branch_id:curUser.branch_id||null,login_status:'success',fail_reason:null});
     showApp();
   }catch(e){
     console.error('Login error:',e);
+    // SEC-D: log network/exception error (fire-and-forget)
+    logLoginActivity({...devInfo,username:u,login_status:'failed',fail_reason:'network_error'});
     if(e.message.includes('Failed to fetch')||e.message.includes('NetworkError')){
       err.innerHTML='❌ CORS error — ต้องอัปขึ้น Netlify ก่อน<br><span style="font-size:11px;color:var(--g5)">ไม่สามารถใช้จากไฟล์ในเครื่องได้</span>';
     } else {
