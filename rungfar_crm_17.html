@@ -411,6 +411,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="ni" onclick="gv('import')"><span class="ic">📥</span>นำเข้า Excel/CSV</div>
     <div class="ni" onclick="gv('settings')"><span class="ic">⚙️</span>ตั้งค่าแจ้งเตือน</div>
     <div class="ni" id="niUsers" onclick="gv('users')"><span class="ic">👤</span>จัดการผู้ใช้</div>
+    <div class="ni" id="niSecLog" onclick="gv('seclog')" style="display:none"><span class="ic">🔐</span>ประวัติการเข้าใช้งาน</div>
     <div class="ni" onclick="gv('attendance')"><span class="ic">📋</span>ตอกบัตรพนักงาน</div>
     <div class="ni" onclick="doLogout()"><span class="ic">🚪</span>ออกจากระบบ</div>
   </div>
@@ -464,6 +465,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="view" id="view-settings"><div style="max-width:560px"><div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
     <div class="view" id="view-attendance"><div style="max-width:960px" id="att_content"></div></div>
+    <div class="view" id="view-seclog"><div id="seclogContent"></div></div>
   </div>
 </div>
 </div>
@@ -1213,6 +1215,7 @@ async function showApp(){
   document.getElementById('sfrole').textContent=curUser.role==='admin'?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
   document.getElementById('sfav').textContent=curUser.full_name.charAt(0).toUpperCase();
   document.getElementById('niUsers').style.display=curUser.role==='admin'?'flex':'none';
+  document.getElementById('niSecLog').style.display=curUser.role==='admin'?'flex':'none';
   await loadAll();
   fillSelects();renderDash();renderSidebar();renderSettings();
   // Apply saved language
@@ -1298,7 +1301,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
   const el=document.getElementById('view-'+v);if(el)el.classList.add('on');
   curView=v;
-  const titles={dash:'แดชบอร์ด',customers:'ลูกค้าทั้งหมด',alerts:'การแจ้งเตือน',employers:'นายจ้าง / บริษัท',groups:'จัดการกลุ่ม',import:'นำเข้าข้อมูล',settings:'ตั้งค่าแจ้งเตือน',users:'จัดการผู้ใช้',attendance:'ตอกบัตรพนักงาน'};
+  const titles={dash:'แดชบอร์ด',customers:'ลูกค้าทั้งหมด',alerts:'การแจ้งเตือน',employers:'นายจ้าง / บริษัท',groups:'จัดการกลุ่ม',import:'นำเข้าข้อมูล',settings:'ตั้งค่าแจ้งเตือน',users:'จัดการผู้ใช้',attendance:'ตอกบัตรพนักงาน',seclog:'ประวัติการเข้าใช้งาน'};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -1336,6 +1339,7 @@ function gv(v,opts={}){
   if(v==='settings')renderSettings();
   if(v==='users')renderUsers();
   if(v==='attendance')renderAttendance();
+  if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML='<div style="padding:60px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์เข้าถึงหน้านี้</div>';}}
 }
 
 function renderSidebar(){
@@ -1800,6 +1804,176 @@ async function saveUser(){
 }
 async function delUser(id){if(!confirm('ลบผู้ใช้นี้?'))return;try{await dbDel('app_users',id);appUsers=appUsers.filter(u=>u.id!==id);renderUsers();toast('ลบแล้ว','err');}catch(e){toast('เกิดข้อผิดพลาด','err');}}
 
+
+// ===== SEC-D: SECURITY LOG VIEW =====
+function renderSecLog(){
+  if(curUser?.role!=='admin'){
+    document.getElementById('seclogContent').innerHTML='<div style="padding:60px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์เข้าถึงหน้านี้</div>';
+    return;
+  }
+  const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const week=new Date(Date.now()-6*86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  document.getElementById('seclogContent').innerHTML=`
+  <div style="max-width:1100px">
+    <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:14px 16px;margin-bottom:14px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">วันที่เริ่ม</div>
+          <input type="date" id="slFrom" value="${week}" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">ถึงวันที่</div>
+          <input type="date" id="slTo" value="${today}" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">ชื่อผู้ใช้</div>
+          <input type="text" id="slUser" placeholder="ทั้งหมด" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff;width:130px">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">สถานะ</div>
+          <select id="slStatus" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
+            <option value="">ทั้งหมด</option>
+            <option value="success">สำเร็จ</option>
+            <option value="failed">ล้มเหลว</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">อุปกรณ์</div>
+          <select id="slDevice" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
+            <option value="">ทั้งหมด</option>
+            <option value="desktop">Desktop</option>
+            <option value="mobile">Mobile</option>
+            <option value="tablet">Tablet</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:1px">
+          <input type="checkbox" id="slSusp" style="width:15px;height:15px;cursor:pointer">
+          <label for="slSusp" style="font-size:13px;color:var(--g7);cursor:pointer;font-weight:500">น่าสงสัยเท่านั้น</label>
+        </div>
+        <button onclick="secLogFilter()" class="btn btn-p btn-sm">ค้นหา</button>
+        <button onclick="secLogClear()" class="btn btn-g btn-sm">ล้าง</button>
+      </div>
+    </div>
+    <div id="sl_cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
+    <div id="sl_table_wrap"></div>
+  </div>`;
+  secLogLoad();
+}
+
+async function secLogLoad(){
+  const wrap=document.getElementById('sl_table_wrap');
+  const cards=document.getElementById('sl_cards');
+  if(!wrap)return;
+  wrap.innerHTML='<div style="padding:30px;text-align:center;color:var(--g5);font-size:13px">กำลังโหลด...</div>';
+  if(cards)cards.innerHTML='';
+  const from=document.getElementById('slFrom')?.value||'';
+  const to=document.getElementById('slTo')?.value||'';
+  const userQ=(document.getElementById('slUser')?.value||'').trim();
+  const status=document.getElementById('slStatus')?.value||'';
+  const device=document.getElementById('slDevice')?.value||'';
+  const susp=document.getElementById('slSusp')?.checked||false;
+  let q='?order=login_time.desc&limit=500';
+  if(from){const fromIso=new Date(`${from}T00:00:00+07:00`).toISOString();q+=`&login_time=gte.${fromIso}`;}
+  if(to){const toIso=new Date(`${to}T23:59:59.999+07:00`).toISOString();q+=`&login_time=lte.${toIso}`;}
+
+  if(userQ)q+=`&username=ilike.*${encodeURIComponent(userQ)}*`;
+  if(status)q+=`&login_status=eq.${status}`;
+  if(device)q+=`&device_type=eq.${device}`;
+  if(susp)q+='&is_suspicious=eq.true';
+  try{
+    const logs=await dbGet('security_login_logs',q);
+    secLogRender(Array.isArray(logs)?logs:[]);
+  }catch(e){
+    wrap.innerHTML=`<div style="padding:30px;text-align:center;color:var(--red);font-size:13px">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message||'')}</div>`;
+  }
+}
+
+function secLogRender(logs){
+  const cards=document.getElementById('sl_cards');
+  const wrap=document.getElementById('sl_table_wrap');
+  if(!cards||!wrap)return;
+  // ─── Summary cards ───
+  const todayStr=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const todayLogs=logs.filter(l=>(l.login_time||'').startsWith(todayStr));
+  const totalToday=todayLogs.length;
+  const failToday=todayLogs.filter(l=>l.login_status==='failed').length;
+  const newDev=logs.filter(l=>l.is_new_device).length;
+  const suspCount=logs.filter(l=>l.is_suspicious).length;
+  const cardStyle='background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:14px 16px;';
+  const numStyle='font-size:26px;font-weight:800;font-family:var(--mono);margin-bottom:2px;';
+  const lblStyle='font-size:11px;color:var(--g5);';
+  cards.innerHTML=
+    `<div style="${cardStyle}"><div style="${numStyle}color:var(--g9)">${totalToday}</div><div style="${lblStyle}">Login วันนี้ทั้งหมด</div></div>`+
+    `<div style="${cardStyle}"><div style="${numStyle}color:${failToday>0?'var(--red)':'var(--grn)'}">${failToday}</div><div style="${lblStyle}">ล้มเหลววันนี้</div></div>`+
+    `<div style="${cardStyle}"><div style="${numStyle}color:var(--blu)">${newDev}</div><div style="${lblStyle}">อุปกรณ์ใหม่ (ช่วงเวลาที่เลือก)</div></div>`+
+    `<div style="${cardStyle}"><div style="${numStyle}color:${suspCount>0?'var(--amb)':'var(--grn)'}">${suspCount}</div><div style="${lblStyle}">น่าสงสัย (ช่วงเวลาที่เลือก)</div></div>`;
+  // ─── Table ───
+  if(!logs.length){
+    wrap.innerHTML='<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ไม่พบข้อมูลในช่วงเวลาที่เลือก</div>';
+    return;
+  }
+  const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return s;}};
+  const rows=logs.map(l=>{
+    const isSucc=l.login_status==='success';
+    const isFail=l.login_status==='failed';
+    const isSusp=l.is_suspicious;
+    const rowBg=isSusp?'background:#fffbeb;':'';
+    const stBg=isSucc?'#dcfce7':isFail?'#fee2e2':'#f3f4f6';
+    const stColor=isSucc?'#15803d':isFail?'#dc2626':'#6b7280';
+    const stTxt=isSucc?'สำเร็จ':isFail?'ล้มเหลว':l.login_status||'—';
+    const fp=l.device_fingerprint?l.device_fingerprint.slice(0,8)+'…':'—';
+    const reason={wrong_password:'รหัสผ่านผิด',user_not_found:'ไม่มีผู้ใช้',network_error:'ข้อผิดพลาดเครือข่าย',inactive_account:'บัญชีถูกระงับ'}[l.fail_reason]||l.fail_reason||'—';
+    const devType={desktop:'คอมพิวเตอร์',mobile:'มือถือ',tablet:'แท็บเล็ต'}[l.device_type]||l.device_type||'—';
+    return`<tr style="border-bottom:1px solid var(--g2);${rowBg}">
+      <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(l.login_time)}</td>
+      <td style="padding:7px 10px;font-size:12px;font-weight:600">${esc(l.username||'—')}</td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--g7)">${esc(l.full_name||'—')}</td>
+      <td style="padding:7px 10px;font-size:11px"><span style="padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:${l.role==='admin'?'#ede9fe':'#f3f4f6'};color:${l.role==='admin'?'#7c3aed':'#6b7280'}">${esc(l.role||'—')}</span></td>
+      <td style="padding:7px 10px"><span style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${stBg};color:${stColor}">${stTxt}</span></td>
+      <td style="padding:7px 10px;font-size:11px;color:${isFail?'var(--red)':'var(--g5)'}">${esc(reason)}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(devType)}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(l.browser_name||'—')}</td>
+      <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g4)">${esc(fp)}</td>
+      <td style="padding:7px 10px;text-align:center">${isSusp?'<span style="font-size:11px;font-weight:700;color:var(--amb)">ใช่</span>':'<span style="color:var(--g3);font-size:11px">—</span>'}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;font-weight:700;color:var(--g8)">รายการ Login ทั้งหมด</div>
+      <div style="font-size:12px;color:var(--g5)">แสดง ${logs.length} รายการ</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:900px">
+        <thead><tr style="background:var(--g0)">
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;white-space:nowrap;border-bottom:1px solid var(--g2)">เวลา Login</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Username</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">ชื่อ-นามสกุล</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">สิทธิ์</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">สถานะ</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">เหตุที่ล้มเหลว</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">อุปกรณ์</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Browser</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Fingerprint</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:center;border-bottom:1px solid var(--g2)">น่าสงสัย</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function secLogFilter(){secLogLoad();}
+function secLogClear(){
+  const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const week=new Date(Date.now()-6*86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const f=document.getElementById('slFrom');if(f)f.value=week;
+  const t=document.getElementById('slTo');if(t)t.value=today;
+  const u=document.getElementById('slUser');if(u)u.value='';
+  const s=document.getElementById('slStatus');if(s)s.value='';
+  const d=document.getElementById('slDevice');if(d)d.value='';
+  const sp=document.getElementById('slSusp');if(sp)sp.checked=false;
+  secLogLoad();
+}
 
 // ===== BULK ACTIONS =====
 function toggleRow(id,checked){
