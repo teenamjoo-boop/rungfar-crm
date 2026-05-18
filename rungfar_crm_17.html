@@ -674,10 +674,27 @@ textarea.fi2{resize:vertical;min-height:65px}
   <div class="mbody">
     <input type="hidden" id="uf_id">
     <div class="fg" style="gap:11px">
-      <div class="fgi full"><label class="fl">ชื่อผู้ใช้ *</label><input class="fi2" id="uf_user" placeholder="username"></div>
-      <div class="fgi full"><label class="fl">ชื่อ-นามสกุล *</label><input class="fi2" id="uf_name" placeholder="ชื่อที่แสดง"></div>
-      <div class="fgi full"><label class="fl" id="uf_plbl">รหัสผ่าน *</label><input class="fi2" type="password" id="uf_pass" placeholder="อย่างน้อย 6 ตัว"></div>
-      <div class="fgi full"><label class="fl">สิทธิ์</label><select class="fi2" id="uf_role"><option value="admin">Admin - ผู้ดูแลระบบ</option><option value="staff">Staff - เจ้าหน้าที่</option></select></div>
+      <div class="fgi full">
+        <label class="fl">ชื่อผู้ใช้ *</label>
+        <input class="fi2" id="uf_user" placeholder="username" autocomplete="off">
+        <div id="uf_user_hint" style="display:none;font-size:11px;color:#7c3aed;margin-top:5px;padding:7px 10px;background:#f5f3ff;border-radius:6px;border-left:3px solid #7c3aed;line-height:1.6">
+          💡 Username ต้องตรงกับ <strong>รหัสพนักงาน (employee_code)</strong> ในระบบตอกบัตร<br>
+          <span style="color:var(--g5)">เช่น EMP001 — ใช้จับคู่กับ attendance_employees.employee_code</span>
+        </div>
+      </div>
+      <div class="fgi full"><label class="fl">ชื่อ-นามสกุล *</label><input class="fi2" id="uf_name" placeholder="ชื่อที่แสดง" autocomplete="off"></div>
+      <div class="fgi full"><label class="fl" id="uf_plbl">รหัสผ่าน *</label><input class="fi2" type="password" id="uf_pass" placeholder="อย่างน้อย 6 ตัว" autocomplete="new-password"></div>
+      <div class="fgi full"><label class="fl">สิทธิ์</label>
+        <select class="fi2" id="uf_role" onchange="ufRoleChange()">
+          <option value="admin">Admin - ผู้ดูแลระบบ</option>
+          <option value="staff">Staff - เจ้าหน้าที่</option>
+          <option value="employee">Employee - พนักงานตอกบัตร</option>
+        </select>
+      </div>
+      <div class="fgi full" style="border-top:1px solid var(--g2);padding-top:11px;margin-top:2px">
+        <label class="fl" style="color:var(--g6)">รหัสผ่านของคุณ (Admin) * <span style="font-weight:400;font-size:10px">— ยืนยันตัวตนก่อนบันทึก</span></label>
+        <input class="fi2" type="password" id="uf_admin_pass" placeholder="รหัสผ่าน Admin ของคุณ" autocomplete="current-password">
+      </div>
     </div>
   </div>
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('uModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveUser()">💾 บันทึก</button></div>
@@ -1793,15 +1810,106 @@ function setSetting(k,v){settings[k]=parseInt(v)||30;localStorage.setItem('crm_s
 function renderUsers(){
   document.getElementById('usersContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">จัดการผู้ใช้งาน</div><button class="btn btn-p btn-sm" onclick="openAddUser()">+ เพิ่มผู้ใช้</button></div>
   <div class="twrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>
-  ${appUsers.map(u=>`<tr><td><strong>${esc(u.username)}</strong>${u.id===curUser.id?'<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">คุณ</span>':''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${u.role==='admin'?'sb-act':'sb-prc'}">${u.role==='admin'?'Admin':'Staff'}</span></td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})" style="font-size:12px">✏️</button>${u.id!==curUser.id?`<button class="bic" onclick="delUser(${u.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div></td></tr>`).join('')}
+  ${appUsers.map(u=>{const roleLbl=u.role==='admin'?'Admin':u.role==='employee'?'Employee':'Staff';const roleCls=u.role==='admin'?'sb-act':u.role==='employee'?'sb-pend':'sb-prc';return`<tr><td><strong>${esc(u.username)}</strong>${u.id===curUser.id?'<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">คุณ</span>':''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${roleCls}">${roleLbl}</span></td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})" style="font-size:12px">✏️</button>${u.id!==curUser.id?`<button class="bic" onclick="delUser(${u.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div></td></tr>`;}).join('')}
   </tbody></table></div>`;
 }
-function openAddUser(){document.getElementById('uf_id').value='';document.getElementById('uf_user').value='';document.getElementById('uf_name').value='';document.getElementById('uf_pass').value='';document.getElementById('uf_role').value='staff';document.getElementById('uf_plbl').textContent='รหัสผ่าน *';document.getElementById('uMT').textContent='เพิ่มผู้ใช้';document.getElementById('uModal').style.display='flex';}
-function openEditUser(id){const u=appUsers.find(x=>x.id===id);document.getElementById('uf_id').value=u.id;document.getElementById('uf_user').value=u.username;document.getElementById('uf_name').value=u.full_name;document.getElementById('uf_pass').value='';document.getElementById('uf_role').value=u.role;document.getElementById('uf_plbl').textContent='รหัสผ่านใหม่ (ว่างถ้าไม่เปลี่ยน)';document.getElementById('uMT').textContent='แก้ไขผู้ใช้';document.getElementById('uModal').style.display='flex';}
+function openAddUser(){
+  document.getElementById('uf_id').value='';
+  document.getElementById('uf_user').value='';
+  document.getElementById('uf_name').value='';
+  document.getElementById('uf_pass').value='';
+  document.getElementById('uf_admin_pass').value='';
+  document.getElementById('uf_role').value='staff';
+  document.getElementById('uf_plbl').textContent='รหัสผ่าน *';
+  document.getElementById('uMT').textContent='เพิ่มผู้ใช้';
+  ufRoleChange();
+  document.getElementById('uModal').style.display='flex';
+}
+function openEditUser(id){
+  const u=appUsers.find(x=>x.id===id);
+  if(!u)return;
+  document.getElementById('uf_id').value=u.id;
+  document.getElementById('uf_user').value=u.username;
+  document.getElementById('uf_name').value=u.full_name;
+  document.getElementById('uf_pass').value='';
+  document.getElementById('uf_admin_pass').value='';
+  document.getElementById('uf_role').value=u.role;
+  document.getElementById('uf_plbl').textContent='รหัสผ่านใหม่ (ว่างถ้าไม่เปลี่ยน)';
+  document.getElementById('uMT').textContent='แก้ไขผู้ใช้';
+  ufRoleChange();
+  document.getElementById('uModal').style.display='flex';
+}
+function ufRoleChange(){
+  const role=document.getElementById('uf_role')?.value;
+  const hint=document.getElementById('uf_user_hint');
+  if(hint)hint.style.display=(role==='employee')?'block':'none';
+}
 async function saveUser(){
-  const id=document.getElementById('uf_id').value;const username=document.getElementById('uf_user').value.trim();const full_name=document.getElementById('uf_name').value.trim();const pass=document.getElementById('uf_pass').value;const role=document.getElementById('uf_role').value;
-  if(!username||!full_name){toast('กรุณากรอกข้อมูลให้ครบ','err');return;}
-  try{if(id){const data={username,full_name,role,...(pass?{password_hash:pass}:{})};await dbPatch('app_users',parseInt(id),data);appUsers=appUsers.map(u=>u.id===parseInt(id)?{...u,...data}:u);toast('บันทึกแล้ว');}else{if(!pass){toast('กรุณากรอกรหัสผ่าน','err');return;}const r=await dbPost('app_users',{username,full_name,password_hash:pass,role,is_active:true});if(r&&r[0])appUsers.push(r[0]);toast('เพิ่มผู้ใช้แล้ว');}document.getElementById('uModal').style.display='none';renderUsers();}catch(e){toast('เกิดข้อผิดพลาด','err');}
+  const id=document.getElementById('uf_id').value;
+  const username=document.getElementById('uf_user').value.trim();
+  const full_name=document.getElementById('uf_name').value.trim();
+  const pass=document.getElementById('uf_pass').value;
+  const role=document.getElementById('uf_role').value;
+  const adminPass=document.getElementById('uf_admin_pass').value;
+  // --- validate inputs ---
+  if(!username||!full_name){toast('กรุณากรอก Username และชื่อ-นามสกุล','err');return;}
+  if(!adminPass){toast('กรุณากรอกรหัสผ่าน Admin เพื่อยืนยัน','err');document.getElementById('uf_admin_pass').focus();return;}
+  if(!id&&!pass){toast('กรุณากรอกรหัสผ่านสำหรับผู้ใช้ใหม่','err');document.getElementById('uf_pass').focus();return;}
+  if(pass&&pass.length<6){toast('รหัสผ่านต้องมีอย่างน้อย 6 ตัว','err');return;}
+  // --- helper: map RPC error message → Thai ---
+  function mapRpcErr(msg){
+    if(msg==='unauthorized')return'รหัสผ่าน Admin ไม่ถูกต้อง';
+    if(msg==='username_exists')return'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว';
+    if(msg==='invalid_role')return'สิทธิ์ที่เลือกไม่ถูกต้อง';
+    if(msg==='user_not_found')return'ไม่พบผู้ใช้ที่ต้องการแก้ไข';
+    if(msg==='password_required')return'กรุณากรอกรหัสผ่านสำหรับผู้ใช้ใหม่';
+    return'เกิดข้อผิดพลาด กรุณาลองใหม่';
+  }
+  try{
+    if(id){
+      // --- UPDATE existing user via RPC ---
+      const res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_update_user`,{
+        method:'POST',
+        headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({
+          p_admin_username:curUser.username,
+          p_admin_password:adminPass,
+          p_user_id:parseInt(id),
+          p_username:username,
+          p_full_name:full_name,
+          p_role:role,
+          p_new_password:pass||null
+        })
+      });
+      if(!res.ok){const e=await res.json();toast(mapRpcErr(e?.message||''),'err');return;}
+      const rows=await res.json();
+      if(rows&&rows[0]){appUsers=appUsers.map(u=>u.id===parseInt(id)?{...u,...rows[0]}:u);}
+      toast('บันทึกผู้ใช้แล้ว');
+    }else{
+      // --- CREATE new user via RPC ---
+      const res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_create_user`,{
+        method:'POST',
+        headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({
+          p_admin_username:curUser.username,
+          p_admin_password:adminPass,
+          p_username:username,
+          p_full_name:full_name,
+          p_role:role,
+          p_password:pass
+        })
+      });
+      if(!res.ok){const e=await res.json();toast(mapRpcErr(e?.message||''),'err');return;}
+      const rows=await res.json();
+      if(rows&&rows[0])appUsers.push(rows[0]);
+      toast('เพิ่มผู้ใช้แล้ว');
+    }
+    document.getElementById('uf_admin_pass').value='';
+    document.getElementById('uModal').style.display='none';
+    renderUsers();
+  }catch(e){
+    toast('เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ','err');
+  }
 }
 async function delUser(id){if(!confirm('ลบผู้ใช้นี้?'))return;try{await dbDel('app_users',id);appUsers=appUsers.filter(u=>u.id!==id);renderUsers();toast('ลบแล้ว','err');}catch(e){toast('เกิดข้อผิดพลาด','err');}}
 
