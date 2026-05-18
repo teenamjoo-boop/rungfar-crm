@@ -2115,17 +2115,25 @@ function attUICheckin(){
   const now=new Date();
   const timeStr=now.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   const dateStr=now.toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  // ATT-EMP-a: แยก UI ตาม role
+  const isEmp=curUser?.role==='employee';
+  const empSection=isEmp
+    ?`<div style="text-align:left;margin-bottom:16px;background:var(--pp);border-radius:var(--r);padding:12px 14px">
+        <div style="font-size:10px;font-weight:700;color:var(--pd);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">👤 พนักงาน</div>
+        <div id="att_emp_display" style="font-size:14px;font-weight:700;color:var(--g9)">กำลังโหลด...</div>
+      </div>`
+    :`<div style="text-align:left;margin-bottom:16px">
+        <label class="fl" style="margin-bottom:6px;display:block">👤 เลือกพนักงาน</label>
+        <select id="att_emp_sel" class="fi" style="width:100%;font-size:13px"
+          onchange="attOnEmpChange(this.value)">
+          <option value="">— เลือกพนักงาน —</option>
+        </select>
+      </div>`;
   return`<div class="att-checkin-card">
     <div style="font-size:12px;color:var(--g4);margin-bottom:2px">เวลาปัจจุบัน</div>
     <div class="att-clock" id="att_clock">${timeStr}</div>
     <div class="att-date">${dateStr}</div>
-    <div style="text-align:left;margin-bottom:16px">
-      <label class="fl" style="margin-bottom:6px;display:block">👤 เลือกพนักงาน</label>
-      <select id="att_emp_sel" class="fi" style="width:100%;font-size:13px"
-        onchange="att_curEmployee=att_employees.find(e=>e.id==this.value)||null">
-        <option value="">— กำลังโหลด... —</option>
-      </select>
-    </div>
+    ${empSection}
     <button id="att_btn_in"  class="att-btn-in"  onclick="attDoCheckin()">🟢 &nbsp;เข้างาน</button>
     <button id="att_btn_out" class="att-btn-out" onclick="attDoCheckout()">🔵 &nbsp;ออกงาน</button>
     <div id="att_preview" style="margin-top:16px;text-align:left"></div>
@@ -2948,21 +2956,53 @@ async function attLoadAttendanceData(branchId){
 
 // ===== ATTENDANCE UI CONTROLLERS (รอบ D) =====
 
+// ATT-EMP-a: จับคู่ curUser กับ attendance_employees
+// ใช้ curUser.employee_id ก่อน (ถ้ามี) → fallback username === employee_code
+function attFindMyEmployee(employees){
+  if(!curUser||!Array.isArray(employees))return null;
+  if(curUser.employee_id)return employees.find(e=>e.id===curUser.employee_id)||null;
+  return employees.find(e=>e.employee_code===curUser.username)||null;
+}
+
+// ATT-EMP-a: admin เปลี่ยนพนักงาน → clear state ทุกอย่าง
+function attOnEmpChange(val){
+  att_curEmployee=att_employees.find(e=>e.id==val)||null;
+  att_pendingPayload=null; att_pendingSelfie=null; att_pendingLogId=null;
+  const pv=document.getElementById('att_preview'); if(pv)pv.innerHTML='';
+}
+
 // โหลดพนักงานจาก Supabase และ populate dropdown — เรียกอัตโนมัติเมื่อเข้าหน้า checkin
 async function attInitCheckinView(){
+  att_curEmployee=null; // ATT-EMP-a: reset เสมอ — ป้องกัน state ค้างจาก session ก่อน
   try{
     const data=await attLoadAttendanceData();
     att_todayLogs=data.todayLogs||[];
-    const sel=document.getElementById('att_emp_sel'); if(!sel)return;
-    if(!data.employees.length){
-      sel.innerHTML='<option value="">— ไม่พบข้อมูลพนักงาน (เพิ่มในเมนู จัดการพนักงาน) —</option>'; return;
+    if(curUser?.role==='employee'){
+      // ─── Employee mode: ล็อกเป็นพนักงานของตัวเอง ───
+      const emp=attFindMyEmployee(data.employees);
+      const disp=document.getElementById('att_emp_display');
+      if(!emp){
+        // ไม่พบ mapping → ปิดปุ่ม + แสดง error
+        if(disp)disp.innerHTML='<span style="color:var(--red);font-size:13px;font-weight:600">ไม่พบข้อมูลพนักงานที่ผูกกับบัญชีนี้</span><br><span style="font-size:11px;color:var(--g5);font-weight:400">กรุณาติดต่อผู้ดูแลระบบ</span>';
+        attSetBtnState(true); return;
+      }
+      att_curEmployee=emp;
+      if(disp)disp.innerHTML=`${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>`;
+    }else{
+      // ─── Admin/staff mode: dropdown เลือกพนักงาน ───
+      const sel=document.getElementById('att_emp_sel'); if(!sel)return;
+      if(!data.employees.length){
+        sel.innerHTML='<option value="">— ไม่พบข้อมูลพนักงาน (เพิ่มในเมนู จัดการพนักงาน) —</option>'; return;
+      }
+      sel.innerHTML='<option value="">— เลือกพนักงาน —</option>'+
+        data.employees.map(e=>`<option value="${e.id}">${esc(e.full_name)} (${esc(e.employee_code||'')})</option>`).join('');
+      // ATT-EMP-a: ไม่ auto-select — admin ต้องเลือกเองเสมอ
     }
-    sel.innerHTML='<option value="">— เลือกพนักงาน —</option>'+
-      data.employees.map(e=>`<option value="${e.id}">${esc(e.full_name)} (${esc(e.employee_code||'')})</option>`).join('');
-    if(data.employees.length===1){sel.value=data.employees[0].id;att_curEmployee=data.employees[0];}
   }catch(e){
-    const sel=document.getElementById('att_emp_sel');
-    if(sel)sel.innerHTML='<option value="">— โหลดไม่สำเร็จ กรุณารีเฟรช —</option>';
+    if(curUser?.role!=='employee'){
+      const sel=document.getElementById('att_emp_sel');
+      if(sel)sel.innerHTML='<option value="">— โหลดไม่สำเร็จ กรุณารีเฟรช —</option>';
+    }
   }
 }
 
