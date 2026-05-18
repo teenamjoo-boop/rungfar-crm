@@ -3255,6 +3255,92 @@ async function attConfirmSave(type){
 
 // ===== END ATTENDANCE MODULE =====
 
+// =============================================================
+// LINE-NOTIFY REQUIREMENT (ยังไม่ implement — บันทึกไว้สำหรับรอบ LINE integration)
+// บันทึกวันที่: 2026-05-18
+// =============================================================
+//
+// เงื่อนไขทั่วไป:
+//   - ส่งเมื่อมีการตอกบัตรเข้างาน / ออกงาน สำเร็จเท่านั้น (หลัง attConfirmSave)
+//   - ไม่ส่งถ้าบันทึกไม่สำเร็จ
+//   - ส่งแบบ fire-and-forget (ไม่ await ไม่ block flow หลัก)
+//   - ถ้าส่ง LINE fail ให้ console.warn เท่านั้น ห้าม throw error
+//   - ใช้ LINE Notify token หรือ LINE Messaging API (ตัดสินใจตอน implement)
+//   - token เก็บใน attendance_settings หรือ Supabase secrets (ห้ามฝังใน JS)
+//
+// ─── กลุ่มที่ 1: กลุ่ม LINE ทำงานรวม (พนักงานทุกคนเห็น) ────────
+//   วัตถุประสงค์: แจ้งทีมว่ามีใครเข้า/ออกงานแล้ว
+//   ช่องทาง:     LINE Group หรือ LINE Notify (general token)
+//
+//   ส่งข้อมูล:
+//     - ✅ ชื่อพนักงาน (full_name)
+//     - ✅ เวลาเข้างาน / ออกงาน (format: HH:MM น.)
+//     - ✅ สถานะ: ปกติ / สาย / ออกงาน / นอกพื้นที่
+//     - ✅ ประเภท: เข้างาน หรือ ออกงาน
+//
+//   ห้ามส่ง:
+//     - ❌ employee_code
+//     - ❌ username / user_id
+//     - ❌ รูปเซลฟี่ (base64 หรือ URL)
+//     - ❌ พิกัด GPS (latitude / longitude)
+//     - ❌ ระยะห่างจากสำนักงาน (distance_m)
+//     - ❌ สาย X นาที (เห็นแค่ "สาย" พอ)
+//     - ❌ ข้อมูล payload หลังบ้าน
+//
+//   ตัวอย่าง format:
+//     "✅ สมชาย เข้างาน 08:32 น. (ปกติ)"
+//     "⚠️ สมหญิง เข้างาน 09:15 น. (สาย)"
+//     "🔵 สมชาย ออกงาน 17:45 น."
+//
+// ─── กลุ่มที่ 2: กลุ่ม LINE แอดมิน / เจ้าของ / หัวหน้า ──────────
+//   วัตถุประสงค์: ตรวจสอบรายละเอียดจริง รวมถึงกรณีน่าสงสัย
+//   ช่องทาง:     LINE Group แยก หรือ LINE Notify (admin token)
+//
+//   ส่งข้อมูล:
+//     - ✅ ชื่อพนักงาน (full_name)
+//     - ✅ รหัสพนักงาน (employee_code)
+//     - ✅ เวลาเข้างาน / ออกงาน
+//     - ✅ สถานะ: ปกติ / สาย / ออกงาน / นอกพื้นที่
+//     - ✅ สายกี่นาที (late_minutes / early_leave_minutes)
+//     - ✅ ระยะห่างจากสำนักงาน (checkin_distance_m / checkout_distance_m เป็นเมตร)
+//     - ✅ ลิงก์ดูรูปเซลฟี่ (ถ้า implement photo storage) หรือแนบรูปผ่าน Messaging API
+//     - ✅ GPS สรุป เช่น "ห่าง 45 ม." (ไม่ต้องส่ง lat/lon ดิบ)
+//     - ✅ แจ้งเตือนพิเศษเมื่อ: นอกพื้นที่ / ขาดงาน / ไม่รูดออก
+//
+//   ตัวอย่าง format:
+//     "🟢 [EMP001] สมชาย เข้างาน 08:32 น. — ปกติ — ห่าง 12 ม."
+//     "⚠️ [EMP002] สมหญิง เข้างาน 09:15 น. — สาย 45 นาที — ห่าง 8 ม."
+//     "📍 [EMP003] สมศรี เข้างาน 08:50 น. — นอกพื้นที่ (ห่าง 320 ม.)"
+//     "🔵 [EMP001] สมชาย ออกงาน 17:45 น. — รวม 9 ชม. 13 นาที | OT 45 นาที"
+//
+// ─── ฟังก์ชันที่ต้องสร้างในรอบ LINE ────────────────────────────
+//   attBuildLinePublicMsg(type, payload, emp)
+//     → คืน string สำหรับกลุ่มทั่วไป (ไม่มีข้อมูล sensitive)
+//
+//   attBuildLineAdminMsg(type, payload, emp, gps)
+//     → คืน string สำหรับกลุ่ม admin (มี GPS, distance, late_min)
+//
+//   attSendLineNotify(token, message)
+//     → fetch POST ไปที่ LINE Notify API หรือ Messaging API
+//     → fire-and-forget, console.warn on fail
+//
+//   attNotifyLine(type, payload, emp, gps)
+//     → orchestrator: เรียก build แล้ว send ทั้ง 2 กลุ่มแบบ parallel
+//     → เรียกจาก attConfirmSave() หลัง dbPost/dbPatch สำเร็จ
+//
+// ─── Config ที่ต้องเพิ่มใน attendance_settings ─────────────────
+//   line_notify_token_public  TEXT   -- token กลุ่มทั่วไป
+//   line_notify_token_admin   TEXT   -- token กลุ่ม admin
+//   line_notify_enabled       BOOLEAN DEFAULT false
+//
+// ─── ข้อห้ามตอน implement ───────────────────────────────────────
+//   - ห้ามฝัง token ใน JS source code
+//   - ห้ามส่ง base64 selfie ไปกลุ่มทั่วไป
+//   - ห้ามส่ง lat/lon ดิบ ทั้ง 2 กลุ่ม (ใช้ "ห่าง X ม." แทน)
+//   - ห้ามส่งถ้า line_notify_enabled = false หรือ token ว่าง
+//   - ห้ามให้ LINE fail block การบันทึกตอกบัตร
+// =============================================================
+
 // INIT
 if(checkSess()){showApp();}else{document.getElementById('loginScreen').style.display='flex';}
 </script>
