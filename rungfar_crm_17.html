@@ -1352,7 +1352,7 @@ function renderSidebar(){
   if(nb){nb.textContent=al;nb.className='nbadge'+(al>0?'':' ok');}
   const sg=document.getElementById('sideGroups');
   if(!groups.length){sg.innerHTML='';return;}
-  sg.innerHTML='<div class="nlbl">กลุ่มงาน</div>'+groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:${JSON.stringify(g.name)}})">${esc(g.name)}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
+  sg.innerHTML='<div class="nlbl">กลุ่มงาน</div>'+groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;const t=JSON.stringify(g.name).replace(/"/g,'&quot;');return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:${t}})">${esc(g.name)}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
 }
 
 function renderDash(){
@@ -1865,28 +1865,10 @@ async function secLogLoad(){
   const wrap=document.getElementById('sl_table_wrap');
   const cards=document.getElementById('sl_cards');
   if(!wrap)return;
-  wrap.innerHTML='<div style="padding:30px;text-align:center;color:var(--g5);font-size:13px">กำลังโหลด...</div>';
   if(cards)cards.innerHTML='';
-  const from=document.getElementById('slFrom')?.value||'';
-  const to=document.getElementById('slTo')?.value||'';
-  const userQ=(document.getElementById('slUser')?.value||'').trim();
-  const status=document.getElementById('slStatus')?.value||'';
-  const device=document.getElementById('slDevice')?.value||'';
-  const susp=document.getElementById('slSusp')?.checked||false;
-  let q='?order=login_time.desc&limit=500';
-  if(from){const fromIso=new Date(`${from}T00:00:00+07:00`).toISOString();q+=`&login_time=gte.${fromIso}`;}
-  if(to){const toIso=new Date(`${to}T23:59:59.999+07:00`).toISOString();q+=`&login_time=lte.${toIso}`;}
-
-  if(userQ)q+=`&username=ilike.*${encodeURIComponent(userQ)}*`;
-  if(status)q+=`&login_status=eq.${status}`;
-  if(device)q+=`&device_type=eq.${device}`;
-  if(susp)q+='&is_suspicious=eq.true';
-  try{
-    const logs=await dbGet('security_login_logs',q);
-    secLogRender(Array.isArray(logs)?logs:[]);
-  }catch(e){
-    wrap.innerHTML=`<div style="padding:30px;text-align:center;color:var(--red);font-size:13px">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message||'')}</div>`;
-  }
+  // SEC-F-c: direct SELECT ปิดโดย RLS (Option B) — รอ Supabase Auth
+  // logLoginActivity INSERT ยังทำงานปกติผ่าน policy anon INSERT
+  wrap.innerHTML='<div style="padding:40px;text-align:center;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:var(--rl)"><div style="font-size:28px;margin-bottom:10px">🔐</div><div style="font-weight:700;color:#92400e;font-size:15px;margin-bottom:8px">ฟีเจอร์นี้อยู่ระหว่างอัปเกรดความปลอดภัย</div><div style="font-size:12px;color:#b45309;line-height:1.7">ระบบ Security Log กำลังอัปเกรดเป็น Supabase Auth<br>การบันทึก Login Activity ยังคงทำงานปกติ<br>เฉพาะหน้าแสดงผลรอการอัปเกรด</div></div>';
 }
 
 function secLogRender(logs){
@@ -2853,6 +2835,29 @@ function attCaptureSelfie(){
   });
 }
 
+// 3b. แสดงปุ่มเซลฟี่ให้ user กดเอง — ไม่ .click() หลัง await (ป้องกัน File chooser blocked)
+function attWaitUserSelfie(pv){
+  return new Promise(resolve=>{
+    if(!pv){resolve(null);return;}
+    const uid='att_sf_'+Date.now();
+    pv.innerHTML=
+      '<div style="text-align:center;padding:20px 16px">'+
+      '<div style="font-size:13px;color:var(--g6);margin-bottom:14px">📷 กดปุ่มด้านล่างเพื่อถ่ายเซลฟี่ยืนยันตัวตน</div>'+
+      '<label for="'+uid+'" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:var(--p);color:#fff;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:600;user-select:none">📷 ถ่ายเซลฟี่</label>'+
+      '<input type="file" id="'+uid+'" accept="image/*" capture="user" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">'+
+      '<br><button style="margin-top:12px;font-size:12px;color:var(--g5);background:none;border:none;cursor:pointer;text-decoration:underline" id="'+uid+'_sk">ข้ามขั้นตอนเซลฟี่</button>'+
+      '</div>';
+    const inp=document.getElementById(uid);
+    const sk=document.getElementById(uid+'_sk');
+    inp.addEventListener('change',async()=>{
+      const f=inp.files[0];
+      if(!f){resolve(null);return;}
+      try{resolve(await attResizeSelfieImage(f));}catch{resolve(null);}
+    },{once:true});
+    if(sk)sk.addEventListener('click',()=>resolve(null),{once:true});
+  });
+}
+
 // 4. Canvas resize → ≤300×300 JPEG Q=0.75 — คืน Promise<base64>
 function attResizeSelfieImage(blob){
   return new Promise((resolve,reject)=>{
@@ -3048,8 +3053,7 @@ async function attDoCheckin(){
       return;
     }
     att_pendingLogId=null; // checkin = INSERT แถวใหม่
-    if(pv)pv.innerHTML=`<div style="text-align:center;padding:16px;color:var(--g4);font-size:13px">📷 กรุณาถ่ายเซลฟี่เพื่อยืนยันตัวตน...</div>`;
-    const selfieB64=await attCaptureSelfie();
+    const selfieB64=await attWaitUserSelfie(pv); // user กดปุ่มเอง — ไม่ .click() หลัง await
     const payload=attPrepareAttendancePayload('checkin',emp,settings,gps,selfieB64);
     att_pendingPayload=payload;
     attShowResultPreview('checkin',payload,gps,selfieB64,emp,settings);
@@ -3088,8 +3092,7 @@ async function attDoCheckout(){
       return;
     }
     att_pendingLogId=todayLog.id; // checkout = PATCH แถวเดิม
-    if(pv)pv.innerHTML=`<div style="text-align:center;padding:16px;color:var(--g4);font-size:13px">📷 กรุณาถ่ายเซลฟี่เพื่อยืนยันตัวตน...</div>`;
-    const selfieB64=await attCaptureSelfie();
+    const selfieB64=await attWaitUserSelfie(pv); // user กดปุ่มเอง — ไม่ .click() หลัง await
     const payload=attPrepareAttendancePayload('checkout',emp,settings,gps,selfieB64,todayLog.checkin_time);
     att_pendingPayload=payload;
     attShowResultPreview('checkout',payload,gps,selfieB64,emp,settings);
