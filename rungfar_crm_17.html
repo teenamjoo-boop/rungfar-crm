@@ -421,7 +421,7 @@ textarea.fi2{resize:vertical;min-height:65px}
   </div>
   <div class="sfoot">
     <div class="sfav" id="sfav">A</div>
-    <div><div class="sfname" id="sfname"></div><div class="sfrole" id="sfrole"></div></div>
+    <div><div class="sfname" id="sfname"></div><div class="sfrole" id="sfrole"></div><div id="sfbranch" style="font-size:10px;color:var(--g4);margin-top:1px"></div></div>
   </div>
 </div>
 <div class="main">
@@ -514,7 +514,7 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi"><label class="fl">เบอร์โทรศัพท์</label><input class="fi2" id="f_phone" placeholder="08X-XXX-XXXX" oninput="checkDup()"></div>
           <div class="fgi"><label class="fl">กลุ่ม</label><select class="fi2" id="f_grp"><option value="">-- ไม่ระบุ --</option></select></div>
           <div class="fgi"><label class="fl">สาขา</label><select class="fi2" id="f_branch"><option value="">-- ไม่ระบุ --</option></select></div>
-          <div class="fgi"><label class="fl">สถานะงาน</label><select class="fi2" id="f_ws"></select></div>
+          <div class="fgi" id="fgi_ws"><label class="fl">สถานะงาน</label><select class="fi2" id="f_ws"></select></div>
         </div>
       </div>
       <div class="fsec" id="empSec"><div class="fst">ข้อมูลนายจ้าง</div>
@@ -526,7 +526,7 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi full"><label class="fl">ที่อยู่</label><input class="fi2" id="f_addr" placeholder="ที่อยู่นายจ้าง"></div>
         </div>
       </div>
-      <div class="fsec"><div class="fst">เจ้าหน้าที่รับผิดชอบ</div>
+      <div class="fsec" id="staffSec"><div class="fst">เจ้าหน้าที่รับผิดชอบ</div>
         <div class="fg3">
           <div class="fgi"><label class="fl">คนรับเคส</label><input class="fi2" id="f_sr" placeholder="ชื่อเจ้าหน้าที่"></div>
           <div class="fgi"><label class="fl">คนดูแลเอกสาร</label><input class="fi2" id="f_sd" placeholder="ชื่อเจ้าหน้าที่"></div>
@@ -796,6 +796,10 @@ let filtered=[],curPage=1;const PG=15;
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
 let empQ=''; // employer search query
+// ── FEATURE FLAGS ──
+const SIMPLE_CUSTOMER_DETAIL=true; // true=ซ่อน timeline/finance/status-history ใน detail modal; false=แสดงครบ
+const CUSTOMER_MVP_MODE=true;      // true=ซ่อน workflow/finance ใน add/edit modal (tab การเงิน, สถานะงาน, เจ้าหน้าที่)
+let curEmpInfo=null; // BRANCH-LIGHT: ข้อมูลพนักงานของ staff ที่ login อยู่ (fetch ในพื้นหลัง)
 function openPhotoModal(src){document.getElementById('photoModalImg').src=src;document.getElementById('photoModal').style.display='flex';}
 function closePhotoModal(){document.getElementById('photoModal').style.display='none';document.getElementById('photoModalImg').src='';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePhotoModal();});
@@ -1688,6 +1692,16 @@ async function showApp(){
   fillSelects();renderDash();renderSidebar();renderSettings();
   // Apply saved language
   setLang(curLang);
+  // BRANCH-LIGHT: staff → fetch ข้อมูลพนักงานตัวเองในพื้นหลัง เพื่อแสดงสาขาใน sidebar
+  if(!isAdmin){
+    curEmpInfo=null;
+    dbGet('attendance_employees',`?employee_code=eq.${encodeURIComponent(curUser.username)}&select=id,employee_code,full_name,branch_id,branch_name,normal_checkin_time,normal_checkout_time&limit=1`)
+      .then(rows=>{
+        curEmpInfo=(Array.isArray(rows)&&rows[0])||null;
+        const el=document.getElementById('sfbranch');
+        if(el)el.textContent=(curEmpInfo&&curEmpInfo.branch_name)||'';
+      }).catch(()=>{});
+  }
 }
 
 async function loadAll(silent=false){
@@ -2060,7 +2074,7 @@ function openAdd(){
   ['epp','evis','ewp','e90','emou','ren','dob','fpdate'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   document.getElementById('f_nat').value='เมียนมา';['f_src','f_grp','f_branch','f_empId','f_fpay','f_fst'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
   document.getElementById('r_free').checked=true;ctChange();document.getElementById('pprev').style.display='none';document.getElementById('pphold').style.display='block';document.getElementById('dupWarn').style.display='none';
-  fillSelects();document.getElementById('f_ws').value='รับเรื่อง';renderSvcT();renderDocGrid();swTab(0);document.getElementById('cModal').style.display='flex';
+  fillSelects();document.getElementById('f_ws').value='รับเรื่อง';renderSvcT();renderMultiDocGrid();applyMvpModal();swTab(0);document.getElementById('cModal').style.display='flex';
 }
 function openEdit(id){
   const c=customers.find(x=>x.id===id);if(!c)return;
@@ -2087,17 +2101,27 @@ function openEdit(id){
     }
     renderMultiDocGrid();
   }).catch(()=>{});
-  swTab(0);document.getElementById('cModal').style.display='flex';
+  applyMvpModal();swTab(0);document.getElementById('cModal').style.display='flex';
 }
 function ctChange(){document.getElementById('empSec').style.display=document.getElementById('r_comp').checked?'block':'none';}
 function calcFee(){const t=parseFloat(document.getElementById('f_ftotal').value)||0;const p=parseFloat(document.getElementById('f_fpaid').value)||0;document.getElementById('f_fdue').value=Math.max(0,t-p);}
 function renderSvcT(){document.getElementById('svcT').innerHTML=SVCS.map(s=>`<button class="svt ${selSvcs.includes(s)?'on':''}" onclick="toggleSvc('${s}')">${s}</button>`).join('');}
 function toggleSvc(s){selSvcs=selSvcs.includes(s)?selSvcs.filter(x=>x!==s):[...selSvcs,s];renderSvcT();}
-function renderDocGrid(){document.getElementById('docGrid').innerHTML=DOCS.map(d=>`<div class="doc-card ${docFiles[d.k]?'has':''}" id="dc-${d.k}" onclick="triggerDoc('${d.k}')"><button class="doc-del" onclick="event.stopPropagation();delDoc('${d.k}')">✕</button><div class="doc-icon">${d.i}</div><div class="doc-nm">${d.l}</div><div class="doc-st">${docFiles[d.k]?'✅ มีไฟล์':'กดเพื่ออัปโหลด'}</div><input type="file" id="df-${d.k}" accept="image/*,.pdf" style="display:none" onchange="handleDoc(event,'${d.k}')"></div>`).join('');}
+function renderDocGrid(){const _dg=document.getElementById('docGrid');if(!_dg)return;_dg.innerHTML=DOCS.map(d=>`<div class="doc-card ${docFiles[d.k]?'has':''}" id="dc-${d.k}" onclick="triggerDoc('${d.k}')"><button class="doc-del" onclick="event.stopPropagation();delDoc('${d.k}')">✕</button><div class="doc-icon">${d.i}</div><div class="doc-nm">${d.l}</div><div class="doc-st">${docFiles[d.k]?'✅ มีไฟล์':'กดเพื่ออัปโหลด'}</div><input type="file" id="df-${d.k}" accept="image/*,.pdf" style="display:none" onchange="handleDoc(event,'${d.k}')"></div>`).join('');}
 function triggerDoc(k){document.getElementById('df-'+k).click();}
 function handleDoc(e,k){const f=e.target.files[0];if(!f)return;if(f.size>5*1024*1024){toast('ไฟล์ใหญ่เกิน 5MB','err');return;}const r=new FileReader();r.onload=ev=>{docFiles[k]={data:ev.target.result,name:f.name,type:f.type};renderDocGrid();};r.readAsDataURL(f);}
 function delDoc(k){delete docFiles[k];renderDocGrid();}
-function swTab(n){curTab=n;[0,1,2,3,4,5].forEach(i=>{document.getElementById('ct'+i).style.display=i===n?'block':'none';document.querySelectorAll('.tbtn')[i].classList.toggle('on',i===n);});}
+function swTab(n){curTab=n;[0,1,2,3,4,5].forEach(i=>{document.getElementById('ct'+i).style.display=i===n?'block':'none';const _tb=document.querySelectorAll('#cModal .tbtn')[i];if(_tb)_tb.classList.toggle('on',i===n);});}
+function applyMvpModal(){
+  if(!CUSTOMER_MVP_MODE)return;
+  // ซ่อน tab 3 (💰 การเงิน)
+  const _tbns=document.querySelectorAll('#cModal .tbtn');
+  if(_tbns[3])_tbns[3].style.display='none';
+  // ซ่อน work_status dropdown
+  const _ws=document.getElementById('fgi_ws');if(_ws)_ws.style.display='none';
+  // ซ่อน เจ้าหน้าที่รับผิดชอบ section
+  const _sf=document.getElementById('staffSec');if(_sf)_sf.style.display='none';
+}
 function handlePhoto(e){const f=e.target.files[0];if(!f)return;if(f.size>2*1024*1024){toast('ไฟล์ใหญ่เกิน 2MB','err');return;}const r=new FileReader();r.onload=ev=>{photoB64=ev.target.result;document.getElementById('pprevImg').src=photoB64;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';};r.readAsDataURL(f);}
 
 async function saveCustomer(){
@@ -2164,8 +2188,17 @@ async function openDetail(id){
   detId=id;const c=customers.find(x=>x.id===id);if(!c)return;
   document.getElementById('dTitle').textContent=c.name;
   let docs=[],tl=[],clogs=[];
-  try{[docs,tl,clogs]=await Promise.all([dbGet('documents',`?customer_id=eq.${id}&order=created_at.desc`),dbGet('work_timeline',`?customer_id=eq.${id}&order=created_at.asc`),dbGet('contact_logs',`?customer_id=eq.${id}&order=created_at.desc`)]);}catch(e){}
+  // SIMPLE_CUSTOMER_DETAIL: skip timeline + contact-log fetches เพื่อประหยัด DB round-trips
+  try{[docs,tl,clogs]=await Promise.all([dbGet('documents',`?customer_id=eq.${id}&order=created_at.desc`),SIMPLE_CUSTOMER_DETAIL?Promise.resolve([]):dbGet('work_timeline',`?customer_id=eq.${id}&order=created_at.asc`),SIMPLE_CUSTOMER_DETAIL?Promise.resolve([]):dbGet('contact_logs',`?customer_id=eq.${id}&order=created_at.desc`)]);}catch(e){}
   const exps=getExps(c);const curWi=wsIdx(c.work_status||'รับเรื่อง');
+  // ── pre-compute sections ที่ซ่อนด้วย SIMPLE_CUSTOMER_DETAIL ──
+  // เปลี่ยน SIMPLE_CUSTOMER_DETAIL=false เพื่อเปิด timeline/finance/staff/contact-log/history กลับมา
+  const _updBtn=SIMPLE_CUSTOMER_DETAIL?'':`<button class="btn btn-p btn-sm" onclick="openTLModal(${c.id})">${T('updateStatus')}</button>`;
+  const _tlSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('detTimeline')}</div><div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${wsT(s)}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div></div>`);
+  const _finSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detFinance')}</div><div class="pay-sum"><div class="pay-box"><div class="pay-num" style="color:var(--g9)">${Number(c.fee_total||0).toLocaleString()}</div><div class="pay-lbl">${T('detFeeLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:var(--grn)">${Number(c.fee_paid||0).toLocaleString()}</div><div class="pay-lbl">${T('detPaidLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:${c.fee_due>0?'var(--red)':'var(--grn)'}">${Number(c.fee_due||0).toLocaleString()}</div><div class="pay-lbl">${T('detDueLabel')}</div></div><div class="pay-box"><div class="pay-num" style="font-size:13px">${{paid:T('payFull'),partial:T('payPart'),unpaid:T('payNo')}[c.pay_status]||'—'}</div><div class="pay-lbl">${T('detPayStatus')}</div></div></div></div>`);
+  const _staffGrid=SIMPLE_CUSTOMER_DETAIL?'':(`<div class="dg4" style="margin-bottom:14px"><div class="df"><div class="dfl">${T('detReceiver')}</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div><div class="df"><div class="dfl">${T('detDocStaff')}</div><div class="dfv">${esc(c.staff_document||'—')}</div></div><div class="df"><div class="dfl">${T('detCloser')}</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div></div>`);
+  const _clogSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}</div>`);
+  const _histSec=(!SIMPLE_CUSTOMER_DETAIL&&tl.length)?(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`):'';
   document.getElementById('dBody').innerHTML=`
   <div class="dh">
     <div class="dav">${c.photo?`<img src="${esc(c.photo)}">`:(NF[c.nationality]||'👤')}</div>
@@ -2180,12 +2213,9 @@ async function openDetail(id){
       </div>
       <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">${(c.services||[]).map(s=>`<span class="xb ${SC[s]||'xb-ot'}">${s}</span>`).join('')}</div>
     </div>
-    <button class="btn btn-p btn-sm" onclick="openTLModal(${c.id})">${T('updateStatus')}</button>
+    ${_updBtn}
   </div>
-  <div style="margin-bottom:16px">
-    <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('detTimeline')}</div>
-    <div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${wsT(s)}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div>
-  </div>
+  ${_tlSec}
   <div class="dg4">
     <div class="df"><div class="dfl">${T('detBoss')}</div><div class="dfv">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div>
     <div class="df"><div class="dfl">${T('detPhone')}</div><div class="dfv">${esc(c.phone||'—')}</div></div>
@@ -2194,21 +2224,9 @@ async function openDetail(id){
     <div class="df"><div class="dfl">${T('detWP')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.wp_no||'—')}</div></div>
     <div class="df"><div class="dfl">${T('detBranch')}</div><div class="dfv">${c.branch_id?esc(brN(c.branch_id)):'—'}</div></div>
   </div>
-  <div class="dg4" style="margin-bottom:14px">
-    <div class="df"><div class="dfl">${T('detReceiver')}</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div>
-    <div class="df"><div class="dfl">${T('detDocStaff')}</div><div class="dfv">${esc(c.staff_document||'—')}</div></div>
-    <div class="df"><div class="dfl">${T('detCloser')}</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div>
-  </div>
+  ${_staffGrid}
   ${exps.length?`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
-  <div style="margin-bottom:16px">
-    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detFinance')}</div>
-    <div class="pay-sum">
-      <div class="pay-box"><div class="pay-num" style="color:var(--g9)">${Number(c.fee_total||0).toLocaleString()}</div><div class="pay-lbl">${T('detFeeLabel')}</div></div>
-      <div class="pay-box"><div class="pay-num" style="color:var(--grn)">${Number(c.fee_paid||0).toLocaleString()}</div><div class="pay-lbl">${T('detPaidLabel')}</div></div>
-      <div class="pay-box"><div class="pay-num" style="color:${c.fee_due>0?'var(--red)':'var(--grn)'}">${Number(c.fee_due||0).toLocaleString()}</div><div class="pay-lbl">${T('detDueLabel')}</div></div>
-      <div class="pay-box"><div class="pay-num" style="font-size:13px">${{paid:T('payFull'),partial:T('payPart'),unpaid:T('payNo')}[c.pay_status]||'—'}</div><div class="pay-lbl">${T('detPayStatus')}</div></div>
-    </div>
-  </div>
+  ${_finSec}
   ${docs.length?`<div style="margin-bottom:16px">
     <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detDocs')} (${docs.length} ${T('detFiles')})</div>
     <div class="mdoc-grid">${docs.map(d=>{
@@ -2219,11 +2237,8 @@ async function openDetail(id){
       return`<div class="mdoc-item">${thumb}<div class="mdoc-info"><div class="mdoc-label">${esc(d.doc_name)}</div><div class="mdoc-type">${new Date(d.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short'})}</div></div></div>`;
     }).join('')}</div>
   </div>`:''}
-  <div style="margin-bottom:16px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>
-    ${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}
-  </div>
-  ${tl.length?`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`:''}
+  ${_clogSec}
+  ${_histSec}
   <div style="font-size:11px;color:var(--g5);text-align:right;margin-top:8px">${T('detUpdated')}: ${c.updated_at?new Date(c.updated_at).toLocaleString('th-TH'):'—'}</div>`;
   document.getElementById('dModal').style.display='flex';
 }
@@ -3753,7 +3768,9 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
   const isOutside=distM!==null&&distM>allowedR;
 
   if(type==='checkin'){
-    const lateMin=attCalculateLateMinutes(nowISO,(settings&&settings.normal_checkin_time)||'08:30:00',(settings&&settings.late_tolerance_minutes)||10);
+    // BRANCH-LIGHT: ใช้เวลาของพนักงานรายคนก่อน → fallback settings → default
+    const _cinTime=(emp&&emp.normal_checkin_time)||(settings&&settings.normal_checkin_time)||'08:30:00';
+    const lateMin=attCalculateLateMinutes(nowISO,_cinTime,(settings&&settings.late_tolerance_minutes)||10);
     return{
       employee_id:emp.id, employee_code:emp.employee_code||null,
       employee_name:emp.full_name||null, branch_id:emp.branch_id||null,
@@ -3768,7 +3785,8 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
       checkout_status:'pending'
     };
   } else {
-    const [hh2,mm2]=((settings&&settings.normal_checkout_time)||'17:30:00').split(':').map(Number);
+    // BRANCH-LIGHT: ใช้เวลาของพนักงานรายคนก่อน → fallback settings → default
+    const [hh2,mm2]=((emp&&emp.normal_checkout_time)||(settings&&settings.normal_checkout_time)||'17:30:00').split(':').map(Number);
     const tol2=(settings&&settings.early_leave_tolerance_minutes)||10;
     const earlyMin=Math.max(0,(hh2*60+mm2-tol2)-nowMins);
     const totalMins=attCalculateWorkMinutes(checkinTime,nowISO);
@@ -3818,7 +3836,22 @@ function attFindMyEmployee(employees){
 function attOnEmpChange(val){
   att_curEmployee=att_employees.find(e=>e.id==val)||null;
   att_pendingPayload=null; att_pendingSelfie=null; att_pendingLogId=null;
-  const pv=document.getElementById('att_preview'); if(pv)pv.innerHTML='';
+  const pv=document.getElementById('att_preview');
+  if(pv){
+    if(att_curEmployee){
+      // BRANCH-LIGHT: แสดง mini-card ข้อมูลพนักงานที่เลือก
+      const emp=att_curEmployee;
+      const _cin=(emp.normal_checkin_time||'').slice(0,5)||'—';
+      const _cout=(emp.normal_checkout_time||'').slice(0,5)||'—';
+      const _brn=emp.branch_name?`<span style="background:var(--pp);color:var(--pd);border-radius:4px;padding:2px 7px;font-size:10px">${esc(emp.branch_name)}</span>`:'';
+      pv.innerHTML=`<div style="background:var(--bg);border:1px solid var(--g2);border-radius:var(--r);padding:10px 14px;font-size:12px">`
+        +`<div style="font-weight:600;font-size:13px;margin-bottom:4px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5)">(${esc(emp.employee_code||'')})</span>&nbsp;${_brn}</div>`
+        +`<div style="color:var(--g5)">⏰ เวลางาน ${_cin} – ${_cout}${emp.position?` &nbsp;·&nbsp; ${esc(emp.position)}`:''}</div>`
+        +`</div>`;
+    }else{
+      pv.innerHTML='';
+    }
+  }
 }
 
 // โหลดพนักงานจาก Supabase และ populate dropdown — เรียกอัตโนมัติเมื่อเข้าหน้า checkin
@@ -3837,7 +3870,14 @@ async function attInitCheckinView(){
         attSetBtnState(true); return;
       }
       att_curEmployee=emp;
-      if(disp)disp.innerHTML=`${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>`;
+      if(disp){
+        // BRANCH-LIGHT: แสดงการ์ดชื่อ+รหัส+สาขา+เวลางาน
+        const _cin=(emp.normal_checkin_time||'').slice(0,5)||'—';
+        const _cout=(emp.normal_checkout_time||'').slice(0,5)||'—';
+        const _brn=emp.branch_name?`<span style="background:var(--pp);color:var(--pd);border-radius:4px;padding:1px 6px;font-size:10px;margin-left:6px;white-space:nowrap">${esc(emp.branch_name)}</span>`:'';
+        disp.innerHTML=`<div style="font-weight:600;font-size:14px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>${_brn}</div>`
+          +`<div style="font-size:11px;color:var(--g5);margin-top:3px">⏰ เวลางาน ${_cin} – ${_cout}</div>`;
+      }
     }else{
       // ─── Admin mode: dropdown เลือกพนักงาน ───
       const sel=document.getElementById('att_emp_sel'); if(!sel)return;
