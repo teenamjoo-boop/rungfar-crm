@@ -376,6 +376,10 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="l-company">บริษัท <span>รุ่งฟ้า รุ่งฟ้า</span> จำกัด</div>
           <div class="l-system">ระบบจัดการแรงงานต่างด้าว</div>
         </div>
+        <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:14px">
+          <button class="lang-btn" id="llLangTH" onclick="setLang('th')">🇹🇭 ไทย</button>
+          <button class="lang-btn" id="llLangMY" onclick="setLang('my')">🇲🇲 မြန်မာ</button>
+        </div>
         <div class="lfl" id="lfl_user">ชื่อผู้ใช้</div>
         <input id="lu" class="linput" type="text" placeholder="กรอกชื่อผู้ใช้" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()">
         <div class="lfl" id="lfl_pass">รหัสผ่าน</div>
@@ -431,6 +435,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <button class="btn btn-p" onclick="openAdd()">+ เพิ่มลูกค้า</button>
   </div>
   <div class="abanner" id="abanner"></div>
+  <div id="refreshBar" style="display:none;background:var(--pp);padding:3px 22px;font-size:11px;color:var(--pd);text-align:center">⟳ กำลังอัปเดตข้อมูล...</div>
   <div class="content">
     <div class="view on" id="view-dash"><div id="dbContent"><div style="text-align:center;padding:60px;color:var(--g5)">⏳ กำลังโหลด...</div></div></div>
     <div class="view" id="view-customers">
@@ -462,7 +467,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="view" id="view-employers"><div id="empContent"></div></div>
     <div class="view" id="view-groups"><div id="grpContent"></div></div>
     <div class="view" id="view-import"><div id="importContent"></div></div>
-    <div class="view" id="view-settings"><div style="max-width:560px"><div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
+    <div class="view" id="view-settings"><div style="max-width:560px"><div id="settingsTitleDiv" style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
     <div class="view" id="view-attendance"><div style="max-width:960px" id="att_content"></div></div>
     <div class="view" id="view-seclog"><div id="seclogContent"></div></div>
@@ -606,7 +611,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 <!-- MODAL: DETAIL -->
 <div class="mo" id="dModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-lg" onclick="event.stopPropagation()">
-  <div class="mh"><div class="mt" id="dTitle">รายละเอียด</div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" onclick="editFromDetail()">✏️ แก้ไข</button><button class="xbtn" onclick="document.getElementById('dModal').style.display='none'">×</button></div></div>
+  <div class="mh"><div class="mt" id="dTitle">รายละเอียด</div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" id="dEditBtn" onclick="editFromDetail()">✏️ แก้ไข</button><button class="xbtn" onclick="document.getElementById('dModal').style.display='none'">×</button></div></div>
   <div class="mbody" id="dBody"></div>
 </div></div>
 
@@ -641,7 +646,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 <!-- MODAL: CONTACT LOG -->
 <div class="mo" id="clogModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
-  <div class="mh"><div class="mt">บันทึกการติดต่อ</div><button class="xbtn" onclick="document.getElementById('clogModal').style.display='none'">×</button></div>
+  <div class="mh"><div class="mt" id="clogMT">บันทึกการติดต่อ</div><button class="xbtn" onclick="document.getElementById('clogModal').style.display='none'">×</button></div>
   <div class="mbody">
     <div class="fg" style="gap:11px">
       <div class="fgi"><label class="fl">ประเภท</label><select class="fi2" id="clf_type"><option value="call">📞 โทรศัพท์</option><option value="line">💬 LINE</option><option value="walk-in">🚶 Walk-in</option><option value="other">📌 อื่นๆ</option></select></div>
@@ -659,12 +664,12 @@ textarea.fi2{resize:vertical;min-height:65px}
 <!-- MODAL: TIMELINE -->
 <div class="mo" id="tlModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
-  <div class="mh"><div class="mt">อัปเดตสถานะงาน</div><button class="xbtn" onclick="document.getElementById('tlModal').style.display='none'">×</button></div>
+  <div class="mh"><div class="mt" id="tlMT">อัปเดตสถานะงาน</div><button class="xbtn" onclick="document.getElementById('tlModal').style.display='none'">×</button></div>
   <div class="mbody">
     <div class="fgi" style="margin-bottom:12px"><label class="fl">สถานะใหม่</label><select class="fi2" id="tlf_status"></select></div>
     <div class="fgi"><label class="fl">หมายเหตุ</label><textarea class="fi2" id="tlf_note" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('tlModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveTL()">✅ อัปเดต</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('tlModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" id="tlSaveBtn" onclick="saveTL()">✅ อัปเดต</button></div>
 </div></div>
 
 <!-- MODAL: USER -->
@@ -790,6 +795,7 @@ let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[];
 let filtered=[],curPage=1;const PG=15;
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
+let empQ=''; // employer search query
 function openPhotoModal(src){document.getElementById('photoModalImg').src=src;document.getElementById('photoModal').style.display='flex';}
 function closePhotoModal(){document.getElementById('photoModal').style.display='none';document.getElementById('photoModalImg').src='';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePhotoModal();});
@@ -805,15 +811,29 @@ const LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAsIAAAKvCAYAAABgeKldAA
 
 // ===== LOADING =====
 let _loading=0;
-function showLoading(msg='กำลังโหลด...'){
+let _loadTimer=null;
+let _loadAllInProgress=false;
+let _lastLoadTime=0;
+function showLoading(msg='กำลังโหลด...',delay=300){
   _loading++;
-  const el=document.getElementById('loadingOverlay');
-  if(el){el.style.display='flex';document.getElementById('loadingText').textContent=msg;}
+  if(_loadTimer){clearTimeout(_loadTimer);_loadTimer=null;}
+  if(delay>0){
+    _loadTimer=setTimeout(()=>{
+      _loadTimer=null;
+      if(_loading>0){const el=document.getElementById('loadingOverlay');if(el){el.style.display='flex';document.getElementById('loadingText').textContent=msg;}}
+    },delay);
+  }else{
+    const el=document.getElementById('loadingOverlay');
+    if(el){el.style.display='flex';document.getElementById('loadingText').textContent=msg;}
+  }
 }
 function hideLoading(){
   _loading=Math.max(0,_loading-1);
+  if(_loadTimer){clearTimeout(_loadTimer);_loadTimer=null;}
   if(_loading===0){const el=document.getElementById('loadingOverlay');if(el)el.style.display='none';}
 }
+function showRefreshBar(){const el=document.getElementById('refreshBar');if(el)el.style.display='block';}
+function hideRefreshBar(){const el=document.getElementById('refreshBar');if(el)el.style.display='none';}
 
 // ===== SUPABASE =====
 async function sb(table,method='GET',body=null,query=''){
@@ -843,7 +863,7 @@ const LANG = {
     employers:'นายจ้าง / บริษัท', groups:'จัดการกลุ่ม', import:'นำเข้าข้อมูล',
     settings:'ตั้งค่าแจ้งเตือน', users:'จัดการผู้ใช้',
     addCustomer:'+ เพิ่มลูกค้า', importExcel:'📥 นำเข้า Excel',
-    search:'ค้นหา ชื่อ / พาสปอร์ต / เลขต่างด้าว / เบอร์...',
+    search:'ค้นหา ชื่อ / พาสปอร์ต / เลขต่างด้าว / เบอร์ / นายจ้าง...',
     allNat:'สัญชาติทั้งหมด', allType:'ประเภททั้งหมด', allStatus:'สถานะทั้งหมด',
     allGroup:'กลุ่มทั้งหมด', allBranch:'สาขาทั้งหมด',
     found:'พบ', records:'รายการ', exportCSV:'📤 Export CSV',
@@ -870,13 +890,140 @@ const LANG = {
     selectAll:'☐ เลือกทั้งหมด', selected:'เลือก', items:'รายการ',
     changeGroup:'🗂️ เปลี่ยนกลุ่ม', changeStatus:'📋 เปลี่ยนสถานะ',
     exportSel:'📤 Export ที่เลือก', deleteSel:'🗑️ ลบที่เลือก', clearSel:'✕ ยกเลิก',
+    loginPlUser:'กรอกชื่อผู้ใช้', loginPlPass:'กรอกรหัสผ่าน',
+    natMM:'🇲🇲 เมียนมา', natKH:'🇰🇭 กัมพูชา', natLA:'🇱🇦 ลาว', natVN:'🇻🇳 เวียดนาม',
+    typeFreelance:'ไม่มีนายจ้าง', typeCompany:'ลูกจ้างบริษัท',
+    srcNone:'ไม่ระบุ', srcWalkin:'Walk-in', srcReferral:'แนะนำ', srcOnline:'ออนไลน์', srcRepeat:'ลูกค้าเก่า',
+    payCash:'เงินสด', payTransfer:'โอนเงิน', payOther:'อื่นๆ',
+    fstPaid:'ชำระครบแล้ว', fstPartial:'ชำระบางส่วน', fstUnpaid:'ยังไม่ชำระ',
+    docPassport:'📘 รูปพาสปอร์ต', docVisa:'🛂 VISA', docWP:'📄 Work Permit',
+    docEmployerCard:'🪪 บัตรนายจ้าง', docReceipt:'🧾 ใบเสร็จ', docPhoto:'📷 รูปถ่าย',
+    docPOW:'📜 หนังสือมอบอำนาจ', docOther:'📎 อื่นๆ',
+    clfCall:'📞 โทรศัพท์', clfLine:'💬 LINE', clfWalkin:'🚶 Walk-in', clfOther:'📌 อื่นๆ',
+    roleAdmin:'Admin - ผู้ดูแลระบบ', roleStaff:'Staff - พนักงานออฟฟิศ',
+    empStatusActive:'✅ ใช้งาน (Active)', empStatusInactive:'⛔ ปิดใช้งาน (Inactive)',
+    attStatAll:'ทุกสถานะ', attStatOk:'✅ ปกติ', attStatLate:'⚠️ มาสาย',
+    attStatAbsent:'❌ ขาดงาน', attStatNoOut:'🔴 ไม่รูดออก', attStatOut:'📍 นอกพื้นที่',
+    attSelEmp:'— เลือกพนักงาน —',
+    attNoEmp:'— ไม่พบข้อมูลพนักงาน (เพิ่มในเมนู จัดการพนักงาน) —',
+    attLoadFail:'— โหลดไม่สำเร็จ กรุณารีเฟรช —',
+    attEmpNotFound:'ไม่พบข้อมูลพนักงานที่ผูกกับบัญชีนี้',
+    attEmpContact:'กรุณาติดต่อผู้ดูแลระบบ',
+    attLoading:'กำลังโหลด...', attCurTime:'เวลาปัจจุบัน',
+    attSearchPH:'ค้นหาชื่อ/รหัสพนักงาน', attHistOwn:'👤 แสดงเฉพาะประวัติของ',
+    attBtnIn:'🟢 &nbsp;เข้างาน', attBtnOut:'🔵 &nbsp;ออกงาน',
+    attSelLabel:'👤 เลือกพนักงาน', attEmpLabel:'👤 พนักงาน',
+    attHdrDate:'วันที่', attHdrEmp:'พนักงาน', attHdrIn:'เข้างาน', attHdrOut:'ออกงาน',
+    attHdrHrs:'ชม.ทำงาน', attHdrStatus:'สถานะ',
+    // ── LANG-FULL additions ──
+    sideGrpLabel:'กลุ่มงาน',
+    attendance:'ตอกบัตรพนักงาน', seclog:'ประวัติการเข้าใช้งาน',
+    elExpired:'เกิน', elDays:'วัน', elToday:'วันนี้!',
+    expPassport:'พาสปอร์ต', expVisa:'VISA', expWP:'Work Permit', exp90:'90 วัน', expMOU:'MOU',
+    dashAllWorkers:'แรงงานทั้งหมด', dashPerson:'คน', dashNoBoss:'ไม่มีนายจ้าง',
+    dashNoData:'ยังไม่มีข้อมูล', dashAllInSys:'ทั้งหมดในระบบ', dashNoGroup:'ยังไม่มีกลุ่ม',
+    dashMustAct:'ต้องดำเนินการ', dashUrgentWarn:'มีรายการด่วน', dashOkAll:'ปกติดี',
+    dashNoUrgent:'ไม่มีรายการด่วน',
+    dashD15:'≤15 วัน', dashD1630:'16-30 วัน',
+    dashPP:'📘 พาสปอร์ต (30 วัน)', dashVWP:'🛂 VISA/WP (30 วัน)', dash90:'📅 รายงาน 90 วัน',
+    dashVISA15:'VISA ≤15 วัน', dashWP15:'WP ≤15 วัน',
+    dashByNat:'📊 แยกตามสัญชาติ', dashTopEmp:'🏢 นายจ้างมีแรงงานมากสุด',
+    dashTopUrgent:'🚨 ด่วนที่สุด', dashSeeAll:'ดูทั้งหมด →', dashTopSvc:'📋 บริการที่ใช้',
+    dashSummGrp:'🗂️ สรุปตามกลุ่มงาน',
+    bannerFmt:'มี {n} รายการที่ต้องดำเนินการ', bannerSeeAll:'ดูทั้งหมด →',
+    alertNone:'ไม่มีรายการแจ้งเตือน',
+    empTitle:'นายจ้าง / บริษัท ทั้งหมด', empAdd:'+ เพิ่มนายจ้าง',
+    empUrgent:'ด่วน', empWorkers:'แรงงาน', empNone:'ยังไม่มีนายจ้าง',
+    empDetPhone:'เบอร์โทร', empDetContact:'ผู้ติดต่อ', empDetAddr:'ที่อยู่',
+    empDetWorkerList:'รายชื่อแรงงาน', empDetNoWorker:'ยังไม่มีแรงงาน',
+    empTblName:'ชื่อ', empTblNat:'สัญชาติ', empTblStatus:'สถานะ',
+    grpTitle:'จัดการกลุ่มงาน', grpAdd:'+ เพิ่มกลุ่ม', grpPerson:'คน',
+    grpNone:'ยังไม่มีกลุ่ม กด "+ เพิ่มกลุ่ม"',
+    grpTip:'💡 กลุ่มช่วยแบ่งประเภทงาน เช่น มติ 11, มติ 24, MOU',
+    fillNoSpec:'-- ไม่ระบุ --', fillSelectNew:'-- เลือกหรือกรอกใหม่ --',
+    fillAllStatus:'สถานะทั้งหมด', fillAllGroup:'กลุ่มทั้งหมด', fillAllBranch:'สาขาทั้งหมด',
+    usersTitle:'จัดการผู้ใช้งาน', usersAdd:'+ เพิ่มผู้ใช้',
+    usersTblUser:'ชื่อผู้ใช้', usersTblName:'ชื่อ-นามสกุล', usersTblRole:'สิทธิ์', usersTblManage:'จัดการ',
+    usersYou:'คุณ',
+    pagShow:'แสดง', pagFrom:'จาก',
+    detBoss:'นายจ้าง', detPhone:'เบอร์โทร', detPassport:'เลขพาสปอร์ต',
+    detAlien:'เลขต่างด้าว', detWP:'เลขคำขอ WP', detBranch:'สาขา',
+    detReceiver:'คนรับเคส', detDocStaff:'คนดูแลเอกสาร', detCloser:'คนปิดงาน',
+    detExpiry:'📅 วันหมดอายุ', detFinance:'💰 การเงิน',
+    detFeeLabel:'ค่าบริการ', detPaidLabel:'ชำระแล้ว', detDueLabel:'ค้างชำระ',
+    detPayStatus:'สถานะ', detDocs:'📎 เอกสารแนบ', detFiles:'ไฟล์',
+    detContacts:'📞 ประวัติการติดต่อ', detAddLog:'+ บันทึก',
+    detHistory:'📋 ประวัติสถานะ', detNoContact:'ยังไม่มีประวัติ',
+    detUpdated:'อัปเดต', detTimeline:'🗂️ Timeline สถานะงาน',
+    detCustComp:'🏢 ลูกจ้างบริษัท', detCustFree:'🧑 ไม่มีนายจ้าง',
+    payFull:'✅ ครบ', payPart:'⚠️ บางส่วน', payNo:'❌ ยังไม่ได้',
+    attTitle:'📋 ระบบตอกบัตรพนักงาน',
+    attTabCheckin:'📲 ตอกบัตรเข้า-ออก', attTabHistory:'📋 ประวัติตอกบัตร',
+    attTabReport:'📊 รายงาน', attTabEmployees:'👥 จัดการพนักงาน',
+    attTabSettings:'⚙️ ตั้งค่าเวลา', attTabExport:'📤 ส่งออก Excel',
+    attHistTitle:'ประวัติตอกบัตร', attHistMine:'เฉพาะของคุณ',
+    attHistSearch:'🔍 ค้นหา', attHistTo:'ถึง', attNoRecord:'ไม่พบข้อมูลในช่วงที่เลือก',
+    attHdrOT:'OT', attHdrGPS:'GPS',
+    attStPresent:'✅ ปกติ', attStLate:'⚠️ สาย', attStAbsent:'❌ ขาด',
+    attStHalfDay:'🌗 ครึ่งวัน', attStHoliday:'🎌 หยุด', attStLeave:'🏖 ลา', attStOutside:'📍 นอกพื้นที่',
+    attNoOut:'ไม่รูด',
+    attRptTitle:'📊 รายงานมาสาย / OT ประจำเดือน', attRptView:'ดูรายงาน',
+    attRptNormal:'✅ ปกติ', attRptLate:'⚠️ มาสาย', attRptAbsent:'❌ ขาดงาน', attRptOT:'⏱ OT รวม',
+    attRptNoData:'ไม่มีข้อมูลในเดือนนี้',
+    attRptTblEmp:'พนักงาน', attRptTblDays:'วันทำงาน', attRptTblLate:'สาย',
+    attRptTblAbsent:'ขาด', attRptTblHrs:'ชม.รวม',
+    attEmpTitle:'จัดการพนักงาน', attEmpAdd:'+ เพิ่มพนักงาน',
+    attEmpSummTotal:'พนักงานทั้งหมด', attEmpSummActive:'ใช้งาน', attEmpSummInactive:'ปิดใช้งาน',
+    attEmpPerson:'คน',
+    attEmpTblCode:'รหัส', attEmpTblName:'ชื่อ-นามสกุล', attEmpTblNick:'ชื่อเล่น',
+    attEmpTblPos:'ตำแหน่ง', attEmpTblBranch:'สาขา', attEmpTblTime:'เวลางาน',
+    attEmpTblManage:'จัดการ', attEmpActLabel:'ใช้งาน', attEmpInactLabel:'ปิดใช้',
+    attEmpNone:'ยังไม่มีข้อมูลพนักงาน', attEmpNoneSub:'กด + เพิ่มพนักงาน เพื่อเริ่มต้นใช้งานระบบตอกบัตร',
+    seclogNoAccess:'ไม่มีสิทธิ์เข้าถึงหน้านี้',
+    seclogDateFrom:'วันที่เริ่ม', seclogDateTo:'ถึงวันที่',
+    seclogUser:'ชื่อผู้ใช้', seclogStatus:'สถานะ', seclogDevice:'อุปกรณ์',
+    seclogAllPH:'ทั้งหมด', seclogSuspOnly:'น่าสงสัยเท่านั้น',
+    seclogSearch:'ค้นหา', seclogClear:'ล้าง',
+    seclogLoginToday:'Login วันนี้ทั้งหมด', seclogFailToday:'ล้มเหลววันนี้',
+    seclogNewDev:'อุปกรณ์ใหม่ (ช่วงเวลาที่เลือก)', seclogSuspCount:'น่าสงสัย (ช่วงเวลาที่เลือก)',
+    seclogAllLogs:'รายการ Login ทั้งหมด', seclogShowing:'แสดง', seclogItems:'รายการ',
+    seclogSuccess:'สำเร็จ', seclogFailed:'ล้มเหลว', seclogSuspYes:'ใช่',
+    seclogDevDesktop:'คอมพิวเตอร์', seclogDevMobile:'มือถือ', seclogDevTablet:'แท็บเล็ต',
+    seclogTblTime:'เวลา Login', seclogTblName:'ชื่อ-นามสกุล',
+    seclogTblRole:'สิทธิ์', seclogTblFail:'เหตุที่ล้มเหลว',
+    seclogTblFP:'Fingerprint', seclogTblSusp:'น่าสงสัย',
+    seclogReasonWrong:'รหัสผ่านผิด', seclogReasonNoUser:'ไม่มีผู้ใช้',
+    seclogReasonNetwork:'ข้อผิดพลาดเครือข่าย', seclogReasonInactive:'บัญชีถูกระงับ',
+    seclogNoDataRange:'ไม่พบข้อมูลในช่วงเวลาที่เลือก',
+    seclogUpgrading:'ฟีเจอร์นี้อยู่ระหว่างอัปเกรดความปลอดภัย',
+    seclogUpgradeSub:'ระบบ Security Log กำลังอัปเกรดเป็น Supabase Auth<br>การบันทึก Login Activity ยังคงทำงานปกติ<br>เฉพาะหน้าแสดงผลรอการอัปเกรด',
+    settingsDays:'วัน', settingsNotifyBefore:'แจ้งเตือนล่วงหน้า',
+    // ── LANG-FULL-PATCH ──
+    wsS0:'รับเรื่อง', wsS1:'รอเอกสาร', wsS2:'เอกสารครบ', wsS3:'ยื่นแล้ว', wsS4:'รอผล', wsS5:'นัดรับ', wsS6:'ปิดงาน',
+    empModalAdd:'เพิ่มนายจ้าง', empModalEdit:'แก้ไขนายจ้าง',
+    grpModalAdd:'เพิ่มกลุ่ม', grpModalEdit:'แก้ไขกลุ่ม',
+    empSearchPH:'ค้นหาชื่อนายจ้าง / เบอร์ / ผู้ติดต่อ / ที่อยู่...', empFoundFmt:'พบ {n} รายการ',
+    empClear:'ล้างการค้นหา', empNoResult:'ไม่พบนายจ้างที่ตรงกัน',
+    toastSaved:'บันทึกแล้ว', toastEmpAdded:'เพิ่มนายจ้างแล้ว', toastGrpAdded:'เพิ่มกลุ่มแล้ว',
+    toastError:'เกิดข้อผิดพลาด', errEmpName:'กรุณากรอกชื่อนายจ้าง',
+    settingsTitle:'⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า',
+    clogTitle:'บันทึกการติดต่อ', tlModalTitle:'อัปเดตสถานะงาน', tlBtnSave:'✅ อัปเดต',
+    detTitle:'รายละเอียด', btnEdit:'✏️ แก้ไข',
+    grpNameLabel:'ชื่อกลุ่ม *', grpDescLabel:'คำอธิบาย',
+    efNameLabel:'ชื่อนายจ้าง/บริษัท *', efBizLabel:'ประเภทธุรกิจ', efPhoneLabel:'เบอร์โทร',
+    efContactLabel:'ผู้ติดต่อ', efAddrLabel:'ที่อยู่', efNoteLabel:'หมายเหตุ',
+    clfTypeLabel:'ประเภท', clfDateLabel:'วันที่', clfSumLabel:'สรุปการติดต่อ *',
+    clfRecvLabel:'เอกสารที่ได้รับแล้ว', clfMissLabel:'เอกสารที่ยังขาด',
+    clfNextLabel:'นัดหมายถัดไป', clfNdateLabel:'วันนัด',
+    tlStatusLabel:'สถานะใหม่', tlNoteLabel:'หมายเหตุ',
+    seclogNoAccessMsg:'ไม่มีสิทธิ์เข้าถึงหน้านี้',
   },
   my: {
     dashboard:'ဒက်ရှ်ဘုတ်', customers:'ဖောက်သည်များ', alerts:'သတိပေးချက်',
     employers:'အလုပ်ရှင် / ကုမ္ပဏီ', groups:'အုပ်စုစီမံခန့်ခွဲ', import:'ဒေတာတင်သွင်း',
     settings:'သတိပေးချက်ပြင်ဆင်', users:'အသုံးပြုသူစီမံ',
     addCustomer:'+ ဖောက်သည်ထည့်', importExcel:'📥 Excel တင်သွင်း',
-    search:'ရှာဖွေရန် ชื่อ / နိုင်ငံကူး / ID / ဖုန်း...',
+    search:'ရှာဖွေ ชื่อ / နိုင်ငံကူး / ID / ဖုန်း / အလုပ်ရှင်...',
     allNat:'အမျိုးသားရေး အားလုံး', allType:'အမျိုးအစား အားလုံး', allStatus:'အခြေအနေ အားလုံး',
     allGroup:'အုပ်စု အားလုံး', allBranch:'ဌာနခွဲ အားလုံး',
     found:'တွေ့ရသည်', records:'မှတ်တမ်း', exportCSV:'📤 CSV ထုတ်ယူ',
@@ -903,17 +1050,174 @@ const LANG = {
     selectAll:'☐ အားလုံးရွေး', selected:'ရွေးထား', items:'မှတ်တမ်း',
     changeGroup:'🗂️ အုပ်စုပြောင်း', changeStatus:'📋 အခြေအနေပြောင်း',
     exportSel:'📤 ရွေးထားသည်ထုတ်ယူ', deleteSel:'🗑️ ရွေးထားသည်ဖျက်', clearSel:'✕ မပြုတော့',
+    loginPlUser:'အသုံးပြုသူအမည်ထည့်ပါ', loginPlPass:'စကားဝှက်ထည့်ပါ',
+    natMM:'🇲🇲 မြန်မာ', natKH:'🇰🇭 ကမ္ဘောဒီးယား', natLA:'🇱🇦 လာအို', natVN:'🇻🇳 ဗီယက်နမ်',
+    typeFreelance:'အလုပ်ရှင်မရှိ', typeCompany:'ကုမ္ပဏီဝန်ထမ်း',
+    srcNone:'မသတ်မှတ်', srcWalkin:'Walk-in', srcReferral:'ညွှန်းဆိုမှု', srcOnline:'အွန်လိုင်း', srcRepeat:'ဖောက်သည်ဟောင်း',
+    payCash:'ငွေသား', payTransfer:'ငွေလွှဲ', payOther:'အခြား',
+    fstPaid:'ပေးချေပြီး', fstPartial:'တစ်စိတ်တစ်ပိုင်းပေး', fstUnpaid:'မပေးရသေး',
+    docPassport:'📘 နိုင်ငံကူးပုံ', docVisa:'🛂 VISA', docWP:'📄 Work Permit',
+    docEmployerCard:'🪪 အလုပ်ရှင်ကတ်', docReceipt:'🧾 ငွေလက်ခံ', docPhoto:'📷 ဓာတ်ပုံ',
+    docPOW:'📜 လုပ်ပိုင်ခွင့်စာ', docOther:'📎 အခြား',
+    clfCall:'📞 ဖုန်း', clfLine:'💬 LINE', clfWalkin:'🚶 Walk-in', clfOther:'📌 အခြား',
+    roleAdmin:'Admin - စီမံခန့်ခွဲသူ', roleStaff:'Staff - ရုံးဝန်ထမ်း',
+    empStatusActive:'✅ အသုံးပြုနေသည် (Active)', empStatusInactive:'⛔ ပိတ်ထားသည် (Inactive)',
+    attStatAll:'အခြေအနေအားလုံး', attStatOk:'✅ ပုံမှန်', attStatLate:'⚠️ နောက်ကျ',
+    attStatAbsent:'❌ ခွင့်မပြတ်ပျက်', attStatNoOut:'🔴 ထွက်မရိုက်', attStatOut:'📍 နယ်မြေပြင်ပ',
+    attSelEmp:'— ဝန်ထမ်းရွေးချယ်ပါ —',
+    attNoEmp:'— ဝန်ထမ်းမတွေ့ပါ (စီမံခန့်ခွဲမှုတွင်ထည့်ပါ) —',
+    attLoadFail:'— တင်မရပါ ပြန်ဖတ်ပါ —',
+    attEmpNotFound:'ဤအကောင့်နှင့်ချိတ်ဆက်ထားသောဝန်ထမ်းမတွေ့ပါ',
+    attEmpContact:'စီမံခန့်ခွဲသူထံဆက်သွယ်ပါ',
+    attLoading:'တင်နေသည်...', attCurTime:'လက်ရှိအချိန်',
+    attSearchPH:'ဝန်ထမ်းအမည်/ကုဒ်ရှာဖွေ', attHistOwn:'👤 ကိုယ်ပိုင်မှတ်တမ်း ─',
+    attBtnIn:'🟢 &nbsp;အလုပ်ဝင်', attBtnOut:'🔵 &nbsp;အလုပ်ထွက်',
+    attSelLabel:'👤 ဝန်ထမ်းရွေးချယ်ပါ', attEmpLabel:'👤 ဝန်ထမ်း',
+    attHdrDate:'ရက်စွဲ', attHdrEmp:'ဝန်ထမ်း', attHdrIn:'အဝင်', attHdrOut:'အထွက်',
+    attHdrHrs:'နာရီ', attHdrStatus:'အခြေအနေ',
+    // ── LANG-FULL additions ──
+    sideGrpLabel:'အုပ်စုများ',
+    attendance:'နှိပ်ကတ်စနစ်', seclog:'ဝင်ရောက်မှတ်တမ်း',
+    elExpired:'ကျော်လွန်', elDays:'ရက်', elToday:'ယနေ့!',
+    expPassport:'နိုင်ငံကူး', expVisa:'VISA', expWP:'Work Permit', exp90:'90 ရက်', expMOU:'MOU',
+    dashAllWorkers:'လုပ်သားအားလုံး', dashPerson:'ဦးရေ', dashNoBoss:'အလုပ်ရှင်မရှိ',
+    dashNoData:'ဒေတာမရှိသေး', dashAllInSys:'စနစ်အတွင်းအားလုံး', dashNoGroup:'အုပ်စုမရှိသေး',
+    dashMustAct:'ဆောင်ရွက်ရမည်', dashUrgentWarn:'အရေးတကြီးရှိ', dashOkAll:'ပုံမှန်',
+    dashNoUrgent:'အရေးပေါ်မရှိ',
+    dashD15:'≤15 ရက်', dashD1630:'16-30 ရက်',
+    dashPP:'📘 နိုင်ငံကူး (30 ရက်)', dashVWP:'🛂 VISA/WP (30 ရက်)', dash90:'📅 90 ရက်အစီရင်ခံ',
+    dashVISA15:'VISA ≤15 ရက်', dashWP15:'WP ≤15 ရက်',
+    dashByNat:'📊 နိုင်ငံသားဆိုင်ရာ', dashTopEmp:'🏢 လုပ်သားအများဆုံးသော အလုပ်ရှင်',
+    dashTopUrgent:'🚨 အရေးပေါ်ဆုံး', dashSeeAll:'အားလုံးကြည့် →', dashTopSvc:'📋 ဝန်ဆောင်မှုများ',
+    dashSummGrp:'🗂️ အုပ်စုအလိုက်',
+    bannerFmt:'ဆောင်ရွက်ရမည့် မှတ်တမ်း {n} ခု ရှိသည်', bannerSeeAll:'အားလုံးကြည့် →',
+    alertNone:'သတိပေးချက်မရှိပါ',
+    empTitle:'အလုပ်ရှင် / ကုမ္ပဏီ အားလုံး', empAdd:'+ အလုပ်ရှင်ထည့်',
+    empUrgent:'အရေးတကြီး', empWorkers:'လုပ်သား', empNone:'အလုပ်ရှင်မရှိသေး',
+    empDetPhone:'ဖုန်းနံပါတ်', empDetContact:'ဆက်သွယ်ရမည့်သူ', empDetAddr:'လိပ်စာ',
+    empDetWorkerList:'လုပ်သားစာရင်း', empDetNoWorker:'လုပ်သားမရှိသေး',
+    empTblName:'အမည်', empTblNat:'နိုင်ငံသားဆိုင်ရာ', empTblStatus:'အခြေအနေ',
+    grpTitle:'အုပ်စုစီမံခန့်ခွဲ', grpAdd:'+ အုပ်စုထည့်', grpPerson:'ဦးရေ',
+    grpNone:'အုပ်စုမရှိသေး "+ အုပ်စုထည့်" နှိပ်ပါ',
+    grpTip:'💡 အုပ်စုများသည် အလုပ်အမျိုးအစားခွဲရာတွင် အသုံးဝင်သည်',
+    fillNoSpec:'-- မသတ်မှတ် --', fillSelectNew:'-- ရွေးချယ်ရန် သို့မဟုတ် အသစ်ထည့် --',
+    fillAllStatus:'အခြေအနေအားလုံး', fillAllGroup:'အုပ်စုအားလုံး', fillAllBranch:'ဌာနခွဲအားလုံး',
+    usersTitle:'အသုံးပြုသူစီမံ', usersAdd:'+ အသုံးပြုသူထည့်',
+    usersTblUser:'အသုံးပြုသူအမည်', usersTblName:'အမည်-နာမဆိုင်ရာ', usersTblRole:'သက်ဆိုင်ရာ', usersTblManage:'စီမံ',
+    usersYou:'သင်',
+    pagShow:'ပြသနေသည်', pagFrom:'မှ',
+    detBoss:'အလုပ်ရှင်', detPhone:'ဖုန်းနံပါတ်', detPassport:'နိုင်ငံကူးနံပါတ်',
+    detAlien:'နိုင်ငံခြားသားနံပါတ်', detWP:'WP တောင်းဆိုနံပါတ်', detBranch:'ဌာနခွဲ',
+    detReceiver:'လက်ခံဝန်ထမ်း', detDocStaff:'စာရွက်တာဝန်ခံ', detCloser:'ပိတ်သိမ်းသူ',
+    detExpiry:'📅 သက်တမ်းကုန်ဆုံးရက်', detFinance:'💰 ငွေကြေးအချက်အလက်',
+    detFeeLabel:'ဝန်ဆောင်ခ', detPaidLabel:'ပေးပြီး', detDueLabel:'ကျန်ရှိ',
+    detPayStatus:'အခြေအနေ', detDocs:'📎 ပူးတွဲဖိုင်', detFiles:'ဖိုင်',
+    detContacts:'📞 ဆက်သွယ်မှုမှတ်တမ်း', detAddLog:'+ မှတ်တမ်းထည့်',
+    detHistory:'📋 အခြေအနေမှတ်တမ်း', detNoContact:'မှတ်တမ်းမရှိသေး',
+    detUpdated:'ပြင်ဆင်ပြီး', detTimeline:'🗂️ Timeline အခြေအနေ',
+    detCustComp:'🏢 ကုမ္ပဏီဝန်ထမ်း', detCustFree:'🧑 အလုပ်ရှင်မရှိ',
+    payFull:'✅ ပေးပြီး', payPart:'⚠️ တစ်စိတ်တစ်ပိုင်း', payNo:'❌ မပေးရသေး',
+    attTitle:'📋 နှိပ်ကတ်စနစ်',
+    attTabCheckin:'📲 ဝင်/ထွက်နှိပ်', attTabHistory:'📋 နှိပ်မှတ်တမ်း',
+    attTabReport:'📊 အစီရင်ခံ', attTabEmployees:'👥 ဝန်ထမ်းစီမံ',
+    attTabSettings:'⚙️ အချိန်ပြင်ဆင်', attTabExport:'📤 Excel ထုတ်ယူ',
+    attHistTitle:'နှိပ်မှတ်တမ်း', attHistMine:'ကိုယ်ပိုင်မှတ်တမ်းသာ',
+    attHistSearch:'🔍 ရှာဖွေ', attHistTo:'မှ', attNoRecord:'ရွေးချယ်သောကာလတွင် မှတ်တမ်းမတွေ့ပါ',
+    attHdrOT:'OT', attHdrGPS:'GPS',
+    attStPresent:'✅ ပုံမှန်', attStLate:'⚠️ နောက်ကျ', attStAbsent:'❌ ပျက်',
+    attStHalfDay:'🌗 တစ်ဝက်', attStHoliday:'🎌 ရုံးပိတ်', attStLeave:'🏖 ခွင့်', attStOutside:'📍 နယ်မြေပြင်ပ',
+    attNoOut:'ထွက်မနှိပ်',
+    attRptTitle:'📊 နောက်ကျ / OT အစီရင်ခံ', attRptView:'အစီရင်ခံကြည့်',
+    attRptNormal:'✅ ပုံမှန်', attRptLate:'⚠️ နောက်ကျ', attRptAbsent:'❌ ပျက်', attRptOT:'⏱ OT စုစုပေါင်း',
+    attRptNoData:'ဤလတွင် ဒေတာမရှိပါ',
+    attRptTblEmp:'ဝန်ထမ်း', attRptTblDays:'အလုပ်ရက်', attRptTblLate:'နောက်ကျ',
+    attRptTblAbsent:'ပျက်', attRptTblHrs:'နာရီစုစုပေါင်း',
+    attEmpTitle:'ဝန်ထမ်းစီမံ', attEmpAdd:'+ ဝန်ထမ်းထည့်',
+    attEmpSummTotal:'ဝန်ထမ်းအားလုံး', attEmpSummActive:'အသုံးပြုနေသည်', attEmpSummInactive:'ပိတ်ထားသည်',
+    attEmpPerson:'ဦးရေ',
+    attEmpTblCode:'ကုဒ်', attEmpTblName:'အမည်-နာမဆိုင်ရာ', attEmpTblNick:'အဓိပ္ပာယ်',
+    attEmpTblPos:'ရာထူး', attEmpTblBranch:'ဌာနခွဲ', attEmpTblTime:'အချိန်',
+    attEmpTblManage:'စီမံ', attEmpActLabel:'အသုံးပြုနေသည်', attEmpInactLabel:'ပိတ်ထား',
+    attEmpNone:'ဝန်ထမ်းဒေတာမရှိသေး', attEmpNoneSub:'+ ဝန်ထမ်းထည့် နှိပ်၍ စတင်ပါ',
+    seclogNoAccess:'ဝင်ရောက်ခွင့်မရှိပါ',
+    seclogDateFrom:'စတင်ရက်', seclogDateTo:'ကုန်ဆုံးရက်',
+    seclogUser:'အသုံးပြုသူအမည်', seclogStatus:'အခြေအနေ', seclogDevice:'ကိရိယာ',
+    seclogAllPH:'အားလုံး', seclogSuspOnly:'သံသယရှိသာ',
+    seclogSearch:'ရှာဖွေ', seclogClear:'ရှင်းလင်း',
+    seclogLoginToday:'ယနေ့ Login အားလုံး', seclogFailToday:'ယနေ့ မအောင်မြင်',
+    seclogNewDev:'ကိရိယာအသစ် (ရွေးချယ်ကာလ)', seclogSuspCount:'သံသယရှိ (ရွေးချယ်ကာလ)',
+    seclogAllLogs:'Login မှတ်တမ်းအားလုံး', seclogShowing:'ပြသနေသည်', seclogItems:'မှတ်တမ်း',
+    seclogSuccess:'အောင်မြင်', seclogFailed:'မအောင်မြင်', seclogSuspYes:'ကြား',
+    seclogDevDesktop:'ကွန်ပြူတာ', seclogDevMobile:'မိုဘိုင်း', seclogDevTablet:'တက်ဘလက်',
+    seclogTblTime:'Login အချိန်', seclogTblName:'အမည်-နာမဆိုင်ရာ',
+    seclogTblRole:'သက်ဆိုင်ရာ', seclogTblFail:'မအောင်မြင်ရသောအကြောင်း',
+    seclogTblFP:'Fingerprint', seclogTblSusp:'သံသယရှိ',
+    seclogReasonWrong:'စကားဝှက်မှား', seclogReasonNoUser:'အသုံးပြုသူမရှိ',
+    seclogReasonNetwork:'ကွန်ရက်အမှား', seclogReasonInactive:'အကောင့်ပိတ်ထား',
+    seclogNoDataRange:'ရွေးချယ်သောကာလတွင် ဒေတာမတွေ့ပါ',
+    seclogUpgrading:'ဤဖီချာကို လုံခြုံရေးဆိုင်ရာ အဆင့်မြှင့်နေသည်',
+    seclogUpgradeSub:'Security Log ကို Supabase Auth သို့ အဆင့်မြှင့်နေသည်<br>Login Activity မှတ်တမ်းသည် ပုံမှန်လည်ပတ်နေသည်<br>ပြသမှုစာမျက်နှာသာ အဆင့်မြှင့်ဆဲ',
+    settingsDays:'ရက်', settingsNotifyBefore:'ကြိုတင်အကြောင်းကြား',
+    // ── LANG-FULL-PATCH ──
+    wsS0:'လက်ခံ', wsS1:'စာရွက်တောင်း', wsS2:'စာရွက်ပြည့်', wsS3:'တင်ပြပြီ', wsS4:'ရလဒ်စောင့်', wsS5:'ချိန်းဆို', wsS6:'ပိတ်သိမ်း',
+    empModalAdd:'အလုပ်ရှင်ထည့်', empModalEdit:'အလုပ်ရှင်ပြင်ဆင်',
+    grpModalAdd:'အုပ်စုထည့်', grpModalEdit:'အုပ်စုပြင်ဆင်',
+    empSearchPH:'အမည် / ဖုန်း / ဆက်သွယ်ရမည့်သူ / လိပ်စာ ရှာဖွေ...', empFoundFmt:'{n} ခု တွေ့ရသည်',
+    empClear:'ရှင်းလင်း', empNoResult:'ကိုက်ညီသောအလုပ်ရှင်မတွေ့ပါ',
+    toastSaved:'သိမ်းဆည်းပြီ', toastEmpAdded:'အလုပ်ရှင်ထည့်ပြီ', toastGrpAdded:'အုပ်စုထည့်ပြီ',
+    toastError:'အမှားဖြစ်သည်', errEmpName:'အလုပ်ရှင်အမည်ထည့်ပါ',
+    settingsTitle:'⚙️ သတိပေးချက်ကြိုတင်ပြင်ဆင်',
+    clogTitle:'ဆက်သွယ်မှတ်တမ်း', tlModalTitle:'အလုပ်အခြေအနေပြင်ဆင်', tlBtnSave:'✅ ပြင်ဆင်',
+    detTitle:'အသေးစိတ်', btnEdit:'✏️ ပြင်ဆင်',
+    grpNameLabel:'အုပ်စုအမည် *', grpDescLabel:'ဖော်ပြချက်',
+    efNameLabel:'အလုပ်ရှင်/ကုမ္ပဏီအမည် *', efBizLabel:'စီးပွားရေးအမျိုးအစား', efPhoneLabel:'ဖုန်းနံပါတ်',
+    efContactLabel:'ဆက်သွယ်ရမည့်သူ', efAddrLabel:'လိပ်စာ', efNoteLabel:'မှတ်ချက်',
+    clfTypeLabel:'အမျိုးအစား', clfDateLabel:'ရက်စွဲ', clfSumLabel:'ဆက်သွယ်မှုနိဒါန်း *',
+    clfRecvLabel:'ရရှိပြီးသောစာရွက်', clfMissLabel:'ပျောက်ဆုံးနေသောစာရွက်',
+    clfNextLabel:'နောက်ချိန်းဆိုမှု', clfNdateLabel:'ချိန်းဆိုရက်',
+    tlStatusLabel:'အခြေအနေအသစ်', tlNoteLabel:'မှတ်ချက်',
+    seclogNoAccessMsg:'ဝင်ရောက်ခွင့်မရှိပါ',
   }
 };
 
 function T(key){ return (LANG[curLang]||LANG['th'])[key] || (LANG['th'])[key] || key; }
+// Work-status display translation: value stays Thai (DB), display uses wsS0-wsS6
+const WS_IDX={}; // built lazily after WS array is defined
+function wsT(s){
+  if(!s)return'—';
+  // build index on first use
+  if(typeof WS!=='undefined'&&!Object.keys(WS_IDX).length)WS.forEach((v,i)=>WS_IDX[v]=i);
+  const i=WS_IDX[s];
+  return(i!==undefined)?T('wsS'+i):s;
+}
 
 function setLang(lang){
   curLang=lang;
   localStorage.setItem('crm_lang',lang);
+  // topbar buttons (appScreen)
   document.getElementById('langTH').classList.toggle('active',lang==='th');
   document.getElementById('langMY').classList.toggle('active',lang==='my');
+  // login page buttons (null-safe — มีเฉพาะตอนหน้า login แสดง)
+  const llTH=document.getElementById('llLangTH');
+  const llMY=document.getElementById('llLangMY');
+  if(llTH)llTH.classList.toggle('active',lang==='th');
+  if(llMY)llMY.classList.toggle('active',lang==='my');
   applyLang();
+  // Re-render current view so all T() calls update immediately
+  if(typeof curView!=='undefined'&&curView){
+    if(curView==='dash')renderDash();
+    else if(curView==='alerts')renderAlerts();
+    else if(curView==='customers'){fillSelects();doFilter();}
+    else if(curView==='employers')renderEmployers();
+    else if(curView==='groups')renderGroups();
+    else if(curView==='users')renderUsers();
+    else if(curView==='settings')renderSettings();
+    else if(curView==='attendance')renderAttendance();
+    else if(curView==='seclog'){
+      if(curUser?.role==='admin')renderSecLog();
+      else{const c=document.getElementById('seclogContent');if(c)c.innerHTML='<div style="padding:60px;text-align:center;color:var(--g5)">'+T('seclogNoAccess')+'</div>';}
+    }
+  }
 }
 
 function applyLang(){
@@ -1041,6 +1345,55 @@ function applyLang(){
   if(lfls[0])lfls[0].textContent=L.username;
   if(lfls[1])lfls[1].textContent=L.password;
   const lbtn=document.querySelector('.lbtn');if(lbtn)lbtn.textContent=L.login;
+  const luEl=document.getElementById('lu');if(luEl)luEl.placeholder=L.loginPlUser;
+  const lpEl=document.getElementById('lp');if(lpEl)lpEl.placeholder=L.loginPlPass;
+
+  // ===== NATIONALITY (qnat filter + f_nat form) =====
+  const natMap=[{val:'เมียนมา',k:'natMM'},{val:'กัมพูชา',k:'natKH'},{val:'ลาว',k:'natLA'},{val:'เวียดนาม',k:'natVN'}];
+  ['qnat','f_nat'].forEach(sid=>{
+    const sel=document.getElementById(sid);if(!sel)return;
+    natMap.forEach(o=>{const opt=Array.from(sel.options).find(x=>x.value===o.val);if(opt)opt.text=L[o.k];});
+  });
+
+  // ===== CUSTOMER TYPE FILTER (qct) =====
+  const qct2=document.getElementById('qct');
+  if(qct2){if(qct2.options[1])qct2.options[1].text=L.typeFreelance;if(qct2.options[2])qct2.options[2].text=L.typeCompany;}
+
+  // ===== SOURCE (f_src) =====
+  const fsrc=document.getElementById('f_src');
+  if(fsrc){[[0,'srcNone'],[1,'srcWalkin'],[2,'srcReferral'],[3,'srcOnline'],[4,'srcRepeat']].forEach(([i,k])=>{if(fsrc.options[i])fsrc.options[i].text=L[k];});}
+
+  // ===== PAYMENT CHANNEL (f_fpay) =====
+  const ffpay=document.getElementById('f_fpay');
+  if(ffpay){[[0,'srcNone'],[1,'payCash'],[2,'payTransfer'],[3,'payOther']].forEach(([i,k])=>{if(ffpay.options[i])ffpay.options[i].text=L[k];});}
+
+  // ===== PAYMENT STATUS (f_fst) =====
+  const ffst=document.getElementById('f_fst');
+  if(ffst){[[0,'srcNone'],[1,'fstPaid'],[2,'fstPartial'],[3,'fstUnpaid']].forEach(([i,k])=>{if(ffst.options[i])ffst.options[i].text=L[k];});}
+
+  // ===== DOC TYPE (newDocType) =====
+  const ndt=document.getElementById('newDocType');
+  if(ndt){[['docPassport'],['docVisa'],['docWP'],['docEmployerCard'],['docReceipt'],['docPhoto'],['docPOW'],['docOther']].forEach(([k],i)=>{if(ndt.options[i])ndt.options[i].text=L[k];});}
+
+  // ===== CONTACT LOG TYPE (clf_type) =====
+  const clt=document.getElementById('clf_type');
+  if(clt){[[0,'clfCall'],[1,'clfLine'],[2,'clfWalkin'],[3,'clfOther']].forEach(([i,k])=>{if(clt.options[i])clt.options[i].text=L[k];});}
+
+  // ===== USER ROLE DROPDOWN (uf_role) =====
+  const ufr=document.getElementById('uf_role');
+  if(ufr){if(ufr.options[0])ufr.options[0].text=L.roleAdmin;if(ufr.options[1])ufr.options[1].text=L.roleStaff;}
+
+  // ===== EMPLOYEE STATUS (aef_status) =====
+  const aefs=document.getElementById('aef_status');
+  if(aefs){if(aefs.options[0])aefs.options[0].text=L.empStatusActive;if(aefs.options[1])aefs.options[1].text=L.empStatusInactive;}
+
+  // ===== ATTENDANCE HISTORY STATUS (null-safe — มีเมื่อ tab history เปิดอยู่) =====
+  const atths=document.getElementById('att_hist_status');
+  if(atths){[[0,'attStatAll'],[1,'attStatOk'],[2,'attStatLate'],[3,'attStatAbsent'],[4,'attStatNoOut'],[5,'attStatOut']].forEach(([i,k])=>{if(atths.options[i])atths.options[i].text=L[k];});}
+
+  // ===== ATTENDANCE EMP SELECT placeholder (null-safe) =====
+  const attSel2=document.getElementById('att_emp_sel');
+  if(attSel2&&attSel2.options[0]&&!attSel2.options[0].value)attSel2.options[0].text=L.attSelEmp;
 
   // ===== PAGE TITLE =====
   const ttitle=document.getElementById('ttitle');
@@ -1048,7 +1401,7 @@ function applyLang(){
     const titleMap={
       'dash':'dashboard','customers':'customers','alerts':'alerts',
       'employers':'employers','groups':'groups','import':'import',
-      'settings':'settings','users':'users'
+      'settings':'settings','users':'users','attendance':'attendance','seclog':'seclog'
     };
     if(titleMap[curView])ttitle.textContent=L[titleMap[curView]]||ttitle.textContent;
   }
@@ -1065,6 +1418,54 @@ function applyLang(){
   // ===== SIDEBAR BRAND =====
   const brandSub=document.querySelector('.brand-sub');
   if(brandSub)brandSub.textContent=curLang==='my'?'အလုပ်သမား CRM':'Labor CRM';
+
+  // ===== PHOTO TABLE HEADER (th[1] skipped before) =====
+  const custThs=document.querySelectorAll('#view-customers thead th');
+  if(custThs[1])custThs[1].textContent=L.photo||'รูป';
+
+  // ===== SETTINGS PAGE TITLE =====
+  const std=document.getElementById('settingsTitleDiv');
+  if(std)std.textContent=T('settingsTitle');
+
+  // ===== CONTACT LOG MODAL TITLE =====
+  const clogMT=document.getElementById('clogMT');
+  if(clogMT)clogMT.textContent=T('clogTitle');
+
+  // ===== TIMELINE MODAL TITLE + SAVE BUTTON =====
+  const tlMT=document.getElementById('tlMT');
+  if(tlMT)tlMT.textContent=T('tlModalTitle');
+  const tlSB=document.getElementById('tlSaveBtn');
+  if(tlSB)tlSB.textContent=T('tlBtnSave');
+
+  // ===== EMPLOYER MODAL FORM LABELS =====
+  const efLabels=document.querySelectorAll('#empModal .fl');
+  const efKeys=['efNameLabel','efBizLabel','efPhoneLabel','efContactLabel','efAddrLabel','efNoteLabel'];
+  efLabels.forEach((lb,i)=>{if(efKeys[i])lb.textContent=T(efKeys[i]);});
+
+  // ===== GROUP MODAL FORM LABELS =====
+  const gfLabels=document.querySelectorAll('#grpModal .fl');
+  if(gfLabels[0])gfLabels[0].textContent=T('grpNameLabel');
+  if(gfLabels[1])gfLabels[1].textContent=T('grpDescLabel');
+
+  // ===== CONTACT LOG MODAL FORM LABELS =====
+  const clfLabels=document.querySelectorAll('#clogModal .fl');
+  const clfKeys=['clfTypeLabel','clfDateLabel','clfSumLabel','clfRecvLabel','clfMissLabel','clfNextLabel','clfNdateLabel'];
+  clfLabels.forEach((lb,i)=>{if(clfKeys[i])lb.textContent=T(clfKeys[i]);});
+
+  // ===== TIMELINE MODAL FORM LABELS =====
+  const tlLabels=document.querySelectorAll('#tlModal .fl');
+  if(tlLabels[0])tlLabels[0].textContent=T('tlStatusLabel');
+  if(tlLabels[1])tlLabels[1].textContent=T('tlNoteLabel');
+
+  // ===== EMPLOYER SEARCH INPUT PLACEHOLDER (if visible) =====
+  const empSI=document.getElementById('empSearchInput');
+  if(empSI)empSI.placeholder=T('empSearchPH');
+  const empCB=document.getElementById('empClearBtn');
+  if(empCB)empCB.textContent=T('empClear');
+
+  // ===== DETAIL MODAL EDIT BUTTON =====
+  const dEditBtn=document.getElementById('dEditBtn');
+  if(dEditBtn)dEditBtn.textContent=T('btnEdit');
 }
 
 // ===== MULTI-DOC SYSTEM =====
@@ -1281,14 +1682,18 @@ async function showApp(){
       const el=document.getElementById(id);if(el)el.style.display='none';
     });
   }
-  await loadAll();
+  showLoading('กำลังโหลดข้อมูล...',0);
+  await loadAll(true);
+  hideLoading();
   fillSelects();renderDash();renderSidebar();renderSettings();
   // Apply saved language
   setLang(curLang);
 }
 
 async function loadAll(silent=false){
-  if(!silent)showLoading('กำลังโหลดข้อมูล...');
+  if(_loadAllInProgress)return;
+  _loadAllInProgress=true;
+  if(!silent)showLoading('กำลังโหลดข้อมูล...',300);
   try{
     [customers,groups,branches,employers,appUsers]=await Promise.all([
       dbGet('customers','?order=name.asc&limit=2000'),
@@ -1303,10 +1708,11 @@ async function loadAll(silent=false){
     // Merge duplicate employers by name
     mergeDuplicateEmployers();
     settings=JSON.parse(localStorage.getItem('crm_settings')||'null')||settings;
+    _lastLoadTime=Date.now();
   }catch(e){
     console.error('loadAll error:',e);
     toast('ไม่สามารถโหลดข้อมูลได้: '+e.message,'err');
-  }finally{if(!silent)hideLoading();}
+  }finally{_loadAllInProgress=false;if(!silent)hideLoading();}
 }
 
 function mergeDuplicateEmployers(){
@@ -1343,7 +1749,7 @@ function mergeDuplicateEmployers(){
 function du(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);const x=new Date(d);x.setHours(0,0,0,0);return Math.round((x-t)/86400000);}
 function fd(d){if(!d)return'—';return new Date(d).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}
 function ec(d){if(d===null)return'eb-n';if(d<0||d<=7)return'eb-u';if(d<=14)return'eb-w';if(d<=30)return'eb-s';return'eb-ok';}
-function el(d){if(d===null)return'—';if(d<0)return`เกิน ${Math.abs(d)} วัน`;if(d===0)return'วันนี้!';return`${d} วัน`;}
+function el(d){if(d===null)return'—';if(d<0)return`${T('elExpired')} ${Math.abs(d)} ${T('elDays')}`;if(d===0)return T('elToday');return`${d} ${T('elDays')}`;}
 function wsIdx(s){return WS.indexOf(s);}
 function wsC(s){const i=wsIdx(s);return i>=0?WSC[i]:'ws-0';}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -1352,11 +1758,11 @@ function brN(id){const b=branches.find(x=>x.id===id);return b?b.name:'';}
 function empN(id){const e=employers.find(x=>x.id===id);return e?e.name:'';}
 function getExps(c){
   const r=[];
-  if(c.exp_passport)r.push({l:'พาสปอร์ต',d:c.exp_passport,w:settings.passport});
-  if(c.exp_visa)r.push({l:'VISA',d:c.exp_visa,w:settings.visa});
-  if(c.exp_wp)r.push({l:'Work Permit',d:c.exp_wp,w:settings.wp});
-  if(c.next_90)r.push({l:'90 วัน',d:c.next_90,w:settings.next90});
-  if(c.exp_mou)r.push({l:'MOU',d:c.exp_mou,w:settings.mou});
+  if(c.exp_passport)r.push({l:T('expPassport'),d:c.exp_passport,w:settings.passport});
+  if(c.exp_visa)r.push({l:T('expVisa'),d:c.exp_visa,w:settings.visa});
+  if(c.exp_wp)r.push({l:T('expWP'),d:c.exp_wp,w:settings.wp});
+  if(c.next_90)r.push({l:T('exp90'),d:c.next_90,w:settings.next90});
+  if(c.exp_mou)r.push({l:T('expMOU'),d:c.exp_mou,w:settings.mou});
   return r;
 }
 function isAlert(c){return getExps(c).some(x=>{const d=du(x.d);return d!==null&&d<=x.w;});}
@@ -1366,37 +1772,63 @@ function gv(v,opts={}){
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
   const el=document.getElementById('view-'+v);if(el)el.classList.add('on');
   curView=v;
-  const titles={dash:'แดชบอร์ด',customers:'ลูกค้าทั้งหมด',alerts:'การแจ้งเตือน',employers:'นายจ้าง / บริษัท',groups:'จัดการกลุ่ม',import:'นำเข้าข้อมูล',settings:'ตั้งค่าแจ้งเตือน',users:'จัดการผู้ใช้',attendance:'ตอกบัตรพนักงาน',seclog:'ประวัติการเข้าใช้งาน'};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),seclog:T('seclog')};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
-    if(opts.grp){
-      const qgrp=document.getElementById('qgrp');
-      if(qgrp)qgrp.value=opts.grp;
-    }
-    // Always reload from Supabase before showing
-    showLoading('กำลังโหลดข้อมูลลูกค้า...');
-    loadAll(true).then(()=>{
-      fillSelects();
-      renderSidebar();
-      if(opts.grp){
-        const qgrp=document.getElementById('qgrp');
-        if(qgrp)qgrp.value=opts.grp;
-      }
+    if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
+    const hasCache=customers.length>0;
+    if(hasCache){
+      // Render from cache immediately (no flicker)
+      fillSelects();renderSidebar();
+      if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
       doFilter();
-    }).catch(e=>{
-      toast('โหลดข้อมูลไม่ได้: '+e.message,'err');
-    }).finally(()=>hideLoading());
-    return; // exit early, doFilter called inside .then()
+      // Background refresh — show slim bar instead of full overlay
+      if(!_loadAllInProgress){
+        showRefreshBar();
+        loadAll(true).then(()=>{
+          fillSelects();renderSidebar();
+          if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
+          doFilter();
+        }).catch(e=>{console.error('bg refresh error',e);}).finally(()=>hideRefreshBar());
+      }
+    }else{
+      // No cache — show overlay (with 300ms delay so instant nav feels clean)
+      showLoading('กำลังโหลดข้อมูลลูกค้า...',300);
+      loadAll(true).then(()=>{
+        fillSelects();renderSidebar();
+        if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
+        doFilter();
+      }).catch(e=>{toast('โหลดข้อมูลไม่ได้: '+e.message,'err');}).finally(()=>hideLoading());
+    }
+    return;
   }
   if(v==='alerts'){
-    showLoading('กำลังโหลด...');
-    loadAll(true).then(()=>{renderSidebar();renderAlerts();}).finally(()=>hideLoading());
+    const hasCache=customers.length>0;
+    if(hasCache){
+      renderSidebar();renderAlerts();
+      if(!_loadAllInProgress){
+        showRefreshBar();
+        loadAll(true).then(()=>{renderSidebar();renderAlerts();}).catch(e=>{console.error('bg refresh error',e);}).finally(()=>hideRefreshBar());
+      }
+    }else{
+      showLoading('กำลังโหลด...',300);
+      loadAll(true).then(()=>{renderSidebar();renderAlerts();}).finally(()=>hideLoading());
+    }
     return;
   }
   if(v==='employers'){
-    showLoading('กำลังโหลด...');
-    loadAll(true).then(()=>{renderEmployers();}).finally(()=>hideLoading());
+    const hasCache=employers.length>0;
+    if(hasCache){
+      renderEmployers();
+      if(!_loadAllInProgress){
+        showRefreshBar();
+        loadAll(true).then(()=>{renderEmployers();}).catch(e=>{console.error('bg refresh error',e);}).finally(()=>hideRefreshBar());
+      }
+    }else{
+      showLoading('กำลังโหลด...',300);
+      loadAll(true).then(()=>{renderEmployers();}).finally(()=>hideLoading());
+    }
     return;
   }
   if(v==='groups')renderGroups();
@@ -1404,7 +1836,7 @@ function gv(v,opts={}){
   if(v==='settings')renderSettings();
   if(v==='users')renderUsers();
   if(v==='attendance')renderAttendance();
-  if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML='<div style="padding:60px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์เข้าถึงหน้านี้</div>';}}
+  if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
 }
 
 function renderSidebar(){
@@ -1416,7 +1848,7 @@ function renderSidebar(){
   if(nb){nb.textContent=al;nb.className='nbadge'+(al>0?'':' ok');}
   const sg=document.getElementById('sideGroups');
   if(!groups.length){sg.innerHTML='';return;}
-  sg.innerHTML='<div class="nlbl">กลุ่มงาน</div>'+groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;const t=JSON.stringify(g.name).replace(/"/g,'&quot;');return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:${t}})">${esc(g.name)}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
+  sg.innerHTML='<div class="nlbl">'+T('sideGrpLabel')+'</div>'+groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;const t=JSON.stringify(g.name).replace(/"/g,'&quot;');return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:${t}})">${esc(g.name)}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
 }
 
 function renderDash(){
@@ -1440,62 +1872,115 @@ function renderDash(){
   const natD=[{l:'🇲🇲',v:mm},{l:'🇰🇭',v:kh},{l:'🇱🇦',v:la},{l:'🇻🇳',v:vn}];
   const natC=['#F26522','#1D4ED8','#15803D','#DC2626'];const natMax=Math.max(mm,kh,la,vn,1);
   const ab=document.getElementById('abanner');
-  if(al.length>0){ab.style.display='flex';ab.innerHTML=`⚠️ มี <strong>${al.length}</strong> รายการที่ต้องดำเนินการ — <span style="cursor:pointer;text-decoration:underline" onclick="gv('alerts')">ดูทั้งหมด →</span>`;}
+  if(al.length>0){ab.style.display='flex';ab.innerHTML=`⚠️ ${T('bannerFmt').replace('{n}',`<strong>${al.length}</strong>`)} — <span style="cursor:pointer;text-decoration:underline" onclick="gv('alerts')">${T('bannerSeeAll')}</span>`;}
   else ab.style.display='none';
   document.getElementById('dbContent').innerHTML=`
   <div class="sg">
-    <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">แรงงานทั้งหมด</div><div class="sc-sub">🧑 ${customers.filter(c=>c.customer_type==='freelance').length} &nbsp; 🏢 ${customers.filter(c=>c.customer_type==='company').length}</div></div>
-    <div class="sc c2" onclick="gv('alerts')"><div class="sc-num" style="color:${al.length>0?'var(--amb)':'var(--grn)'}">${al.length}</div><div class="sc-lbl">ต้องดำเนินการ</div><div class="sc-sub" style="color:${al.length>0?'var(--red)':'var(--grn)'}">${al.length>0?'⚠️ มีรายการด่วน':'✅ ปกติดี'}</div></div>
-    <div class="sc c3" onclick="gv('employers')"><div class="sc-num">${employers.length}</div><div class="sc-lbl">นายจ้าง/บริษัท</div><div class="sc-sub">ทั้งหมดในระบบ</div></div>
-    <div class="sc c4"><div class="sc-num">${groups.length}</div><div class="sc-lbl">กลุ่มงาน</div><div class="sc-sub">${groups.slice(0,2).map(g=>esc(g.name)).join(', ')||'ยังไม่มีกลุ่ม'}</div></div>
+    <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">${T('dashAllWorkers')}</div><div class="sc-sub">🧑 ${customers.filter(c=>c.customer_type==='freelance').length} &nbsp; 🏢 ${customers.filter(c=>c.customer_type==='company').length}</div></div>
+    <div class="sc c2" onclick="gv('alerts')"><div class="sc-num" style="color:${al.length>0?'var(--amb)':'var(--grn)'}">${al.length}</div><div class="sc-lbl">${T('dashMustAct')}</div><div class="sc-sub" style="color:${al.length>0?'var(--red)':'var(--grn)'}">${al.length>0?'⚠️ '+T('dashUrgentWarn'):'✅ '+T('dashOkAll')}</div></div>
+    <div class="sc c3" onclick="gv('employers')"><div class="sc-num">${employers.length}</div><div class="sc-lbl">${T('employers')}</div><div class="sc-sub">${T('dashAllInSys')}</div></div>
+    <div class="sc c4"><div class="sc-num">${groups.length}</div><div class="sc-lbl">${T('groups')}</div><div class="sc-sub">${groups.slice(0,2).map(g=>esc(g.name)).join(', ')||T('dashNoGroup')}</div></div>
   </div>
   <div class="dg2">
-    <div class="dc"><div class="dct">📘 พาสปอร์ต (30 วัน)</div><div class="er"><span style="color:var(--red);font-weight:700">≤15 วัน</span><span class="eb eb-u">${e15pp} คน</span></div><div class="er"><span style="color:var(--p);font-weight:700">16-30 วัน</span><span class="eb eb-w">${e30pp} คน</span></div></div>
-    <div class="dc"><div class="dct">🛂 VISA/WP (30 วัน)</div><div class="er"><span style="color:var(--red);font-weight:700">VISA ≤15 วัน</span><span class="eb eb-u">${e15v} คน</span></div><div class="er"><span style="color:var(--red);font-weight:700">WP ≤15 วัน</span><span class="eb eb-u">${e15w} คน</span></div><div class="er"><span style="color:var(--amb);font-weight:700">16-30 วัน</span><span class="eb eb-s">${e30v+e30w} คน</span></div></div>
-    <div class="dc"><div class="dct">📅 รายงาน 90 วัน</div><div class="er"><span style="color:var(--red);font-weight:700">≤15 วัน</span><span class="eb eb-u">${e15r} คน</span></div><div class="er"><span style="color:var(--amb);font-weight:700">16-30 วัน</span><span class="eb eb-s">${e30r} คน</span></div></div>
+    <div class="dc"><div class="dct">${T('dashPP')}</div><div class="er"><span style="color:var(--red);font-weight:700">${T('dashD15')}</span><span class="eb eb-u">${e15pp} ${T('dashPerson')}</span></div><div class="er"><span style="color:var(--p);font-weight:700">${T('dashD1630')}</span><span class="eb eb-w">${e30pp} ${T('dashPerson')}</span></div></div>
+    <div class="dc"><div class="dct">${T('dashVWP')}</div><div class="er"><span style="color:var(--red);font-weight:700">${T('dashVISA15')}</span><span class="eb eb-u">${e15v} ${T('dashPerson')}</span></div><div class="er"><span style="color:var(--red);font-weight:700">${T('dashWP15')}</span><span class="eb eb-u">${e15w} ${T('dashPerson')}</span></div><div class="er"><span style="color:var(--amb);font-weight:700">${T('dashD1630')}</span><span class="eb eb-s">${e30v+e30w} ${T('dashPerson')}</span></div></div>
+    <div class="dc"><div class="dct">${T('dash90')}</div><div class="er"><span style="color:var(--red);font-weight:700">${T('dashD15')}</span><span class="eb eb-u">${e15r} ${T('dashPerson')}</span></div><div class="er"><span style="color:var(--amb);font-weight:700">${T('dashD1630')}</span><span class="eb eb-s">${e30r} ${T('dashPerson')}</span></div></div>
   </div>
   <div class="dg3">
-    <div class="dc"><div class="dct">📊 แยกตามสัญชาติ</div><div class="bc">${natD.map((d,i)=>`<div class="bc-b"><div class="bc-v" style="color:${natC[i]}">${d.v||''}</div><div class="bc-f" style="height:${Math.round(d.v/natMax*60)}px;background:${natC[i]}"></div><div class="bc-l">${d.l}</div></div>`).join('')}</div></div>
-    <div class="dc"><div class="dct">🏢 นายจ้างมีแรงงานมากสุด</div>${topE.length?topE.map(([n,c])=>`<div class="bx"><div style="font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n)}</div><div class="bx-bar" style="width:${Math.round(c/maxE*70)}px;flex-shrink:0"></div><div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--p);flex-shrink:0">${c}</div></div>`).join(''):'<div style="color:var(--g5);font-size:12px;padding:8px 0;text-align:center">ยังไม่มีข้อมูล</div>'}</div>
+    <div class="dc"><div class="dct">${T('dashByNat')}</div><div class="bc">${natD.map((d,i)=>`<div class="bc-b"><div class="bc-v" style="color:${natC[i]}">${d.v||''}</div><div class="bc-f" style="height:${Math.round(d.v/natMax*60)}px;background:${natC[i]}"></div><div class="bc-l">${d.l}</div></div>`).join('')}</div></div>
+    <div class="dc"><div class="dct">${T('dashTopEmp')}</div>${topE.length?topE.map(([n,c])=>`<div class="bx"><div style="font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n)}</div><div class="bx-bar" style="width:${Math.round(c/maxE*70)}px;flex-shrink:0"></div><div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--p);flex-shrink:0">${c}</div></div>`).join(''):'<div style="color:var(--g5);font-size:12px;padding:8px 0;text-align:center">'+T('dashNoData')+'</div>'}</div>
   </div>
   <div class="dg3">
-    <div class="dc"><div class="dct" style="justify-content:space-between">🚨 ด่วนที่สุด <span style="font-size:11px;color:var(--p);cursor:pointer;font-weight:400" onclick="gv('alerts')">ดูทั้งหมด →</span></div>${urg.filter(x=>x.d<=7).slice(0,4).map(({c,x,d})=>`<div class="ac urg" onclick="openDetail(${c.id})"><div class="adot adot-r">${NF[c.nationality]||'👤'}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} • ${c.employer_id?esc(empN(c.employer_id)):'ไม่มีนายจ้าง'}</div></div><div class="dr">${el(d)}</div></div>`).join('')||'<div style="color:var(--g5);font-size:12px;padding:8px 0">✅ ไม่มีรายการด่วน</div>'}</div>
-    <div class="dc"><div class="dct">📋 บริการที่ใช้</div>${topS.length?topS.map(([s,n])=>`<div class="bx"><span class="xb ${SC[s]||'xb-ot'}">${s}</span><div class="bx-bar" style="width:${Math.round(n/maxS*70)}px;flex-shrink:0"></div><div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--p);flex-shrink:0;margin-left:auto">${n}</div></div>`).join(''):'<div style="color:var(--g5);font-size:12px;padding:8px 0;text-align:center">ยังไม่มีข้อมูล</div>'}</div>
+    <div class="dc"><div class="dct" style="justify-content:space-between">${T('dashTopUrgent')} <span style="font-size:11px;color:var(--p);cursor:pointer;font-weight:400" onclick="gv('alerts')">${T('dashSeeAll')}</span></div>${urg.filter(x=>x.d<=7).slice(0,4).map(({c,x,d})=>`<div class="ac urg" onclick="openDetail(${c.id})"><div class="adot adot-r">${NF[c.nationality]||'👤'}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} • ${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="dr">${el(d)}</div></div>`).join('')||'<div style="color:var(--g5);font-size:12px;padding:8px 0">✅ '+T('dashNoUrgent')+'</div>'}</div>
+    <div class="dc"><div class="dct">${T('dashTopSvc')}</div>${topS.length?topS.map(([s,n])=>`<div class="bx"><span class="xb ${SC[s]||'xb-ot'}">${s}</span><div class="bx-bar" style="width:${Math.round(n/maxS*70)}px;flex-shrink:0"></div><div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--p);flex-shrink:0;margin-left:auto">${n}</div></div>`).join(''):'<div style="color:var(--g5);font-size:12px;padding:8px 0;text-align:center">'+T('dashNoData')+'</div>'}</div>
   </div>
-  ${grpRows.length?`<div class="dc" style="margin-bottom:14px"><div class="dct">🗂️ สรุปตามกลุ่มงาน</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${grpRows.map(({g,cnt})=>`<div onclick="gv('customers',{grp:${g.id},title:${JSON.stringify(g.name)}})" style="padding:8px 14px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--r);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><span style="font-size:12px;font-weight:700;color:var(--p)">${esc(g.name)}</span><span style="font-size:16px;font-weight:800;font-family:var(--mono);color:var(--g9)">${cnt}</span><span style="font-size:10px;color:var(--g5)">คน</span></div>`).join('')}</div></div>`:''}`;
+  ${grpRows.length?`<div class="dc" style="margin-bottom:14px"><div class="dct">${T('dashSummGrp')}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${grpRows.map(({g,cnt})=>`<div onclick="gv('customers',{grp:${g.id},title:${JSON.stringify(g.name)}})" style="padding:8px 14px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--r);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><span style="font-size:12px;font-weight:700;color:var(--p)">${esc(g.name)}</span><span style="font-size:16px;font-weight:800;font-family:var(--mono);color:var(--g9)">${cnt}</span><span style="font-size:10px;color:var(--g5)">${T('dashPerson')}</span></div>`).join('')}</div></div>`:''}`;
 }
 
 function renderAlerts(){
   const urg=[];customers.forEach(c=>getExps(c).forEach(x=>{const d=du(x.d);if(d!==null&&d<=x.w)urg.push({c,x,d});}));urg.sort((a,b)=>a.d-b.d);
-  if(!urg.length){document.getElementById('alertContent').innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--g5)"><div style="font-size:44px;opacity:.3;margin-bottom:10px">✅</div>ไม่มีรายการแจ้งเตือน</div>';return;}
-  document.getElementById('alertContent').innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">'+urg.map(({c,x,d})=>`<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot ${d<=7?'adot-r':d<=14?'adot-o':'adot-g'}">${NF[c.nationality]||'👤'}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} หมด ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):'ไม่มีนายจ้าง'}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`).join('')+'</div>';
+  if(!urg.length){document.getElementById('alertContent').innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--g5)"><div style="font-size:44px;opacity:.3;margin-bottom:10px">✅</div>${T('alertNone')}</div>`;return;}
+  document.getElementById('alertContent').innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">'+urg.map(({c,x,d})=>`<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot ${d<=7?'adot-r':d<=14?'adot-o':'adot-g'}">${NF[c.nationality]||'👤'}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} หมด ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`).join('')+'</div>';
 }
 
 function renderEmployers(){
-  document.getElementById('empContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">นายจ้าง / บริษัท ทั้งหมด</div><button class="btn btn-p btn-sm" onclick="openAddEmp()">+ เพิ่มนายจ้าง</button></div>
-  <div class="emp-grid">${employers.map(e=>{const cnt=customers.filter(c=>c.employer_id===e.id).length;const alrt=customers.filter(c=>c.employer_id===e.id&&isAlert(c)).length;
-    return`<div class="emp-card" onclick="openEmpDet(${e.id})"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px"><div style="font-size:24px">🏢</div>${alrt>0?`<span class="eb eb-u">${alrt} ด่วน</span>`:''}</div><div style="font-weight:700;font-size:14px;color:var(--g9);margin-bottom:4px">${esc(e.name)}</div>${e.business_type?`<div style="font-size:11px;color:var(--g5);margin-bottom:4px">${esc(e.business_type)}</div>`:''}<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--g1)"><span style="font-size:12px;color:var(--g5)">แรงงาน</span><span style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--p)">${cnt}</span></div></div>`;
-  }).join('')||'<div style="color:var(--g5);font-size:13px;padding:40px;text-align:center;grid-column:1/-1">ยังไม่มีนายจ้าง<br><button class="btn btn-p btn-sm" style="margin-top:12px" onclick="openAddEmp()">+ เพิ่มนายจ้าง</button></div>'}</div>`;
+  document.getElementById('empContent').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:700">${T('empTitle')}</div>
+      <button class="btn btn-p btn-sm" onclick="openAddEmp()">${T('empAdd')}</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <div class="srch" style="flex:1">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="si" id="empSearchInput" placeholder="${T('empSearchPH')}" oninput="empFilter(this.value)" value="${esc(empQ)}">
+      </div>
+      <button class="btn btn-g btn-sm" id="empClearBtn" onclick="empFilter('')" style="display:${empQ?'inline-flex':'none'}">${T('empClear')}</button>
+    </div>
+    <div id="empResultCount" style="font-size:12px;color:var(--g5);margin-bottom:10px"></div>
+    <div id="empGrid" class="emp-grid"></div>
+  `;
+  renderEmpGrid();
+}
+
+function empFilter(q){
+  empQ=q;
+  const inp=document.getElementById('empSearchInput');if(inp&&inp.value!==q)inp.value=q;
+  const cb=document.getElementById('empClearBtn');if(cb)cb.style.display=q?'inline-flex':'none';
+  renderEmpGrid();
+}
+
+function renderEmpGrid(){
+  const q=empQ.toLowerCase().trim();
+  const filt=q?employers.filter(e=>[e.name,e.contact_person,e.phone,e.address,e.note,String(e.id||'')].some(v=>v&&String(v).toLowerCase().includes(q))):employers;
+  const rc=document.getElementById('empResultCount');
+  if(rc)rc.textContent=q?T('empFoundFmt').replace('{n}',filt.length):'';
+  const grid=document.getElementById('empGrid');if(!grid)return;
+  if(!filt.length){
+    grid.innerHTML=q
+      ?`<div style="color:var(--g5);font-size:13px;padding:50px;text-align:center;grid-column:1/-1"><div style="font-size:36px;opacity:.3;margin-bottom:8px">🔍</div>${T('empNoResult')}</div>`
+      :`<div style="color:var(--g5);font-size:13px;padding:40px;text-align:center;grid-column:1/-1">${T('empNone')}<br><button class="btn btn-p btn-sm" style="margin-top:12px" onclick="openAddEmp()">${T('empAdd')}</button></div>`;
+    return;
+  }
+  grid.innerHTML=filt.map(e=>{
+    const cnt=customers.filter(c=>c.employer_id===e.id).length;
+    const alrt=customers.filter(c=>c.employer_id===e.id&&isAlert(c)).length;
+    return`<div class="emp-card" onclick="openEmpDet(${e.id})">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:24px">🏢</div>
+        ${alrt>0?`<span class="eb eb-u">${alrt} ${T('empUrgent')}</span>`:''}
+      </div>
+      <div style="font-weight:700;font-size:14px;color:var(--g9);margin-bottom:4px">${esc(e.name)}</div>
+      ${e.business_type?`<div style="font-size:11px;color:var(--g5);margin-bottom:4px">${esc(e.business_type)}</div>`:''}
+      ${e.phone||e.contact_person?`<div style="font-size:11px;color:var(--g5);margin-bottom:6px">${e.phone?'📞 '+esc(e.phone):''}${e.phone&&e.contact_person?' &nbsp;·&nbsp; ':''}${e.contact_person?'👤 '+esc(e.contact_person):''}</div>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--g1)">
+        <span style="font-size:12px;color:var(--g5)">${T('empWorkers')}</span>
+        <span style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--p)">${cnt}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function openEmpDet(id){
   const e=employers.find(x=>x.id===id);if(!e)return;
   const empc=customers.filter(c=>c.employer_id===id);const alrt=empc.filter(isAlert);
-  const html=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--g2)"><div style="font-size:36px">🏢</div><div><div style="font-size:20px;font-weight:800">${esc(e.name)}</div>${e.business_type?`<div style="font-size:12px;color:var(--g5)">${esc(e.business_type)}</div>`:''}</div><div style="margin-left:auto;display:flex;gap:8px"><span style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--p)">${empc.length}</span><span style="font-size:11px;color:var(--g5);align-self:flex-end;margin-bottom:4px">คน</span>${alrt.length>0?`<span class="eb eb-u" style="align-self:center">${alrt.length} ด่วน</span>`:''}</div></div>
-  <div class="dg4"><div class="df"><div class="dfl">เบอร์โทร</div><div class="dfv">${esc(e.phone)||'—'}</div></div><div class="df"><div class="dfl">ผู้ติดต่อ</div><div class="dfv">${esc(e.contact_person)||'—'}</div></div><div class="df"><div class="dfl">ที่อยู่</div><div class="dfv">${esc(e.address)||'—'}</div></div></div>
-  <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">รายชื่อแรงงาน</div>
-  ${empc.length?`<div class="twrap"><table><thead><tr><th>ชื่อ</th><th>สัญชาติ</th><th>สถานะ</th><th>90วัน</th><th>VISA/WP</th></tr></thead><tbody>${empc.map(c=>{const d90=du(c.next_90);const dvw=Math.min(...[c.exp_visa,c.exp_wp].filter(Boolean).map(du).filter(d=>d!==null),Infinity);return`<tr onclick="document.getElementById('empDetModal').style.display='none';openDetail(${c.id})" style="cursor:pointer"><td style="font-weight:600;font-size:12px">${esc(c.name)}</td><td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td><td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 7px;border-radius:20px">${c.work_status||'—'}</span></td><td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:'—'}</td><td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:'—'}</td></tr>`;}).join('')}</tbody></table></div>`:'<div style="color:var(--g5);font-size:13px;text-align:center;padding:20px">ยังไม่มีแรงงาน</div>'}`;
+  const html=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--g2)"><div style="font-size:36px">🏢</div><div><div style="font-size:20px;font-weight:800">${esc(e.name)}</div>${e.business_type?`<div style="font-size:12px;color:var(--g5)">${esc(e.business_type)}</div>`:''}</div><div style="margin-left:auto;display:flex;gap:8px"><span style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--p)">${empc.length}</span><span style="font-size:11px;color:var(--g5);align-self:flex-end;margin-bottom:4px">${T('dashPerson')}</span>${alrt.length>0?`<span class="eb eb-u" style="align-self:center">${alrt.length} ${T('empUrgent')}</span>`:''}</div></div>
+  <div class="dg4"><div class="df"><div class="dfl">${T('empDetPhone')}</div><div class="dfv">${esc(e.phone)||'—'}</div></div><div class="df"><div class="dfl">${T('empDetContact')}</div><div class="dfv">${esc(e.contact_person)||'—'}</div></div><div class="df"><div class="dfl">${T('empDetAddr')}</div><div class="dfv">${esc(e.address)||'—'}</div></div></div>
+  <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('empDetWorkerList')}</div>
+  ${empc.length?`<div class="twrap"><table><thead><tr><th>${T('empTblName')}</th><th>${T('empTblNat')}</th><th>${T('empTblStatus')}</th><th>${T('day90')}</th><th>VISA/WP</th></tr></thead><tbody>${empc.map(c=>{const d90=du(c.next_90);const dvw=Math.min(...[c.exp_visa,c.exp_wp].filter(Boolean).map(du).filter(d=>d!==null),Infinity);return`<tr onclick="document.getElementById('empDetModal').style.display='none';openDetail(${c.id})" style="cursor:pointer"><td style="font-weight:600;font-size:12px">${esc(c.name)}</td><td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td><td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 7px;border-radius:20px">${wsT(c.work_status||'')}</span></td><td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:'—'}</td><td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:'—'}</td></tr>`;}).join('')}</tbody></table></div>`:`<div style="color:var(--g5);font-size:13px;text-align:center;padding:20px">${T('empDetNoWorker')}</div>`}`;
   let m=document.getElementById('empDetModal');
-  if(!m){m=document.createElement('div');m.id='empDetModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};m.innerHTML=`<div class="mb mb-lg" onclick="event.stopPropagation()"><div class="mh"><div class="mt" id="empDetTitle"></div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" onclick="openEditEmp(${id})">✏️ แก้ไข</button><button class="xbtn" onclick="document.getElementById('empDetModal').style.display='none'">×</button></div></div><div class="mbody" id="empDetBody"></div></div>`;document.body.appendChild(m);}
-  document.getElementById('empDetTitle').textContent=e.name;document.getElementById('empDetBody').innerHTML=html;m.style.display='flex';
+  if(!m){m=document.createElement('div');m.id='empDetModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};m.innerHTML=`<div class="mb mb-lg" onclick="event.stopPropagation()"><div class="mh"><div class="mt" id="empDetTitle"></div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" id="empDetEditBtn" onclick="openEditEmp(${id})">${T('btnEdit')}</button><button class="xbtn" onclick="document.getElementById('empDetModal').style.display='none'">×</button></div></div><div class="mbody" id="empDetBody"></div></div>`;document.body.appendChild(m);}
+  document.getElementById('empDetTitle').textContent=e.name;document.getElementById('empDetBody').innerHTML=html;
+  // Update edit button text and ID in case modal was reused
+  const edb=document.getElementById('empDetEditBtn');if(edb){edb.textContent=T('btnEdit');edb.onclick=()=>openEditEmp(id);}
+  m.style.display='flex';
 }
 
-function openAddEmp(){editEid=null;['name','biz','phone','contact','addr','note'].forEach(f=>{const el=document.getElementById('ef_'+f);if(el)el.value='';});document.getElementById('empMT').textContent='เพิ่มนายจ้าง';document.getElementById('empModal').style.display='flex';}
-function openEditEmp(id){editEid=id;const e=employers.find(x=>x.id===id);if(!e)return;document.getElementById('ef_name').value=e.name||'';document.getElementById('ef_biz').value=e.business_type||'';document.getElementById('ef_phone').value=e.phone||'';document.getElementById('ef_contact').value=e.contact_person||'';document.getElementById('ef_addr').value=e.address||'';document.getElementById('ef_note').value=e.note||'';document.getElementById('empMT').textContent='แก้ไขนายจ้าง';document.getElementById('empModal').style.display='flex';}
+function openAddEmp(){editEid=null;['name','biz','phone','contact','addr','note'].forEach(f=>{const el=document.getElementById('ef_'+f);if(el)el.value='';});document.getElementById('empMT').textContent=T('empModalAdd');document.getElementById('empModal').style.display='flex';}
+function openEditEmp(id){editEid=id;const e=employers.find(x=>x.id===id);if(!e)return;document.getElementById('ef_name').value=e.name||'';document.getElementById('ef_biz').value=e.business_type||'';document.getElementById('ef_phone').value=e.phone||'';document.getElementById('ef_contact').value=e.contact_person||'';document.getElementById('ef_addr').value=e.address||'';document.getElementById('ef_note').value=e.note||'';document.getElementById('empMT').textContent=T('empModalEdit');document.getElementById('empModal').style.display='flex';}
 async function saveEmployer(){
-  const name=document.getElementById('ef_name').value.trim();if(!name){toast('กรุณากรอกชื่อนายจ้าง','err');return;}
+  const name=document.getElementById('ef_name').value.trim();if(!name){toast(T('errEmpName'),'err');return;}
   const data={name,business_type:document.getElementById('ef_biz').value.trim(),phone:document.getElementById('ef_phone').value.trim(),contact_person:document.getElementById('ef_contact').value.trim(),address:document.getElementById('ef_addr').value.trim(),note:document.getElementById('ef_note').value.trim(),updated_at:new Date().toISOString()};
-  try{if(editEid){await dbPatch('employers',editEid,data);employers=employers.map(e=>e.id===editEid?{...e,...data}:e);toast('บันทึกแล้ว');}else{const r=await dbPost('employers',data);if(r&&r[0])employers.push(r[0]);toast('เพิ่มนายจ้างแล้ว');}document.getElementById('empModal').style.display='none';renderEmployers();fillSelects();}catch(e){toast('เกิดข้อผิดพลาด','err');}
+  try{if(editEid){await dbPatch('employers',editEid,data);employers=employers.map(e=>e.id===editEid?{...e,...data}:e);toast(T('toastSaved'));}else{const r=await dbPost('employers',data);if(r&&r[0])employers.push(r[0]);toast(T('toastEmpAdded'));}document.getElementById('empModal').style.display='none';renderEmployers();fillSelects();}catch(e){toast(T('toastError'),'err');}
 }
 
 function doFilter(){
@@ -1503,7 +1988,8 @@ function doFilter(){
   const nat=document.getElementById('qnat')?.value||'';const ct=document.getElementById('qct')?.value||'';
   const ws=document.getElementById('qws')?.value||'';const grp=document.getElementById('qgrp')?.value||'';const br=document.getElementById('qbr')?.value||'';
   filtered=customers.filter(c=>{
-    const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no].some(v=>v&&v.toLowerCase().includes(q))||(c.employer_id&&empN(c.employer_id).toLowerCase().includes(q));
+    const emp2=c.employer_id?employers.find(e=>e.id===c.employer_id):null;
+    const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
     return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br));
   });
   // Sort A-Z by name
@@ -1534,14 +2020,14 @@ function renderTable(){
       <td style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.employer_id?esc(empN(c.employer_id)):'<span style="color:var(--g4)">—</span>'}</td>
       <td>${c.group_id?`<span class="gb">${esc(grpN(c.group_id))}</span>`:'<span style="color:var(--g4);font-size:11px">—</span>'}</td>
       <td style="max-width:110px">${svcs}${ex}</td>
-      <td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700">${c.work_status||'รับเรื่อง'}</span></td>
+      <td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700">${wsT(c.work_status||'รับเรื่อง')}</span></td>
       <td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:'<span style="color:var(--g4);font-size:11px">—</span>'}</td>
       <td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:'<span style="color:var(--g4);font-size:11px">—</span>'}</td>
       <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})" style="font-size:11px">✏️</button><button class="bic" onclick="delCust(${c.id})" style="font-size:11px;color:var(--red)">🗑️</button></div></td>
     </tr>`;
   }).join('');
   const pages=Math.ceil(total/PG);const ss=(curPage-1)*PG+1,ee=Math.min(curPage*PG,total);
-  document.getElementById('pag').innerHTML=`<span>แสดง ${total?ss:0}–${ee} จาก ${total}</span><div class="pbtns"><button class="pb" onclick="goPage(${curPage-1})" ${curPage<=1?'disabled':''}>‹</button>${Array.from({length:Math.min(pages,5)},(_,i)=>{const p=Math.max(1,Math.min(curPage-2,pages-4))+i;return`<button class="pb ${p===curPage?'on':''}" onclick="goPage(${p})">${p}</button>`;}).join('')}<button class="pb" onclick="goPage(${curPage+1})" ${curPage>=pages?'disabled':''}>›</button></div>`;
+  document.getElementById('pag').innerHTML=`<span>${T('pagShow')} ${total?ss:0}–${ee} ${T('pagFrom')} ${total}</span><div class="pbtns"><button class="pb" onclick="goPage(${curPage-1})" ${curPage<=1?'disabled':''}>‹</button>${Array.from({length:Math.min(pages,5)},(_,i)=>{const p=Math.max(1,Math.min(curPage-2,pages-4))+i;return`<button class="pb ${p===curPage?'on':''}" onclick="goPage(${p})">${p}</button>`;}).join('')}<button class="pb" onclick="goPage(${curPage+1})" ${curPage>=pages?'disabled':''}>›</button></div>`;
 }
 function goPage(p){const pages=Math.ceil(filtered.length/PG);if(p<1||p>pages)return;curPage=p;renderTable();}
 
@@ -1556,14 +2042,14 @@ function checkDup(){
 }
 
 function fillSelects(){
-  const fg=document.getElementById('f_grp');if(fg)fg.innerHTML='<option value="">-- ไม่ระบุ --</option>'+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
-  const fb=document.getElementById('f_branch');if(fb)fb.innerHTML='<option value="">-- ไม่ระบุ --</option>'+branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
-  const fe=document.getElementById('f_empId');if(fe)fe.innerHTML='<option value="">-- เลือกหรือกรอกใหม่ --</option>'+employers.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
-  const fw=document.getElementById('f_ws');if(fw)fw.innerHTML=WS.map(s=>`<option value="${s}">${s}</option>`).join('');
-  const qws=document.getElementById('qws');if(qws)qws.innerHTML='<option value="">สถานะทั้งหมด</option>'+WS.map(s=>`<option value="${s}">${s}</option>`).join('');
-  const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.innerHTML='<option value="">กลุ่มทั้งหมด</option>'+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
-  const qbr=document.getElementById('qbr');if(qbr)qbr.innerHTML='<option value="">สาขาทั้งหมด</option>'+branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
-  const tls=document.getElementById('tlf_status');if(tls)tls.innerHTML=WS.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const fg=document.getElementById('f_grp');if(fg)fg.innerHTML=`<option value="">${T('fillNoSpec')}</option>`+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
+  const fb=document.getElementById('f_branch');if(fb)fb.innerHTML=`<option value="">${T('fillNoSpec')}</option>`+branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  const fe=document.getElementById('f_empId');if(fe)fe.innerHTML=`<option value="">${T('fillSelectNew')}</option>`+employers.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  const fw=document.getElementById('f_ws');if(fw)fw.innerHTML=WS.map(s=>`<option value="${s}">${wsT(s)}</option>`).join('');
+  const qws=document.getElementById('qws');if(qws)qws.innerHTML=`<option value="">${T('fillAllStatus')}</option>`+WS.map(s=>`<option value="${s}">${wsT(s)}</option>`).join('');
+  const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.innerHTML=`<option value="">${T('fillAllGroup')}</option>`+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
+  const qbr=document.getElementById('qbr');if(qbr)qbr.innerHTML=`<option value="">${T('fillAllBranch')}</option>`+branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  const tls=document.getElementById('tlf_status');if(tls)tls.innerHTML=WS.map(s=>`<option value="${s}">${wsT(s)}</option>`).join('');
 }
 function empSelected(){const id=document.getElementById('f_empId').value;if(id){const e=employers.find(x=>x.id===parseInt(id));if(e){document.getElementById('f_emp').value=e.name;document.getElementById('f_biz').value=e.business_type||'';document.getElementById('f_ephon').value=e.phone||'';document.getElementById('f_addr').value=e.address||'';}}}
 
@@ -1688,43 +2174,43 @@ async function openDetail(id){
       ${c.name_th?`<div style="font-size:13px;color:var(--g5);margin-top:2px">${esc(c.name_th)}</div>`:''}
       <div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
         <span class="nb ${NC[c.nationality]||'nb-ot'}">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span>
-        <span class="${c.customer_type==='company'?'ct-comp':'ct-free'}">${c.customer_type==='company'?'🏢 ลูกจ้างบริษัท':'🧑 ไม่มีนายจ้าง'}</span>
-        <span class="${wsC(c.work_status)}">${c.work_status||'รับเรื่อง'}</span>
+        <span class="${c.customer_type==='company'?'ct-comp':'ct-free'}">${c.customer_type==='company'?T('detCustComp'):T('detCustFree')}</span>
+        <span class="${wsC(c.work_status)}">${wsT(c.work_status||'รับเรื่อง')}</span>
         ${c.group_id?`<span class="gb">${esc(grpN(c.group_id))}</span>`:''}
       </div>
       <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">${(c.services||[]).map(s=>`<span class="xb ${SC[s]||'xb-ot'}">${s}</span>`).join('')}</div>
     </div>
-    <button class="btn btn-p btn-sm" onclick="openTLModal(${c.id})">📋 อัปเดตสถานะ</button>
+    <button class="btn btn-p btn-sm" onclick="openTLModal(${c.id})">${T('updateStatus')}</button>
   </div>
   <div style="margin-bottom:16px">
-    <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">🗂️ Timeline สถานะงาน</div>
-    <div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${s}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div>
+    <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('detTimeline')}</div>
+    <div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${wsT(s)}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div>
   </div>
   <div class="dg4">
-    <div class="df"><div class="dfl">นายจ้าง</div><div class="dfv">${c.employer_id?esc(empN(c.employer_id)):'ไม่มีนายจ้าง'}</div></div>
-    <div class="df"><div class="dfl">เบอร์โทร</div><div class="dfv">${esc(c.phone||'—')}</div></div>
-    <div class="df"><div class="dfl">เลขพาสปอร์ต</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.passport_no||'—')}</div></div>
-    <div class="df"><div class="dfl">เลขต่างด้าว</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.alien_id||'—')}</div></div>
-    <div class="df"><div class="dfl">เลขคำขอ WP</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.wp_no||'—')}</div></div>
-    <div class="df"><div class="dfl">สาขา</div><div class="dfv">${c.branch_id?esc(brN(c.branch_id)):'—'}</div></div>
+    <div class="df"><div class="dfl">${T('detBoss')}</div><div class="dfv">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div>
+    <div class="df"><div class="dfl">${T('detPhone')}</div><div class="dfv">${esc(c.phone||'—')}</div></div>
+    <div class="df"><div class="dfl">${T('detPassport')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.passport_no||'—')}</div></div>
+    <div class="df"><div class="dfl">${T('detAlien')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.alien_id||'—')}</div></div>
+    <div class="df"><div class="dfl">${T('detWP')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.wp_no||'—')}</div></div>
+    <div class="df"><div class="dfl">${T('detBranch')}</div><div class="dfv">${c.branch_id?esc(brN(c.branch_id)):'—'}</div></div>
   </div>
   <div class="dg4" style="margin-bottom:14px">
-    <div class="df"><div class="dfl">คนรับเคส</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div>
-    <div class="df"><div class="dfl">คนดูแลเอกสาร</div><div class="dfv">${esc(c.staff_document||'—')}</div></div>
-    <div class="df"><div class="dfl">คนปิดงาน</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div>
+    <div class="df"><div class="dfl">${T('detReceiver')}</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div>
+    <div class="df"><div class="dfl">${T('detDocStaff')}</div><div class="dfv">${esc(c.staff_document||'—')}</div></div>
+    <div class="df"><div class="dfl">${T('detCloser')}</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div>
   </div>
-  ${exps.length?`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📅 วันหมดอายุ</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
+  ${exps.length?`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
   <div style="margin-bottom:16px">
-    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">💰 การเงิน</div>
+    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detFinance')}</div>
     <div class="pay-sum">
-      <div class="pay-box"><div class="pay-num" style="color:var(--g9)">${Number(c.fee_total||0).toLocaleString()}</div><div class="pay-lbl">ค่าบริการ</div></div>
-      <div class="pay-box"><div class="pay-num" style="color:var(--grn)">${Number(c.fee_paid||0).toLocaleString()}</div><div class="pay-lbl">ชำระแล้ว</div></div>
-      <div class="pay-box"><div class="pay-num" style="color:${c.fee_due>0?'var(--red)':'var(--grn)'}">${Number(c.fee_due||0).toLocaleString()}</div><div class="pay-lbl">ค้างชำระ</div></div>
-      <div class="pay-box"><div class="pay-num" style="font-size:13px">${c.pay_status==='paid'?'✅ ครบ':c.pay_status==='partial'?'⚠️ บางส่วน':c.pay_status==='unpaid'?'❌ ยังไม่ได้':'—'}</div><div class="pay-lbl">สถานะ</div></div>
+      <div class="pay-box"><div class="pay-num" style="color:var(--g9)">${Number(c.fee_total||0).toLocaleString()}</div><div class="pay-lbl">${T('detFeeLabel')}</div></div>
+      <div class="pay-box"><div class="pay-num" style="color:var(--grn)">${Number(c.fee_paid||0).toLocaleString()}</div><div class="pay-lbl">${T('detPaidLabel')}</div></div>
+      <div class="pay-box"><div class="pay-num" style="color:${c.fee_due>0?'var(--red)':'var(--grn)'}">${Number(c.fee_due||0).toLocaleString()}</div><div class="pay-lbl">${T('detDueLabel')}</div></div>
+      <div class="pay-box"><div class="pay-num" style="font-size:13px">${{paid:T('payFull'),partial:T('payPart'),unpaid:T('payNo')}[c.pay_status]||'—'}</div><div class="pay-lbl">${T('detPayStatus')}</div></div>
     </div>
   </div>
   ${docs.length?`<div style="margin-bottom:16px">
-    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📎 เอกสารแนบ (${docs.length} ไฟล์)</div>
+    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detDocs')} (${docs.length} ${T('detFiles')})</div>
     <div class="mdoc-grid">${docs.map(d=>{
       const isPdf=d.file_type==='application/pdf';
       const thumb=isPdf
@@ -1734,11 +2220,11 @@ async function openDetail(id){
     }).join('')}</div>
   </div>`:''}
   <div style="margin-bottom:16px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">📞 ประวัติการติดต่อ</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">+ บันทึก</button></div>
-    ${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${l.contact_type==='call'?'📞 โทรศัพท์':l.contact_type==='line'?'💬 LINE':l.contact_type==='walk-in'?'🚶 Walk-in':'📌 อื่นๆ'}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):'<div style="color:var(--g5);font-size:12px;padding:8px 0">ยังไม่มีประวัติ</div>'}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>
+    ${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}
   </div>
-  ${tl.length?`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 ประวัติสถานะ</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`:''}
-  <div style="font-size:11px;color:var(--g5);text-align:right;margin-top:8px">อัปเดต: ${c.updated_at?new Date(c.updated_at).toLocaleString('th-TH'):'—'}</div>`;
+  ${tl.length?`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`:''}
+  <div style="font-size:11px;color:var(--g5);text-align:right;margin-top:8px">${T('detUpdated')}: ${c.updated_at?new Date(c.updated_at).toLocaleString('th-TH'):'—'}</div>`;
   document.getElementById('dModal').style.display='flex';
 }
 function editFromDetail(){document.getElementById('dModal').style.display='none';openEdit(detId);}
@@ -1756,9 +2242,9 @@ async function saveTL(){
 }
 
 function renderGroups(){
-  document.getElementById('grpContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">จัดการกลุ่มงาน</div><button class="btn btn-p btn-sm" onclick="openAddGrp()">+ เพิ่มกลุ่ม</button></div>
-  ${groups.length?`<div style="display:flex;flex-direction:column;gap:8px">${groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div style="background:#fff;border:1.5px solid var(--g2);border-radius:var(--rl);padding:13px 16px;display:flex;align-items:center;gap:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><div style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0"></div><div style="flex:1;font-weight:600;font-size:14px">${esc(g.name)}</div>${g.description?`<div style="font-size:12px;color:var(--g5)">${esc(g.description)}</div>`:''}<div style="font-size:12px;font-family:var(--mono);color:var(--g5)">${cnt} คน</div><button class="bic" onclick="openEditGrp(${g.id})" style="font-size:12px">✏️</button><button class="bic" onclick="delGrp(${g.id})" style="font-size:12px;color:var(--red)">🗑️</button></div>`;}).join('')}</div>`:'<div style="text-align:center;padding:30px;color:var(--g5);background:var(--g0);border-radius:var(--r)">ยังไม่มีกลุ่ม กด "+ เพิ่มกลุ่ม"</div>'}
-  <div style="margin-top:12px;padding:10px 13px;background:var(--pp);border-radius:var(--r);font-size:12px;color:var(--pd)">💡 กลุ่มช่วยแบ่งประเภทงาน เช่น มติ 11, มติ 24, MOU</div>`;
+  document.getElementById('grpContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">${T('grpTitle')}</div><button class="btn btn-p btn-sm" onclick="openAddGrp()">${T('grpAdd')}</button></div>
+  ${groups.length?`<div style="display:flex;flex-direction:column;gap:8px">${groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div style="background:#fff;border:1.5px solid var(--g2);border-radius:var(--rl);padding:13px 16px;display:flex;align-items:center;gap:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><div style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0"></div><div style="flex:1;font-weight:600;font-size:14px">${esc(g.name)}</div>${g.description?`<div style="font-size:12px;color:var(--g5)">${esc(g.description)}</div>`:''}<div style="font-size:12px;font-family:var(--mono);color:var(--g5)">${cnt} ${T('grpPerson')}</div><button class="bic" onclick="openEditGrp(${g.id})" style="font-size:12px">✏️</button><button class="bic" onclick="delGrp(${g.id})" style="font-size:12px;color:var(--red)">🗑️</button></div>`;}).join('')}</div>`:`<div style="text-align:center;padding:30px;color:var(--g5);background:var(--g0);border-radius:var(--r)">${T('grpNone')}</div>`}
+  <div style="margin-top:12px;padding:10px 13px;background:var(--pp);border-radius:var(--r);font-size:12px;color:var(--pd)">${T('grpTip')}</div>`;
 }
 function openAddGrp(){editGid=null;document.getElementById('gf_name').value='';document.getElementById('gf_desc').value='';document.getElementById('grpMT').textContent='เพิ่มกลุ่ม';document.getElementById('grpModal').style.display='flex';}
 function openEditGrp(id){editGid=id;const g=groups.find(x=>x.id===id);if(!g)return;document.getElementById('gf_name').value=g.name;document.getElementById('gf_desc').value=g.description||'';document.getElementById('grpMT').textContent='แก้ไขกลุ่ม';document.getElementById('grpModal').style.display='flex';}
@@ -1849,15 +2335,15 @@ async function doImport(){
 }
 
 function renderSettings(){
-  const items=[{k:'passport',l:'พาสปอร์ต'},{k:'visa',l:'VISA'},{k:'wp',l:'Work Permit'},{k:'next90',l:'รายงาน 90 วัน'},{k:'mou',l:'MOU'}];
-  document.getElementById('settingsContent').innerHTML=items.map(it=>`<div class="sr"><div><div style="font-size:13px;font-weight:700">${it.l}</div><div style="font-size:12px;color:var(--g5);margin-top:2px">แจ้งเตือนล่วงหน้า</div></div><div style="display:flex;align-items:center;gap:6px"><input class="si2" type="number" min="1" max="365" value="${settings[it.k]}" onchange="setSetting('${it.k}',this.value)"><span style="font-size:12px;color:var(--g5)">วัน</span></div></div>`).join('');
+  const items=[{k:'passport',l:T('expPassport')},{k:'visa',l:T('expVisa')},{k:'wp',l:T('expWP')},{k:'next90',l:T('exp90')},{k:'mou',l:T('expMOU')}];
+  document.getElementById('settingsContent').innerHTML=items.map(it=>`<div class="sr"><div><div style="font-size:13px;font-weight:700">${it.l}</div><div style="font-size:12px;color:var(--g5);margin-top:2px">${T('settingsNotifyBefore')}</div></div><div style="display:flex;align-items:center;gap:6px"><input class="si2" type="number" min="1" max="365" value="${settings[it.k]}" onchange="setSetting('${it.k}',this.value)"><span style="font-size:12px;color:var(--g5)">${T('settingsDays')}</span></div></div>`).join('');
 }
 function setSetting(k,v){settings[k]=parseInt(v)||30;localStorage.setItem('crm_settings',JSON.stringify(settings));toast('บันทึกการตั้งค่าแล้ว');}
 
 function renderUsers(){
-  document.getElementById('usersContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">จัดการผู้ใช้งาน</div><button class="btn btn-p btn-sm" onclick="openAddUser()">+ เพิ่มผู้ใช้</button></div>
-  <div class="twrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>
-  ${appUsers.map(u=>{const roleLbl=u.role==='admin'?'Admin':'Staff';const roleCls=u.role==='admin'?'sb-act':'sb-prc';return`<tr><td><strong>${esc(u.username)}</strong>${u.id===curUser.id?'<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">คุณ</span>':''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${roleCls}">${roleLbl}</span></td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})" style="font-size:12px">✏️</button>${u.id!==curUser.id?`<button class="bic" onclick="delUser(${u.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div></td></tr>`;}).join('')}
+  document.getElementById('usersContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">${T('usersTitle')}</div><button class="btn btn-p btn-sm" onclick="openAddUser()">${T('usersAdd')}</button></div>
+  <div class="twrap"><table><thead><tr><th>${T('usersTblUser')}</th><th>${T('usersTblName')}</th><th>${T('usersTblRole')}</th><th>${T('usersTblManage')}</th></tr></thead><tbody>
+  ${appUsers.map(u=>{const roleLbl=u.role==='admin'?'Admin':'Staff';const roleCls=u.role==='admin'?'sb-act':'sb-prc';return`<tr><td><strong>${esc(u.username)}</strong>${u.id===curUser.id?`<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">${T('usersYou')}</span>`:''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${roleCls}">${roleLbl}</span></td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})" style="font-size:12px">✏️</button>${u.id!==curUser.id?`<button class="bic" onclick="delUser(${u.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div></td></tr>`;}).join('')}
   </tbody></table></div>`;
 }
 function openAddUser(){
@@ -1981,7 +2467,7 @@ async function delUser(id){if(!confirm('ลบผู้ใช้นี้?'))ret
 // ===== SEC-D: SECURITY LOG VIEW =====
 function renderSecLog(){
   if(curUser?.role!=='admin'){
-    document.getElementById('seclogContent').innerHTML='<div style="padding:60px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์เข้าถึงหน้านี้</div>';
+    document.getElementById('seclogContent').innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccess')}</div>`;
     return;
   }
   const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
@@ -1991,29 +2477,29 @@ function renderSecLog(){
     <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:14px 16px;margin-bottom:14px">
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">วันที่เริ่ม</div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${T('seclogDateFrom')}</div>
           <input type="date" id="slFrom" value="${week}" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
         </div>
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">ถึงวันที่</div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${T('seclogDateTo')}</div>
           <input type="date" id="slTo" value="${today}" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
         </div>
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">ชื่อผู้ใช้</div>
-          <input type="text" id="slUser" placeholder="ทั้งหมด" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff;width:130px">
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${T('seclogUser')}</div>
+          <input type="text" id="slUser" placeholder="${T('seclogAllPH')}" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff;width:130px">
         </div>
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">สถานะ</div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${T('seclogStatus')}</div>
           <select id="slStatus" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
-            <option value="">ทั้งหมด</option>
-            <option value="success">สำเร็จ</option>
-            <option value="failed">ล้มเหลว</option>
+            <option value="">${T('seclogAllPH')}</option>
+            <option value="success">${T('seclogSuccess')}</option>
+            <option value="failed">${T('seclogFailed')}</option>
           </select>
         </div>
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">อุปกรณ์</div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${T('seclogDevice')}</div>
           <select id="slDevice" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff">
-            <option value="">ทั้งหมด</option>
+            <option value="">${T('seclogAllPH')}</option>
             <option value="desktop">Desktop</option>
             <option value="mobile">Mobile</option>
             <option value="tablet">Tablet</option>
@@ -2021,10 +2507,10 @@ function renderSecLog(){
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:1px">
           <input type="checkbox" id="slSusp" style="width:15px;height:15px;cursor:pointer">
-          <label for="slSusp" style="font-size:13px;color:var(--g7);cursor:pointer;font-weight:500">น่าสงสัยเท่านั้น</label>
+          <label for="slSusp" style="font-size:13px;color:var(--g7);cursor:pointer;font-weight:500">${T('seclogSuspOnly')}</label>
         </div>
-        <button onclick="secLogFilter()" class="btn btn-p btn-sm">ค้นหา</button>
-        <button onclick="secLogClear()" class="btn btn-g btn-sm">ล้าง</button>
+        <button onclick="secLogFilter()" class="btn btn-p btn-sm">${T('seclogSearch')}</button>
+        <button onclick="secLogClear()" class="btn btn-g btn-sm">${T('seclogClear')}</button>
       </div>
     </div>
     <div id="sl_cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
@@ -2040,7 +2526,7 @@ async function secLogLoad(){
   if(cards)cards.innerHTML='';
   // SEC-F-c: direct SELECT ปิดโดย RLS (Option B) — รอ Supabase Auth
   // logLoginActivity INSERT ยังทำงานปกติผ่าน policy anon INSERT
-  wrap.innerHTML='<div style="padding:40px;text-align:center;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:var(--rl)"><div style="font-size:28px;margin-bottom:10px">🔐</div><div style="font-weight:700;color:#92400e;font-size:15px;margin-bottom:8px">ฟีเจอร์นี้อยู่ระหว่างอัปเกรดความปลอดภัย</div><div style="font-size:12px;color:#b45309;line-height:1.7">ระบบ Security Log กำลังอัปเกรดเป็น Supabase Auth<br>การบันทึก Login Activity ยังคงทำงานปกติ<br>เฉพาะหน้าแสดงผลรอการอัปเกรด</div></div>';
+  wrap.innerHTML=`<div style="padding:40px;text-align:center;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:var(--rl)"><div style="font-size:28px;margin-bottom:10px">🔐</div><div style="font-weight:700;color:#92400e;font-size:15px;margin-bottom:8px">${T('seclogUpgrading')}</div><div style="font-size:12px;color:#b45309;line-height:1.7">${T('seclogUpgradeSub')}</div></div>`;
 }
 
 function secLogRender(logs){
@@ -2058,13 +2544,13 @@ function secLogRender(logs){
   const numStyle='font-size:26px;font-weight:800;font-family:var(--mono);margin-bottom:2px;';
   const lblStyle='font-size:11px;color:var(--g5);';
   cards.innerHTML=
-    `<div style="${cardStyle}"><div style="${numStyle}color:var(--g9)">${totalToday}</div><div style="${lblStyle}">Login วันนี้ทั้งหมด</div></div>`+
-    `<div style="${cardStyle}"><div style="${numStyle}color:${failToday>0?'var(--red)':'var(--grn)'}">${failToday}</div><div style="${lblStyle}">ล้มเหลววันนี้</div></div>`+
-    `<div style="${cardStyle}"><div style="${numStyle}color:var(--blu)">${newDev}</div><div style="${lblStyle}">อุปกรณ์ใหม่ (ช่วงเวลาที่เลือก)</div></div>`+
-    `<div style="${cardStyle}"><div style="${numStyle}color:${suspCount>0?'var(--amb)':'var(--grn)'}">${suspCount}</div><div style="${lblStyle}">น่าสงสัย (ช่วงเวลาที่เลือก)</div></div>`;
+    `<div style="${cardStyle}"><div style="${numStyle}color:var(--g9)">${totalToday}</div><div style="${lblStyle}">${T('seclogLoginToday')}</div></div>`+
+    `<div style="${cardStyle}"><div style="${numStyle}color:${failToday>0?'var(--red)':'var(--grn)'}">${failToday}</div><div style="${lblStyle}">${T('seclogFailToday')}</div></div>`+
+    `<div style="${cardStyle}"><div style="${numStyle}color:var(--blu)">${newDev}</div><div style="${lblStyle}">${T('seclogNewDev')}</div></div>`+
+    `<div style="${cardStyle}"><div style="${numStyle}color:${suspCount>0?'var(--amb)':'var(--grn)'}">${suspCount}</div><div style="${lblStyle}">${T('seclogSuspCount')}</div></div>`;
   // ─── Table ───
   if(!logs.length){
-    wrap.innerHTML='<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ไม่พบข้อมูลในช่วงเวลาที่เลือก</div>';
+    wrap.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogNoDataRange')}</div>`;
     return;
   }
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return s;}};
@@ -2075,10 +2561,10 @@ function secLogRender(logs){
     const rowBg=isSusp?'background:#fffbeb;':'';
     const stBg=isSucc?'#dcfce7':isFail?'#fee2e2':'#f3f4f6';
     const stColor=isSucc?'#15803d':isFail?'#dc2626':'#6b7280';
-    const stTxt=isSucc?'สำเร็จ':isFail?'ล้มเหลว':l.login_status||'—';
+    const stTxt=isSucc?T('seclogSuccess'):isFail?T('seclogFailed'):l.login_status||'—';
     const fp=l.device_fingerprint?l.device_fingerprint.slice(0,8)+'…':'—';
-    const reason={wrong_password:'รหัสผ่านผิด',user_not_found:'ไม่มีผู้ใช้',network_error:'ข้อผิดพลาดเครือข่าย',inactive_account:'บัญชีถูกระงับ'}[l.fail_reason]||l.fail_reason||'—';
-    const devType={desktop:'คอมพิวเตอร์',mobile:'มือถือ',tablet:'แท็บเล็ต'}[l.device_type]||l.device_type||'—';
+    const reason=({wrong_password:T('seclogReasonWrong'),user_not_found:T('seclogReasonNoUser'),network_error:T('seclogReasonNetwork'),inactive_account:T('seclogReasonInactive')}[l.fail_reason])||l.fail_reason||'—';
+    const devType=({desktop:T('seclogDevDesktop'),mobile:T('seclogDevMobile'),tablet:T('seclogDevTablet')}[l.device_type])||l.device_type||'—';
     return`<tr style="border-bottom:1px solid var(--g2);${rowBg}">
       <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(l.login_time)}</td>
       <td style="padding:7px 10px;font-size:12px;font-weight:600">${esc(l.username||'—')}</td>
@@ -2089,27 +2575,27 @@ function secLogRender(logs){
       <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(devType)}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(l.browser_name||'—')}</td>
       <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g4)">${esc(fp)}</td>
-      <td style="padding:7px 10px;text-align:center">${isSusp?'<span style="font-size:11px;font-weight:700;color:var(--amb)">ใช่</span>':'<span style="color:var(--g3);font-size:11px">—</span>'}</td>
+      <td style="padding:7px 10px;text-align:center">${isSusp?`<span style="font-size:11px;font-weight:700;color:var(--amb)">${T('seclogSuspYes')}</span>`:'<span style="color:var(--g3);font-size:11px">—</span>'}</td>
     </tr>`;
   }).join('');
   wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
     <div style="padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between">
-      <div style="font-size:13px;font-weight:700;color:var(--g8)">รายการ Login ทั้งหมด</div>
-      <div style="font-size:12px;color:var(--g5)">แสดง ${logs.length} รายการ</div>
+      <div style="font-size:13px;font-weight:700;color:var(--g8)">${T('seclogAllLogs')}</div>
+      <div style="font-size:12px;color:var(--g5)">${T('seclogShowing')} ${logs.length} ${T('seclogItems')}</div>
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;min-width:900px">
         <thead><tr style="background:var(--g0)">
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;white-space:nowrap;border-bottom:1px solid var(--g2)">เวลา Login</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;white-space:nowrap;border-bottom:1px solid var(--g2)">${T('seclogTblTime')}</th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Username</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">ชื่อ-นามสกุล</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">สิทธิ์</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">สถานะ</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">เหตุที่ล้มเหลว</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">อุปกรณ์</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblName')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblRole')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogStatus')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblFail')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogDevice')}</th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Browser</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Fingerprint</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:center;border-bottom:1px solid var(--g2)">น่าสงสัย</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblFP')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:center;border-bottom:1px solid var(--g2)">${T('seclogTblSusp')}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -2243,17 +2729,17 @@ function renderAttendance(){
   const isEmp=curUser?.role!=='admin';
   if(isEmp&&!['checkin','history'].includes(att_curTab))att_curTab='checkin';
   const tabs=[
-    {k:'checkin',   l:'📲 ตอกบัตรเข้า-ออก'},
-    {k:'history',   l:'📋 ประวัติตอกบัตร'},
+    {k:'checkin',   l:T('attTabCheckin')},
+    {k:'history',   l:T('attTabHistory')},
     ...(!isEmp?[
-      {k:'report',       l:'📊 รายงาน'},
-      {k:'employees',    l:'👥 จัดการพนักงาน'},
-      {k:'attsettings',  l:'⚙️ ตั้งค่าเวลา'},
-      {k:'export',       l:'📤 ส่งออก Excel'},
+      {k:'report',       l:T('attTabReport')},
+      {k:'employees',    l:T('attTabEmployees')},
+      {k:'attsettings',  l:T('attTabSettings')},
+      {k:'export',       l:T('attTabExport')},
     ]:[]),
   ];
   document.getElementById('att_content').innerHTML=
-    `<div style="font-size:16px;font-weight:700;margin-bottom:14px">📋 ระบบตอกบัตรพนักงาน</div>
+    `<div style="font-size:16px;font-weight:700;margin-bottom:14px">${T('attTitle')}</div>
      <div class="att-subnav">${tabs.map(t=>`<button class="att-tab${att_curTab===t.k?' att-on':''}" onclick="attGo('${t.k}')">${t.l}</button>`).join('')}</div>
      <div id="att_sub"></div>`;
   attRender(att_curTab);
@@ -2297,23 +2783,23 @@ function attUICheckin(){
   const isEmp=curUser?.role!=='admin';
   const empSection=isEmp
     ?`<div style="text-align:left;margin-bottom:16px;background:var(--pp);border-radius:var(--r);padding:12px 14px">
-        <div style="font-size:10px;font-weight:700;color:var(--pd);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">👤 พนักงาน</div>
-        <div id="att_emp_display" style="font-size:14px;font-weight:700;color:var(--g9)">กำลังโหลด...</div>
+        <div style="font-size:10px;font-weight:700;color:var(--pd);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${T('attEmpLabel')}</div>
+        <div id="att_emp_display" style="font-size:14px;font-weight:700;color:var(--g9)">${T('attLoading')}</div>
       </div>`
     :`<div style="text-align:left;margin-bottom:16px">
-        <label class="fl" style="margin-bottom:6px;display:block">👤 เลือกพนักงาน</label>
+        <label class="fl" style="margin-bottom:6px;display:block">${T('attSelLabel')}</label>
         <select id="att_emp_sel" class="fi" style="width:100%;font-size:13px"
           onchange="attOnEmpChange(this.value)">
-          <option value="">— เลือกพนักงาน —</option>
+          <option value="">${T('attSelEmp')}</option>
         </select>
       </div>`;
   return`<div class="att-checkin-card">
-    <div style="font-size:12px;color:var(--g4);margin-bottom:2px">เวลาปัจจุบัน</div>
+    <div style="font-size:12px;color:var(--g4);margin-bottom:2px">${T('attCurTime')}</div>
     <div class="att-clock" id="att_clock">${timeStr}</div>
     <div class="att-date">${dateStr}</div>
     ${empSection}
-    <button id="att_btn_in"  class="att-btn-in"  onclick="attDoCheckin()">🟢 &nbsp;เข้างาน</button>
-    <button id="att_btn_out" class="att-btn-out" onclick="attDoCheckout()">🔵 &nbsp;ออกงาน</button>
+    <button id="att_btn_in"  class="att-btn-in"  onclick="attDoCheckin()">${T('attBtnIn')}</button>
+    <button id="att_btn_out" class="att-btn-out" onclick="attDoCheckout()">${T('attBtnOut')}</button>
     <div id="att_preview" style="margin-top:16px;text-align:left"></div>
   </div>`;
 }
@@ -2331,40 +2817,40 @@ function attUIHistory(){
   const isEmp=curUser?.role!=='admin';
   return`<div class="twrap">
     <div class="tbar2">
-      <div style="font-size:13px;font-weight:700">ประวัติตอกบัตร${isEmp?'<span style="font-size:11px;font-weight:400;color:var(--g5);margin-left:8px">เฉพาะของคุณ</span>':''}</div>
-      <button class="btn btn-p btn-sm" onclick="attApplyHistoryFilter()">🔍 ค้นหา</button>
+      <div style="font-size:13px;font-weight:700">${T('attHistTitle')}${isEmp?`<span style="font-size:11px;font-weight:400;color:var(--g5);margin-left:8px">${T('attHistMine')}</span>`:''}</div>
+      <button class="btn btn-p btn-sm" onclick="attApplyHistoryFilter()">${T('attHistSearch')}</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 0;align-items:center">
       ${isEmp
         ?`<input id="att_hist_search" type="hidden" value="">
-           <div style="font-size:12px;color:var(--g5);padding:5px 10px;background:var(--g0);border:1px solid var(--g2);border-radius:6px">👤 แสดงเฉพาะประวัติของ ${esc(curUser.full_name||curUser.username)}</div>`
-        :`<input id="att_hist_search" class="si" placeholder="ค้นหาชื่อ/รหัสพนักงาน" style="width:175px">`
+           <div style="font-size:12px;color:var(--g5);padding:5px 10px;background:var(--g0);border:1px solid var(--g2);border-radius:6px">${T('attHistOwn')} ${esc(curUser.full_name||curUser.username)}</div>`
+        :`<input id="att_hist_search" class="si" placeholder="${T('attSearchPH')}" style="width:175px">`
       }
       <input id="att_hist_from" type="date" class="fi" style="width:135px">
-      <span style="color:var(--g6);font-size:13px">ถึง</span>
+      <span style="color:var(--g6);font-size:13px">${T('attHistTo')}</span>
       <input id="att_hist_to" type="date" class="fi" style="width:135px">
       <select id="att_hist_status" class="fi" style="width:140px">
-        <option value="all">ทุกสถานะ</option>
-        <option value="present">✅ ปกติ</option>
-        <option value="late">⚠️ มาสาย</option>
-        <option value="absent">❌ ขาดงาน</option>
-        <option value="missing_checkout">🔴 ไม่รูดออก</option>
-        <option value="outside">📍 นอกพื้นที่</option>
+        <option value="all">${T('attStatAll')}</option>
+        <option value="present">${T('attStatOk')}</option>
+        <option value="late">${T('attStatLate')}</option>
+        <option value="absent">${T('attStatAbsent')}</option>
+        <option value="missing_checkout">${T('attStatNoOut')}</option>
+        <option value="outside">${T('attStatOut')}</option>
       </select>
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
-          <th style="padding:8px 6px;text-align:left;white-space:nowrap">วันที่</th>
-          <th style="padding:8px 6px;text-align:left">พนักงาน</th>
-          <th style="padding:8px 6px;text-align:left">เข้างาน</th>
-          <th style="padding:8px 6px;text-align:left">ออกงาน</th>
-          <th style="padding:8px 6px;text-align:center">ชม.ทำงาน</th>
-          <th style="padding:8px 6px;text-align:center">OT</th>
-          <th style="padding:8px 6px;text-align:center">สถานะ</th>
-          <th style="padding:8px 6px;text-align:center">GPS</th>
+          <th style="padding:8px 6px;text-align:left;white-space:nowrap">${T('attHdrDate')}</th>
+          <th style="padding:8px 6px;text-align:left">${T('attHdrEmp')}</th>
+          <th style="padding:8px 6px;text-align:left">${T('attHdrIn')}</th>
+          <th style="padding:8px 6px;text-align:left">${T('attHdrOut')}</th>
+          <th style="padding:8px 6px;text-align:center">${T('attHdrHrs')}</th>
+          <th style="padding:8px 6px;text-align:center">${T('attHdrOT')}</th>
+          <th style="padding:8px 6px;text-align:center">${T('attHdrStatus')}</th>
+          <th style="padding:8px 6px;text-align:center">${T('attHdrGPS')}</th>
         </tr></thead>
-        <tbody id="att_hist_body"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">กำลังโหลด...</td></tr></tbody>
+        <tbody id="att_hist_body"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">${T('attLoading')}</td></tr></tbody>
       </table>
     </div>
   </div>`;
@@ -2373,10 +2859,10 @@ function attUIHistory(){
 function attUIReport(){
   return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:18px">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-      <div style="font-weight:700;font-size:14px">📊 รายงานมาสาย / OT ประจำเดือน</div>
+      <div style="font-weight:700;font-size:14px">${T('attRptTitle')}</div>
       <div style="display:flex;align-items:center;gap:8px">
         <input id="att_rpt_month" type="month" class="fi" style="width:150px">
-        <button class="btn btn-p btn-sm" onclick="attLoadReport()">ดูรายงาน</button>
+        <button class="btn btn-p btn-sm" onclick="attLoadReport()">${T('attRptView')}</button>
       </div>
     </div>
     <div id="att_rpt_summary" style="margin-bottom:16px"></div>
@@ -2401,7 +2887,7 @@ async function attApplyHistoryFilter(){
   const status=document.getElementById('att_hist_status')?.value||'all';
   const body=document.getElementById('att_hist_body');
   if(!body)return;
-  body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--g5)">กำลังโหลด...</td></tr>';
+  body.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--g5)">${T('attLoading')}</td></tr>`;
   // staff (และ legacy employee) lock query ดูเฉพาะของตัวเอง — admin ดูทุกคน
   const isEmp=curUser?.role!=='admin';
   try{
@@ -2425,15 +2911,15 @@ async function attApplyHistoryFilter(){
 }
 
 function attRenderHistoryRows(logs){
-  if(!logs.length)return'<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">ไม่พบข้อมูลในช่วงที่เลือก</td></tr>';
+  if(!logs.length)return`<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">${T('attNoRecord')}</td></tr>`;
   const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
   const radius=att_branchSettings?.allowed_radius_meter||200;
-  const stMap={present:'✅ ปกติ',late:'⚠️ สาย',absent:'❌ ขาด',half_day:'🌗 ครึ่งวัน',holiday:'🎌 หยุด',leave:'🏖 ลา',outside:'📍 นอกพื้นที่'};
+  const stMap=()=>({present:T('attStPresent'),late:T('attStLate'),absent:T('attStAbsent'),half_day:T('attStHalfDay'),holiday:T('attStHoliday'),leave:T('attStLeave'),outside:T('attStOutside')});
   const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',outside:'#fef9c3'};
   return logs.map(l=>{
     const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',weekday:'short'});
     const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'—';
-    const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):'<span style="color:#dc2626">ไม่รูด</span>';
+    const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):`<span style="color:#dc2626">${T('attNoOut')}</span>`;
     const work=fmtMin(l.total_work_minutes||0);
     const ot=l.ot_minutes>0?`<span style="color:#7c3aed">${fmtMin(l.ot_minutes)}</span>`:'—';
     const late=l.late_minutes>0?`<br><span style="font-size:11px;color:#d97706">สาย ${l.late_minutes}น.</span>`:'';
@@ -2446,7 +2932,7 @@ function attRenderHistoryRows(logs){
       <td style="padding:7px 6px;font-size:12px">${co}</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px">${work}</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px">${ot}</td>
-      <td style="padding:7px 6px;text-align:center"><span style="background:${stBg[l.day_status]||'#f3f4f6'};padding:2px 7px;border-radius:99px;font-size:11px">${stMap[l.day_status]||l.day_status||'—'}</span></td>
+      <td style="padding:7px 6px;text-align:center"><span style="background:${stBg[l.day_status]||'#f3f4f6'};padding:2px 7px;border-radius:99px;font-size:11px">${stMap()[l.day_status]||l.day_status||'—'}</span></td>
       <td style="padding:7px 6px;text-align:center;font-size:12px">${gps}</td>
     </tr>`;
   }).join('');
@@ -2468,7 +2954,7 @@ async function attLoadReport(){
   const to=`${yr}-${mo}-${String(lastDay).padStart(2,'0')}`;
   const summDiv=document.getElementById('att_rpt_summary');
   const tableDiv=document.getElementById('att_rpt_table');
-  if(summDiv)summDiv.innerHTML='<div style="text-align:center;padding:14px;color:var(--g5)">กำลังโหลด...</div>';
+  if(summDiv)summDiv.innerHTML=`<div style="text-align:center;padding:14px;color:var(--g5)">${T('attLoading')}</div>`;
   if(tableDiv)tableDiv.innerHTML='';
   try{
     const logs=await dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=1000`);
@@ -2480,10 +2966,10 @@ async function attLoadReport(){
     const totalOT=arr.reduce((s,l)=>s+(l.ot_minutes||0),0);
     if(summDiv)summDiv.innerHTML=`
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-        <div style="padding:14px;background:#dcfce7;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#15803d">${present}</div><div style="font-size:11px;color:#15803d;font-weight:700">✅ ปกติ</div></div>
-        <div style="padding:14px;background:#fff3e0;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#d97706">${late}</div><div style="font-size:11px;color:#d97706;font-weight:700">⚠️ มาสาย</div></div>
-        <div style="padding:14px;background:#fee2e2;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#dc2626">${absent}</div><div style="font-size:11px;color:#dc2626;font-weight:700">❌ ขาดงาน</div></div>
-        <div style="padding:14px;background:#f3e8ff;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#7c3aed">${fmtMin(totalOT)}</div><div style="font-size:11px;color:#7c3aed;font-weight:700">⏱ OT รวม</div></div>
+        <div style="padding:14px;background:#dcfce7;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#15803d">${present}</div><div style="font-size:11px;color:#15803d;font-weight:700">${T('attRptNormal')}</div></div>
+        <div style="padding:14px;background:#fff3e0;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#d97706">${late}</div><div style="font-size:11px;color:#d97706;font-weight:700">${T('attRptLate')}</div></div>
+        <div style="padding:14px;background:#fee2e2;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#dc2626">${absent}</div><div style="font-size:11px;color:#dc2626;font-weight:700">${T('attRptAbsent')}</div></div>
+        <div style="padding:14px;background:#f3e8ff;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#7c3aed">${fmtMin(totalOT)}</div><div style="font-size:11px;color:#7c3aed;font-weight:700">${T('attRptOT')}</div></div>
       </div>`;
     const byEmp={};
     arr.forEach(l=>{
@@ -2506,15 +2992,15 @@ async function attLoadReport(){
     if(tableDiv)tableDiv.innerHTML=rows?`
       <table style="width:100%;border-collapse:collapse;margin-top:8px">
         <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
-          <th style="padding:8px 6px;text-align:left;font-size:12px">พนักงาน</th>
-          <th style="padding:8px 6px;text-align:center;font-size:12px">วันทำงาน</th>
-          <th style="padding:8px 6px;text-align:center;font-size:12px">สาย</th>
-          <th style="padding:8px 6px;text-align:center;font-size:12px">ขาด</th>
-          <th style="padding:8px 6px;text-align:center;font-size:12px">ชม.รวม</th>
-          <th style="padding:8px 6px;text-align:center;font-size:12px">OT</th>
+          <th style="padding:8px 6px;text-align:left;font-size:12px">${T('attRptTblEmp')}</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attRptTblDays')}</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attRptTblLate')}</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attRptTblAbsent')}</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attRptTblHrs')}</th>
+          <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attHdrOT')}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
-      </table>`:'<div style="text-align:center;padding:20px;color:var(--g5)">ไม่มีข้อมูลในเดือนนี้</div>';
+      </table>`:`<div style="text-align:center;padding:20px;color:var(--g5)">${T('attRptNoData')}</div>`;
   }catch(e){
     if(summDiv)summDiv.innerHTML='<div style="color:#dc2626;text-align:center;padding:10px">โหลดข้อมูลไม่สำเร็จ</div>';
   }
@@ -2523,14 +3009,14 @@ async function attLoadReport(){
 function attUIEmployees(){
   // เฉพาะ admin เท่านั้น — staff ไม่มีสิทธิ์จัดการพนักงาน
   if(curUser?.role!=='admin'){
-    return`<div style="padding:60px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์เข้าถึงหน้านี้</div>`;
+    return`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccess')}</div>`;
   }
   return`<div class="twrap">
     <div class="tbar2">
-      <div style="font-size:13px;font-weight:700">จัดการพนักงาน</div>
-      <button class="btn btn-p btn-sm" onclick="attEmpOpenAdd()">+ เพิ่มพนักงาน</button>
+      <div style="font-size:13px;font-weight:700">${T('attEmpTitle')}</div>
+      <button class="btn btn-p btn-sm" onclick="attEmpOpenAdd()">${T('attEmpAdd')}</button>
     </div>
-    <div id="att_emp_list_wrap"><div style="text-align:center;padding:30px;color:var(--g5)">กำลังโหลด...</div></div>
+    <div id="att_emp_list_wrap"><div style="text-align:center;padding:30px;color:var(--g5)">${T('attLoading')}</div></div>
   </div>`;
 }
 
@@ -2553,23 +3039,23 @@ function attRenderEmployeesList(emps,wrap){
   if(!wrap)wrap=document.getElementById('att_emp_list_wrap');
   if(!wrap)return;
   if(!emps||!emps.length){
-    wrap.innerHTML=attPH('👥','ยังไม่มีข้อมูลพนักงาน','กด + เพิ่มพนักงาน เพื่อเริ่มต้นใช้งานระบบตอกบัตร','');
+    wrap.innerHTML=attPH('👥',T('attEmpNone'),T('attEmpNoneSub'),'');
     return;
   }
   const active=emps.filter(e=>e.status==='active').length;
   wrap.innerHTML=`
-    <div style="font-size:12px;color:var(--g5);margin-bottom:10px">พนักงานทั้งหมด ${emps.length} คน · ใช้งาน ${active} คน · ปิดใช้งาน ${emps.length-active} คน</div>
+    <div style="font-size:12px;color:var(--g5);margin-bottom:10px">${T('attEmpSummTotal')} ${emps.length} ${T('attEmpPerson')} · ${T('attEmpSummActive')} ${active} ${T('attEmpPerson')} · ${T('attEmpSummInactive')} ${emps.length-active} ${T('attEmpPerson')}</div>
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
-        <th style="padding:8px 10px;text-align:left;white-space:nowrap">รหัส</th>
-        <th style="padding:8px 10px;text-align:left">ชื่อ-นามสกุล</th>
-        <th style="padding:8px 10px;text-align:left">ชื่อเล่น</th>
-        <th style="padding:8px 10px;text-align:left">ตำแหน่ง</th>
-        <th style="padding:8px 10px;text-align:left">สาขา</th>
-        <th style="padding:8px 10px;text-align:center;white-space:nowrap">เวลางาน</th>
-        <th style="padding:8px 10px;text-align:center">สถานะ</th>
-        <th style="padding:8px 10px;text-align:center">จัดการ</th>
+        <th style="padding:8px 10px;text-align:left;white-space:nowrap">${T('attEmpTblCode')}</th>
+        <th style="padding:8px 10px;text-align:left">${T('attEmpTblName')}</th>
+        <th style="padding:8px 10px;text-align:left">${T('attEmpTblNick')}</th>
+        <th style="padding:8px 10px;text-align:left">${T('attEmpTblPos')}</th>
+        <th style="padding:8px 10px;text-align:left">${T('attEmpTblBranch')}</th>
+        <th style="padding:8px 10px;text-align:center;white-space:nowrap">${T('attEmpTblTime')}</th>
+        <th style="padding:8px 10px;text-align:center">${T('attHdrStatus')}</th>
+        <th style="padding:8px 10px;text-align:center">${T('attEmpTblManage')}</th>
       </tr></thead>
       <tbody>
       ${emps.map(e=>{
@@ -2583,7 +3069,7 @@ function attRenderEmployeesList(emps,wrap){
           <td style="padding:8px 10px;color:var(--g5)">${esc(e.position||'—')}</td>
           <td style="padding:8px 10px;color:var(--g5)">${esc(e.branch_name||String(e.branch_id||'—'))}</td>
           <td style="padding:8px 10px;text-align:center;font-size:12px;color:var(--g5);white-space:nowrap">${tIn} – ${tOut}</td>
-          <td style="padding:8px 10px;text-align:center"><span class="sb ${isActive?'sb-act':'sb-prc'}">${isActive?'ใช้งาน':'ปิดใช้'}</span></td>
+          <td style="padding:8px 10px;text-align:center"><span class="sb ${isActive?'sb-act':'sb-prc'}">${isActive?T('attEmpActLabel'):T('attEmpInactLabel')}</span></td>
           <td style="padding:8px 10px;text-align:center">
             <div style="display:flex;gap:4px;justify-content:center">
               <button class="bic" onclick="attEmpOpenEdit(${e.id})" title="แก้ไข" style="font-size:12px">✏️</button>
@@ -3347,7 +3833,7 @@ async function attInitCheckinView(){
       const disp=document.getElementById('att_emp_display');
       if(!emp){
         // ไม่พบ mapping → ปิดปุ่ม + แสดง error
-        if(disp)disp.innerHTML='<span style="color:var(--red);font-size:13px;font-weight:600">ไม่พบข้อมูลพนักงานที่ผูกกับบัญชีนี้</span><br><span style="font-size:11px;color:var(--g5);font-weight:400">กรุณาติดต่อผู้ดูแลระบบ</span>';
+        if(disp)disp.innerHTML=`<span style="color:var(--red);font-size:13px;font-weight:600">${T('attEmpNotFound')}</span><br><span style="font-size:11px;color:var(--g5);font-weight:400">${T('attEmpContact')}</span>`;
         attSetBtnState(true); return;
       }
       att_curEmployee=emp;
@@ -3356,16 +3842,16 @@ async function attInitCheckinView(){
       // ─── Admin mode: dropdown เลือกพนักงาน ───
       const sel=document.getElementById('att_emp_sel'); if(!sel)return;
       if(!data.employees.length){
-        sel.innerHTML='<option value="">— ไม่พบข้อมูลพนักงาน (เพิ่มในเมนู จัดการพนักงาน) —</option>'; return;
+        sel.innerHTML=`<option value="">${T('attNoEmp')}</option>`; return;
       }
-      sel.innerHTML='<option value="">— เลือกพนักงาน —</option>'+
+      sel.innerHTML=`<option value="">${T('attSelEmp')}</option>`+
         data.employees.map(e=>`<option value="${e.id}">${esc(e.full_name)} (${esc(e.employee_code||'')})</option>`).join('');
       // ATT-EMP-a: ไม่ auto-select — admin ต้องเลือกเองเสมอ
     }
   }catch(e){
     if(curUser?.role==='admin'){
       const sel=document.getElementById('att_emp_sel');
-      if(sel)sel.innerHTML='<option value="">— โหลดไม่สำเร็จ กรุณารีเฟรช —</option>';
+      if(sel)sel.innerHTML=`<option value="">${T('attLoadFail')}</option>`;
     }
   }
 }
@@ -3707,7 +4193,7 @@ async function attConfirmSave(type){
 // =============================================================
 
 // INIT
-if(checkSess()){showApp();}else{document.getElementById('loginScreen').style.display='flex';}
+if(checkSess()){showApp();}else{document.getElementById('loginScreen').style.display='flex';setLang(curLang);}
 </script>
 </body>
 </html>
