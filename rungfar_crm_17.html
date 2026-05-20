@@ -722,9 +722,13 @@ textarea.fi2{resize:vertical;min-height:65px}
         <div><label class="fl">เบอร์โทร</label><input class="fi2" id="aef_phone" placeholder="0xx-xxx-xxxx" autocomplete="off"></div>
       </div>
       <div class="fgi full"><label class="fl">ตำแหน่ง</label><input class="fi2" id="aef_position" placeholder="ตำแหน่งงาน" autocomplete="off"></div>
-      <div class="fgi full" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
-        <div><label class="fl">สาขา (branch_id)</label><input class="fi2" type="number" id="aef_branch_id" placeholder="1" min="1"></div>
-        <div><label class="fl">ชื่อสาขา</label><input class="fi2" id="aef_branch_name" placeholder="สาขาหลัก" autocomplete="off"></div>
+      <div class="fgi full">
+        <label class="fl">สาขา <span style="font-size:10px;font-weight:400;color:var(--g5)">— เลือกสาขาเพื่อดึงเวลาเริ่มต้น (ยังแก้เองได้)</span></label>
+        <select class="fi2" id="aef_branch_sel" onchange="attEmpBranchChange(this.value)">
+          <option value="">— ไม่ระบุสาขา —</option>
+        </select>
+        <input type="hidden" id="aef_branch_id">
+        <input type="hidden" id="aef_branch_name">
       </div>
       <div class="fgi full" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
         <div><label class="fl">เวลาเข้างาน</label><input class="fi2" id="aef_checkin_time" placeholder="08:30" maxlength="5"></div>
@@ -739,6 +743,29 @@ textarea.fi2{resize:vertical;min-height:65px}
     </div>
   </div>
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attEmpModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attEmpSave()">💾 บันทึก</button></div>
+</div></div>
+
+<!-- MODAL: BRANCH (BRANCH-MGMT) -->
+<div class="mo" id="attBranchModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="attBranchMT">เพิ่มสาขา</div><button class="xbtn" onclick="document.getElementById('attBranchModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fg" style="gap:11px">
+      <div class="fgi full"><label class="fl">ชื่อสาขา *</label><input class="fi2" id="abf_name" placeholder="เช่น สำนักงานใหญ่, สาขาเชียงใหม่" autocomplete="off"></div>
+      <div class="fgi full" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div><label class="fl">เวลาเข้างาน (เริ่มต้น)</label><input class="fi2" id="abf_checkin" placeholder="08:30" maxlength="5"></div>
+        <div><label class="fl">เวลาออกงาน (เริ่มต้น)</label><input class="fi2" id="abf_checkout" placeholder="17:30" maxlength="5"></div>
+      </div>
+      <div class="fgi full"><label class="fl">สถานะ</label>
+        <select class="fi2" id="abf_status">
+          <option value="active">✅ ใช้งาน (Active)</option>
+          <option value="inactive">⛔ ปิดใช้งาน (Inactive)</option>
+        </select>
+      </div>
+      <div style="font-size:11px;color:var(--g5);padding:8px 10px;background:var(--pp);border-radius:var(--r)">💡 เวลาเริ่มต้นของสาขาใช้เป็น fallback เมื่อพนักงานไม่มีเวลาเฉพาะตัว</div>
+    </div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attBranchModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attBranchSave()">💾 บันทึก</button></div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -1712,7 +1739,7 @@ async function loadAll(silent=false){
     [customers,groups,branches,employers,appUsers]=await Promise.all([
       dbGet('customers','?order=name.asc&limit=2000'),
       dbGet('groups','?order=name.asc'),
-      dbGet('branches','?order=name.asc'),
+      dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status'),
       dbGet('employers','?order=name.asc'),
       dbGet('app_users','?order=full_name.asc&select=id,username,full_name,role,is_active'),
     ]);
@@ -2749,6 +2776,7 @@ function renderAttendance(){
     ...(!isEmp?[
       {k:'report',       l:T('attTabReport')},
       {k:'employees',    l:T('attTabEmployees')},
+      {k:'branches',     l:'🏢 สาขา'},
       {k:'attsettings',  l:T('attTabSettings')},
       {k:'export',       l:T('attTabExport')},
     ]:[]),
@@ -2771,7 +2799,7 @@ function attGo(tab){
 function attRender(tab){
   const el=document.getElementById('att_sub'); if(!el)return;
   if(att_clockTimer){clearInterval(att_clockTimer);att_clockTimer=null;}
-  const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,employees:attUIEmployees,attsettings:attUISettings,export:attUIExport};
+  const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,employees:attUIEmployees,branches:attUIBranches,attsettings:attUISettings,export:attUIExport};
   el.innerHTML=(map[tab]||attUICheckin)();
   if(tab==='checkin'){attStartClock();attInitCheckinView();}
   if(tab==='attsettings'){attInitSettingsView();}
@@ -2779,6 +2807,7 @@ function attRender(tab){
   if(tab==='report'){attInitReportView();}
   if(tab==='export'){attInitExportView();}
   if(tab==='employees'){attInitEmployeesView();}
+  if(tab==='branches'){attInitBranchesView();}
 }
 
 function attPH(icon,title,sub,badge){
@@ -2858,6 +2887,7 @@ function attUIHistory(){
         <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
           <th style="padding:8px 6px;text-align:left;white-space:nowrap">${T('attHdrDate')}</th>
           <th style="padding:8px 6px;text-align:left">${T('attHdrEmp')}</th>
+          <th style="padding:8px 6px;text-align:left;white-space:nowrap">สาขา</th>
           <th style="padding:8px 6px;text-align:left">${T('attHdrIn')}</th>
           <th style="padding:8px 6px;text-align:left">${T('attHdrOut')}</th>
           <th style="padding:8px 6px;text-align:center">${T('attHdrHrs')}</th>
@@ -2865,7 +2895,7 @@ function attUIHistory(){
           <th style="padding:8px 6px;text-align:center">${T('attHdrStatus')}</th>
           <th style="padding:8px 6px;text-align:center">${T('attHdrGPS')}</th>
         </tr></thead>
-        <tbody id="att_hist_body"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">${T('attLoading')}</td></tr></tbody>
+        <tbody id="att_hist_body"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--g5)">${T('attLoading')}</td></tr></tbody>
       </table>
     </div>
   </div>`;
@@ -2926,7 +2956,7 @@ async function attApplyHistoryFilter(){
 }
 
 function attRenderHistoryRows(logs){
-  if(!logs.length)return`<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--g5)">${T('attNoRecord')}</td></tr>`;
+  if(!logs.length)return`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--g5)">${T('attNoRecord')}</td></tr>`;
   const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
   const radius=att_branchSettings?.allowed_radius_meter||200;
   const stMap=()=>({present:T('attStPresent'),late:T('attStLate'),absent:T('attStAbsent'),half_day:T('attStHalfDay'),holiday:T('attStHoliday'),leave:T('attStLeave'),outside:T('attStOutside')});
@@ -2943,6 +2973,7 @@ function attRenderHistoryRows(logs){
     return`<tr style="border-bottom:1px solid var(--g2)">
       <td style="padding:7px 6px;font-size:12px;white-space:nowrap">${dateStr}</td>
       <td style="padding:7px 6px;font-size:12px;font-weight:600">${esc(l.employee_name||'—')}<br><span style="font-weight:400;color:var(--g5);font-size:11px">${esc(l.employee_code||'')}</span></td>
+      <td style="padding:7px 6px;font-size:12px;color:var(--g5);white-space:nowrap">${esc(l.branch_name||'—')}</td>
       <td style="padding:7px 6px;font-size:12px">${ci}${late}</td>
       <td style="padding:7px 6px;font-size:12px">${co}</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px">${work}</td>
@@ -2989,7 +3020,7 @@ async function attLoadReport(){
     const byEmp={};
     arr.forEach(l=>{
       const k=l.employee_id;
-      if(!byEmp[k])byEmp[k]={name:l.employee_name||'?',code:l.employee_code||'',days:0,late:0,absent:0,ot:0,work:0};
+      if(!byEmp[k])byEmp[k]={name:l.employee_name||'?',code:l.employee_code||'',branch:l.branch_name||'—',days:0,late:0,absent:0,ot:0,work:0};
       byEmp[k].days++;
       if(l.day_status==='late')byEmp[k].late++;
       if(l.day_status==='absent')byEmp[k].absent++;
@@ -2998,6 +3029,7 @@ async function attLoadReport(){
     });
     const rows=Object.values(byEmp).map(e=>`<tr style="border-bottom:1px solid var(--g2)">
       <td style="padding:8px 6px;font-size:12px;font-weight:600">${esc(e.name)}<br><span style="color:var(--g5);font-weight:400;font-size:11px">${esc(e.code)}</span></td>
+      <td style="padding:8px 6px;font-size:12px;color:var(--g5)">${esc(e.branch)}</td>
       <td style="padding:8px 6px;text-align:center;font-size:13px">${e.days}</td>
       <td style="padding:8px 6px;text-align:center;font-size:13px;color:#d97706">${e.late||'—'}</td>
       <td style="padding:8px 6px;text-align:center;font-size:13px;color:#dc2626">${e.absent||'—'}</td>
@@ -3008,6 +3040,7 @@ async function attLoadReport(){
       <table style="width:100%;border-collapse:collapse;margin-top:8px">
         <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
           <th style="padding:8px 6px;text-align:left;font-size:12px">${T('attRptTblEmp')}</th>
+          <th style="padding:8px 6px;text-align:left;font-size:12px">สาขา</th>
           <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attRptTblDays')}</th>
           <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attRptTblLate')}</th>
           <th style="padding:8px 6px;text-align:center;font-size:12px">${T('attRptTblAbsent')}</th>
@@ -3099,10 +3132,12 @@ function attRenderEmployeesList(emps,wrap){
 
 // รอบ G: เปิด modal เพิ่มพนักงานใหม่
 function attEmpOpenAdd(){
-  ['aef_code','aef_full_name','aef_nickname','aef_phone','aef_position','aef_branch_name','aef_checkin_time','aef_checkout_time'].forEach(id=>{
+  ['aef_code','aef_full_name','aef_nickname','aef_phone','aef_position','aef_checkin_time','aef_checkout_time'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.value='';
   });
-  const bid=document.getElementById('aef_branch_id'); if(bid)bid.value='';
+  // reset hidden branch fields + dropdown
+  ['aef_branch_id','aef_branch_name'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  attPopulateBranchSel('');
   const st=document.getElementById('aef_status'); if(st)st.value='active';
   document.getElementById('aef_id').value='';
   // employee_code editable สำหรับ add
@@ -3123,10 +3158,13 @@ function attEmpOpenEdit(id){
   document.getElementById('aef_nickname').value=e.nickname||'';
   document.getElementById('aef_phone').value=e.phone||'';
   document.getElementById('aef_position').value=e.position||'';
-  document.getElementById('aef_branch_id').value=e.branch_id||'';
-  document.getElementById('aef_branch_name').value=e.branch_name||'';
-  document.getElementById('aef_checkin_time').value=e.normal_checkin_time||'';
-  document.getElementById('aef_checkout_time').value=e.normal_checkout_time||'';
+  // set hidden fields ก่อน แล้วค่อย populate dropdown
+  const _bi=document.getElementById('aef_branch_id'); if(_bi)_bi.value=e.branch_id||'';
+  const _bn=document.getElementById('aef_branch_name'); if(_bn)_bn.value=e.branch_name||'';
+  attPopulateBranchSel(e.branch_id||'');
+  // slice(0,5) → normalize '08:30:00' → '08:30' ป้องกัน maxlength block การพิมพ์
+  document.getElementById('aef_checkin_time').value=(e.normal_checkin_time||'').slice(0,5);
+  document.getElementById('aef_checkout_time').value=(e.normal_checkout_time||'').slice(0,5);
   document.getElementById('aef_status').value=e.status||'active';
   // lock employee_code — เปลี่ยนไม่ได้เพราะผูกกับ app_users.username
   const codeEl=document.getElementById('aef_code');
@@ -3144,10 +3182,13 @@ async function attEmpSave(){
   const nickname=document.getElementById('aef_nickname').value.trim();
   const phone=document.getElementById('aef_phone').value.trim();
   const position=document.getElementById('aef_position').value.trim();
+  // branch_id/branch_name มาจาก hidden inputs (set โดย attEmpBranchChange)
   const branch_id=document.getElementById('aef_branch_id').value.trim();
   const branch_name=document.getElementById('aef_branch_name').value.trim();
-  const normal_checkin_time=document.getElementById('aef_checkin_time').value.trim();
-  const normal_checkout_time=document.getElementById('aef_checkout_time').value.trim();
+  // normalize HH:MM → HH:MM:00 ก่อนส่ง DB (time type ต้องการ HH:MM:SS)
+  const _normTime=t=>{t=(t||'').trim();if(!t)return null;return/^\d{2}:\d{2}$/.test(t)?t+':00':t;};
+  const normal_checkin_time=_normTime(document.getElementById('aef_checkin_time').value);
+  const normal_checkout_time=_normTime(document.getElementById('aef_checkout_time').value);
   const status=document.getElementById('aef_status').value;
   // validate required
   if(!employee_code){toast('กรุณากรอกรหัสพนักงาน','err');document.getElementById('aef_code').focus();return;}
@@ -3204,14 +3245,181 @@ async function attEmpToggleStatus(id,currentStatus){
   }
 }
 
+// ===== BRANCH MANAGEMENT (BRANCH-MGMT) =====
+
+// UI skeleton — init โหลดข้อมูลจริงใน attInitBranchesView
+function attUIBranches(){
+  if(curUser?.role!=='admin')return`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccess')}</div>`;
+  return`<div class="twrap">
+    <div class="tbar2">
+      <div style="font-size:13px;font-weight:700">🏢 จัดการสาขา</div>
+      <button class="btn btn-p btn-sm" onclick="attBranchOpenAdd()">+ เพิ่มสาขา</button>
+    </div>
+    <div id="att_branch_list_wrap"><div style="text-align:center;padding:30px;color:var(--g5)">กำลังโหลด...</div></div>
+  </div>`;
+}
+
+// โหลดและ render รายการสาขา
+async function attInitBranchesView(){
+  const wrap=document.getElementById('att_branch_list_wrap'); if(!wrap)return;
+  try{
+    const data=await dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status');
+    branches=Array.isArray(data)?data:[];
+    attRenderBranchesList(branches,wrap);
+  }catch(e){
+    if(wrap)wrap.innerHTML=`<div style="color:#dc2626;padding:14px;text-align:center">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message||'')}</div>`;
+  }
+}
+
+function attRenderBranchesList(brs,wrap){
+  if(!wrap)wrap=document.getElementById('att_branch_list_wrap'); if(!wrap)return;
+  if(!brs||!brs.length){wrap.innerHTML=attPH('🏢','ยังไม่มีสาขา','กดปุ่ม "+ เพิ่มสาขา" เพื่อเริ่มต้น','');return;}
+  const active=brs.filter(b=>b.status!=='inactive').length;
+  wrap.innerHTML=`
+    <div style="font-size:12px;color:var(--g5);margin-bottom:10px">ทั้งหมด ${brs.length} สาขา · ใช้งาน ${active} · ปิด ${brs.length-active}</div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
+        <th style="padding:8px 10px;text-align:left">ชื่อสาขา</th>
+        <th style="padding:8px 10px;text-align:center;white-space:nowrap">เวลาเข้า</th>
+        <th style="padding:8px 10px;text-align:center;white-space:nowrap">เวลาออก</th>
+        <th style="padding:8px 10px;text-align:center">สถานะ</th>
+        <th style="padding:8px 10px;text-align:center">จัดการ</th>
+      </tr></thead>
+      <tbody>
+      ${brs.map(b=>{
+        const isActive=b.status!=='inactive';
+        const tIn=(b.normal_checkin_time||'').slice(0,5)||'—';
+        const tOut=(b.normal_checkout_time||'').slice(0,5)||'—';
+        return`<tr style="border-bottom:1px solid var(--g2);${isActive?'':'opacity:.55;background:#fafafa'}">
+          <td style="padding:8px 10px;font-weight:600">${esc(b.name||'')}</td>
+          <td style="padding:8px 10px;text-align:center;font-family:var(--mono);font-size:12px">${tIn}</td>
+          <td style="padding:8px 10px;text-align:center;font-family:var(--mono);font-size:12px">${tOut}</td>
+          <td style="padding:8px 10px;text-align:center"><span class="sb ${isActive?'sb-act':'sb-prc'}">${isActive?'ใช้งาน':'ปิด'}</span></td>
+          <td style="padding:8px 10px;text-align:center">
+            <div style="display:flex;gap:4px;justify-content:center">
+              <button class="bic" onclick="attBranchOpenEdit(${b.id})" title="แก้ไข">✏️</button>
+              <button class="bic" onclick="attBranchToggle(${b.id},'${b.status||'active'}')" title="${isActive?'ปิดใช้งาน':'เปิดใช้งาน'}" style="font-size:12px">${isActive?'⛔':'✅'}</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+// เปิด modal เพิ่มสาขา
+function attBranchOpenAdd(){
+  att_editBranchId=null;
+  ['abf_name','abf_checkin','abf_checkout'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const st=document.getElementById('abf_status'); if(st)st.value='active';
+  document.getElementById('attBranchMT').textContent='เพิ่มสาขา';
+  document.getElementById('attBranchModal').style.display='flex';
+}
+
+// เปิด modal แก้ไขสาขา
+function attBranchOpenEdit(id){
+  const b=branches.find(x=>x.id===id); if(!b)return;
+  att_editBranchId=id;
+  document.getElementById('abf_name').value=b.name||'';
+  document.getElementById('abf_checkin').value=(b.normal_checkin_time||'').slice(0,5);
+  document.getElementById('abf_checkout').value=(b.normal_checkout_time||'').slice(0,5);
+  document.getElementById('abf_status').value=b.status||'active';
+  document.getElementById('attBranchMT').textContent='แก้ไขสาขา';
+  document.getElementById('attBranchModal').style.display='flex';
+}
+
+// บันทึกสาขา
+async function attBranchSave(){
+  const name=document.getElementById('abf_name').value.trim();
+  const cin=document.getElementById('abf_checkin').value.trim();
+  const cout=document.getElementById('abf_checkout').value.trim();
+  const status=document.getElementById('abf_status').value;
+  if(!name){toast('กรุณากรอกชื่อสาขา','err');return;}
+  const timeRx=/^\d{2}:\d{2}$/;
+  if(cin&&!timeRx.test(cin)){toast('เวลาเข้างานต้องเป็น HH:MM เช่น 08:30','err');return;}
+  if(cout&&!timeRx.test(cout)){toast('เวลาออกงานต้องเป็น HH:MM เช่น 17:30','err');return;}
+  const data={
+    name,
+    normal_checkin_time:cin?(cin+':00'):null,
+    normal_checkout_time:cout?(cout+':00'):null,
+    status
+  };
+  try{
+    if(att_editBranchId){
+      await dbPatch('branches',att_editBranchId,data);
+      branches=branches.map(b=>b.id===att_editBranchId?{...b,...data}:b);
+      toast('บันทึกสาขาแล้ว');
+    }else{
+      const r=await dbPost('branches',data);
+      if(r&&r[0])branches.push(r[0]);
+      else branches.push({...data,id:Date.now()});
+      toast('เพิ่มสาขาแล้ว');
+    }
+    document.getElementById('attBranchModal').style.display='none';
+    fillSelects(); // อัพเดต customer branch dropdown ด้วย
+    attRenderBranchesList(branches);
+  }catch(e){
+    toast('เกิดข้อผิดพลาด กรุณาลองใหม่','err');
+    console.error('[attBranchSave]',e);
+  }
+}
+
+// toggle สถานะสาขา (active ↔ inactive)
+async function attBranchToggle(id,currentStatus){
+  const newStatus=currentStatus==='active'?'inactive':'active';
+  if(!confirm(`${newStatus==='active'?'เปิด':'ปิด'}ใช้งานสาขานี้?`))return;
+  try{
+    await dbPatch('branches',id,{status:newStatus});
+    branches=branches.map(b=>b.id===id?{...b,status:newStatus}:b);
+    fillSelects();
+    attRenderBranchesList(branches);
+    toast(`${newStatus==='active'?'เปิด':'ปิด'}ใช้งานแล้ว`);
+  }catch(e){
+    toast('เกิดข้อผิดพลาด','err');
+    console.error('[attBranchToggle]',e);
+  }
+}
+
+// populate branch dropdown ใน employee modal + set selected value
+function attPopulateBranchSel(selectedBranchId){
+  const sel=document.getElementById('aef_branch_sel'); if(!sel)return;
+  const active=branches.filter(b=>b.status!=='inactive');
+  sel.innerHTML=`<option value="">— ไม่ระบุสาขา —</option>`
+    +active.map(b=>`<option value="${b.id}"${b.id==selectedBranchId?' selected':''}>${esc(b.name)}</option>`).join('');
+}
+
+// เมื่อเลือกสาขาใน employee modal → auto-fill hidden fields + เวลา (ถ้าว่างอยู่)
+function attEmpBranchChange(val){
+  const bid=document.getElementById('aef_branch_id');
+  const bname=document.getElementById('aef_branch_name');
+  const cin=document.getElementById('aef_checkin_time');
+  const cout=document.getElementById('aef_checkout_time');
+  if(!val){
+    if(bid)bid.value=''; if(bname)bname.value=''; return;
+  }
+  const b=branches.find(x=>x.id==val);
+  if(b){
+    if(bid)bid.value=b.id;
+    if(bname)bname.value=b.name||'';
+    // auto-fill เวลาเสมอ — user ยังแก้เองได้หลังจากนี้
+    if(cin&&b.normal_checkin_time)cin.value=b.normal_checkin_time.slice(0,5);
+    if(cout&&b.normal_checkout_time)cout.value=b.normal_checkout_time.slice(0,5);
+  }
+}
+
 function attUISettings(){
   return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:560px">
     <div style="font-weight:700;font-size:15px;margin-bottom:20px">⚙️ ตั้งค่าระบบตอกบัตร</div>
 
-    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g2)">🕐 เวลาทำงาน</div>
+    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--g2)">🕐 เวลาทำงาน (ค่าเริ่มต้น Fallback)</div>
+    <div style="font-size:11px;color:var(--g5);margin-bottom:12px;padding:7px 10px;background:var(--pp);border-radius:var(--r);line-height:1.6">
+      ⚠️ ค่านี้เป็น <strong>fallback ลำดับสุดท้าย</strong> — ระบบจะใช้เวลาของพนักงานรายคน → สาขา → ค่านี้ ตามลำดับ<br>
+      ถ้าพนักงานหรือสาขามีเวลาตั้งไว้แล้ว ค่านี้จะไม่ถูกนำมาใช้
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-      <div class="fgi"><label class="fl">เวลาเข้างาน</label><div style="display:flex;align-items:center;gap:6px"><input id="att_cfg_checkin" class="fi2" type="text" placeholder="08:30" maxlength="5" style="width:90px"><span style="color:var(--g6);font-size:13px">น.</span></div></div>
-      <div class="fgi"><label class="fl">เวลาออกงาน</label><div style="display:flex;align-items:center;gap:6px"><input id="att_cfg_checkout" class="fi2" type="text" placeholder="17:30" maxlength="5" style="width:90px"><span style="color:var(--g6);font-size:13px">น.</span></div></div>
+      <div class="fgi"><label class="fl">เวลาเข้างาน (ค่าเริ่มต้น)</label><div style="display:flex;align-items:center;gap:6px"><input id="att_cfg_checkin" class="fi2" type="text" placeholder="08:30" maxlength="5" style="width:90px"><span style="color:var(--g6);font-size:13px">น.</span></div></div>
+      <div class="fgi"><label class="fl">เวลาออกงาน (ค่าเริ่มต้น)</label><div style="display:flex;align-items:center;gap:6px"><input id="att_cfg_checkout" class="fi2" type="text" placeholder="17:30" maxlength="5" style="width:90px"><span style="color:var(--g6);font-size:13px">น.</span></div></div>
       <div class="fgi"><label class="fl">อนุโลมสาย (นาที)</label><input id="att_cfg_late_tol" class="fi2" type="number" min="0" max="120" value="10"></div>
       <div class="fgi"><label class="fl">รัศมีที่อนุญาต (เมตร)</label><input id="att_cfg_radius" class="fi2" type="number" min="50" max="5000" value="200"></div>
     </div>
@@ -3394,7 +3602,7 @@ function attBuildSummary(logs,emps,yr,mo,workDaysStr){
   const byEmp={};
   emps.forEach(e=>{
     byEmp[e.id]={
-      id:e.id,code:e.employee_code||'',name:e.full_name||'',
+      id:e.id,code:e.employee_code||'',name:e.full_name||'',branch:e.branch_name||'—',
       scheduled,worked:0,absent:0,
       late_minutes:0,early_leave_minutes:0,ot_minutes:0,
       forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0
@@ -3403,7 +3611,7 @@ function attBuildSummary(logs,emps,yr,mo,workDaysStr){
   logs.forEach(l=>{
     const k=l.employee_id;
     if(!byEmp[k])byEmp[k]={
-      id:k,code:l.employee_code||'',name:l.employee_name||'',
+      id:k,code:l.employee_code||'',name:l.employee_name||'',branch:l.branch_name||'—',
       scheduled,worked:0,absent:0,
       late_minutes:0,early_leave_minutes:0,ot_minutes:0,
       forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0
@@ -3455,10 +3663,11 @@ function attRenderExportPreview(summary,yr,mo){
   const tot={scheduled:0,worked:0,absent:0,late_minutes:0,early_leave_minutes:0,ot_minutes:0,forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0};
   summary.forEach(r=>{tot.scheduled+=r.scheduled;tot.worked+=r.worked;tot.absent+=r.absent;tot.late_minutes+=r.late_minutes;tot.early_leave_minutes+=r.early_leave_minutes;tot.ot_minutes+=r.ot_minutes;tot.forgot_in+=r.forgot_in;tot.forgot_out+=r.forgot_out;tot.normal_days+=r.normal_days;tot.total_work_minutes+=r.total_work_minutes;});
   const scheduled=summary[0]?.scheduled||0;
-  const headers=['ชื่อพนักงาน','รหัส','กำหนด','มาจริง','ขาด','สาย(น.)','ออกก่อน(น.)','OT','ลืมตอกเข้า','ลืมตอกออก','ปกติ','ชม.รวม','เข้างาน%'];
+  const headers=['ชื่อพนักงาน','รหัส','สาขา','กำหนด','มาจริง','ขาด','สาย(น.)','ออกก่อน(น.)','OT','ลืมตอกเข้า','ลืมตอกออก','ปกติ','ชม.รวม','เข้างาน%'];
   const rows=summary.map(r=>`<tr style="border-bottom:1px solid var(--g2)">
     <td style="padding:6px 8px;font-size:12px">${esc(r.name)}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${esc(r.code)}</td>
+    <td style="padding:6px 8px;font-size:12px;color:var(--g5)">${esc(r.branch||'—')}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${r.scheduled}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${r.worked}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center;color:${r.absent>0?'#dc2626':'inherit'}">${r.absent}</td>
@@ -3509,13 +3718,13 @@ async function attExportDetailCSV(){
     const logs=await dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc,employee_id.asc&limit=5000`);
     const arr=Array.isArray(logs)?logs:[];
     const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""').replace(/\n/g,' ')+'"';
-    const headers=['วันที่','รหัสพนักงาน','ชื่อพนักงาน','เวลาเข้างาน','เวลาออกงาน','ชม.ทำงาน','สายกี่นาที','OT','สถานะ','GPS เข้า(ม.)','GPS ออก(ม.)','หมายเหตุ','admin note'];
+    const headers=['วันที่','รหัสพนักงาน','ชื่อพนักงาน','สาขา','เวลาเข้างาน','เวลาออกงาน','ชม.ทำงาน','สายกี่นาที','OT','สถานะ','GPS เข้า(ม.)','GPS ออก(ม.)','หมายเหตุ','admin note'];
     const rows=[headers.map(esc).join(',')];
     arr.forEach(l=>{
       const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'';
       const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):'';
       rows.push([
-        l.log_date,l.employee_code||'',l.employee_name||'',ci,co,
+        l.log_date,l.employee_code||'',l.employee_name||'',l.branch_name||'',ci,co,
         fmtMin(l.total_work_minutes||0),l.late_minutes||0,fmtMin(l.ot_minutes||0),
         stMap[l.day_status]||l.day_status||'',
         l.checkin_distance_m??'',l.checkout_distance_m??'',
@@ -3555,7 +3764,7 @@ async function attExportSummaryXLS(){
     const T='border:1px solid #000;padding:5px 8px;font-size:10pt;';
     const TC=T+'text-align:center;';
     const TH='border:1px solid #000;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1e3a5f;color:#fff;text-align:center;';
-    const colHeaders=['ชื่อพนักงาน','รหัสพนักงาน','วันทำงานตามกำหนด','วันมาทำงานจริง','วันขาดงาน','นาทีมาสาย','นาทีออกก่อนเวลา','ชั่วโมง OT','ลืมตอกเข้า','ลืมตอกออก','เข้างานปกติ','ชม.ลาพักร้อน','ชม.ลาป่วย','ชม.ลาอื่นๆ','ชม.ทำงานรวม','อัตราเข้างาน%'];
+    const colHeaders=['ชื่อพนักงาน','รหัสพนักงาน','สาขา','วันทำงานตามกำหนด','วันมาทำงานจริง','วันขาดงาน','นาทีมาสาย','นาทีออกก่อนเวลา','ชั่วโมง OT','ลืมตอกเข้า','ลืมตอกออก','เข้างานปกติ','ชม.ลาพักร้อน','ชม.ลาป่วย','ชม.ลาอื่นๆ','ชม.ทำงานรวม','อัตราเข้างาน%'];
     const NC=colHeaders.length;
     const dataRows=summary.map((r,i)=>{
       const bg=i%2===0?'#ffffff':'#f0f7ff';
@@ -3563,6 +3772,7 @@ async function attExportSummaryXLS(){
       return`<tr style="background:${bg}">
         <td style="${T}">${esc(r.name)}</td>
         <td style="${TC}">${esc(r.code)}</td>
+        <td style="${T}">${esc(r.branch||'—')}</td>
         <td style="${TC}">${r.scheduled}</td>
         <td style="${TC}">${r.worked}</td>
         <td style="${TC};color:${r.absent>0?'#c00000':'#000'}">${r.absent}</td>
@@ -3622,6 +3832,7 @@ async function attExportSummaryXLS(){
 // ตัวแปร module-level สำหรับ cache ข้อมูล
 let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_pendingLogId=null, att_isProcessing=false, att_historyLogs=[];
 let att_empList=[]; // รอบ G: cache สำหรับหน้าจัดการพนักงาน (active+inactive ทั้งหมด)
+let att_editBranchId=null; // BRANCH-MGMT: id สาขาที่กำลังแก้ไข (null = add)
 
 // ─── Bangkok Time Helpers ───
 function attFormatThaiDateTime(date){
@@ -3767,9 +3978,14 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
   }
   const isOutside=distM!==null&&distM>allowedR;
 
+  // BRANCH-MGMT: หา branch จาก local cache เพื่อ fallback เวลา
+  const _empBranch=branches.find(b=>b.id===emp.branch_id)||null;
   if(type==='checkin'){
-    // BRANCH-LIGHT: ใช้เวลาของพนักงานรายคนก่อน → fallback settings → default
-    const _cinTime=(emp&&emp.normal_checkin_time)||(settings&&settings.normal_checkin_time)||'08:30:00';
+    // priority: emp → branch → settings → default
+    const _cinTime=(emp&&emp.normal_checkin_time)
+      ||(_empBranch&&_empBranch.normal_checkin_time)
+      ||(settings&&settings.normal_checkin_time)
+      ||'08:30:00';
     const lateMin=attCalculateLateMinutes(nowISO,_cinTime,(settings&&settings.late_tolerance_minutes)||10);
     return{
       employee_id:emp.id, employee_code:emp.employee_code||null,
@@ -3785,8 +4001,11 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
       checkout_status:'pending'
     };
   } else {
-    // BRANCH-LIGHT: ใช้เวลาของพนักงานรายคนก่อน → fallback settings → default
-    const [hh2,mm2]=((emp&&emp.normal_checkout_time)||(settings&&settings.normal_checkout_time)||'17:30:00').split(':').map(Number);
+    // priority: emp → branch → settings → default
+    const [hh2,mm2]=((emp&&emp.normal_checkout_time)
+      ||(_empBranch&&_empBranch.normal_checkout_time)
+      ||(settings&&settings.normal_checkout_time)
+      ||'17:30:00').split(':').map(Number);
     const tol2=(settings&&settings.early_leave_tolerance_minutes)||10;
     const earlyMin=Math.max(0,(hh2*60+mm2-tol2)-nowMins);
     const totalMins=attCalculateWorkMinutes(checkinTime,nowISO);
@@ -3808,7 +4027,7 @@ async function attLoadAttendanceData(branchId){
   try{
     const today=attGetThaiLogDate();
     const [empRes,logRes]=await Promise.all([
-      dbGet('attendance_employees','?status=eq.active&order=employee_code.asc&select=id,employee_code,full_name,branch_id,branch_name,status'),
+      dbGet('attendance_employees','?status=eq.active&order=employee_code.asc&select=id,employee_code,full_name,branch_id,branch_name,normal_checkin_time,normal_checkout_time,status'),
       dbGet('attendance_logs',`?log_date=eq.${today}&order=employee_id.asc`)
     ]);
     att_employees=Array.isArray(empRes)?empRes:[];
@@ -3839,10 +4058,19 @@ function attOnEmpChange(val){
   const pv=document.getElementById('att_preview');
   if(pv){
     if(att_curEmployee){
-      // BRANCH-LIGHT: แสดง mini-card ข้อมูลพนักงานที่เลือก
+      // แสดงเวลาที่จะใช้จริง: emp → branch → settings → default
       const emp=att_curEmployee;
-      const _cin=(emp.normal_checkin_time||'').slice(0,5)||'—';
-      const _cout=(emp.normal_checkout_time||'').slice(0,5)||'—';
+      const _empBr=branches.find(b=>b.id===emp.branch_id)||null;
+      const _cinRaw=emp.normal_checkin_time
+        ||(_empBr&&_empBr.normal_checkin_time)
+        ||(att_branchSettings&&att_branchSettings.normal_checkin_time)
+        ||'';
+      const _coutRaw=emp.normal_checkout_time
+        ||(_empBr&&_empBr.normal_checkout_time)
+        ||(att_branchSettings&&att_branchSettings.normal_checkout_time)
+        ||'';
+      const _cin=_cinRaw.slice(0,5)||'—';
+      const _cout=_coutRaw.slice(0,5)||'—';
       const _brn=emp.branch_name?`<span style="background:var(--pp);color:var(--pd);border-radius:4px;padding:2px 7px;font-size:10px">${esc(emp.branch_name)}</span>`:'';
       pv.innerHTML=`<div style="background:var(--bg);border:1px solid var(--g2);border-radius:var(--r);padding:10px 14px;font-size:12px">`
         +`<div style="font-weight:600;font-size:13px;margin-bottom:4px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5)">(${esc(emp.employee_code||'')})</span>&nbsp;${_brn}</div>`
@@ -3871,9 +4099,18 @@ async function attInitCheckinView(){
       }
       att_curEmployee=emp;
       if(disp){
-        // BRANCH-LIGHT: แสดงการ์ดชื่อ+รหัส+สาขา+เวลางาน
-        const _cin=(emp.normal_checkin_time||'').slice(0,5)||'—';
-        const _cout=(emp.normal_checkout_time||'').slice(0,5)||'—';
+        // แสดงเวลาที่จะใช้จริง: emp → branch → settings → default
+        const _empBr=branches.find(b=>b.id===emp.branch_id)||null;
+        const _cinRaw=emp.normal_checkin_time
+          ||(_empBr&&_empBr.normal_checkin_time)
+          ||(att_branchSettings&&att_branchSettings.normal_checkin_time)
+          ||'';
+        const _coutRaw=emp.normal_checkout_time
+          ||(_empBr&&_empBr.normal_checkout_time)
+          ||(att_branchSettings&&att_branchSettings.normal_checkout_time)
+          ||'';
+        const _cin=_cinRaw.slice(0,5)||'—';
+        const _cout=_coutRaw.slice(0,5)||'—';
         const _brn=emp.branch_name?`<span style="background:var(--pp);color:var(--pd);border-radius:4px;padding:1px 6px;font-size:10px;margin-left:6px;white-space:nowrap">${esc(emp.branch_name)}</span>`:'';
         disp.innerHTML=`<div style="font-weight:600;font-size:14px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>${_brn}</div>`
           +`<div style="font-size:11px;color:var(--g5);margin-top:3px">⏰ เวลางาน ${_cin} – ${_cout}</div>`;
