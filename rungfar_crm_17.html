@@ -397,7 +397,7 @@ textarea.fi2{resize:vertical;min-height:65px}
       <div><div class="brand-name">รุ่งฟ้า รุ่งฟ้า</div><div class="brand-sub">Labor CRM</div></div>
     </div>
   </div>
-  <div class="nsec">
+  <div class="nsec" id="sideMain">
     <div class="nlbl">เมนูหลัก</div>
     <div class="ni on" onclick="gv('dash')"><span class="ic">📊</span>แดชบอร์ด</div>
     <div class="ni" onclick="gv('customers')"><span class="ic">👥</span>ลูกค้าทั้งหมด <span class="nbadge ok" id="nbTotal">0</span></div>
@@ -405,15 +405,15 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="ni" onclick="gv('employers')"><span class="ic">🏢</span>นายจ้าง/บริษัท</div>
   </div>
   <div class="nsec" id="sideGroups"></div>
-  <div class="nsec">
-    <div class="nlbl">ระบบ</div>
-    <div class="ni" onclick="gv('groups')"><span class="ic">🗂️</span>จัดการกลุ่ม</div>
-    <div class="ni" onclick="gv('import')"><span class="ic">📥</span>นำเข้า Excel/CSV</div>
-    <div class="ni" onclick="gv('settings')"><span class="ic">⚙️</span>ตั้งค่าแจ้งเตือน</div>
+  <div class="nsec" id="sideSys">
+    <div class="nlbl" id="sideSysLbl">ระบบ</div>
+    <div class="ni" id="niGroups" onclick="gv('groups')"><span class="ic">🗂️</span>จัดการกลุ่ม</div>
+    <div class="ni" id="niImport" onclick="gv('import')"><span class="ic">📥</span>นำเข้า Excel/CSV</div>
+    <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic">⚙️</span>ตั้งค่าแจ้งเตือน</div>
     <div class="ni" id="niUsers" onclick="gv('users')"><span class="ic">👤</span>จัดการผู้ใช้</div>
     <div class="ni" id="niSecLog" onclick="gv('seclog')" style="display:none"><span class="ic">🔐</span>ประวัติการเข้าใช้งาน</div>
-    <div class="ni" onclick="gv('attendance')"><span class="ic">📋</span>ตอกบัตรพนักงาน</div>
-    <div class="ni" onclick="doLogout()"><span class="ic">🚪</span>ออกจากระบบ</div>
+    <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic">📋</span>ตอกบัตรพนักงาน</div>
+    <div class="ni" id="niLogout" onclick="doLogout()"><span class="ic">🚪</span>ออกจากระบบ</div>
   </div>
   <div class="sfoot">
     <div class="sfav" id="sfav">A</div>
@@ -687,8 +687,7 @@ textarea.fi2{resize:vertical;min-height:65px}
       <div class="fgi full"><label class="fl">สิทธิ์</label>
         <select class="fi2" id="uf_role" onchange="ufRoleChange()">
           <option value="admin">Admin - ผู้ดูแลระบบ</option>
-          <option value="staff">Staff - เจ้าหน้าที่</option>
-          <option value="employee">Employee - พนักงานตอกบัตร</option>
+          <option value="staff">Staff - พนักงานออฟฟิศ</option>
         </select>
       </div>
       <div class="fgi full" style="border-top:1px solid var(--g2);padding-top:11px;margin-top:2px">
@@ -698,6 +697,43 @@ textarea.fi2{resize:vertical;min-height:65px}
     </div>
   </div>
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('uModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveUser()">💾 บันทึก</button></div>
+</div></div>
+
+<!-- MODAL: EMPLOYEE (รอบ G) -->
+<div class="mo" id="attEmpModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="attEmpMT">เพิ่มพนักงาน</div><button class="xbtn" onclick="document.getElementById('attEmpModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <input type="hidden" id="aef_id">
+    <div class="fg" style="gap:11px">
+      <div class="fgi full">
+        <label class="fl">รหัสพนักงาน * <span style="font-size:10px;font-weight:400;color:var(--g5)">— ต้องตรงกับ Username ของ role Employee</span></label>
+        <input class="fi2" id="aef_code" placeholder="เช่น EMP004" autocomplete="off" style="font-family:var(--mono);font-weight:700;letter-spacing:.5px">
+        <div id="aef_code_hint" style="display:none;font-size:11px;color:var(--g5);margin-top:4px;padding:5px 8px;background:#f3f4f6;border-radius:6px">🔒 รหัสพนักงานไม่สามารถเปลี่ยนได้หลังจากสร้างแล้ว เพราะใช้จับคู่กับ Username ในระบบ Login</div>
+      </div>
+      <div class="fgi full"><label class="fl">ชื่อ-นามสกุล *</label><input class="fi2" id="aef_full_name" placeholder="ชื่อ-นามสกุล" autocomplete="off"></div>
+      <div class="fgi full" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div><label class="fl">ชื่อเล่น</label><input class="fi2" id="aef_nickname" placeholder="ชื่อเล่น" autocomplete="off"></div>
+        <div><label class="fl">เบอร์โทร</label><input class="fi2" id="aef_phone" placeholder="0xx-xxx-xxxx" autocomplete="off"></div>
+      </div>
+      <div class="fgi full"><label class="fl">ตำแหน่ง</label><input class="fi2" id="aef_position" placeholder="ตำแหน่งงาน" autocomplete="off"></div>
+      <div class="fgi full" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div><label class="fl">สาขา (branch_id)</label><input class="fi2" type="number" id="aef_branch_id" placeholder="1" min="1"></div>
+        <div><label class="fl">ชื่อสาขา</label><input class="fi2" id="aef_branch_name" placeholder="สาขาหลัก" autocomplete="off"></div>
+      </div>
+      <div class="fgi full" style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div><label class="fl">เวลาเข้างาน</label><input class="fi2" id="aef_checkin_time" placeholder="08:30" maxlength="5"></div>
+        <div><label class="fl">เวลาออกงาน</label><input class="fi2" id="aef_checkout_time" placeholder="17:30" maxlength="5"></div>
+      </div>
+      <div class="fgi full"><label class="fl">สถานะ</label>
+        <select class="fi2" id="aef_status">
+          <option value="active">✅ ใช้งาน (Active)</option>
+          <option value="inactive">⛔ ปิดใช้งาน (Inactive)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attEmpModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attEmpSave()">💾 บันทึก</button></div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -1230,10 +1266,20 @@ async function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   document.getElementById('sfname').textContent=curUser.full_name;
-  document.getElementById('sfrole').textContent=curUser.role==='admin'?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
+  // role display — employee เดิม treat เป็น staff (compat)
+  const isAdmin=curUser.role==='admin';
+  document.getElementById('sfrole').textContent=isAdmin?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
   document.getElementById('sfav').textContent=curUser.full_name.charAt(0).toUpperCase();
-  document.getElementById('niUsers').style.display=curUser.role==='admin'?'flex':'none';
-  document.getElementById('niSecLog').style.display=curUser.role==='admin'?'flex':'none';
+  // 1) Reset ทุก element ก่อนเสมอ — ป้องกัน state ค้างจาก session ก่อน
+  ['sideMain','sideGroups','sideSysLbl','niGroups','niImport','niSettings','niUsers','niSecLog','niAttendance','niLogout'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='';
+  });
+  // 2) ซ่อน admin-only items ถ้าเป็น staff (หรือ legacy employee)
+  if(!isAdmin){
+    ['niImport','niSettings','niUsers','niSecLog'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.style.display='none';
+    });
+  }
   await loadAll();
   fillSelects();renderDash();renderSidebar();renderSettings();
   // Apply saved language
@@ -1810,7 +1856,7 @@ function setSetting(k,v){settings[k]=parseInt(v)||30;localStorage.setItem('crm_s
 function renderUsers(){
   document.getElementById('usersContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">จัดการผู้ใช้งาน</div><button class="btn btn-p btn-sm" onclick="openAddUser()">+ เพิ่มผู้ใช้</button></div>
   <div class="twrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ-นามสกุล</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead><tbody>
-  ${appUsers.map(u=>{const roleLbl=u.role==='admin'?'Admin':u.role==='employee'?'Employee':'Staff';const roleCls=u.role==='admin'?'sb-act':u.role==='employee'?'sb-pend':'sb-prc';return`<tr><td><strong>${esc(u.username)}</strong>${u.id===curUser.id?'<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">คุณ</span>':''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${roleCls}">${roleLbl}</span></td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})" style="font-size:12px">✏️</button>${u.id!==curUser.id?`<button class="bic" onclick="delUser(${u.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div></td></tr>`;}).join('')}
+  ${appUsers.map(u=>{const roleLbl=u.role==='admin'?'Admin':'Staff';const roleCls=u.role==='admin'?'sb-act':'sb-prc';return`<tr><td><strong>${esc(u.username)}</strong>${u.id===curUser.id?'<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">คุณ</span>':''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${roleCls}">${roleLbl}</span></td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})" style="font-size:12px">✏️</button>${u.id!==curUser.id?`<button class="bic" onclick="delUser(${u.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div></td></tr>`;}).join('')}
   </tbody></table></div>`;
 }
 function openAddUser(){
@@ -1833,7 +1879,8 @@ function openEditUser(id){
   document.getElementById('uf_name').value=u.full_name;
   document.getElementById('uf_pass').value='';
   document.getElementById('uf_admin_pass').value='';
-  document.getElementById('uf_role').value=u.role;
+  // legacy employee treat เป็น staff ใน dropdown
+  document.getElementById('uf_role').value=(u.role==='employee')?'staff':u.role;
   document.getElementById('uf_plbl').textContent='รหัสผ่านใหม่ (ว่างถ้าไม่เปลี่ยน)';
   document.getElementById('uMT').textContent='แก้ไขผู้ใช้';
   ufRoleChange();
@@ -1842,7 +1889,8 @@ function openEditUser(id){
 function ufRoleChange(){
   const role=document.getElementById('uf_role')?.value;
   const hint=document.getElementById('uf_user_hint');
-  if(hint)hint.style.display=(role==='employee')?'block':'none';
+  // staff ต้องใช้ username ตรงกับ employee_code เพื่อตอกบัตร
+  if(hint)hint.style.display=(role==='staff')?'block':'none';
 }
 async function saveUser(){
   const id=document.getElementById('uf_id').value;
@@ -1881,7 +1929,14 @@ async function saveUser(){
           p_new_password:pass||null
         })
       });
-      if(!res.ok){const e=await res.json();toast(mapRpcErr(e?.message||''),'err');return;}
+      if(!res.ok){
+        let e={};try{e=await res.json();}catch(_){}
+        console.error('[saveUser] update_user RPC error:',e);
+        const knownCodes=['unauthorized','username_exists','invalid_role','user_not_found','password_required'];
+        const isKnown=knownCodes.includes(e?.message||'');
+        toast(isKnown?mapRpcErr(e.message):`${mapRpcErr(e?.message||'')} — ${e?.message||e?.code||'unknown error'}`,'err');
+        return;
+      }
       const rows=await res.json();
       if(rows&&rows[0]){appUsers=appUsers.map(u=>u.id===parseInt(id)?{...u,...rows[0]}:u);}
       toast('บันทึกผู้ใช้แล้ว');
@@ -1899,7 +1954,14 @@ async function saveUser(){
           p_password:pass
         })
       });
-      if(!res.ok){const e=await res.json();toast(mapRpcErr(e?.message||''),'err');return;}
+      if(!res.ok){
+        let e={};try{e=await res.json();}catch(_){}
+        console.error('[saveUser] create_user RPC error:',e);
+        const knownCodes=['unauthorized','username_exists','invalid_role','user_not_found','password_required'];
+        const isKnown=knownCodes.includes(e?.message||'');
+        toast(isKnown?mapRpcErr(e.message):`${mapRpcErr(e?.message||'')} — ${e?.message||e?.code||'unknown error'}`,'err');
+        return;
+      }
       const rows=await res.json();
       if(rows&&rows[0])appUsers.push(rows[0]);
       toast('เพิ่มผู้ใช้แล้ว');
@@ -1908,6 +1970,7 @@ async function saveUser(){
     document.getElementById('uModal').style.display='none';
     renderUsers();
   }catch(e){
+    console.error('[saveUser] network/parse error:',e);
     toast('เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ','err');
   }
 }
@@ -2175,13 +2238,18 @@ function doExport(){
 let att_curTab='checkin', att_clockTimer=null;
 
 function renderAttendance(){
+  // staff (และ legacy employee) เห็นเฉพาะ checkin + history — admin เห็นทุก tab
+  const isEmp=curUser?.role!=='admin';
+  if(isEmp&&!['checkin','history'].includes(att_curTab))att_curTab='checkin';
   const tabs=[
     {k:'checkin',   l:'📲 ตอกบัตรเข้า-ออก'},
     {k:'history',   l:'📋 ประวัติตอกบัตร'},
-    {k:'report',    l:'📊 รายงาน'},
-    {k:'employees', l:'👥 จัดการพนักงาน'},
-    {k:'attsettings',l:'⚙️ ตั้งค่าเวลา'},
-    {k:'export',    l:'📤 ส่งออก Excel'},
+    ...(!isEmp?[
+      {k:'report',       l:'📊 รายงาน'},
+      {k:'employees',    l:'👥 จัดการพนักงาน'},
+      {k:'attsettings',  l:'⚙️ ตั้งค่าเวลา'},
+      {k:'export',       l:'📤 ส่งออก Excel'},
+    ]:[]),
   ];
   document.getElementById('att_content').innerHTML=
     `<div style="font-size:16px;font-weight:700;margin-bottom:14px">📋 ระบบตอกบัตรพนักงาน</div>
@@ -2208,6 +2276,7 @@ function attRender(tab){
   if(tab==='history'){attInitHistoryView();}
   if(tab==='report'){attInitReportView();}
   if(tab==='export'){attInitExportView();}
+  if(tab==='employees'){attInitEmployeesView();}
 }
 
 function attPH(icon,title,sub,badge){
@@ -2223,8 +2292,8 @@ function attUICheckin(){
   const now=new Date();
   const timeStr=now.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   const dateStr=now.toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  // ATT-EMP-a: แยก UI ตาม role
-  const isEmp=curUser?.role==='employee';
+  // ATT-EMP-a: staff (และ legacy employee) lock เป็นตัวเอง / admin เลือก dropdown
+  const isEmp=curUser?.role!=='admin';
   const empSection=isEmp
     ?`<div style="text-align:left;margin-bottom:16px;background:var(--pp);border-radius:var(--r);padding:12px 14px">
         <div style="font-size:10px;font-weight:700;color:var(--pd);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">👤 พนักงาน</div>
@@ -2257,13 +2326,19 @@ function attStartClock(){
 }
 
 function attUIHistory(){
+  // staff ดูเฉพาะตัวเอง / admin ดูทุกคน
+  const isEmp=curUser?.role!=='admin';
   return`<div class="twrap">
     <div class="tbar2">
-      <div style="font-size:13px;font-weight:700">ประวัติตอกบัตร</div>
+      <div style="font-size:13px;font-weight:700">ประวัติตอกบัตร${isEmp?'<span style="font-size:11px;font-weight:400;color:var(--g5);margin-left:8px">เฉพาะของคุณ</span>':''}</div>
       <button class="btn btn-p btn-sm" onclick="attApplyHistoryFilter()">🔍 ค้นหา</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 0;align-items:center">
-      <input id="att_hist_search" class="si" placeholder="ค้นหาชื่อ/รหัสพนักงาน" style="width:175px">
+      ${isEmp
+        ?`<input id="att_hist_search" type="hidden" value="">
+           <div style="font-size:12px;color:var(--g5);padding:5px 10px;background:var(--g0);border:1px solid var(--g2);border-radius:6px">👤 แสดงเฉพาะประวัติของ ${esc(curUser.full_name||curUser.username)}</div>`
+        :`<input id="att_hist_search" class="si" placeholder="ค้นหาชื่อ/รหัสพนักงาน" style="width:175px">`
+      }
       <input id="att_hist_from" type="date" class="fi" style="width:135px">
       <span style="color:var(--g6);font-size:13px">ถึง</span>
       <input id="att_hist_to" type="date" class="fi" style="width:135px">
@@ -2326,14 +2401,20 @@ async function attApplyHistoryFilter(){
   const body=document.getElementById('att_hist_body');
   if(!body)return;
   body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--g5)">กำลังโหลด...</td></tr>';
+  // staff (และ legacy employee) lock query ดูเฉพาะของตัวเอง — admin ดูทุกคน
+  const isEmp=curUser?.role!=='admin';
   try{
     let q='?order=log_date.desc,employee_id.asc&limit=300';
+    if(isEmp&&curUser?.username){
+      q+=`&employee_code=eq.${encodeURIComponent(curUser.username)}`;
+    }
     if(from)q+=`&log_date=gte.${from}`;
     if(to)q+=`&log_date=lte.${to}`;
     if(status!=='all'&&status!=='missing_checkout')q+=`&day_status=eq.${status}`;
     let logs=await dbGet('attendance_logs',q);
     logs=Array.isArray(logs)?logs:[];
-    if(search)logs=logs.filter(l=>(l.employee_name||'').toLowerCase().includes(search)||(l.employee_code||'').toLowerCase().includes(search));
+    // client-side search เฉพาะ admin (staff ล็อค query ฝั่ง DB แล้ว)
+    if(!isEmp&&search)logs=logs.filter(l=>(l.employee_name||'').toLowerCase().includes(search)||(l.employee_code||'').toLowerCase().includes(search));
     if(status==='missing_checkout')logs=logs.filter(l=>l.checkin_time&&!l.checkout_time);
     att_historyLogs=logs;
     body.innerHTML=attRenderHistoryRows(logs);
@@ -2439,13 +2520,186 @@ async function attLoadReport(){
 }
 
 function attUIEmployees(){
+  // เฉพาะ admin เท่านั้น — staff ไม่มีสิทธิ์จัดการพนักงาน
+  if(curUser?.role!=='admin'){
+    return`<div style="padding:60px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์เข้าถึงหน้านี้</div>`;
+  }
   return`<div class="twrap">
     <div class="tbar2">
       <div style="font-size:13px;font-weight:700">จัดการพนักงาน</div>
-      <button class="btn btn-p btn-sm" disabled style="opacity:.5;cursor:not-allowed">+ เพิ่มพนักงาน</button>
+      <button class="btn btn-p btn-sm" onclick="attEmpOpenAdd()">+ เพิ่มพนักงาน</button>
     </div>
-    ${attPH('👥','ยังไม่มีข้อมูลพนักงาน','เพิ่มพนักงานเพื่อให้สามารถตอกบัตรได้<br>เชื่อมกับ Supabase table <strong>employees</strong>','⏳ รอบ G: CRUD พนักงาน + Supabase')}
+    <div id="att_emp_list_wrap"><div style="text-align:center;padding:30px;color:var(--g5)">กำลังโหลด...</div></div>
   </div>`;
+}
+
+// รอบ G: โหลดรายการพนักงานทั้งหมด (active + inactive) จาก Supabase
+async function attInitEmployeesView(){
+  const wrap=document.getElementById('att_emp_list_wrap');
+  if(!wrap)return;
+  try{
+    // ห้าม select pin_code ทุกกรณี
+    const data=await dbGet('attendance_employees','?order=employee_code.asc&select=id,employee_code,full_name,nickname,phone,position,branch_id,branch_name,normal_checkin_time,normal_checkout_time,status');
+    att_empList=Array.isArray(data)?data:[];
+    attRenderEmployeesList(att_empList,wrap);
+  }catch(e){
+    if(wrap)wrap.innerHTML=`<div style="color:#dc2626;padding:14px;text-align:center">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message||'')}</div>`;
+  }
+}
+
+// รอบ G: render ตารางพนักงาน
+function attRenderEmployeesList(emps,wrap){
+  if(!wrap)wrap=document.getElementById('att_emp_list_wrap');
+  if(!wrap)return;
+  if(!emps||!emps.length){
+    wrap.innerHTML=attPH('👥','ยังไม่มีข้อมูลพนักงาน','กด + เพิ่มพนักงาน เพื่อเริ่มต้นใช้งานระบบตอกบัตร','');
+    return;
+  }
+  const active=emps.filter(e=>e.status==='active').length;
+  wrap.innerHTML=`
+    <div style="font-size:12px;color:var(--g5);margin-bottom:10px">พนักงานทั้งหมด ${emps.length} คน · ใช้งาน ${active} คน · ปิดใช้งาน ${emps.length-active} คน</div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
+        <th style="padding:8px 10px;text-align:left;white-space:nowrap">รหัส</th>
+        <th style="padding:8px 10px;text-align:left">ชื่อ-นามสกุล</th>
+        <th style="padding:8px 10px;text-align:left">ชื่อเล่น</th>
+        <th style="padding:8px 10px;text-align:left">ตำแหน่ง</th>
+        <th style="padding:8px 10px;text-align:left">สาขา</th>
+        <th style="padding:8px 10px;text-align:center;white-space:nowrap">เวลางาน</th>
+        <th style="padding:8px 10px;text-align:center">สถานะ</th>
+        <th style="padding:8px 10px;text-align:center">จัดการ</th>
+      </tr></thead>
+      <tbody>
+      ${emps.map(e=>{
+        const isActive=e.status==='active';
+        const tIn=e.normal_checkin_time||'—';
+        const tOut=e.normal_checkout_time||'—';
+        return`<tr style="border-bottom:1px solid var(--g2);${isActive?'':'opacity:.5;background:#fafafa'}">
+          <td style="padding:8px 10px;font-family:var(--mono);font-weight:700;white-space:nowrap">${esc(e.employee_code||'')}</td>
+          <td style="padding:8px 10px;font-weight:500">${esc(e.full_name||'')}</td>
+          <td style="padding:8px 10px;color:var(--g5)">${esc(e.nickname||'—')}</td>
+          <td style="padding:8px 10px;color:var(--g5)">${esc(e.position||'—')}</td>
+          <td style="padding:8px 10px;color:var(--g5)">${esc(e.branch_name||String(e.branch_id||'—'))}</td>
+          <td style="padding:8px 10px;text-align:center;font-size:12px;color:var(--g5);white-space:nowrap">${tIn} – ${tOut}</td>
+          <td style="padding:8px 10px;text-align:center"><span class="sb ${isActive?'sb-act':'sb-prc'}">${isActive?'ใช้งาน':'ปิดใช้'}</span></td>
+          <td style="padding:8px 10px;text-align:center">
+            <div style="display:flex;gap:4px;justify-content:center">
+              <button class="bic" onclick="attEmpOpenEdit(${e.id})" title="แก้ไข" style="font-size:12px">✏️</button>
+              <button class="bic" onclick="attEmpToggleStatus(${e.id},'${e.status}')" title="${isActive?'ปิดใช้งาน':'เปิดใช้งาน'}" style="font-size:12px">${isActive?'⛔':'✅'}</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+// รอบ G: เปิด modal เพิ่มพนักงานใหม่
+function attEmpOpenAdd(){
+  ['aef_code','aef_full_name','aef_nickname','aef_phone','aef_position','aef_branch_name','aef_checkin_time','aef_checkout_time'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  const bid=document.getElementById('aef_branch_id'); if(bid)bid.value='';
+  const st=document.getElementById('aef_status'); if(st)st.value='active';
+  document.getElementById('aef_id').value='';
+  // employee_code editable สำหรับ add
+  const codeEl=document.getElementById('aef_code');
+  if(codeEl){codeEl.removeAttribute('readonly');codeEl.style.background='';codeEl.style.color='';}
+  const hint=document.getElementById('aef_code_hint'); if(hint)hint.style.display='none';
+  document.getElementById('attEmpMT').textContent='เพิ่มพนักงาน';
+  document.getElementById('attEmpModal').style.display='flex';
+}
+
+// รอบ G: เปิด modal แก้ไขพนักงาน
+function attEmpOpenEdit(id){
+  const e=att_empList.find(x=>x.id===id);
+  if(!e)return;
+  document.getElementById('aef_id').value=e.id;
+  document.getElementById('aef_code').value=e.employee_code||'';
+  document.getElementById('aef_full_name').value=e.full_name||'';
+  document.getElementById('aef_nickname').value=e.nickname||'';
+  document.getElementById('aef_phone').value=e.phone||'';
+  document.getElementById('aef_position').value=e.position||'';
+  document.getElementById('aef_branch_id').value=e.branch_id||'';
+  document.getElementById('aef_branch_name').value=e.branch_name||'';
+  document.getElementById('aef_checkin_time').value=e.normal_checkin_time||'';
+  document.getElementById('aef_checkout_time').value=e.normal_checkout_time||'';
+  document.getElementById('aef_status').value=e.status||'active';
+  // lock employee_code — เปลี่ยนไม่ได้เพราะผูกกับ app_users.username
+  const codeEl=document.getElementById('aef_code');
+  if(codeEl){codeEl.setAttribute('readonly','readonly');codeEl.style.background='#f3f4f6';codeEl.style.color='var(--g5)';}
+  const hint=document.getElementById('aef_code_hint'); if(hint)hint.style.display='block';
+  document.getElementById('attEmpMT').textContent='แก้ไขพนักงาน';
+  document.getElementById('attEmpModal').style.display='flex';
+}
+
+// รอบ G: บันทึกพนักงาน (POST = เพิ่ม, PATCH = แก้ไข)
+async function attEmpSave(){
+  const id=document.getElementById('aef_id').value;
+  const employee_code=document.getElementById('aef_code').value.trim();
+  const full_name=document.getElementById('aef_full_name').value.trim();
+  const nickname=document.getElementById('aef_nickname').value.trim();
+  const phone=document.getElementById('aef_phone').value.trim();
+  const position=document.getElementById('aef_position').value.trim();
+  const branch_id=document.getElementById('aef_branch_id').value.trim();
+  const branch_name=document.getElementById('aef_branch_name').value.trim();
+  const normal_checkin_time=document.getElementById('aef_checkin_time').value.trim();
+  const normal_checkout_time=document.getElementById('aef_checkout_time').value.trim();
+  const status=document.getElementById('aef_status').value;
+  // validate required
+  if(!employee_code){toast('กรุณากรอกรหัสพนักงาน','err');document.getElementById('aef_code').focus();return;}
+  if(!full_name){toast('กรุณากรอกชื่อ-นามสกุล','err');document.getElementById('aef_full_name').focus();return;}
+  // ตรวจ employee_code ซ้ำ (client-side ก่อน)
+  const editId=id?parseInt(id):null;
+  const dup=att_empList.find(e=>e.employee_code===employee_code&&e.id!==editId);
+  if(dup){toast(`รหัสพนักงาน "${employee_code}" มีอยู่ในระบบแล้ว`,'err');return;}
+  const data={
+    employee_code,
+    full_name,
+    nickname:nickname||null,
+    phone:phone||null,
+    position:position||null,
+    branch_id:branch_id?parseInt(branch_id):null,
+    branch_name:branch_name||null,
+    normal_checkin_time:normal_checkin_time||null,
+    normal_checkout_time:normal_checkout_time||null,
+    status
+  };
+  try{
+    if(id){
+      // PATCH — employee_code ส่งไปด้วยได้ (readonly ค่าไม่เปลี่ยน)
+      await dbPatch('attendance_employees',parseInt(id),data);
+      att_empList=att_empList.map(e=>e.id===parseInt(id)?{...e,...data}:e);
+      toast('บันทึกพนักงานแล้ว');
+    }else{
+      const r=await dbPost('attendance_employees',data);
+      if(r&&r[0])att_empList.push(r[0]);
+      else att_empList.push({...data,id:Date.now()}); // fallback ถ้า Supabase ไม่ return
+      toast('เพิ่มพนักงานแล้ว');
+    }
+    document.getElementById('attEmpModal').style.display='none';
+    attRenderEmployeesList(att_empList);
+  }catch(e){
+    toast('เกิดข้อผิดพลาด กรุณาลองใหม่','err');
+    console.error('[attEmpSave]',e);
+  }
+}
+
+// รอบ G: เปิด/ปิดใช้งานพนักงาน (ไม่ลบถาวร)
+async function attEmpToggleStatus(id,currentStatus){
+  const newStatus=currentStatus==='active'?'inactive':'active';
+  const label=newStatus==='active'?'เปิดใช้งาน':'ปิดใช้งาน';
+  if(!confirm(`${label}พนักงานนี้?`))return;
+  try{
+    await dbPatch('attendance_employees',id,{status:newStatus});
+    att_empList=att_empList.map(e=>e.id===id?{...e,status:newStatus}:e);
+    attRenderEmployeesList(att_empList);
+    toast(`${label}แล้ว`);
+  }catch(e){
+    toast('เกิดข้อผิดพลาด','err');
+    console.error('[attEmpToggleStatus]',e);
+  }
 }
 
 function attUISettings(){
@@ -2865,6 +3119,7 @@ async function attExportSummaryXLS(){
 
 // ตัวแปร module-level สำหรับ cache ข้อมูล
 let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_pendingLogId=null, att_isProcessing=false, att_historyLogs=[];
+let att_empList=[]; // รอบ G: cache สำหรับหน้าจัดการพนักงาน (active+inactive ทั้งหมด)
 
 // ─── Bangkok Time Helpers ───
 function attFormatThaiDateTime(date){
@@ -3085,8 +3340,8 @@ async function attInitCheckinView(){
   try{
     const data=await attLoadAttendanceData();
     att_todayLogs=data.todayLogs||[];
-    if(curUser?.role==='employee'){
-      // ─── Employee mode: ล็อกเป็นพนักงานของตัวเอง ───
+    if(curUser?.role!=='admin'){
+      // ─── Staff mode: ล็อกเป็นพนักงานของตัวเอง (username === employee_code) ───
       const emp=attFindMyEmployee(data.employees);
       const disp=document.getElementById('att_emp_display');
       if(!emp){
@@ -3097,7 +3352,7 @@ async function attInitCheckinView(){
       att_curEmployee=emp;
       if(disp)disp.innerHTML=`${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>`;
     }else{
-      // ─── Admin/staff mode: dropdown เลือกพนักงาน ───
+      // ─── Admin mode: dropdown เลือกพนักงาน ───
       const sel=document.getElementById('att_emp_sel'); if(!sel)return;
       if(!data.employees.length){
         sel.innerHTML='<option value="">— ไม่พบข้อมูลพนักงาน (เพิ่มในเมนู จัดการพนักงาน) —</option>'; return;
@@ -3107,7 +3362,7 @@ async function attInitCheckinView(){
       // ATT-EMP-a: ไม่ auto-select — admin ต้องเลือกเองเสมอ
     }
   }catch(e){
-    if(curUser?.role!=='employee'){
+    if(curUser?.role==='admin'){
       const sel=document.getElementById('att_emp_sel');
       if(sel)sel.innerHTML='<option value="">— โหลดไม่สำเร็จ กรุณารีเฟรช —</option>';
     }
@@ -3171,7 +3426,7 @@ function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">🕐 เวลา</span><span><strong>${timeLabel}</strong>&nbsp;&nbsp;${stBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
-      <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>
+      ${isIn?`<div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>`:''}
     </div>
     <button onclick="attConfirmSave('${type}')" style="margin-top:14px;width:100%;padding:13px;background:${color};color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:.3px">✅ ยืนยันบันทึก${isIn?'เข้างาน':'ออกงาน'}</button>
   </div>`;
@@ -3240,7 +3495,8 @@ async function attDoCheckout(){
       return;
     }
     att_pendingLogId=todayLog.id; // checkout = PATCH แถวเดิม
-    const selfieB64=await attWaitUserSelfie(pv); // user กดปุ่มเอง — ไม่ .click() หลัง await
+    // ออกงาน: ไม่บังคับถ่ายเซลฟี่ — ส่ง null โดยตรง (เซลฟี่เฉพาะเข้างาน)
+    const selfieB64=null;
     const payload=attPrepareAttendancePayload('checkout',emp,settings,gps,selfieB64,todayLog.checkin_time);
     att_pendingPayload=payload;
     attShowResultPreview('checkout',payload,gps,selfieB64,emp,settings);
@@ -3320,7 +3576,7 @@ function attShowSavedSuccess(type,payload,gps,selfieB64,emp,settings){
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
       ${extraRow}
       ${otRow}
-      <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>
+      ${isIn?`<div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>`:''}
     </div>
     <div style="margin-top:14px;padding:10px 14px;background:${color}18;border-radius:8px;font-size:12px;color:${color};font-weight:700">✅ บันทึกลง Supabase สำเร็จแล้ว</div>
   </div>`;
