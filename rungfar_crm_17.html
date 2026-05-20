@@ -1275,8 +1275,9 @@ async function showApp(){
     const el=document.getElementById(id);if(el)el.style.display='';
   });
   // 2) ซ่อน admin-only items ถ้าเป็น staff (หรือ legacy employee)
+  // niImport = นำเข้าข้อมูล → staff เห็นได้ (พนักงานออฟฟิศใช้ CRM จริง)
   if(!isAdmin){
-    ['niImport','niSettings','niUsers','niSecLog'].forEach(id=>{
+    ['niSettings','niUsers','niSecLog'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
     });
   }
