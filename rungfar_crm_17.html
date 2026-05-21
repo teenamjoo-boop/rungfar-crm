@@ -403,7 +403,7 @@ textarea.fi2{resize:vertical;min-height:65px}
   </div>
   <div class="nsec" id="sideMain">
     <div class="nlbl">เมนูหลัก</div>
-    <div class="ni on" onclick="gv('dash')"><span class="ic">📊</span>แดชบอร์ด</div>
+    <div class="ni" onclick="gv('dash')"><span class="ic">📊</span>แดชบอร์ด</div>
     <div class="ni" onclick="gv('customers')"><span class="ic">👥</span>ลูกค้าทั้งหมด <span class="nbadge ok" id="nbTotal">0</span></div>
     <div class="ni" onclick="gv('alerts')"><span class="ic">🔔</span>แจ้งเตือน <span class="nbadge" id="nbAlert">0</span></div>
     <div class="ni" onclick="gv('employers')"><span class="ic">🏢</span>นายจ้าง/บริษัท</div>
@@ -747,7 +747,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 
 <!-- MODAL: BRANCH (BRANCH-MGMT) -->
 <div class="mo" id="attBranchModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-<div class="mb mb-sm" onclick="event.stopPropagation()">
+<div class="mb" onclick="event.stopPropagation()">
   <div class="mh"><div class="mt" id="attBranchMT">เพิ่มสาขา</div><button class="xbtn" onclick="document.getElementById('attBranchModal').style.display='none'">×</button></div>
   <div class="mbody">
     <div class="fg" style="gap:11px">
@@ -762,7 +762,51 @@ textarea.fi2{resize:vertical;min-height:65px}
           <option value="inactive">⛔ ปิดใช้งาน (Inactive)</option>
         </select>
       </div>
-      <div style="font-size:11px;color:var(--g5);padding:8px 10px;background:var(--pp);border-radius:var(--r)">💡 เวลาเริ่มต้นของสาขาใช้เป็น fallback เมื่อพนักงานไม่มีเวลาเฉพาะตัว</div>
+      <!-- GPS-BRANCH-LOCK: GPS fields -->
+      <div class="fgi full" style="border-top:1px solid var(--g2);padding-top:10px">
+        <label class="fl" style="font-weight:700;color:var(--g6)">📍 พิกัด GPS สาขา</label>
+        <!-- GPS-BRANCH-UX-LITE: วางพิกัดจาก Google Maps -->
+        <div style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r);padding:10px">
+          <div style="font-size:11px;font-weight:600;color:#0369a1;margin-bottom:6px">📋 วางพิกัดจาก Google Maps</div>
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <input class="fi2" id="abf_coords_paste" placeholder="วางพิกัดที่นี่ เช่น 13.756330, 100.501765" autocomplete="off" style="flex:1;font-size:12px">
+            <button type="button" onclick="attBranchParseCoords()" style="padding:0 14px;background:#0369a1;color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0">ดึงพิกัด</button>
+          </div>
+          <div style="font-size:10px;color:#0369a1;margin-top:6px;line-height:1.6">
+            💡 วิธีคัดลอก: เปิด Google Maps → กดค้าง (มือถือ) หรือคลิกขวา (PC) ที่ตำแหน่งสาขา → แตะพิกัดที่แสดง → วางในช่องนี้
+          </div>
+        </div>
+        <div id="abf_parse_msg" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+        <!-- lat/lng inputs -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <div><label class="fl" style="font-size:11px">ละติจูด</label><input class="fi2" id="abf_lat" type="number" step="any" placeholder="เช่น 13.7563" autocomplete="off"></div>
+          <div><label class="fl" style="font-size:11px">ลองจิจูด</label><input class="fi2" id="abf_lng" type="number" step="any" placeholder="เช่น 100.5018" autocomplete="off"></div>
+        </div>
+        <!-- ปุ่มแถวล่าง: ใช้ตำแหน่งปัจจุบัน + เปิด Google Maps -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <button type="button" onclick="attBranchGetMyLocation()" style="padding:9px 6px;background:var(--pp);color:var(--pd);border:1.5px dashed var(--p);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">📍 ใช้ตำแหน่งปัจจุบัน</button>
+          <button type="button" onclick="attBranchOpenMap()" style="padding:9px 6px;background:#16a34a;color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">🗺️ เปิด Google Maps</button>
+        </div>
+        <div id="abf_loc_msg" style="font-size:11px;color:var(--g5);margin-top:4px;min-height:16px"></div>
+      </div>
+      <div class="fgi full" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label class="fl" style="font-size:11px">รัศมีที่อนุญาต (เมตร)</label>
+          <input class="fi2" id="abf_radius" type="number" min="50" max="5000" placeholder="200">
+          <div style="font-size:10px;color:var(--g4);margin-top:3px;line-height:1.5">100–200 ม. ออฟฟิศทั่วไป<br>300–500 ม. GPS เพี้ยน/พื้นที่กว้าง</div>
+        </div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-start;padding-top:18px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="abf_gps_required" checked style="width:16px;height:16px;cursor:pointer">
+            <span>บังคับใช้ GPS</span>
+          </label>
+          <div style="font-size:10px;color:var(--g4);margin-top:4px">ปิด = ตอกบัตรได้โดยไม่ต้องเช็ก GPS</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--g5);padding:8px 10px;background:var(--pp);border-radius:var(--r);line-height:1.6">
+        💡 เวลาเริ่มต้นของสาขาใช้เป็น fallback เมื่อพนักงานไม่มีเวลาเฉพาะตัว<br>
+        📍 พิกัด GPS ใช้บังคับพนักงานต้องอยู่ในพื้นที่สาขาก่อนตอกบัตร
+      </div>
     </div>
   </div>
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attBranchModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attBranchSave()">💾 บันทึก</button></div>
@@ -1717,6 +1761,10 @@ async function showApp(){
   await loadAll(true);
   hideLoading();
   fillSelects();renderDash();renderSidebar();renderSettings();
+  // set initial nav active (dash) — ไม่ผ่าน gv() เพื่อไม่ re-render
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
+  const niInit=document.querySelector(`.ni[onclick*="'dash'"]`);
+  if(niInit)niInit.classList.add('on');
   // Apply saved language
   setLang(curLang);
   // BRANCH-LIGHT: staff → fetch ข้อมูลพนักงานตัวเองในพื้นหลัง เพื่อแสดงสาขาใน sidebar
@@ -1739,7 +1787,7 @@ async function loadAll(silent=false){
     [customers,groups,branches,employers,appUsers]=await Promise.all([
       dbGet('customers','?order=name.asc&limit=2000'),
       dbGet('groups','?order=name.asc'),
-      dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status'),
+      dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required'),
       dbGet('employers','?order=name.asc'),
       dbGet('app_users','?order=full_name.asc&select=id,username,full_name,role,is_active'),
     ]);
@@ -1813,6 +1861,10 @@ function gv(v,opts={}){
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
   const el=document.getElementById('view-'+v);if(el)el.classList.add('on');
   curView=v;
+  // อัปเดต sidebar nav active state
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
+  const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
+  if(niActive)niActive.classList.add('on');
   const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),seclog:T('seclog')};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
@@ -2958,7 +3010,6 @@ async function attApplyHistoryFilter(){
 function attRenderHistoryRows(logs){
   if(!logs.length)return`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--g5)">${T('attNoRecord')}</td></tr>`;
   const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
-  const radius=att_branchSettings?.allowed_radius_meter||200;
   const stMap=()=>({present:T('attStPresent'),late:T('attStLate'),absent:T('attStAbsent'),half_day:T('attStHalfDay'),holiday:T('attStHoliday'),leave:T('attStLeave'),outside:T('attStOutside')});
   const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',outside:'#fef9c3'};
   return logs.map(l=>{
@@ -2968,8 +3019,14 @@ function attRenderHistoryRows(logs){
     const work=fmtMin(l.total_work_minutes||0);
     const ot=l.ot_minutes>0?`<span style="color:#7c3aed">${fmtMin(l.ot_minutes)}</span>`:'—';
     const late=l.late_minutes>0?`<br><span style="font-size:11px;color:#d97706">สาย ${l.late_minutes}น.</span>`:'';
-    const gpsOk=l.checkin_distance_m==null||l.checkin_distance_m<=radius;
-    const gps=l.checkin_distance_m!=null?`<span style="color:${gpsOk?'#15803d':'#dc2626'}">${l.checkin_distance_m}ม.</span>`:'—';
+    const _logBr=branches.find(b=>b.id===l.branch_id)||null;
+    const _logR=_logBr?.allowed_radius_meters!=null?_logBr.allowed_radius_meters:(att_branchSettings?.allowed_radius_meter||200);
+    const gpsOk=l.checkin_distance_m==null||l.checkin_distance_m<=_logR;
+    const gpsStatusMap={in_area:'✅',out_of_area:'🚫',no_gps:'📡',no_coords:'❓',no_radius:'⚙️'};
+    const gpsStatusLabel=l.gps_status?gpsStatusMap[l.gps_status]||l.gps_status:'';
+    const gps=l.checkin_distance_m!=null
+      ?`<span style="color:${gpsOk?'#15803d':'#dc2626'}">${l.checkin_distance_m}ม.</span>&nbsp;${gpsStatusLabel}`
+      :(gpsStatusLabel?gpsStatusLabel:'—');
     return`<tr style="border-bottom:1px solid var(--g2)">
       <td style="padding:7px 6px;font-size:12px;white-space:nowrap">${dateStr}</td>
       <td style="padding:7px 6px;font-size:12px;font-weight:600">${esc(l.employee_name||'—')}<br><span style="font-weight:400;color:var(--g5);font-size:11px">${esc(l.employee_code||'')}</span></td>
@@ -3263,7 +3320,7 @@ function attUIBranches(){
 async function attInitBranchesView(){
   const wrap=document.getElementById('att_branch_list_wrap'); if(!wrap)return;
   try{
-    const data=await dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status');
+    const data=await dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required');
     branches=Array.isArray(data)?data:[];
     attRenderBranchesList(branches,wrap);
   }catch(e){
@@ -3283,6 +3340,7 @@ function attRenderBranchesList(brs,wrap){
         <th style="padding:8px 10px;text-align:left">ชื่อสาขา</th>
         <th style="padding:8px 10px;text-align:center;white-space:nowrap">เวลาเข้า</th>
         <th style="padding:8px 10px;text-align:center;white-space:nowrap">เวลาออก</th>
+        <th style="padding:8px 10px;text-align:center;white-space:nowrap">📍 GPS</th>
         <th style="padding:8px 10px;text-align:center">สถานะ</th>
         <th style="padding:8px 10px;text-align:center">จัดการ</th>
       </tr></thead>
@@ -3291,10 +3349,19 @@ function attRenderBranchesList(brs,wrap){
         const isActive=b.status!=='inactive';
         const tIn=(b.normal_checkin_time||'').slice(0,5)||'—';
         const tOut=(b.normal_checkout_time||'').slice(0,5)||'—';
+        const hasCoords=b.latitude!=null&&b.longitude!=null;
+        const radius=b.allowed_radius_meters!=null?b.allowed_radius_meters:'—';
+        const gpsReq=b.gps_required!==false;
+        const mapsUrl=hasCoords?`https://www.google.com/maps?q=${b.latitude},${b.longitude}&z=17`:`https://www.google.com/maps/search/${encodeURIComponent(b.name||'')}`;
+        const mapBtn=`<a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" title="เปิด Google Maps" style="display:inline-block;margin-top:3px;padding:2px 7px;background:#16a34a;color:#fff;border-radius:4px;font-size:10px;font-weight:600;text-decoration:none;line-height:1.6">🗺️ แผนที่</a>`;
+        const gpsBadge=hasCoords
+          ?`<div style="font-size:11px;color:#15803d">✅ ตั้งค่าแล้ว</div><div style="font-size:10px;color:var(--g5)">รัศมี ${radius} ม.${gpsReq?' · บังคับ':' · ไม่บังคับ'}</div>${mapBtn}`
+          :`<div style="font-size:11px;color:#dc2626">❌ ยังไม่ตั้งค่า</div>${mapBtn}`;
         return`<tr style="border-bottom:1px solid var(--g2);${isActive?'':'opacity:.55;background:#fafafa'}">
           <td style="padding:8px 10px;font-weight:600">${esc(b.name||'')}</td>
           <td style="padding:8px 10px;text-align:center;font-family:var(--mono);font-size:12px">${tIn}</td>
           <td style="padding:8px 10px;text-align:center;font-family:var(--mono);font-size:12px">${tOut}</td>
+          <td style="padding:8px 10px;text-align:center">${gpsBadge}</td>
           <td style="padding:8px 10px;text-align:center"><span class="sb ${isActive?'sb-act':'sb-prc'}">${isActive?'ใช้งาน':'ปิด'}</span></td>
           <td style="padding:8px 10px;text-align:center">
             <div style="display:flex;gap:4px;justify-content:center">
@@ -3311,8 +3378,10 @@ function attRenderBranchesList(brs,wrap){
 // เปิด modal เพิ่มสาขา
 function attBranchOpenAdd(){
   att_editBranchId=null;
-  ['abf_name','abf_checkin','abf_checkout'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['abf_name','abf_checkin','abf_checkout','abf_lat','abf_lng','abf_radius','abf_coords_paste'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const st=document.getElementById('abf_status'); if(st)st.value='active';
+  const gpsReq=document.getElementById('abf_gps_required'); if(gpsReq)gpsReq.checked=true;
+  ['abf_loc_msg','abf_parse_msg'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   document.getElementById('attBranchMT').textContent='เพิ่มสาขา';
   document.getElementById('attBranchModal').style.display='flex';
 }
@@ -3325,6 +3394,13 @@ function attBranchOpenEdit(id){
   document.getElementById('abf_checkin').value=(b.normal_checkin_time||'').slice(0,5);
   document.getElementById('abf_checkout').value=(b.normal_checkout_time||'').slice(0,5);
   document.getElementById('abf_status').value=b.status||'active';
+  // GPS fields
+  const latEl=document.getElementById('abf_lat'); if(latEl)latEl.value=b.latitude!=null?b.latitude:'';
+  const lngEl=document.getElementById('abf_lng'); if(lngEl)lngEl.value=b.longitude!=null?b.longitude:'';
+  const radEl=document.getElementById('abf_radius'); if(radEl)radEl.value=b.allowed_radius_meters!=null?b.allowed_radius_meters:'';
+  const gpsReq=document.getElementById('abf_gps_required'); if(gpsReq)gpsReq.checked=b.gps_required!==false;
+  ['abf_loc_msg','abf_parse_msg'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const cp=document.getElementById('abf_coords_paste'); if(cp)cp.value='';
   document.getElementById('attBranchMT').textContent='แก้ไขสาขา';
   document.getElementById('attBranchModal').style.display='flex';
 }
@@ -3335,15 +3411,29 @@ async function attBranchSave(){
   const cin=document.getElementById('abf_checkin').value.trim();
   const cout=document.getElementById('abf_checkout').value.trim();
   const status=document.getElementById('abf_status').value;
+  const latRaw=document.getElementById('abf_lat')?.value.trim();
+  const lngRaw=document.getElementById('abf_lng')?.value.trim();
+  const radRaw=document.getElementById('abf_radius')?.value.trim();
+  const gpsRequired=document.getElementById('abf_gps_required')?.checked!==false;
   if(!name){toast('กรุณากรอกชื่อสาขา','err');return;}
   const timeRx=/^\d{2}:\d{2}$/;
   if(cin&&!timeRx.test(cin)){toast('เวลาเข้างานต้องเป็น HH:MM เช่น 08:30','err');return;}
   if(cout&&!timeRx.test(cout)){toast('เวลาออกงานต้องเป็น HH:MM เช่น 17:30','err');return;}
+  const lat=latRaw!==''&&latRaw!=null?parseFloat(latRaw):null;
+  const lng=lngRaw!==''&&lngRaw!=null?parseFloat(lngRaw):null;
+  const radius=radRaw!==''&&radRaw!=null?parseInt(radRaw):null;
+  if(lat!=null&&(isNaN(lat)||lat<-90||lat>90)){toast('ละติจูดต้องอยู่ระหว่าง -90 ถึง 90','err');return;}
+  if(lng!=null&&(isNaN(lng)||lng<-180||lng>180)){toast('ลองจิจูดต้องอยู่ระหว่าง -180 ถึง 180','err');return;}
+  if((lat!=null)!==(lng!=null)){toast('กรุณากรอกทั้งละติจูดและลองจิจูด หรือเว้นว่างทั้งคู่','err');return;}
+  if(radius!=null&&(isNaN(radius)||radius<50||radius>5000)){toast('รัศมีต้องอยู่ระหว่าง 50–5,000 เมตร','err');return;}
   const data={
     name,
     normal_checkin_time:cin?(cin+':00'):null,
     normal_checkout_time:cout?(cout+':00'):null,
-    status
+    status,
+    latitude:lat, longitude:lng,
+    allowed_radius_meters:radius,
+    gps_required:gpsRequired
   };
   try{
     if(att_editBranchId){
@@ -3718,7 +3808,7 @@ async function attExportDetailCSV(){
     const logs=await dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc,employee_id.asc&limit=5000`);
     const arr=Array.isArray(logs)?logs:[];
     const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""').replace(/\n/g,' ')+'"';
-    const headers=['วันที่','รหัสพนักงาน','ชื่อพนักงาน','สาขา','เวลาเข้างาน','เวลาออกงาน','ชม.ทำงาน','สายกี่นาที','OT','สถานะ','GPS เข้า(ม.)','GPS ออก(ม.)','หมายเหตุ','admin note'];
+    const headers=['วันที่','รหัสพนักงาน','ชื่อพนักงาน','สาขา','เวลาเข้างาน','เวลาออกงาน','ชม.ทำงาน','สายกี่นาที','OT','สถานะ','GPS เข้า(ม.)','GPS ออก(ม.)','GPS Status','นอกพื้นที่','หมายเหตุ','admin note'];
     const rows=[headers.map(esc).join(',')];
     arr.forEach(l=>{
       const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'';
@@ -3728,6 +3818,7 @@ async function attExportDetailCSV(){
         fmtMin(l.total_work_minutes||0),l.late_minutes||0,fmtMin(l.ot_minutes||0),
         stMap[l.day_status]||l.day_status||'',
         l.checkin_distance_m??'',l.checkout_distance_m??'',
+        l.gps_status||'',l.is_out_of_area!=null?(l.is_out_of_area?'ใช่':'ไม่'):'',
         l.note||'',l.admin_note||''
       ].map(esc).join(','));
     });
@@ -3898,6 +3989,149 @@ function attCalculateDistance(lat1,lon1,lat2,lon2){
   return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
 }
 
+// GPS-BRANCH-LOCK: ดึงตำแหน่งปัจจุบันเพื่อกรอกใน branch modal
+function attBranchGetMyLocation(){
+  const lm=document.getElementById('abf_loc_msg');
+  const latEl=document.getElementById('abf_lat');
+  const lngEl=document.getElementById('abf_lng');
+  if(!lm||!latEl||!lngEl)return;
+  if(!navigator.geolocation){lm.textContent='❌ browser ไม่รองรับ Geolocation';lm.style.color='#dc2626';return;}
+  lm.textContent='⏳ กำลังรับตำแหน่ง...';lm.style.color='var(--g5)';
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const lat=pos.coords.latitude.toFixed(7);
+      const lng=pos.coords.longitude.toFixed(7);
+      latEl.value=lat; lngEl.value=lng;
+      lm.textContent=`✅ ได้ตำแหน่งแล้ว ±${Math.round(pos.coords.accuracy)} ม.`;
+      lm.style.color='#15803d';
+    },
+    ()=>{lm.textContent='❌ ไม่ได้รับตำแหน่ง กรุณาอนุญาต Location ใน browser';lm.style.color='#dc2626';},
+    {enableHighAccuracy:true,timeout:12000,maximumAge:0}
+  );
+}
+
+// GPS-BRANCH-UX-LITE: parse พิกัดจากช่อง paste → เติม lat/lng fields
+function attBranchParseCoords(){
+  const raw=(document.getElementById('abf_coords_paste')?.value||'').trim();
+  const msg=document.getElementById('abf_parse_msg');
+  const _err=t=>{if(msg){msg.textContent=t;msg.style.color='#dc2626';}};
+  const _ok=t=>{if(msg){msg.textContent=t;msg.style.color='#15803d';}};
+  if(!raw){_err('กรุณาวางพิกัดก่อนกดดึงพิกัด');return;}
+  // รองรับรูปแบบ: "lat, lng" / "lat lng" / URL Google Maps ที่มี @lat,lng หรือ q=lat,lng
+  const rx=/(-?\d{1,3}\.\d{3,})[,\s]+(-?\d{1,3}\.\d{3,})/;
+  const m=raw.match(rx);
+  if(!m){_err('ไม่พบพิกัดในข้อความ ลองคัดลอกพิกัดตรง ๆ เช่น 13.7563, 100.5018');return;}
+  const lat=parseFloat(m[1]), lng=parseFloat(m[2]);
+  if(lat<-90||lat>90){_err(`ละติจูด ${lat} ไม่ถูกต้อง (ต้องอยู่ระหว่าง -90 ถึง 90)`);return;}
+  if(lng<-180||lng>180){_err(`ลองจิจูด ${lng} ไม่ถูกต้อง (ต้องอยู่ระหว่าง -180 ถึง 180)`);return;}
+  const latEl=document.getElementById('abf_lat'); if(latEl)latEl.value=lat;
+  const lngEl=document.getElementById('abf_lng'); if(lngEl)lngEl.value=lng;
+  _ok(`✅ ดึงพิกัดสำเร็จ: ${lat}, ${lng}`);
+}
+
+// GPS-BRANCH-UX-LITE: เปิด Google Maps ที่พิกัดสาขา (ไม่ต้องใช้ API)
+function attBranchOpenMap(){
+  const lat=parseFloat(document.getElementById('abf_lat')?.value||'');
+  const lng=parseFloat(document.getElementById('abf_lng')?.value||'');
+  const name=(document.getElementById('abf_name')?.value||'').trim();
+  let url;
+  if(!isNaN(lat)&&!isNaN(lng)&&lat!==0&&lng!==0){
+    url=`https://www.google.com/maps?q=${lat},${lng}&z=17`;
+  } else if(name){
+    url=`https://www.google.com/maps/search/${encodeURIComponent(name)}`;
+  } else {
+    url='https://www.google.com/maps';
+  }
+  window.open(url,'_blank','noopener,noreferrer');
+}
+
+// GPS-BRANCH-LOCK: ตรวจสอบ GPS ก่อนอนุญาตตอกบัตร
+// คืน {ok:true, distM, radius} หรือ {ok:false} พร้อมแสดง error card ใน pv
+function attCheckGPSLock(gps, branch, pv, type){
+  const retry=type==='checkin'?'attDoCheckin()':'attDoCheckout()';
+  const branchName=(branch&&branch.name)?esc(branch.name):'สาขา';
+  const mapLink=(branch&&branch.latitude!=null&&branch.longitude!=null)
+    ?`https://www.google.com/maps?q=${branch.latitude},${branch.longitude}`:null;
+
+  const _block=html=>{if(pv)pv.innerHTML=html;return{ok:false};};
+
+  // 1. พนักงานไม่มีสาขา (branch_id null หรือ branch ไม่เจอใน cache)
+  if(!branch||branch.id==null){
+    return _block(`<div style="background:#fef2f2;border-radius:var(--rx);border:2px solid #fca5a5;padding:22px;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">🏢</div>
+      <div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:8px">ยังไม่ได้กำหนดสาขา</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:16px">พนักงานนี้ยังไม่ได้กำหนดสาขา<br>กรุณาติดต่อผู้ดูแลระบบ</div>
+      <button onclick="${retry}" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🔄 ลองใหม่</button>
+    </div>`);
+  }
+
+  // 2. สาขา gps_required = false → อนุญาตผ่าน
+  if(branch.gps_required===false){
+    return{ok:true,distM:null,radius:null};
+  }
+
+  // 3. สาขาไม่มีพิกัด GPS
+  if(branch.latitude==null||branch.longitude==null){
+    return _block(`<div style="background:#fef2f2;border-radius:var(--rx);border:2px solid #fca5a5;padding:22px;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">📍</div>
+      <div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:8px">ยังไม่ได้ตั้งค่าพิกัด GPS</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:6px">สาขา <strong>${branchName}</strong> ยังไม่ได้ตั้งค่าพิกัด GPS</div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่าพิกัดสาขา</div>
+      <button onclick="${retry}" style="padding:10px 24px;background:#6b7280;color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🔄 ลองใหม่</button>
+    </div>`);
+  }
+
+  // 4. ไม่ได้รับ GPS จาก browser
+  if(!gps){
+    return _block(`<div style="background:#fffbeb;border-radius:var(--rx);border:2px solid #fcd34d;padding:22px;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">📡</div>
+      <div style="font-size:14px;font-weight:700;color:#d97706;margin-bottom:8px">ไม่ได้รับสัญญาณ GPS</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:6px">กรุณาอนุญาตการเข้าถึงตำแหน่งเพื่อยืนยันว่าคุณอยู่ในพื้นที่</div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:16px">สาขา <strong>${branchName}</strong><br>เปิด Settings ของ browser แล้วอนุญาต Location จากนั้นลองใหม่</div>
+      <button onclick="${retry}" style="padding:10px 24px;background:#d97706;color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">📡 อนุญาตตำแหน่งแล้ว ลองใหม่</button>
+    </div>`);
+  }
+
+  // 5. คำนวณระยะทาง
+  const distM=attCalculateDistance(gps.latitude,gps.longitude,branch.latitude,branch.longitude);
+
+  // 6. หา radius: branch → settings fallback
+  const radius=branch.allowed_radius_meters!=null
+    ?branch.allowed_radius_meters
+    :(att_branchSettings&&att_branchSettings.allowed_radius_meter!=null?att_branchSettings.allowed_radius_meter:null);
+
+  if(radius==null){
+    return _block(`<div style="background:#fef2f2;border-radius:var(--rx);border:2px solid #fca5a5;padding:22px;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">⚙️</div>
+      <div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:8px">ยังไม่ได้ตั้งค่ารัศมี GPS</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:16px">สาขา <strong>${branchName}</strong> ยังไม่ได้ตั้งค่ารัศมีที่อนุญาต<br>กรุณาติดต่อผู้ดูแลระบบ</div>
+      <button onclick="${retry}" style="padding:10px 24px;background:#6b7280;color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🔄 ลองใหม่</button>
+    </div>`);
+  }
+
+  // 7. เช็กว่าอยู่ในพื้นที่ไหม
+  if(distM>radius){
+    const distLabel=distM>=1000?`${(distM/1000).toFixed(2)} กม.`:`${distM} เมตร`;
+    const mapBtn=mapLink
+      ?`<a href="${mapLink}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;border-radius:var(--r);font-size:13px;font-weight:600;text-decoration:none">🗺️ ดูแผนที่สาขา</a>`:'';
+    return _block(`<div style="background:#fef2f2;border-radius:var(--rx);border:2px solid #fca5a5;padding:22px;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">🚫</div>
+      <div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:6px">อยู่นอกพื้นที่สาขา</div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">${branchName}</div>
+      <div style="font-size:26px;font-weight:800;color:#dc2626;margin:8px 0">${distLabel}</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:4px">รัศมีที่อนุญาต: ${radius} เมตร</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:16px">ไม่สามารถตอกบัตรได้ คุณอยู่นอกพื้นที่สาขา</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button onclick="${retry}" style="padding:10px 24px;background:#dc2626;color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🔄 ลองใหม่</button>
+        ${mapBtn}
+      </div>
+    </div>`);
+  }
+
+  // ✅ ผ่าน GPS lock
+  return{ok:true,distM,radius};
+}
+
 // 3. เปิด file picker (camera capture) ถ่าย selfie — คืน Promise<base64|null>
 function attCaptureSelfie(){
   return new Promise(resolve=>{
@@ -3971,15 +4205,20 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
   const logDate=attGetThaiLogDate(now);
   const nowISO=now.toISOString();
   const nowMins=parseInt(bkkStr.slice(11,13))*60+parseInt(bkkStr.slice(14,16));
-  const allowedR=(settings&&settings.allowed_radius_meter)||200;
+  // หา branch ของพนักงานจาก local cache — ใช้ทั้ง GPS lock และ fallback เวลา
+  const _empBranch=branches.find(b=>b.id===emp.branch_id)||null;
+  // GPS-BRANCH-LOCK: ใช้พิกัดสาขา (branch) แทน settings — fallback settings radius ถ้า branch ไม่มี
+  const _branchLat=_empBranch?.latitude??null;
+  const _branchLng=_empBranch?.longitude??null;
+  const allowedR=_empBranch?.allowed_radius_meters!=null
+    ?_empBranch.allowed_radius_meters
+    :(settings&&settings.allowed_radius_meter!=null?settings.allowed_radius_meter:200);
   let distM=null;
-  if(gps&&settings&&settings.branch_latitude&&settings.branch_longitude){
-    distM=attCalculateDistance(gps.latitude,gps.longitude,settings.branch_latitude,settings.branch_longitude);
+  if(gps&&_branchLat!=null&&_branchLng!=null){
+    distM=attCalculateDistance(gps.latitude,gps.longitude,_branchLat,_branchLng);
   }
   const isOutside=distM!==null&&distM>allowedR;
-
-  // BRANCH-MGMT: หา branch จาก local cache เพื่อ fallback เวลา
-  const _empBranch=branches.find(b=>b.id===emp.branch_id)||null;
+  const gpsStatus=!gps?'no_gps':(_branchLat==null?'no_coords':isOutside?'out_of_area':'in_area');
   if(type==='checkin'){
     // priority: emp → branch → settings → default
     const _cinTime=(emp&&emp.normal_checkin_time)
@@ -3994,7 +4233,7 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
       checkin_time:nowISO,
       checkin_latitude:gps?gps.latitude:null, checkin_longitude:gps?gps.longitude:null,
       checkin_accuracy:gps?gps.accuracy:null, checkin_selfie:selfieB64||null,
-      checkin_distance_m:distM,
+      checkin_distance_m:distM, gps_status:gpsStatus, is_out_of_area:isOutside,
       checkin_status:isOutside?'outside':lateMin>0?'late':'normal',
       late_minutes:lateMin,
       day_status:isOutside?'outside':lateMin>0?'late':'present',
@@ -4013,7 +4252,7 @@ function attPrepareAttendancePayload(type,emp,settings,gps,selfieB64,checkinTime
       checkout_time:nowISO,
       checkout_latitude:gps?gps.latitude:null, checkout_longitude:gps?gps.longitude:null,
       checkout_accuracy:gps?gps.accuracy:null, checkout_selfie:selfieB64||null,
-      checkout_distance_m:distM,
+      checkout_distance_m:distM, gps_status:gpsStatus, is_out_of_area:isOutside,
       checkout_status:isOutside?'outside':earlyMin>0?'early':'normal',
       early_leave_minutes:earlyMin, total_work_minutes:totalMins,
       ot_minutes:attCalculateOTMinutes(checkinTime,nowISO,settings),
@@ -4153,14 +4392,15 @@ function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
     ?`<span class="att-badge-ok">✅ GPS สำเร็จ ±${gps.accuracy} ม.</span>`
     :`<span class="att-badge-err">❌ ไม่ได้รับ GPS — กรุณาอนุญาตแล้วลองใหม่</span>`;
 
-  // ระยะห่างสาขา
+  // ระยะห่างสาขา — ใช้ branch radius (GPS-BRANCH-LOCK)
   const dm=isIn?payload.checkin_distance_m:payload.checkout_distance_m;
-  const allowedR=(settings&&settings.allowed_radius_meter)||200;
+  const _pvBr=branches.find(b=>b.id===emp.branch_id)||null;
+  const allowedR=_pvBr?.allowed_radius_meters!=null?_pvBr.allowed_radius_meters:(settings?.allowed_radius_meter||200);
   const distBadge=dm!=null
     ?`<strong>${dm.toLocaleString()} เมตร</strong>&nbsp;${dm<=allowedR
         ?'<span class="att-badge-ok">✅ ในพื้นที่</span>'
         :'<span class="att-badge-late">⚠️ นอกพื้นที่</span>'}`
-    :`<span style="color:var(--g4)">— ยังไม่ตั้งค่า GPS สาขา —</span>`;
+    :`<span style="color:var(--g4)">— ${_pvBr&&_pvBr.latitude==null?'ยังไม่ตั้งค่า GPS สาขา':'ไม่มีข้อมูลระยะ'} —</span>`;
 
   // เวลา
   const rawTime=isIn?payload.checkin_time:payload.checkout_time;
@@ -4220,6 +4460,10 @@ async function attDoCheckin(){
       return;
     }
     att_pendingLogId=null; // checkin = INSERT แถวใหม่
+    // GPS-BRANCH-LOCK: ตรวจสอบก่อนไปขั้นเซลฟี่
+    const _empBr=branches.find(b=>b.id===emp.branch_id)||null;
+    const gpsCheck=attCheckGPSLock(gps,_empBr,pv,'checkin');
+    if(!gpsCheck.ok)return;
     const selfieB64=await attWaitUserSelfie(pv); // user กดปุ่มเอง — ไม่ .click() หลัง await
     const payload=attPrepareAttendancePayload('checkin',emp,settings,gps,selfieB64);
     att_pendingPayload=payload;
@@ -4259,6 +4503,10 @@ async function attDoCheckout(){
       return;
     }
     att_pendingLogId=todayLog.id; // checkout = PATCH แถวเดิม
+    // GPS-BRANCH-LOCK: ตรวจสอบก่อน prepare payload
+    const _empBr=branches.find(b=>b.id===emp.branch_id)||null;
+    const gpsCheck=attCheckGPSLock(gps,_empBr,pv,'checkout');
+    if(!gpsCheck.ok)return;
     // ออกงาน: ไม่บังคับถ่ายเซลฟี่ — ส่ง null โดยตรง (เซลฟี่เฉพาะเข้างาน)
     const selfieB64=null;
     const payload=attPrepareAttendancePayload('checkout',emp,settings,gps,selfieB64,todayLog.checkin_time);
@@ -4310,10 +4558,11 @@ function attShowSavedSuccess(type,payload,gps,selfieB64,emp,settings){
   }
 
   const dm=isIn?payload.checkin_distance_m:payload.checkout_distance_m;
-  const allowedR=(settings&&settings.allowed_radius_meter)||200;
+  const _ssBr=branches.find(b=>b.id===emp.branch_id)||null;
+  const allowedR=_ssBr?.allowed_radius_meters!=null?_ssBr.allowed_radius_meters:(settings?.allowed_radius_meter||200);
   const distBadge=dm!=null
     ?`<strong>${dm.toLocaleString()} เมตร</strong>&nbsp;${dm<=allowedR?'<span class="att-badge-ok">✅ ในพื้นที่</span>':'<span class="att-badge-late">⚠️ นอกพื้นที่</span>'}`
-    :`<span style="color:var(--g4)">— ไม่มีข้อมูล GPS สาขา —</span>`;
+    :`<span style="color:var(--g4)">— ไม่มีข้อมูลระยะ —</span>`;
 
   const gpsBadge=gps?`<span class="att-badge-ok">✅ GPS สำเร็จ ±${gps.accuracy} ม.</span>`:'<span class="att-badge-err">❌ ไม่มี GPS</span>';
 
@@ -4431,6 +4680,9 @@ async function attConfirmSave(type){
 //     - ✅ สถานะ: ปกติ / สาย / ออกงาน / นอกพื้นที่
 //     - ✅ สายกี่นาที (late_minutes / early_leave_minutes)
 //     - ✅ ระยะห่างจากสำนักงาน (checkin_distance_m / checkout_distance_m เป็นเมตร)
+//     - ✅ gps_status (in_area / out_of_area / no_gps / no_coords) — GPS-BRANCH-LOCK
+//     - ✅ is_out_of_area: boolean — ใช้ filter แจ้งเตือนเร่งด่วน — GPS-BRANCH-LOCK
+//     - ✅ branch_name — ระบุสาขาที่ตอกบัตร — GPS-BRANCH-LOCK
 //     - ✅ ลิงก์ดูรูปเซลฟี่ (ถ้า implement photo storage) หรือแนบรูปผ่าน Messaging API
 //     - ✅ GPS สรุป เช่น "ห่าง 45 ม." (ไม่ต้องส่ง lat/lon ดิบ)
 //     - ✅ แจ้งเตือนพิเศษเมื่อ: นอกพื้นที่ / ขาดงาน / ไม่รูดออก
