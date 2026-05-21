@@ -2555,7 +2555,45 @@ async function saveUser(){
     toast('เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ','err');
   }
 }
-async function delUser(id){if(!confirm('ลบผู้ใช้นี้?'))return;try{await dbDel('app_users',id);appUsers=appUsers.filter(u=>u.id!==id);renderUsers();toast('ลบแล้ว','err');}catch(e){toast('เกิดข้อผิดพลาด','err');}}
+// RLS-HARDEN-2A: delUser ใช้ RPC app_admin_delete_user แทน direct DELETE app_users
+async function delUser(id){
+  const target=appUsers.find(u=>u.id===id);
+  if(!target)return;
+  const label=target.full_name?`"${target.full_name}"`:target.username?`"${target.username}"`:'ผู้ใช้นี้';
+  if(!confirm(`ลบ ${label} ?\nการลบนี้ไม่สามารถเรียกคืนได้`))return;
+  const adminPass=window.prompt('กรุณากรอกรหัสผ่านของคุณ (Admin) เพื่อยืนยันการลบ:');
+  if(adminPass===null)return; // กด Cancel
+  if(!adminPass.trim()){toast('กรุณากรอกรหัสผ่านก่อนลบ','err');return;}
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_delete_user`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        p_admin_username:curUser.username,
+        p_admin_password:adminPass.trim(),
+        p_user_id:parseInt(id)
+      })
+    });
+    let data={};
+    try{data=await res.json();}catch(_){}
+    if(!res.ok||!data?.ok){
+      const errMap={
+        unauthorized:'รหัสผ่าน Admin ไม่ถูกต้อง',
+        cannot_delete_self:'ไม่สามารถลบบัญชีตัวเองได้',
+        last_admin:'ไม่สามารถลบ Admin คนสุดท้ายได้ — ต้องมี Admin อย่างน้อย 1 คน',
+        user_not_found:'ไม่พบผู้ใช้นี้ในระบบ'
+      };
+      toast(errMap[data?.error]||`ลบไม่สำเร็จ: ${data?.error||'unknown'}`, 'err');
+      return;
+    }
+    appUsers=appUsers.filter(u=>u.id!==id);
+    renderUsers();
+    toast(`ลบ ${label} แล้ว`,'err');
+  }catch(e){
+    console.error('[delUser] error:',e);
+    toast('เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ','err');
+  }
+}
 
 
 // ===== SEC-D: SECURITY LOG VIEW =====
