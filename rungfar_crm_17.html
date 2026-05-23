@@ -704,6 +704,43 @@ textarea.fi2{resize:vertical;min-height:65px}
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('uModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveUser()">💾 บันทึก</button></div>
 </div></div>
 
+<!-- MODAL: LOAD USERS — RLS-HARDEN-2D: admin password สำหรับโหลดรายชื่อผู้ใช้ -->
+<div class="mo" id="loadUsersModal" style="display:none" onclick="if(event.target===this)closeLoadUsersModal()">
+<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:380px">
+  <div class="mh"><div class="mt">🔐 ยืนยันตัวตน</div><button class="xbtn" onclick="closeLoadUsersModal()">×</button></div>
+  <div class="mbody">
+    <div style="font-size:13px;color:var(--g6);margin-bottom:14px">กรุณากรอกรหัสผ่าน Admin เพื่อโหลดรายชื่อผู้ใช้ในระบบ</div>
+    <div class="fgi full">
+      <label class="fl">รหัสผ่าน Admin</label>
+      <input class="fi2" type="password" id="lum_pass" placeholder="รหัสผ่านของคุณ" autocomplete="current-password" onkeydown="if(event.key==='Enter')confirmLoadUsers()">
+    </div>
+    <div id="lum_err" style="font-size:12px;color:var(--red);min-height:18px;margin-top:6px"></div>
+  </div>
+  <div class="mfoo">
+    <button class="btn btn-g" onclick="closeLoadUsersModal()">ยกเลิก</button>
+    <button class="btn btn-p" onclick="confirmLoadUsers()">🔓 โหลดรายชื่อ</button>
+  </div>
+</div></div>
+
+<!-- MODAL: DELETE USER — RLS-HARDEN-2D: admin password สำหรับยืนยันลบ user -->
+<div class="mo" id="delUserModal" style="display:none" onclick="if(event.target===this)closeDelUserModal()">
+<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:380px">
+  <div class="mh"><div class="mt">🗑️ ยืนยันการลบผู้ใช้</div><button class="xbtn" onclick="closeDelUserModal()">×</button></div>
+  <div class="mbody">
+    <div style="font-size:13px;margin-bottom:4px">ลบผู้ใช้: <strong id="dum_name"></strong></div>
+    <div style="font-size:12px;color:var(--red);margin-bottom:14px">การลบนี้ไม่สามารถเรียกคืนได้</div>
+    <div class="fgi full">
+      <label class="fl">รหัสผ่าน Admin ของคุณ</label>
+      <input class="fi2" type="password" id="dum_pass" placeholder="รหัสผ่านของคุณ" autocomplete="current-password" onkeydown="if(event.key==='Enter')confirmDelUser()">
+    </div>
+    <div id="dum_err" style="font-size:12px;color:var(--red);min-height:18px;margin-top:6px"></div>
+  </div>
+  <div class="mfoo">
+    <button class="btn btn-g" onclick="closeDelUserModal()">ยกเลิก</button>
+    <button class="btn" id="dum_confirm_btn" style="background:var(--red);color:#fff" onclick="confirmDelUser()">🗑️ ยืนยันลบ</button>
+  </div>
+</div></div>
+
 <!-- MODAL: EMPLOYEE (รอบ G) -->
 <div class="mo" id="attEmpModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
@@ -866,6 +903,7 @@ let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[];
 let filtered=[],curPage=1;const PG=15;
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
+let _pendingDelUserId=null; // RLS-HARDEN-2D: id ที่รอยืนยันลบ — cleared on cancel/logout
 let empQ=''; // employer search query
 // ── FEATURE FLAGS ──
 const SIMPLE_CUSTOMER_DETAIL=true; // true=ซ่อน timeline/finance/status-history ใน detail modal; false=แสดงครบ
@@ -1724,12 +1762,28 @@ async function doLogin(){
     }
   }
 }
-function doLogout(){localStorage.removeItem('crm_sess');curUser=null;document.getElementById('loginScreen').style.display='flex';document.getElementById('appScreen').style.display='none';}
+function doLogout(){
+  localStorage.removeItem('crm_sess');
+  curUser=null;
+  // RLS-HARDEN-2D: clear user cache + pending state + reset view on logout
+  appUsers=[];
+  _pendingDelUserId=null;
+  curView='dash';
+  const lum=document.getElementById('loadUsersModal');if(lum)lum.style.display='none';
+  const dum=document.getElementById('delUserModal');if(dum)dum.style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appScreen').style.display='none';
+}
 function checkSess(){try{const s=JSON.parse(localStorage.getItem('crm_sess')||'null');if(s&&s.exp>Date.now()){curUser=s.user;return true;}}catch(e){}return false;}
 
 async function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
+  // RLS-HARDEN-2D: clear user cache จาก session ก่อน + บังคับ view = dash ป้องกัน staff ค้างหน้า users
+  appUsers=[];
+  curView='dash';
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+  const dashV=document.getElementById('view-dash');if(dashV)dashV.classList.add('on');
   document.getElementById('sfname').textContent=curUser.full_name;
   // role display — employee เดิม treat เป็น staff (compat)
   const isAdmin=curUser.role==='admin';
@@ -1773,12 +1827,12 @@ async function loadAll(silent=false){
   _loadAllInProgress=true;
   if(!silent)showLoading('กำลังโหลดข้อมูล...',300);
   try{
-    [customers,groups,branches,employers,appUsers]=await Promise.all([
+    // RLS-HARDEN-2D: appUsers ไม่โหลดที่นี่แล้ว — admin โหลดผ่าน adminLoadUsers() เมื่อเปิดหน้าจัดการผู้ใช้
+    [customers,groups,branches,employers]=await Promise.all([
       dbGet('customers','?order=name.asc&limit=2000'),
       dbGet('groups','?order=name.asc'),
       dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required'),
       dbGet('employers','?order=name.asc'),
-      dbGet('app_users','?order=full_name.asc&select=id,username,full_name,role,is_active'),
     ]);
     // Deduplicate customers by id (safety net)
     const seenIds=new Set();
@@ -1916,7 +1970,11 @@ function gv(v,opts={}){
   if(v==='groups')renderGroups();
   if(v==='import')renderImport();
   if(v==='settings')renderSettings();
-  if(v==='users')renderUsers();
+  // RLS-HARDEN-2D: route guard — non-admin เด้งกลับ dash ทันที
+  if(v==='users'){
+    if(curUser?.role!=='admin'){gv('dash');return;}
+    if(appUsers.length===0){adminLoadUsers();}else{renderUsers();}
+  }
   if(v==='attendance')renderAttendance();
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
 }
@@ -2423,6 +2481,48 @@ function renderSettings(){
 }
 function setSetting(k,v){settings[k]=parseInt(v)||30;localStorage.setItem('crm_settings',JSON.stringify(settings));toast('บันทึกการตั้งค่าแล้ว');}
 
+// RLS-HARDEN-2D: เปิด modal ยืนยัน admin password ก่อนโหลด user list
+function adminLoadUsers(){
+  if(curUser?.role!=='admin'){gv('dash');return;}
+  document.getElementById('lum_pass').value='';
+  document.getElementById('lum_err').textContent='';
+  document.getElementById('loadUsersModal').style.display='flex';
+  setTimeout(()=>document.getElementById('lum_pass').focus(),50);
+}
+function closeLoadUsersModal(){
+  document.getElementById('loadUsersModal').style.display='none';
+  document.getElementById('lum_pass').value='';
+  renderUsers();  // แสดง empty state (appUsers=[]) ถ้าไม่ยืนยัน
+}
+async function confirmLoadUsers(){
+  const pass=document.getElementById('lum_pass').value.trim();
+  const errEl=document.getElementById('lum_err');
+  if(!pass){errEl.textContent='กรุณากรอกรหัสผ่าน';return;}
+  errEl.textContent='';
+  const btn=document.querySelector('#loadUsersModal .btn-p');
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังโหลด...';}
+  try{
+    const data=await sb('rpc/app_admin_list_users','POST',{
+      p_admin_username:curUser.username,
+      p_admin_password:pass
+    });
+    if(!data||!data.length){
+      errEl.textContent='รหัสผ่านไม่ถูกต้อง';
+      document.getElementById('lum_pass').value='';
+      document.getElementById('lum_pass').focus();
+      return;
+    }
+    appUsers=data;
+    document.getElementById('loadUsersModal').style.display='none';
+    document.getElementById('lum_pass').value='';
+    renderUsers();
+  }catch(e){
+    console.error('[confirmLoadUsers] error:',e);
+    errEl.textContent='เกิดข้อผิดพลาด กรุณาลองใหม่';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🔓 โหลดรายชื่อ';}
+  }
+}
 function renderUsers(){
   document.getElementById('usersContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">${T('usersTitle')}</div><button class="btn btn-p btn-sm" onclick="openAddUser()">${T('usersAdd')}</button></div>
   <div class="twrap"><table><thead><tr><th>${T('usersTblUser')}</th><th>${T('usersTblName')}</th><th>${T('usersTblRole')}</th><th>${T('usersTblManage')}</th></tr></thead><tbody>
@@ -2544,27 +2644,40 @@ async function saveUser(){
     toast('เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ','err');
   }
 }
-// RLS-HARDEN-2A: delUser ใช้ RPC app_admin_delete_user แทน direct DELETE app_users
-async function delUser(id){
+// RLS-HARDEN-2D: delUser เปิด modal password แทน window.prompt
+function delUser(id){
+  if(curUser?.role!=='admin')return; // guard
   const target=appUsers.find(u=>u.id===id);
   if(!target)return;
-  const label=target.full_name?`"${target.full_name}"`:target.username?`"${target.username}"`:'ผู้ใช้นี้';
-  if(!confirm(`ลบ ${label} ?\nการลบนี้ไม่สามารถเรียกคืนได้`))return;
-  const adminPass=window.prompt('กรุณากรอกรหัสผ่านของคุณ (Admin) เพื่อยืนยันการลบ:');
-  if(adminPass===null)return; // กด Cancel
-  if(!adminPass.trim()){toast('กรุณากรอกรหัสผ่านก่อนลบ','err');return;}
+  _pendingDelUserId=id;
+  document.getElementById('dum_name').textContent=target.full_name||target.username||String(id);
+  document.getElementById('dum_pass').value='';
+  document.getElementById('dum_err').textContent='';
+  document.getElementById('delUserModal').style.display='flex';
+  setTimeout(()=>document.getElementById('dum_pass').focus(),50);
+}
+function closeDelUserModal(){
+  document.getElementById('delUserModal').style.display='none';
+  document.getElementById('dum_pass').value='';
+  document.getElementById('dum_err').textContent='';
+  _pendingDelUserId=null;
+}
+async function confirmDelUser(){
+  if(!_pendingDelUserId||curUser?.role!=='admin')return;
+  const pass=document.getElementById('dum_pass').value.trim();
+  const errEl=document.getElementById('dum_err');
+  if(!pass){errEl.textContent='กรุณากรอกรหัสผ่าน';return;}
+  errEl.textContent='';
+  const btn=document.getElementById('dum_confirm_btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังลบ...';}
   try{
+    // DELETE via RPC
     const res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_delete_user`,{
       method:'POST',
       headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({
-        p_admin_username:curUser.username,
-        p_admin_password:adminPass.trim(),
-        p_user_id:parseInt(id)
-      })
+      body:JSON.stringify({p_admin_username:curUser.username,p_admin_password:pass,p_user_id:parseInt(_pendingDelUserId)})
     });
-    let data={};
-    try{data=await res.json();}catch(_){}
+    let data={};try{data=await res.json();}catch(_){}
     if(!res.ok||!data?.ok){
       const errMap={
         unauthorized:'รหัสผ่าน Admin ไม่ถูกต้อง',
@@ -2572,15 +2685,28 @@ async function delUser(id){
         last_admin:'ไม่สามารถลบ Admin คนสุดท้ายได้ — ต้องมี Admin อย่างน้อย 1 คน',
         user_not_found:'ไม่พบผู้ใช้นี้ในระบบ'
       };
-      toast(errMap[data?.error]||`ลบไม่สำเร็จ: ${data?.error||'unknown'}`, 'err');
+      errEl.textContent=errMap[data?.error]||`ลบไม่สำเร็จ: ${data?.error||'unknown'}`;
+      document.getElementById('dum_pass').value='';
+      document.getElementById('dum_pass').focus();
       return;
     }
-    appUsers=appUsers.filter(u=>u.id!==id);
+    // refresh list ผ่าน app_admin_list_users ด้วย password เดิม
+    try{
+      const refreshed=await sb('rpc/app_admin_list_users','POST',{p_admin_username:curUser.username,p_admin_password:pass});
+      appUsers=(refreshed&&refreshed.length)?refreshed:appUsers.filter(u=>u.id!==_pendingDelUserId);
+    }catch(_){
+      appUsers=appUsers.filter(u=>u.id!==_pendingDelUserId); // fallback
+    }
+    document.getElementById('delUserModal').style.display='none';
+    document.getElementById('dum_pass').value='';
+    _pendingDelUserId=null;
     renderUsers();
-    toast(`ลบ ${label} แล้ว`,'err');
+    toast('ลบผู้ใช้แล้ว','err');
   }catch(e){
-    console.error('[delUser] error:',e);
-    toast('เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ','err');
+    console.error('[confirmDelUser] error:',e);
+    errEl.textContent='เกิดข้อผิดพลาด กรุณาลองใหม่';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🗑️ ยืนยันลบ';}
   }
 }
 
