@@ -2972,14 +2972,14 @@ function doExport(){
 let att_curTab='checkin', att_clockTimer=null;
 
 function renderAttendance(){
-  // staff (และ legacy employee) เห็นเฉพาะ checkin + history — admin เห็นทุก tab
+  // STAFF-REPORT: staff เห็น checkin + history + report — admin เห็นทุก tab
   const isEmp=curUser?.role!=='admin';
-  if(isEmp&&!['checkin','history'].includes(att_curTab))att_curTab='checkin';
+  if(isEmp&&!['checkin','history','report'].includes(att_curTab))att_curTab='checkin';
   const tabs=[
     {k:'checkin',   l:T('attTabCheckin')},
     {k:'history',   l:T('attTabHistory')},
+    {k:'report',    l:T('attTabReport')},  // staff เห็นด้วย — แต่ filter เฉพาะตัวเองใน attLoadReport
     ...(!isEmp?[
-      {k:'report',       l:T('attTabReport')},
       {k:'employees',    l:T('attTabEmployees')},
       {k:'branches',     l:'🏢 สาขา'},
       {k:'attsettings',  l:T('attTabSettings')},
@@ -3202,9 +3202,9 @@ async function attInitReportView(){
 }
 
 async function attLoadReport(){
-  const m=document.getElementById('att_rpt_month');
-  if(!m||!m.value)return;
-  const[yr,mo]=m.value.split('-');
+  const mEl=document.getElementById('att_rpt_month');
+  if(!mEl||!mEl.value)return;
+  const[yr,mo]=mEl.value.split('-');
   const from=`${yr}-${mo}-01`;
   const lastDay=new Date(+yr,+mo,0).getDate();
   const to=`${yr}-${mo}-${String(lastDay).padStart(2,'0')}`;
@@ -3212,9 +3212,26 @@ async function attLoadReport(){
   const tableDiv=document.getElementById('att_rpt_table');
   if(summDiv)summDiv.innerHTML=`<div style="text-align:center;padding:14px;color:var(--g5)">${T('attLoading')}</div>`;
   if(tableDiv)tableDiv.innerHTML='';
+  // STAFF-REPORT: แยก path staff / admin
+  const isEmp=curUser?.role!=='admin';
   try{
-    const logs=await dbGet('attendance_logs',`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=1000`);
+    let q=`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=1000`;
+    if(isEmp){
+      // STAFF: filter ด้วย employee_code = curUser.username ที่ DB — ห้าม return ข้อมูลคนอื่น
+      if(!curUser?.username){
+        if(summDiv)summDiv.innerHTML='<div style="color:#dc2626;text-align:center;padding:20px">ไม่สามารถระบุรหัสพนักงานได้ กรุณาติดต่อผู้ดูแลระบบ</div>';
+        return;
+      }
+      q+=`&employee_code=eq.${encodeURIComponent(curUser.username)}`;
+    }
+    const logs=await dbGet('attendance_logs',q);
     const arr=Array.isArray(logs)?logs:[];
+    if(isEmp){
+      // STAFF path — render รายงานส่วนตัว
+      attRenderStaffReport(arr,summDiv,tableDiv,yr,mo);
+      return;
+    }
+    // ── ADMIN path เดิม (ไม่แก้) ──────────────────────────────────
     const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
     const present=arr.filter(l=>l.day_status==='present').length;
     const late=arr.filter(l=>l.day_status==='late').length;
@@ -3262,6 +3279,98 @@ async function attLoadReport(){
   }catch(e){
     if(summDiv)summDiv.innerHTML='<div style="color:#dc2626;text-align:center;padding:10px">โหลดข้อมูลไม่สำเร็จ</div>';
   }
+}
+
+// STAFF-REPORT: render รายงานส่วนตัวของ staff — ห้ามเห็นข้อมูลคนอื่น
+function attRenderStaffReport(arr,summDiv,tableDiv,yr,mo){
+  const monthTH=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const first=arr[0]||null;
+  // header: ใช้ข้อมูลจาก log ก่อน fallback curEmpInfo
+  const empName=first?.employee_name||curEmpInfo?.full_name||curUser?.full_name||'—';
+  const empCode=first?.employee_code||curEmpInfo?.employee_code||curUser?.username||'—';
+  const branchName=first?.branch_name||curEmpInfo?.branch_name||'—';
+  const monthLabel=`${monthTH[parseInt(mo)]} ${parseInt(yr)+543}`;
+  // กรณีไม่มี employee record เลย (curEmpInfo=null และไม่มี log)
+  if(!first&&!curEmpInfo){
+    if(summDiv)summDiv.innerHTML=`<div style="text-align:center;padding:40px;color:var(--g5)"><div style="font-size:36px;margin-bottom:12px">🔍</div><div style="font-size:14px;font-weight:700;color:var(--g6);margin-bottom:6px">ไม่พบข้อมูลพนักงานของคุณ</div><div style="font-size:12px">กรุณาติดต่อผู้ดูแลระบบเพื่อเพิ่มข้อมูลพนักงาน</div></div>`;
+    if(tableDiv)tableDiv.innerHTML='';
+    return;
+  }
+  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
+  // header card
+  const headerHtml=`<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r);padding:14px;margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:#0369a1">📊 รายงานของฉัน — ${monthLabel}</div><div style="font-size:12px;color:#0369a1;margin-top:5px">👤 ${esc(empName)} &nbsp;·&nbsp; รหัส: <strong>${esc(empCode)}</strong> &nbsp;·&nbsp; 🏢 ${esc(branchName)}</div></div>`;
+  // กรณีไม่มี log ในเดือนนี้
+  if(!arr.length){
+    if(summDiv)summDiv.innerHTML=headerHtml+`<div style="text-align:center;padding:24px;color:var(--g5)">ยังไม่มีบันทึกการมาทำงานในเดือนนี้</div>`;
+    if(tableDiv)tableDiv.innerHTML='';
+    return;
+  }
+  // คำนวณสรุป
+  const daysCame=arr.filter(l=>l.checkin_time).length;
+  const daysAbsent=arr.filter(l=>l.day_status==='absent').length;
+  const totalLateMin=arr.reduce((s,l)=>s+(l.late_minutes||0),0);
+  const totalEarlyMin=arr.reduce((s,l)=>s+(l.early_leave_minutes||0),0);
+  const totalWorkMin=arr.reduce((s,l)=>s+(l.total_work_minutes||0),0);
+  const totalOTMin=arr.reduce((s,l)=>s+(l.ot_minutes||0),0);
+  const totalRecord=daysCame+daysAbsent;
+  const attRate=totalRecord>0?Math.round(daysCame/totalRecord*100):0;
+  // summary cards row 1 (3 cols)
+  const summRow1=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+    <div style="padding:14px;background:#dcfce7;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#15803d">${daysCame}</div><div style="font-size:11px;color:#15803d;font-weight:700">วันมาทำงาน</div></div>
+    <div style="padding:14px;background:#fee2e2;border-radius:var(--r);text-align:center"><div style="font-size:22px;font-weight:800;color:#dc2626">${daysAbsent}</div><div style="font-size:11px;color:#dc2626;font-weight:700">วันขาดงาน</div></div>
+    <div style="padding:14px;background:#e0f2fe;border-radius:var(--r);text-align:center"><div style="font-size:20px;font-weight:800;color:#0369a1">${attRate}%</div><div style="font-size:11px;color:#0369a1;font-weight:700">อัตราเข้างาน</div></div>
+  </div>`;
+  // summary cards row 2 (3 or 4 cols ถ้ามี early leave)
+  const earlyCard=totalEarlyMin>0?`<div style="padding:12px;background:#fef9c3;border-radius:var(--r);text-align:center"><div style="font-size:16px;font-weight:800;color:#a16207">${totalEarlyMin} น.</div><div style="font-size:11px;color:#a16207;font-weight:700">ออกก่อนรวม</div></div>`:'';
+  const cols=totalEarlyMin>0?4:3;
+  const summRow2=`<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;margin-bottom:16px">
+    <div style="padding:12px;background:#fff3e0;border-radius:var(--r);text-align:center"><div style="font-size:16px;font-weight:800;color:#d97706">${totalLateMin>0?totalLateMin+' น.':'—'}</div><div style="font-size:11px;color:#d97706;font-weight:700">มาสายรวม</div></div>
+    ${earlyCard}
+    <div style="padding:12px;background:#f3f4f6;border-radius:var(--r);text-align:center"><div style="font-size:16px;font-weight:800;color:var(--g7)">${fmtMin(totalWorkMin)}</div><div style="font-size:11px;color:var(--g6);font-weight:700">ชม.ทำงานรวม</div></div>
+    <div style="padding:12px;background:#f3e8ff;border-radius:var(--r);text-align:center"><div style="font-size:16px;font-weight:800;color:#7c3aed">${totalOTMin>0?fmtMin(totalOTMin):'—'}</div><div style="font-size:11px;color:#7c3aed;font-weight:700">OT รวม</div></div>
+  </div>`;
+  if(summDiv)summDiv.innerHTML=headerHtml+summRow1+summRow2;
+  // ตารางรายวัน
+  const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',holiday:'#f0fdf4',leave:'#f5f3ff',outside:'#fef9c3'};
+  const stLabel={present:'ปกติ',late:'มาสาย',absent:'ขาดงาน',half_day:'ครึ่งวัน',holiday:'วันหยุด',leave:'ลา',outside:'นอกสถานที่'};
+  const gpsIcon={in_area:'✅',out_of_area:'🚫',no_gps:'📡',no_coords:'❓',no_radius:'⚙️'};
+  const dailyRows=arr.map(l=>{
+    const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',weekday:'short'});
+    const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'—';
+    const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):`<span style="color:#dc2626">ยังไม่ออก</span>`;
+    const work=fmtMin(l.total_work_minutes||0);
+    const lateCell=l.late_minutes>0?`<span style="color:#d97706">${l.late_minutes} น.</span>`:'—';
+    const otCell=l.ot_minutes>0?`<span style="color:#7c3aed">${fmtMin(l.ot_minutes)}</span>`:'—';
+    const _logBr=branches.find(b=>b.id===l.branch_id)||null;
+    const _logR=_logBr?.allowed_radius_meters!=null?_logBr.allowed_radius_meters:(att_branchSettings?.allowed_radius_meter||200);
+    const gpsOk=l.checkin_distance_m==null||l.checkin_distance_m<=_logR;
+    const gpsIc=l.gps_status?gpsIcon[l.gps_status]||'':'';
+    const gpsCell=l.checkin_distance_m!=null?`<span style="color:${gpsOk?'#15803d':'#dc2626'}">${l.checkin_distance_m}ม.</span> ${gpsIc}`:(gpsIc||'—');
+    return`<tr style="border-bottom:1px solid var(--g2)">
+      <td style="padding:7px 6px;font-size:12px;white-space:nowrap">${dateStr}</td>
+      <td style="padding:7px 6px;font-size:12px;white-space:nowrap">${ci}</td>
+      <td style="padding:7px 6px;font-size:12px;white-space:nowrap">${co}</td>
+      <td style="padding:7px 6px;font-size:12px;text-align:center">${work}</td>
+      <td style="padding:7px 6px;font-size:12px;text-align:center">${lateCell}</td>
+      <td style="padding:7px 6px;font-size:12px;text-align:center">${otCell}</td>
+      <td style="padding:7px 6px;text-align:center"><span style="background:${stBg[l.day_status]||'#f3f4f6'};padding:2px 7px;border-radius:99px;font-size:11px">${stLabel[l.day_status]||l.day_status||'—'}</span></td>
+      <td style="padding:7px 6px;font-size:12px;text-align:center">${gpsCell}</td>
+    </tr>`;
+  }).join('');
+  if(tableDiv)tableDiv.innerHTML=`<div style="font-size:12px;font-weight:600;color:var(--g6);margin-bottom:8px">📋 ตารางรายวัน</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
+        <th style="padding:8px 6px;text-align:left;font-size:12px">วันที่</th>
+        <th style="padding:8px 6px;text-align:left;font-size:12px">เวลาเข้า</th>
+        <th style="padding:8px 6px;text-align:left;font-size:12px">เวลาออก</th>
+        <th style="padding:8px 6px;text-align:center;font-size:12px">ชม.ทำงาน</th>
+        <th style="padding:8px 6px;text-align:center;font-size:12px">สาย</th>
+        <th style="padding:8px 6px;text-align:center;font-size:12px">OT</th>
+        <th style="padding:8px 6px;text-align:center;font-size:12px">สถานะ</th>
+        <th style="padding:8px 6px;text-align:center;font-size:12px">GPS</th>
+      </tr></thead>
+      <tbody>${dailyRows}</tbody>
+    </table></div>`;
 }
 
 function attUIEmployees(){
