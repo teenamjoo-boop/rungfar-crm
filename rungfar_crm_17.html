@@ -1687,14 +1687,11 @@ async function doLogin(){
     device_fingerprint:getDeviceFingerprint()
   };
   try{
-    const res=await fetch(`${SB_URL}/rest/v1/app_users?username=eq.${encodeURIComponent(u)}&is_active=eq.true&select=id,username,full_name,role,branch_id`,{
-      method:'GET',
-      headers:{
-        'apikey':SB_KEY,
-        'Authorization':`Bearer ${SB_KEY}`,
-        'Accept':'application/json',
-        'Content-Type':'application/json',
-      },
+    // RLS-HARDEN-2C: เรียก app_verify_login อย่างเดียว — ไม่ direct SELECT app_users แล้ว
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/app_verify_login`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_username:u,p_password:p}),
       mode:'cors'
     });
     if(!res.ok){
@@ -1703,20 +1700,12 @@ async function doLogin(){
       err.textContent='เชื่อมต่อไม่ได้ ('+res.status+') — ตรวจสอบ Supabase';
       return;
     }
-    const users=await res.json();
-    // SEC-E-b: verify password via RPC — password in POST body, never in URL
-    const res2=await fetch(`${SB_URL}/rest/v1/rpc/app_verify_login`,{
-      method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({p_username:u,p_password:p}),
-      mode:'cors'
-    });
-    const found=await res2.json();
+    const found=await res.json();
     if(!found||!found.length){
       err.textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
       document.getElementById('lp').value='';
-      // SEC-D: log failed login (fire-and-forget — ไม่ await ไม่ทำให้ login พัง)
-      logLoginActivity({...devInfo,username:u,login_status:'failed',fail_reason:users.length===0?'user_not_found':'wrong_password'});
+      // SEC-D: log failed login — RLS-HARDEN-2C: ไม่มี direct SELECT แล้ว รวม fail_reason เป็น wrong_credentials
+      logLoginActivity({...devInfo,username:u,login_status:'failed',fail_reason:'wrong_credentials'});
       return;
     }
     curUser=found[0];
