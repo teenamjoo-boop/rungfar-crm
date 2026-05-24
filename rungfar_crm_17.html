@@ -3005,6 +3005,7 @@ function attGo(tab){
 function attRender(tab){
   const el=document.getElementById('att_sub'); if(!el)return;
   if(att_clockTimer){clearInterval(att_clockTimer);att_clockTimer=null;}
+  if(tab!=='calendar')_att_calSelEmp=''; // CALENDAR-B: reset filter เมื่อออกจาก calendar tab
   const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,calendar:attUICalendar,employees:attUIEmployees,branches:attUIBranches,attsettings:attUISettings,export:attUIExport};
   el.innerHTML=(map[tab]||attUICheckin)();
   if(tab==='checkin'){attStartClock();attInitCheckinView();}
@@ -3143,7 +3144,7 @@ async function attApplyHistoryFilter(){
   // staff (และ legacy employee) lock query ดูเฉพาะของตัวเอง — admin ดูทุกคน
   const isEmp=curUser?.role!=='admin';
   try{
-    let q='?order=log_date.desc,employee_id.asc&limit=300';
+    let q='?order=log_date.asc,checkin_time.asc&limit=300';
     if(isEmp&&curUser?.username){
       q+=`&employee_code=eq.${encodeURIComponent(curUser.username)}`;
     }
@@ -3168,7 +3169,7 @@ function attRenderHistoryRows(logs){
   const stMap=()=>({present:T('attStPresent'),late:T('attStLate'),absent:T('attStAbsent'),half_day:T('attStHalfDay'),holiday:T('attStHoliday'),leave:T('attStLeave'),outside:T('attStOutside')});
   const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',outside:'#fef9c3'};
   return logs.map(l=>{
-    const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',weekday:'short'});
+    const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit'});
     const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'—';
     const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):`<span style="color:#dc2626">${T('attNoOut')}</span>`;
     const work=fmtMin(l.total_work_minutes||0);
@@ -3337,7 +3338,7 @@ function attRenderStaffReport(arr,summDiv,tableDiv,yr,mo){
   const stLabel={present:'ปกติ',late:'มาสาย',absent:'ขาดงาน',half_day:'ครึ่งวัน',holiday:'วันหยุด',leave:'ลา',outside:'นอกสถานที่'};
   const gpsIcon={in_area:'✅',out_of_area:'🚫',no_gps:'📡',no_coords:'❓',no_radius:'⚙️'};
   const dailyRows=arr.map(l=>{
-    const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',weekday:'short'});
+    const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit'});
     const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'—';
     const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):`<span style="color:#dc2626">ยังไม่ออก</span>`;
     const work=fmtMin(l.total_work_minutes||0);
@@ -3382,11 +3383,12 @@ function attUICalendar(){
   const yr=now.getFullYear();
   const mo=String(now.getMonth()+1).padStart(2,'0');
   return`<div class="twrap">
-    <div class="tbar2" style="margin-bottom:14px">
+    <div class="tbar2" style="margin-bottom:10px">
       <div style="font-size:13px;font-weight:700">🗓 ปฏิทินการเข้างาน</div>
       <input type="month" class="fi" id="att_cal_month" value="${yr}-${mo}"
         style="width:auto;font-size:13px" onchange="attLoadCalendar()">
     </div>
+    <div id="att_cal_filter"></div>
     <div id="att_cal_wrap">
       <div style="text-align:center;padding:40px;color:var(--g5)">
         <div style="font-size:32px;margin-bottom:10px;opacity:.4">🗓</div>
@@ -3401,44 +3403,197 @@ async function attInitCalendarView(){
   await attLoadCalendar();
 }
 
-// CALENDAR-A stub — ยังไม่ query DB จริง แสดง grid โครงเดือนเปล่า
+// CALENDAR-B: query attendance_logs จริง + render badge ในแต่ละวัน
 async function attLoadCalendar(){
   const mEl=document.getElementById('att_cal_month');
   const wrap=document.getElementById('att_cal_wrap');
+  const filterEl=document.getElementById('att_cal_filter');
   if(!mEl||!wrap)return;
+
   const[yr,mo]=mEl.value.split('-').map(Number);
-  // สร้าง grid วันในเดือน
-  const firstDay=new Date(yr,mo-1,1).getDay(); // 0=อา, 1=จ, ...
+  const from=`${yr}-${String(mo).padStart(2,'0')}-01`;
   const lastDate=new Date(yr,mo,0).getDate();
-  const monthTH=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  const dayNames=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-  // header แสดงเดือน/ปี
-  const header=`<div style="text-align:center;font-size:14px;font-weight:700;color:var(--g7);margin-bottom:14px">
-    ${monthTH[mo]} ${yr+543}
-  </div>`;
-  // row ชื่อวัน
-  const dayRow=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
-    ${dayNames.map((d,i)=>`<div style="text-align:center;font-size:11px;font-weight:700;padding:5px 2px;color:${i===0?'#dc2626':i===6?'#2563eb':'var(--g6)'}">${d}</div>`).join('')}
-  </div>`;
-  // cells
-  let cells='';
-  // padding ก่อนวันที่ 1 (อิง Sunday=0)
-  for(let i=0;i<firstDay;i++){
-    cells+=`<div style="min-height:46px;border-radius:8px;background:transparent"></div>`;
-  }
-  for(let d=1;d<=lastDate;d++){
-    const dow=new Date(yr,mo-1,d).getDay();
-    const isWknd=dow===0||dow===6;
-    const borderClr=isWknd?'#e0e7ef':'var(--g2)';
-    const numClr=isWknd?(dow===0?'#dc2626':'#2563eb'):'var(--g7)';
-    cells+=`<div style="min-height:46px;border:1px solid ${borderClr};border-radius:8px;padding:5px 6px;background:#fff;position:relative">
-      <div style="font-size:12px;font-weight:700;color:${numClr}">${d}</div>
-      <div id="att_cal_day_${d}" style="font-size:10px;margin-top:2px;min-height:14px"></div>
+  const to=`${yr}-${String(mo).padStart(2,'0')}-${String(lastDate).padStart(2,'0')}`;
+  const isEmp=curUser?.role!=='admin';
+
+  // Loading state
+  wrap.innerHTML=`<div style="text-align:center;padding:40px;color:var(--g5)"><div style="font-size:32px;margin-bottom:10px;opacity:.4">🗓</div><div style="font-size:13px">กำลังโหลดปฏิทิน…</div></div>`;
+
+  try{
+    // ── Admin: dropdown filter พนักงาน ─────────────────────────────
+    if(!isEmp&&filterEl){
+      let empOpts=[];
+      if(att_empList&&att_empList.length){
+        empOpts=att_empList.filter(e=>e.status==='active');
+      }else{
+        try{
+          const eData=await dbGet('attendance_employees','?status=eq.active&order=full_name.asc&select=id,employee_code,full_name');
+          empOpts=Array.isArray(eData)?eData:[];
+        }catch(_){}
+      }
+      // inject HTML ก่อน — ไม่ใส่ onchange inline เพราะ innerHTML handler ไม่ reliable
+      filterEl.innerHTML=`<div style="margin-bottom:12px">
+        <label class="fl" style="font-size:12px;margin-bottom:4px;display:block">🔍 กรองพนักงาน</label>
+        <select id="att_cal_emp_sel" class="fi"
+          style="width:100%;max-width:300px;font-size:13px;cursor:pointer;pointer-events:auto">
+          <option value="">— แสดงทุกคน (สรุปรายวัน) —</option>
+          ${empOpts.map(e=>`<option value="${esc(e.employee_code)}"${_att_calSelEmp===e.employee_code?' selected':''}>${esc(e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('')}
+        </select>
+      </div>`;
+      // ผูก event listener โดยตรงกับ DOM element — ทำงานได้ทุก browser
+      const selEl=document.getElementById('att_cal_emp_sel');
+      if(selEl){
+        selEl.addEventListener('change',function(){
+          _att_calSelEmp=this.value;
+          attLoadCalendar();
+        });
+      }
+    }else if(filterEl){
+      filterEl.innerHTML=''; // staff ไม่เห็น dropdown
+    }
+
+    // ── Query attendance_logs ──────────────────────────────────────
+    let q=`?log_date=gte.${from}&log_date=lte.${to}&order=log_date.asc&limit=5000`;
+    if(isEmp){
+      if(!curUser?.username){
+        wrap.innerHTML='<div style="color:#dc2626;text-align:center;padding:20px">ไม่สามารถระบุรหัสพนักงานได้ กรุณาติดต่อผู้ดูแลระบบ</div>';
+        return;
+      }
+      q+=`&employee_code=eq.${encodeURIComponent(curUser.username)}`;
+    }else if(_att_calSelEmp){
+      q+=`&employee_code=eq.${encodeURIComponent(_att_calSelEmp)}`;
+    }
+
+    const logs=await dbGet('attendance_logs',q);
+    const arr=Array.isArray(logs)?logs:[];
+
+    // ── Build day map ──────────────────────────────────────────────
+    // showSingle: Staff หรือ Admin เลือกพนักงาน → 1 log/วัน
+    // showAll:    Admin ไม่ filter → หลาย log/วัน → count summary
+    const showSingle=isEmp||!!_att_calSelEmp;
+    const dayMap={};
+    arr.forEach(l=>{
+      if(!l.log_date)return;
+      const d=parseInt(l.log_date.split('-')[2],10);
+      if(showSingle){
+        dayMap[d]=l; // ถ้ามีซ้ำอันหลังทับ (ไม่ควรเกิด)
+      }else{
+        if(!dayMap[d])dayMap[d]=[];
+        dayMap[d].push(l);
+      }
+    });
+
+    // ── Shared constants ───────────────────────────────────────────
+    const monthTH=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const dayNames=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    const firstDay=new Date(yr,mo-1,1).getDay();
+    const todayObj=new Date();
+    const isThisMo=yr===todayObj.getFullYear()&&mo===todayObj.getMonth()+1;
+    const todayD=isThisMo?todayObj.getDate():0;
+
+    const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',holiday:'#f0fdf4',leave:'#f5f3ff',outside:'#fef9c3'};
+    const stLabel={present:'ปกติ',late:'มาสาย',absent:'ขาดงาน',half_day:'ครึ่งวัน',holiday:'วันหยุด',leave:'ลา',outside:'นอกสถานที่'};
+    const stTxtClr={present:'#15803d',late:'#d97706',absent:'#dc2626',half_day:'#0369a1',holiday:'#166534',leave:'#7c3aed',outside:'#a16207'};
+
+    // ── Render header + day-name row ───────────────────────────────
+    const header=`<div style="text-align:center;font-size:14px;font-weight:700;color:var(--g7);margin-bottom:12px">${monthTH[mo]} ${yr+543}</div>`;
+    const dayRow=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+      ${dayNames.map((d,i)=>`<div style="text-align:center;font-size:11px;font-weight:700;padding:5px 2px;color:${i===0?'#dc2626':i===6?'#2563eb':'var(--g6)'}">${d}</div>`).join('')}
     </div>`;
-  }
-  wrap.innerHTML=header+dayRow+
-    `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>`+
-    `<div style="margin-top:16px;padding:12px;background:var(--pp);border-radius:var(--r)">
+
+    // ── Render cells ───────────────────────────────────────────────
+    let cells='';
+    for(let i=0;i<firstDay;i++){
+      cells+=`<div style="min-height:64px;border-radius:8px;background:transparent"></div>`;
+    }
+
+    for(let d=1;d<=lastDate;d++){
+      const dow=new Date(yr,mo-1,d).getDay();
+      const isWknd=dow===0||dow===6;
+      const isToday=d===todayD;
+      const numClr=isWknd?(dow===0?'#dc2626':'#2563eb'):'var(--g7)';
+      let cellBg='#fff';
+      let contentHtml='';
+
+      if(showSingle){
+        // ── Staff / Admin กรองคนเดียว ────────────────────────────
+        const log=dayMap[d];
+        if(log){
+          cellBg=stBg[log.day_status]||'#fff';
+          const txClr=stTxtClr[log.day_status]||'var(--g6)';
+          const statusLbl=stLabel[log.day_status]||log.day_status||'';
+
+          // status label
+          const stLine=statusLbl?`<div style="font-size:9px;font-weight:700;color:${txClr};margin-top:1px">${statusLbl}</div>`:'';
+
+          // เวลาเข้า/ออก (ย่อ HH:MM ไม่มี "น.")
+          let timeLine='';
+          if(log.checkin_time){
+            const ci=attFormatThaiTime(new Date(log.checkin_time)).replace(' น.','');
+            const co=log.checkout_time?attFormatThaiTime(new Date(log.checkout_time)).replace(' น.',''):null;
+            timeLine=`<div style="font-size:9px;color:var(--g6);line-height:1.4;margin-top:1px">${ci}${co?' – '+co:''}</div>`;
+          }
+
+          // extra badges
+          let badges='';
+          if(log.checkin_time&&!log.checkout_time&&log.day_status!=='absent'){
+            badges+=`<span style="font-size:8px;background:#fee2e2;color:#dc2626;border-radius:3px;padding:1px 3px;display:inline-block;margin-top:1px">ยังไม่ออก</span>`;
+          }
+          if((log.late_minutes||0)>0){
+            badges+=`<span style="font-size:8px;background:#fff3e0;color:#d97706;border-radius:3px;padding:1px 3px;display:inline-block;margin-top:1px">สาย ${log.late_minutes}น.</span>`;
+          }
+          if((log.early_leave_minutes||0)>0){
+            badges+=`<span style="font-size:8px;background:#fef9c3;color:#a16207;border-radius:3px;padding:1px 3px;display:inline-block;margin-top:1px">ออกก่อน</span>`;
+          }
+          if((log.ot_minutes||0)>0){
+            badges+=`<span style="font-size:8px;background:#f3e8ff;color:#7c3aed;border-radius:3px;padding:1px 3px;display:inline-block;margin-top:1px">OT</span>`;
+          }
+          if(log.gps_status==='out_of_area'||log.is_out_of_area){
+            badges+=`<span style="font-size:8px;background:#fee2e2;color:#dc2626;border-radius:3px;padding:1px 3px;display:inline-block;margin-top:1px">⚠️GPS</span>`;
+          }
+
+          contentHtml=stLine+timeLine+(badges?`<div style="display:flex;flex-wrap:wrap;gap:1px;margin-top:1px">${badges}</div>`:'');
+        }
+
+      }else{
+        // ── Admin ทุกคน — summary count ──────────────────────────
+        const dl=dayMap[d]||[];
+        if(dl.length){
+          const cP=dl.filter(l=>l.day_status==='present').length;
+          const cL=dl.filter(l=>l.day_status==='late').length;
+          const cA=dl.filter(l=>l.day_status==='absent').length;
+          const cV=dl.filter(l=>l.day_status==='leave').length;
+          const cNoOut=dl.filter(l=>l.checkin_time&&!l.checkout_time&&l.day_status!=='absent').length;
+          const cOT=dl.filter(l=>(l.ot_minutes||0)>0).length;
+          const cGPS=dl.filter(l=>l.gps_status==='out_of_area'||l.is_out_of_area).length;
+          if(cA>0)cellBg='#fff5f5';
+          else if(cL>0)cellBg='#fffbf0';
+          let lines='';
+          if(cP)lines+=`<div style="font-size:9px;color:#15803d;line-height:1.6;font-weight:600">ปกติ ${cP}</div>`;
+          if(cL)lines+=`<div style="font-size:9px;color:#d97706;line-height:1.6;font-weight:600">สาย ${cL}</div>`;
+          if(cA)lines+=`<div style="font-size:9px;color:#dc2626;line-height:1.6;font-weight:600">ขาด ${cA}</div>`;
+          if(cV)lines+=`<div style="font-size:9px;color:#7c3aed;line-height:1.6;font-weight:600">ลา ${cV}</div>`;
+          if(cNoOut)lines+=`<div style="font-size:9px;color:#dc2626;line-height:1.6;font-weight:600">ยังไม่ออก ${cNoOut}</div>`;
+          if(cOT)lines+=`<div style="font-size:9px;color:#6d28d9;line-height:1.6;font-weight:600">OT ${cOT}</div>`;
+          if(cGPS)lines+=`<div style="font-size:9px;color:#dc2626;line-height:1.6;font-weight:600">GPS⚠ ${cGPS}</div>`;
+          contentHtml=lines;
+        }
+      }
+
+      // วันที่ตัวเลข — วงกลม highlight ถ้าวันนี้
+      const numHtml=isToday
+        ?`<div style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--p);color:#fff;font-size:10px;font-weight:800">${d}</div>`
+        :`<div style="font-size:12px;font-weight:700;color:${numClr}">${d}</div>`;
+
+      const todayRing=isToday?';box-shadow:0 0 0 2px var(--p)':'';
+      cells+=`<div style="min-height:64px;border:1px solid ${isWknd?'#e0e7ef':'var(--g2)'};border-radius:8px;padding:5px 6px;background:${cellBg}${todayRing}">
+        ${numHtml}
+        <div style="margin-top:1px">${contentHtml}</div>
+      </div>`;
+    }
+
+    // ── Legend ─────────────────────────────────────────────────────
+    const legend=`<div style="margin-top:16px;padding:12px;background:var(--pp);border-radius:var(--r)">
       <div style="font-size:11px;font-weight:700;color:var(--pd);margin-bottom:8px">สัญลักษณ์</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px">
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#dcfce7;margin-right:3px;vertical-align:middle"></span>มาปกติ</span>
@@ -3448,12 +3603,25 @@ async function attLoadCalendar(){
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#e0f2fe;margin-right:3px;vertical-align:middle"></span>ครึ่งวัน</span>
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#fef9c3;margin-right:3px;vertical-align:middle"></span>นอกสถานที่</span>
         <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#f0fdf4;margin-right:3px;vertical-align:middle"></span>วันหยุด</span>
+        ${!isEmp?'<span>✅มา 🟡สาย ❌ขาด 🏖ลา ⏰OT</span>':''}
       </div>
     </div>`;
-  // CALENDAR-A: stub สมบูรณ์ — รอบ B จะโหลดข้อมูลจริงและแต่ละวัน
+
+    wrap.innerHTML=header+dayRow+`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>`+legend;
+
+  }catch(e){
+    console.error('[attLoadCalendar]',e);
+    if(wrap)wrap.innerHTML=`<div style="color:#dc2626;text-align:center;padding:20px">โหลดปฏิทินไม่สำเร็จ กรุณาลองใหม่</div>`;
+  }
 }
 
-// ── end CALENDAR-A ─────────────────────────────────────────────────────────────
+// CALENDAR-B: wrapper สำหรับ onchange dropdown — inline handlers เข้า let ไม่ได้โดยตรง
+function attCalSetEmp(val){
+  _att_calSelEmp=val||'';
+  attLoadCalendar();
+}
+
+// ── end CALENDAR ──────────────────────────────────────────────────────────────
 
 function attUIEmployees(){
   // เฉพาะ admin เท่านั้น — staff ไม่มีสิทธิ์จัดการพนักงาน
@@ -4268,6 +4436,7 @@ async function attExportSummaryXLS(){
 let att_employees=[], att_branchSettings=null, att_curEmployee=null, att_todayLogs=[], att_pendingPayload=null, att_pendingSelfie=null, att_pendingLogId=null, att_isProcessing=false, att_historyLogs=[];
 let att_empList=[]; // รอบ G: cache สำหรับหน้าจัดการพนักงาน (active+inactive ทั้งหมด)
 let att_editBranchId=null; // BRANCH-MGMT: id สาขาที่กำลังแก้ไข (null = add)
+let _att_calSelEmp=''; // CALENDAR-B: employee_code ที่ admin เลือก filter (''=ทุกคน)
 
 // ─── Bangkok Time Helpers ───
 function attFormatThaiDateTime(date){
