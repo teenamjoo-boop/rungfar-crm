@@ -2970,16 +2970,16 @@ function doExport(){
 
 // ===== ATTENDANCE MODULE (รอบ B — โครง UI) =====
 let att_curTab='checkin', att_clockTimer=null;
+let _att_histView='calendar'; // MERGE: subtab ใน history — 'calendar' | 'table'
 
 function renderAttendance(){
-  // STAFF-REPORT: staff เห็น checkin + history + report + calendar — admin เห็นทุก tab
+  // MERGE: calendar ย้ายเข้า subtab ของ history แล้ว — staff เห็น checkin+history+report
   const isEmp=curUser?.role!=='admin';
-  if(isEmp&&!['checkin','history','report','calendar'].includes(att_curTab))att_curTab='checkin';
+  if(isEmp&&!['checkin','history','report'].includes(att_curTab))att_curTab='checkin';
   const tabs=[
     {k:'checkin',   l:T('attTabCheckin')},
     {k:'history',   l:T('attTabHistory')},
-    {k:'report',    l:T('attTabReport')},  // staff เห็นด้วย — แต่ filter เฉพาะตัวเองใน attLoadReport
-    {k:'calendar',  l:'🗓 ปฏิทิน'},       // CALENDAR-A: staff + admin เห็น
+    {k:'report',    l:T('attTabReport')},
     ...(!isEmp?[
       {k:'employees',    l:T('attTabEmployees')},
       {k:'branches',     l:'🏢 สาขา'},
@@ -3005,14 +3005,13 @@ function attGo(tab){
 function attRender(tab){
   const el=document.getElementById('att_sub'); if(!el)return;
   if(att_clockTimer){clearInterval(att_clockTimer);att_clockTimer=null;}
-  if(tab!=='calendar')_att_calSelEmp=''; // CALENDAR-B: reset filter เมื่อออกจาก calendar tab
-  const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,calendar:attUICalendar,employees:attUIEmployees,branches:attUIBranches,attsettings:attUISettings,export:attUIExport};
+  if(tab!=='history')_att_calSelEmp=''; // MERGE: reset calendar filter เมื่อออกจาก history tab
+  const map={checkin:attUICheckin,history:attUIHistory,report:attUIReport,employees:attUIEmployees,branches:attUIBranches,attsettings:attUISettings,export:attUIExport};
   el.innerHTML=(map[tab]||attUICheckin)();
   if(tab==='checkin'){attStartClock();attInitCheckinView();}
   if(tab==='attsettings'){attInitSettingsView();}
   if(tab==='history'){attInitHistoryView();}
   if(tab==='report'){attInitReportView();}
-  if(tab==='calendar'){attInitCalendarView();}  // CALENDAR-A
   if(tab==='export'){attInitExportView();}
   if(tab==='employees'){attInitEmployeesView();}
   if(tab==='branches'){attInitBranchesView();}
@@ -3064,13 +3063,33 @@ function attStartClock(){
   },1000);
 }
 
+// MERGE: attUIHistory เป็น wrapper — subtab bar + att_hist_sub
 function attUIHistory(){
-  // staff ดูเฉพาะตัวเอง / admin ดูทุกคน
+  const calOn=_att_histView==='calendar';
+  return`<div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--g2);padding-bottom:0">
+      <button id="att_hsub_btn_calendar"
+        onclick="attHistGo('calendar')"
+        style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:${calOn?'2px solid var(--p)':'2px solid transparent'};color:${calOn?'var(--p)':'var(--g5)'};margin-bottom:-2px;font-family:var(--font)">
+        🗓 ปฏิทิน
+      </button>
+      <button id="att_hsub_btn_table"
+        onclick="attHistGo('table')"
+        style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:${calOn?'2px solid transparent':'2px solid var(--p)'};color:${calOn?'var(--g5)':'var(--p)'};margin-bottom:-2px;font-family:var(--font)">
+        📋 ตาราง
+      </button>
+    </div>
+    <div id="att_hist_sub"></div>
+  </div>`;
+}
+
+// MERGE: HTML เดิมของ history table — ไม่แก้ logic ใดๆ
+function attUIHistTableContent(){
   const isEmp=curUser?.role!=='admin';
   return`<div class="twrap">
     <div class="tbar2">
       <div style="font-size:13px;font-weight:700">${T('attHistTitle')}${isEmp?`<span style="font-size:11px;font-weight:400;color:var(--g5);margin-left:8px">${T('attHistMine')}</span>`:''}</div>
-      <button class="btn btn-p btn-sm" onclick="attApplyHistoryFilter()">${T('attHistSearch')}</button>
+      <button id="att_hist_srch_btn" class="btn btn-p btn-sm">${T('attHistSearch')}</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 0;align-items:center">
       ${isEmp
@@ -3124,13 +3143,44 @@ function attUIReport(){
 }
 
 async function attInitHistoryView(){
-  const fromDate=new Date(Date.now()-30*24*60*60*1000);
-  const toDate=new Date();
-  const fd=document.getElementById('att_hist_from');
-  const td=document.getElementById('att_hist_to');
-  if(fd)fd.value=attGetThaiLogDate(fromDate);
-  if(td)td.value=attGetThaiLogDate(toDate);
-  await attApplyHistoryFilter();
+  // MERGE: delegate ไปยัง attHistGo ตาม _att_histView state
+  attHistGo(_att_histView);
+}
+
+// MERGE: สลับ subtab ใน history — 'calendar' | 'table'
+function attHistGo(view){
+  _att_histView=view||'calendar';
+  const sub=document.getElementById('att_hist_sub');
+  if(!sub)return;
+
+  // อัพเดต active state บน subtab buttons
+  ['calendar','table'].forEach(v=>{
+    const btn=document.getElementById('att_hsub_btn_'+v);
+    if(!btn)return;
+    const active=v===_att_histView;
+    btn.style.borderBottomColor=active?'var(--p)':'transparent';
+    btn.style.color=active?'var(--p)':'var(--g5)';
+  });
+
+  if(_att_histView==='calendar'){
+    // ── ปฏิทิน: inject calendar shell แล้ว init
+    sub.innerHTML=attUICalendar();
+    attInitCalendarView();
+  }else{
+    // ── ตาราง: inject table shell แล้ว set default dates + load
+    sub.innerHTML=attUIHistTableContent();
+    // ผูก search button ด้วย addEventListener โดยตรง — inline onclick ไม่ reliable หลัง innerHTML
+    const srchBtn=document.getElementById('att_hist_srch_btn');
+    if(srchBtn)srchBtn.addEventListener('click',attApplyHistoryFilter);
+    // set default dates แล้ว initial load
+    const fromDate=new Date(Date.now()-30*24*60*60*1000);
+    const toDate=new Date();
+    const fd=document.getElementById('att_hist_from');
+    const td=document.getElementById('att_hist_to');
+    if(fd)fd.value=attGetThaiLogDate(fromDate);
+    if(td)td.value=attGetThaiLogDate(toDate);
+    attApplyHistoryFilter();
+  }
 }
 
 async function attApplyHistoryFilter(){
