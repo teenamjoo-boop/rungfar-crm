@@ -3169,9 +3169,16 @@ function attHistGo(view){
   }else{
     // ── ตาราง: inject table shell แล้ว set default dates + load
     sub.innerHTML=attUIHistTableContent();
-    // ผูก search button ด้วย addEventListener โดยตรง — inline onclick ไม่ reliable หลัง innerHTML
+    // ── bind events หลัง inject — ไม่ใช้ inline handler (scope issue) ───────
     const srchBtn=document.getElementById('att_hist_srch_btn');
     if(srchBtn)srchBtn.addEventListener('click',attApplyHistoryFilter);
+    // auto-apply เมื่อ filter เปลี่ยน — debounce 250ms กัน query ถี่
+    let _histDebTimer=null;
+    const _histAutoApply=()=>{clearTimeout(_histDebTimer);_histDebTimer=setTimeout(attApplyHistoryFilter,250);};
+    ['att_hist_from','att_hist_to','att_hist_status'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.addEventListener('change',_histAutoApply);
+    });
     // set default dates แล้ว initial load
     const fromDate=new Date(Date.now()-30*24*60*60*1000);
     const toDate=new Date();
