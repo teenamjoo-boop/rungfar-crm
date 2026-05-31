@@ -4463,22 +4463,19 @@ function attRenderExportPreview(summary,yr,mo){
   const tot={scheduled:0,worked:0,absent:0,late_minutes:0,early_leave_minutes:0,ot_minutes:0,forgot_in:0,forgot_out:0,normal_days:0,total_work_minutes:0};
   summary.forEach(r=>{tot.scheduled+=r.scheduled;tot.worked+=r.worked;tot.absent+=r.absent;tot.late_minutes+=r.late_minutes;tot.early_leave_minutes+=r.early_leave_minutes;tot.ot_minutes+=r.ot_minutes;tot.forgot_in+=r.forgot_in;tot.forgot_out+=r.forgot_out;tot.normal_days+=r.normal_days;tot.total_work_minutes+=r.total_work_minutes;});
   const scheduled=summary[0]?.scheduled||0;
-  const headers=['ชื่อพนักงาน','รหัส','สาขา','กำหนด','มาจริง','ขาด','สาย(น.)','ออกก่อน(น.)','OT','ลืมตอกเข้า','ลืมตอกออก','ปกติ','ชม.รวม','เข้างาน%'];
+  const headers=['ชื่อพนักงาน','รหัส','สาขา','กำหนด','ขาด','สาย(น.)','ออกก่อน(น.)','ปกติ','ชม.รวม','มาจริง','OT'];
   const rows=summary.map(r=>`<tr style="border-bottom:1px solid var(--g2)">
     <td style="padding:6px 8px;font-size:12px">${esc(r.name)}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${esc(r.code)}</td>
     <td style="padding:6px 8px;font-size:12px;color:var(--g5)">${esc(r.branch||'—')}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${r.scheduled}</td>
-    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.worked}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center;color:${r.absent>0?'#dc2626':'inherit'}">${r.absent}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center;color:${r.late_minutes>0?'#d97706':'inherit'}">${r.late_minutes||'—'}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${r.early_leave_minutes||'—'}</td>
-    <td style="padding:6px 8px;font-size:12px;text-align:center;color:#7c3aed">${fmtMin(r.ot_minutes)}</td>
-    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.forgot_in||'—'}</td>
-    <td style="padding:6px 8px;font-size:12px;text-align:center;color:${r.forgot_out>0?'#dc2626':'inherit'}">${r.forgot_out||'—'}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${r.normal_days}</td>
     <td style="padding:6px 8px;font-size:12px;text-align:center">${fmtMin(r.total_work_minutes)}</td>
-    <td style="padding:6px 8px;font-size:12px;text-align:center">${scheduled>0?(r.worked/scheduled*100).toFixed(1)+'%':'—'}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center">${r.worked}</td>
+    <td style="padding:6px 8px;font-size:12px;text-align:center;color:#7c3aed">${fmtMin(r.ot_minutes)}</td>
   </tr>`).join('');
   return`<div style="overflow-x:auto;margin-top:4px">
     <div style="font-size:12px;color:var(--g5);margin-bottom:6px">📋 ตัวอย่างรายงานสรุป ${monthTH[mo]} ${yr+543} (${summary.length} คน)</div>
@@ -4488,18 +4485,15 @@ function attRenderExportPreview(summary,yr,mo){
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr style="background:#f3f4f6;font-weight:700;border-top:2px solid var(--g3)">
-        <td style="padding:7px 8px;font-size:12px" colspan="2">รวมทั้งหมด</td>
+        <td style="padding:7px 8px;font-size:12px" colspan="3">รวมทั้งหมด</td>
         <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.scheduled}</td>
-        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.worked}</td>
         <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.absent}</td>
         <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.late_minutes||'—'}</td>
         <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.early_leave_minutes||'—'}</td>
-        <td style="padding:7px 8px;text-align:center;font-size:12px">${fmtMin(tot.ot_minutes)}</td>
-        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.forgot_in||'—'}</td>
-        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.forgot_out||'—'}</td>
         <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.normal_days}</td>
         <td style="padding:7px 8px;text-align:center;font-size:12px">${fmtMin(tot.total_work_minutes)}</td>
-        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.scheduled>0?(tot.worked/tot.scheduled*100).toFixed(1)+'%':'—'}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${tot.worked}</td>
+        <td style="padding:7px 8px;text-align:center;font-size:12px">${fmtMin(tot.ot_minutes)}</td>
       </tr></tfoot>
     </table>
   </div>`;
@@ -4565,49 +4559,44 @@ async function attExportSummaryXLS(){
     const T='border:1px solid #000;padding:5px 8px;font-size:10pt;';
     const TC=T+'text-align:center;';
     const TH='border:1px solid #000;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1e3a5f;color:#fff;text-align:center;';
-    const colHeaders=['ชื่อพนักงาน','รหัสพนักงาน','สาขา','วันทำงานตามกำหนด','วันมาทำงานจริง','วันขาดงาน','นาทีมาสาย','นาทีออกก่อนเวลา','ชั่วโมง OT','ลืมตอกเข้า','ลืมตอกออก','เข้างานปกติ','ชม.ลาพักร้อน','ชม.ลาป่วย','ชม.ลาอื่นๆ','ชม.ทำงานรวม','อัตราเข้างาน%'];
+    const colHeaders=['ชื่อพนักงาน','รหัสพนักงาน','สาขา','วันทำงานตามกำหนด','วันขาดงาน','นาทีมาสาย','นาทีออกก่อนเวลา','เข้างานปกติ','ชม.ลาพักร้อน','ชม.ลาป่วย','ชม.ลาอื่นๆ','ชม.ทำงานรวม','วันมาทำงานจริง','ชั่วโมง OT'];
     const NC=colHeaders.length;
     const dataRows=summary.map((r,i)=>{
       const bg=i%2===0?'#ffffff':'#f0f7ff';
-      const rate=r.scheduled>0?(r.worked/r.scheduled*100).toFixed(1)+'%':'—';
       return`<tr style="background:${bg}">
         <td style="${T}">${esc(r.name)}</td>
         <td style="${TC}">${esc(r.code)}</td>
         <td style="${T}">${esc(r.branch||'—')}</td>
         <td style="${TC}">${r.scheduled}</td>
-        <td style="${TC}">${r.worked}</td>
         <td style="${TC};color:${r.absent>0?'#c00000':'#000'}">${r.absent}</td>
         <td style="${TC};color:${r.late_minutes>0?'#c55a00':'#000'}">${r.late_minutes||0}</td>
         <td style="${TC}">${r.early_leave_minutes||0}</td>
-        <td style="${TC};color:#7030a0">${fmtMin(r.ot_minutes)}</td>
-        <td style="${TC}">${r.forgot_in||0}</td>
-        <td style="${TC};color:${r.forgot_out>0?'#c00000':'#000'}">${r.forgot_out||0}</td>
         <td style="${TC}">${r.normal_days}</td>
         <td style="${TC}">0</td><td style="${TC}">0</td><td style="${TC}">0</td>
         <td style="${TC}">${fmtMin(r.total_work_minutes)}</td>
-        <td style="${TC}">${rate}</td>
+        <td style="${TC}">${r.worked}</td>
+        <td style="${TC};color:#7030a0">${fmtMin(r.ot_minutes)}</td>
       </tr>`;
     }).join('');
-    const subtotalRate=tot.scheduled>0?(tot.worked/tot.scheduled*100).toFixed(1)+'%':'—';
     const ST='border:1px solid #000;padding:6px 8px;font-size:10pt;font-weight:bold;background:#d6e4f0;text-align:center;';
     const subtotalRow=`<tr>
       <td style="${ST};text-align:left" colspan="2">Subtotal</td>
-      <td style="${ST}">${tot.scheduled}</td><td style="${ST}">${tot.worked}</td><td style="${ST}">${tot.absent}</td>
+      <td style="${ST}">${tot.scheduled}</td><td style="${ST}">${tot.absent}</td>
       <td style="${ST}">${tot.late_minutes}</td><td style="${ST}">${tot.early_leave_minutes}</td>
-      <td style="${ST}">${fmtMin(tot.ot_minutes)}</td><td style="${ST}">${tot.forgot_in}</td>
-      <td style="${ST}">${tot.forgot_out}</td><td style="${ST}">${tot.normal_days}</td>
+      <td style="${ST}">${tot.normal_days}</td>
       <td style="${ST}">0</td><td style="${ST}">0</td><td style="${ST}">0</td>
-      <td style="${ST}">${fmtMin(tot.total_work_minutes)}</td><td style="${ST}">${subtotalRate}</td>
+      <td style="${ST}">${fmtMin(tot.total_work_minutes)}</td>
+      <td style="${ST}">${tot.worked}</td><td style="${ST}">${fmtMin(tot.ot_minutes)}</td>
     </tr>`;
     const TT='border:1px solid #3a5a8f;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1e3a5f;color:#fff;text-align:center;';
     const totalRow=`<tr>
       <td style="${TT};text-align:left" colspan="2">Total (${summary.length} คน)</td>
-      <td style="${TT}">${tot.scheduled} วัน</td><td style="${TT}">${tot.worked} วัน</td><td style="${TT}">${tot.absent} วัน</td>
+      <td style="${TT}">${tot.scheduled} วัน</td><td style="${TT}">${tot.absent} วัน</td>
       <td style="${TT}">${tot.late_minutes} น.</td><td style="${TT}">${tot.early_leave_minutes} น.</td>
-      <td style="${TT}">${fmtMin(tot.ot_minutes)}</td><td style="${TT}">${tot.forgot_in}</td>
-      <td style="${TT}">${tot.forgot_out}</td><td style="${TT}">${tot.normal_days}</td>
+      <td style="${TT}">${tot.normal_days}</td>
       <td style="${TT}">0</td><td style="${TT}">0</td><td style="${TT}">0</td>
-      <td style="${TT}">${fmtMin(tot.total_work_minutes)}</td><td style="${TT}">${subtotalRate}</td>
+      <td style="${TT}">${fmtMin(tot.total_work_minutes)}</td>
+      <td style="${TT}">${tot.worked} วัน</td><td style="${TT}">${fmtMin(tot.ot_minutes)}</td>
     </tr>`;
     const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8">
