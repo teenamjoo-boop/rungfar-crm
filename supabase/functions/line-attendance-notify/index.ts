@@ -7,7 +7,7 @@
 // → สร้าง Flex Message 2 แบบ แยก builder อิสระ:
 //     buildGroupMainFlexMessage  — card สั้น (ชื่อ/สาขา/เวลา/รูป)
 //     buildGroupAdminFlexMessage — card เต็ม (ครบทุก field)
-// → push ไป 2 groups ด้วย Promise.allSettled
+// → push ไป "กลุ่มรวม" (MAIN) กลุ่มเดียว (single-group mode)
 // → ถ้า Flex ส่งไม่ผ่าน → fallback เป็น text อัตโนมัติ
 // → return 200 เสมอ — LINE fail ≠ attendance fail
 // =============================================================
@@ -304,6 +304,28 @@ function buildAdminFlexBubble(
     const distText = distM != null ? `${Math.round(distM)} ม.` : '—';
     // ไม่มี hasSelfie — ระบบไม่ถ่ายรูปตอนออกงาน จึงไม่แสดง row รูปออกงาน
 
+    // สรุปงานรายวัน — แสดงเฉพาะรายการที่กรอก; รองรับ items array (ใหม่) + fallback เก่า
+    type WsItem = { type: string; detail: string };
+    const wsItems = (log.work_summary_items as WsItem[] | null);
+    const wsSummaryRows: FlexComponent[] = [];
+    if (wsItems && Array.isArray(wsItems) && wsItems.length > 0) {
+      for (const item of wsItems) {
+        const d = item.detail && item.detail.length > 100
+          ? item.detail.slice(0, 100) + '...'
+          : (item.detail || '-');
+        wsSummaryRows.push(makeRow(item.type, d));
+      }
+    } else {
+      // fallback: log เก่า ใช้ work_summary_type + work_summary_detail
+      const wsTypeFb = (log.work_summary_type as string) || '';
+      const wsRawFb  = (log.work_summary_detail as string) || '';
+      if (wsRawFb || wsTypeFb) {
+        const d = wsRawFb.length > 100 ? wsRawFb.slice(0, 100) + '...' : (wsRawFb || '-');
+        const lbl = wsTypeFb && wsTypeFb !== 'multi' ? wsTypeFb : 'สรุปงาน';
+        wsSummaryRows.push(makeRow(lbl, d));
+      }
+    }
+
     headerColor = '#1AACEE'; // ฟ้าสว่าง = ออกงาน
     headerTitle = 'ออกงาน';
 
@@ -324,6 +346,12 @@ function buildAdminFlexBubble(
       makeSep(),
       makeRow('GPS',        gpsText),
       makeRow('ระยะจากสาขา', distText),
+      ...(wsSummaryRows.length > 0 ? [
+        makeSep(),
+        { type: 'text', text: 'สรุปงานรายวัน', size: 'sm', weight: 'bold',
+          color: '#555555', margin: 'xs' } as FlexComponent,
+        ...wsSummaryRows,
+      ] : []),
     ];
   }
 
@@ -332,18 +360,18 @@ function buildAdminFlexBubble(
     header: {
       type: 'box',
       layout: 'vertical',
-      paddingTop: '14px',
-      paddingBottom: '12px',
+      paddingTop: '10px',
+      paddingBottom: '8px',
       paddingStart: '16px',
       paddingEnd: '16px',
       backgroundColor: headerColor,
       contents: [
         {
-          // หัวข้อหลัก — กึ่งกลาง ไม่มี emoji (xxl = ใหญ่ชัดเจน แต่ไม่ทำ header สูงเกิน)
+          // หัวข้อหลัก — กึ่งกลาง ไม่มี emoji (xl = ใหญ่ชัด แต่ compact ไม่ทำ header สูง)
           type: 'text',
           text: headerTitle,
           color: '#FFFFFF',
-          size: 'xxl',
+          size: 'xl',
           weight: 'bold',
           align: 'center',
         },
@@ -352,17 +380,17 @@ function buildAdminFlexBubble(
           type: 'text',
           text: logDate,
           color: '#FFFFFFCC',
-          size: 'sm',
+          size: 'xs',
           align: 'center',
-          margin: 'sm',
+          margin: 'xs',
         },
       ],
     },
     body: {
       type: 'box',
       layout: 'vertical',
-      paddingAll: '16px',
-      spacing: 'sm',
+      paddingAll: '12px',
+      spacing: 'xs',
       contents: bodyRows,
     },
     footer: makeFooter(),
@@ -430,6 +458,23 @@ function buildAdminTextFallback(log: Record<string, unknown>, type: string): str
     let status = 'ปกติ';
     if (isOutside)         status = 'อยู่นอกพื้นที่';
     else if (earlyMin > 0) status = `ออกก่อน ${earlyMin} นาที`;
+    // สรุปงานรายวัน — items array ใหม่ หรือ fallback เก่า
+    const wsItemsFb = (log.work_summary_items as Array<{type: string; detail: string}> | null);
+    let wsLines: string[] = [];
+    if (wsItemsFb && Array.isArray(wsItemsFb) && wsItemsFb.length > 0) {
+      wsLines = wsItemsFb.map(x => {
+        const d = x.detail.length > 100 ? x.detail.slice(0, 100) + '...' : x.detail;
+        return `${x.type}: ${d}`;
+      });
+    } else {
+      const wsTypeFb = (log.work_summary_type as string) || '';
+      const wsRawFb  = (log.work_summary_detail as string) || '';
+      if (wsRawFb || wsTypeFb) {
+        const d = wsRawFb.length > 100 ? wsRawFb.slice(0, 100) + '...' : (wsRawFb || '-');
+        const lbl = wsTypeFb && wsTypeFb !== 'multi' ? wsTypeFb + ': ' : '';
+        wsLines.push(lbl + d);
+      }
+    }
     return [
       'ออกงาน',
       `พนักงาน: ${name}`, `รหัส: ${code}`, `สาขา: ${branch}`,
@@ -437,6 +482,7 @@ function buildAdminTextFallback(log: Record<string, unknown>, type: string): str
       `ชม.ทำงาน: ${workText}`, `OT: ${otText}`,
       `สถานะ: ${status}`, `GPS: ${gpsText}`,
       `ระยะจากสาขา: ${distText}`,
+      ...(wsLines.length > 0 ? ['สรุปงานรายวัน:', ...wsLines] : []),
     ].join('\n');
   }
 }
@@ -658,29 +704,20 @@ Deno.serve(async (req: Request) => {
     }
     result.branch_hours = branchHours;
 
-    // ── Build messages ────────────────────────────────────────────────
-    // buildGroupMainFlexMessage  — card สั้น (ชื่อ/สาขา/เวลา) ไม่มีเวลาทำการ
-    // buildGroupAdminFlexMessage — card เต็ม (ครบทุก field + เวลาทำการ)
-    const mainFlex    = buildGroupMainFlexMessage(log, type);
-    const mainText    = buildMainTextFallback(log, type);
-    const adminFlex   = buildGroupAdminFlexMessage(log, type, branchHours);
-    const adminText   = buildAdminTextFallback(log, type);
+    // ── Build message ─────────────────────────────────────────────────
+    // ส่ง "กลุ่มรวม" (MAIN) กลุ่มเดียว — ใช้ card ละเอียด (เดิมของ admin)
+    // ไม่ส่งกลุ่ม ADMIN อีกต่อไป (groupAdmin ไม่ถูกใช้แล้ว)
+    const mainFlex = buildGroupAdminFlexMessage(log, type, branchHours);
+    const mainText = buildAdminTextFallback(log, type);
 
-    // ── Send to both groups (independent, non-throwing) ───────────────
-    const [mainResult, adminResult] = await Promise.allSettled([
-      sendGroupMessage(groupMain,  mainFlex,  mainText,  lineToken, 'MAIN'),
-      sendGroupMessage(groupAdmin, adminFlex, adminText, lineToken, 'ADMIN'),
-    ]);
+    // ── Send to MAIN group only (non-throwing) ────────────────────────
+    const mainResult = await sendGroupMessage(groupMain, mainFlex, mainText, lineToken, 'MAIN');
+    result.main = mainResult;
 
-    result.main  = mainResult.status  === 'fulfilled'
-      ? mainResult.value
-      : { sent: false, type: 'none', error: String((mainResult as PromiseRejectedResult).reason) };
+    // ADMIN group ปิดการส่งแล้ว — รายงานเป็น skipped ชัดเจน
+    result.admin = { sent: false, type: 'none', error: 'admin group disabled (single-group mode)' };
 
-    result.admin = adminResult.status === 'fulfilled'
-      ? adminResult.value
-      : { sent: false, type: 'none', error: String((adminResult as PromiseRejectedResult).reason) };
-
-    result.ok = result.main.sent || result.admin.sent;
+    result.ok = result.main.sent;
 
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
