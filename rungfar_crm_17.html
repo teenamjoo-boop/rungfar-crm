@@ -4556,20 +4556,22 @@ async function attExportSummaryXLS(){
     summary.forEach(r=>{tot.scheduled+=r.scheduled;tot.worked+=r.worked;tot.absent+=r.absent;tot.late_minutes+=r.late_minutes;tot.early_leave_minutes+=r.early_leave_minutes;tot.ot_minutes+=r.ot_minutes;tot.forgot_in+=r.forgot_in;tot.forgot_out+=r.forgot_out;tot.normal_days+=r.normal_days;tot.total_work_minutes+=r.total_work_minutes;});
     const scheduled=summary[0]?.scheduled||0;
     const printDate=new Date().toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',year:'numeric',month:'long',day:'numeric'});
-    const T='border:1px solid #000;padding:5px 8px;font-size:10pt;';
+    // ── Style constants — โทนมืออาชีพ: title/subtotal/total น้ำเงินเข้ม, header ส้มครีม ──
+    const T='border:1px solid #BDC3C7;padding:5px 8px;font-size:10pt;';
     const TC=T+'text-align:center;';
-    const TH='border:1px solid #000;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1e3a5f;color:#fff;text-align:center;';
+    // หัวตาราง: ส้มครีมอ่อน + ตัวหนังสือเข้ม (ไม่ใช้พื้นเข้มเพื่อไม่กลืนกับค่าผิดปกติ)
+    const TH='border:1px solid #C8975A;padding:6px 8px;font-size:10pt;font-weight:bold;background:#FCE4C6;color:#3B2A1A;text-align:center;';
     const colHeaders=['ชื่อพนักงาน','รหัสพนักงาน','สาขา','วันทำงานตามกำหนด','วันขาดงาน','นาทีมาสาย','นาทีออกก่อนเวลา','เข้างานปกติ','ชม.ลาพักร้อน','ชม.ลาป่วย','ชม.ลาอื่นๆ','ชม.ทำงานรวม','วันมาทำงานจริง','ชั่วโมง OT'];
     const NC=colHeaders.length;
     const dataRows=summary.map((r,i)=>{
-      const bg=i%2===0?'#ffffff':'#f0f7ff';
+      const bg=i%2===0?'#ffffff':'#FFF5EE'; // สลับขาว/ส้มครีมจางมาก
       return`<tr style="background:${bg}">
         <td style="${T}">${esc(r.name)}</td>
         <td style="${TC}">${esc(r.code)}</td>
         <td style="${T}">${esc(r.branch||'—')}</td>
         <td style="${TC}">${r.scheduled}</td>
-        <td style="${TC};color:${r.absent>0?'#c00000':'#000'}">${r.absent}</td>
-        <td style="${TC};color:${r.late_minutes>0?'#c55a00':'#000'}">${r.late_minutes||0}</td>
+        <td style="${TC};color:${r.absent>0?'#C00000':'#000'}">${r.absent}</td>
+        <td style="${TC};color:${r.late_minutes>0?'#E46C0A':'#000'}">${r.late_minutes||0}</td>
         <td style="${TC}">${r.early_leave_minutes||0}</td>
         <td style="${TC}">${r.normal_days}</td>
         <td style="${TC}">0</td><td style="${TC}">0</td><td style="${TC}">0</td>
@@ -4578,7 +4580,8 @@ async function attExportSummaryXLS(){
         <td style="${TC};color:#7030a0">${fmtMin(r.ot_minutes)}</td>
       </tr>`;
     }).join('');
-    const ST='border:1px solid #000;padding:6px 8px;font-size:10pt;font-weight:bold;background:#d6e4f0;text-align:center;';
+    // Subtotal / Total: น้ำเงินเข้ม + ขาว (เด่น ชัด แยกจากข้อมูล)
+    const ST='border:1px solid #1F4E78;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1F4E78;color:#fff;text-align:center;';
     const subtotalRow=`<tr>
       <td style="${ST};text-align:left" colspan="2">Subtotal</td>
       <td style="${ST}">${tot.scheduled}</td><td style="${ST}">${tot.absent}</td>
@@ -4588,7 +4591,7 @@ async function attExportSummaryXLS(){
       <td style="${ST}">${fmtMin(tot.total_work_minutes)}</td>
       <td style="${ST}">${tot.worked}</td><td style="${ST}">${fmtMin(tot.ot_minutes)}</td>
     </tr>`;
-    const TT='border:1px solid #3a5a8f;padding:6px 8px;font-size:10pt;font-weight:bold;background:#1e3a5f;color:#fff;text-align:center;';
+    const TT='border:1px solid #17365D;padding:6px 8px;font-size:10pt;font-weight:bold;background:#17365D;color:#fff;text-align:center;';
     const totalRow=`<tr>
       <td style="${TT};text-align:left" colspan="2">Total (${summary.length} คน)</td>
       <td style="${TT}">${tot.scheduled} วัน</td><td style="${TT}">${tot.absent} วัน</td>
@@ -4603,8 +4606,8 @@ async function attExportSummaryXLS(){
 <style>body{font-family:'TH Sarabun New',Tahoma,Arial,sans-serif;}table{border-collapse:collapse;width:100%;}</style>
 </head><body>
 <table>
-  <tr><td colspan="${NC}" style="background:#1e3a5f;color:#fff;font-size:14pt;font-weight:bold;text-align:center;padding:12px;border:1px solid #1e3a5f">รายงานสรุปเวลาทำงานพนักงาน</td></tr>
-  <tr><td colspan="${NC}" style="text-align:center;padding:6px;font-size:10pt;border-bottom:2px solid #1e3a5f;border-left:1px solid #ccc;border-right:1px solid #ccc">${company} | ช่วงวันที่: ${from} ถึง ${to} | เดือน${monthTH[mo]} พ.ศ.${yr+543}</td></tr>
+  <tr><td colspan="${NC}" style="background:#1F4E78;color:#fff;font-size:14pt;font-weight:bold;text-align:center;padding:12px;border:1px solid #1F4E78">รายงานสรุปเวลาทำงานพนักงาน</td></tr>
+  <tr><td colspan="${NC}" style="text-align:center;padding:6px;font-size:10pt;border-bottom:2px solid #1F4E78;border-left:1px solid #C8975A;border-right:1px solid #C8975A">${company} | ช่วงวันที่: ${from} ถึง ${to} | เดือน${monthTH[mo]} พ.ศ.${yr+543}</td></tr>
   <tr><td colspan="${NC}" style="padding:3px;border:none"></td></tr>
   <tr>${colHeaders.map(h=>`<th style="${TH}">${h}</th>`).join('')}</tr>
   ${dataRows}
