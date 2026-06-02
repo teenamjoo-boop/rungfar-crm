@@ -36,7 +36,8 @@ import { PDFDocument, degrees, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 // GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 → base64 ของ service account JSON ทั้งไฟล์
 
 const STORAGE_BUCKET = 'line-ai-excel-intake';
-const BATCH_WINDOW_MS = 30 * 60 * 1000; // 30 นาที — รวมรูปชุดเดียวกัน
+const BATCH_WINDOW_MS    = 30 * 60 * 1000; // 30 นาที — รวมรูปชุดเดียวกัน
+const AUTO_FINALIZE_MS   = 45 * 1000;      // 45 วินาที — auto PDF หลังไม่มีรูปใหม่
 // Gemini (legacy) — ยังเก็บไว้เผื่อ fallback แต่ "อ่าน" ใหม่ใช้ Document AI
 const GEMINI_MODEL_PRIMARY  = 'gemini-2.0-flash';
 const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';
@@ -49,7 +50,13 @@ const TSV_PATH_PREFIX = 'line-ai-excel-tsv';
 const A4_W = 595.28;
 const A4_H = 841.89;
 const PDF_MARGIN = 24;
-const FILE_PAGE_ORDER = 'page_no.asc,created_at.asc,id.asc';
+// Source of truth: LINE event timestamp → event index → created_at → id
+// page_no ถูก reindex หลัง sort นี้เสมอ ห้ามใช้ page_no เป็น primary sort
+const FILE_PAGE_ORDER =
+  'line_event_ts.asc.nullslast,' +
+  'line_event_index.asc.nullslast,' +
+  'created_at.asc,' +
+  'id.asc';
 
 // TSV header (8 คอลัมน์ สำหรับ copy วาง Excel เริ่มคอลัมน์ B)
 // คอลัมน์ A ใน Excel ผู้ใช้ใส่เอง (ลำดับ/อื่นๆ) → ห้ามใส่คอลัมน์ลำดับใน TSV
@@ -78,6 +85,7 @@ interface LineMessage {
 }
 interface LineEvent {
   type: string;             // 'message' | ...
+  timestamp?: number;       // LINE server timestamp (Unix ms) — ใช้เป็น sort key
   replyToken?: string;
   source?: LineSource;
   message?: LineMessage;
@@ -279,30 +287,48 @@ function base64UrlEncode(bytes: Uint8Array): string {
   return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** หา batch ล่าสุดของกลุ่มที่ status='collecting' ภายในหน้าต่างเวลา */
+/** หา batch ล่าสุดของกลุ่ม+user ที่ status='collecting' ภายในหน้าต่างเวลา */
 async function findActiveBatch(
-  url: string, key: string, groupId: string,
+  url: string, key: string, groupId: string, userId: string | null,
 ): Promise<Record<string, unknown> | null> {
   const cutoff = new Date(Date.now() - BATCH_WINDOW_MS).toISOString();
-  const rows = await dbSelect(
-    url, key,
+  let path =
     `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
     `&status=eq.collecting&last_image_at=gte.${encodeURIComponent(cutoff)}` +
-    `&order=last_image_at.desc&limit=1`,
-  );
+    `&order=last_image_at.desc&limit=1`;
+  if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
+  const rows = await dbSelect(url, key, path);
   return rows.length > 0 ? rows[0] : null;
 }
 
-/** หา batch ล่าสุดของกลุ่มที่ collecting (ไม่จำกัดเวลา) — ใช้กับคำสั่ง อ่าน/รายการ/ล้าง */
+/** หา batch ล่าสุดของกลุ่ม+user ที่ collecting (ไม่จำกัดเวลา) — ใช้กับคำสั่ง รายการ/ล้าง/pdf */
 async function findLatestCollectingBatch(
-  url: string, key: string, groupId: string,
+  url: string, key: string, groupId: string, userId: string | null,
 ): Promise<Record<string, unknown> | null> {
-  const rows = await dbSelect(
-    url, key,
+  let path =
     `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
-    `&status=eq.collecting&order=last_image_at.desc&limit=1`,
-  );
+    `&status=eq.collecting&order=last_image_at.desc&limit=1`;
+  if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
+  const rows = await dbSelect(url, key, path);
   return rows.length > 0 ? rows[0] : null;
+}
+
+/**
+ * Atomic: เปลี่ยน status collecting → finalizing เฉพาะถ้ายัง collecting อยู่
+ * Returns true ถ้าได้ lock (0 row = คนอื่นได้ก่อน → skip)
+ */
+async function tryLockBatch(url: string, key: string, batchId: string): Promise<boolean> {
+  const res = await fetch(
+    `${url}/rest/v1/line_ai_excel_batches?id=eq.${encodeURIComponent(batchId)}&status=eq.collecting`,
+    {
+      method: 'PATCH',
+      headers: { ...dbHeaders(key, { 'Prefer': 'return=representation' }) },
+      body: JSON.stringify({ status: 'finalizing', updated_at: new Date().toISOString() }),
+    },
+  );
+  if (!res.ok) return false;
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length > 0;
 }
 
 // ─── Gemini ───────────────────────────────────────────────────────────────────
@@ -849,17 +875,26 @@ function parseOcrToRows(ocrText: string, senderName: string): ExcelRow[] {
   const raw = ocrText.replace(/\r/g, '\n');
   const people = findPersonMatches(raw);
 
-  if (people.length === 0) {
-    const row = buildExcelRow(raw, raw, senderName, '-');
-    const hasUsefulData = row.slice(2).some(v => v !== '-');
-    return hasUsefulData ? [row] : [[cleanTsvCell(senderName), 'รอมี', '-', '-', '-', '-', '-', '-']];
+  // 1 batch = 1 person = 1 row
+  // Group similar names, pick longest from first group
+  let bestName = '-';
+  if (people.length > 0) {
+    const groups: string[][] = [];
+    for (const p of people) {
+      const existing = groups.find(g => g.some(n => isSimilarPersonName(n, p.name)));
+      if (existing) {
+        existing.push(p.name);
+      } else {
+        groups.push([p.name]);
+      }
+    }
+    const firstGroup = groups[0];
+    bestName = firstGroup.reduce((a, b) => b.length > a.length ? b : a);
   }
 
-  const rows = people.map((person, idx) => {
-    const context = contextForPerson(raw, people, idx);
-    return buildExcelRow(context, raw, senderName, person.name);
-  });
-  return mergeRows(rows);
+  // Use full OCR text for all field extraction (not split by person)
+  const row = buildExcelRow(raw, raw, senderName, bestName);
+  return [row];
 }
 
 function rowsToTsv(rows: ExcelRow[], includeHeader: boolean): string {
@@ -1160,7 +1195,9 @@ async function buildPdfFromImages(
     }
 
     // ─ combine EXIF + user rotation ─
-    // ถ้า LINE ตัด EXIF → exifOrient=1 → exifCCW=0 → ใช้ user rotation อย่างเดียว
+    // NOTE: LINE อาจ strip EXIF ออกจากรูปก่อนส่ง (พบได้บน iOS/Android บางรุ่น)
+    // ถ้า EXIF ถูก strip → exifOrient=1 → exifCCW=0 → ไม่หมุน auto
+    // ผู้ใช้ต้องใช้คำสั่ง "หมุน N ขวา/ซ้าย" เป็น manual fallback
     const exifOrient = kind === 'jpg' ? readJpegExifOrientation(img.bytes) : 1;
     const exifCCW    = exifToDegreesCCW(exifOrient);          // CCW จาก EXIF
     const userCW     = userRotationsCW[idx] ?? 0;             // CW จาก user command
@@ -1179,17 +1216,211 @@ async function buildPdfFromImages(
   return { pdf: bytes, pages };
 }
 
+// ─── PDF helpers (PDF-only MVP) ───────────────────────────────────────────────
+
+/** โหลดรูปทั้งหมดจาก batchId + สร้าง PDF + upload → คืน path + signedUrl */
+async function buildAndUploadPdf(
+  url: string, key: string, batchId: string,
+): Promise<{ pages: number; pdfPath: string; signedUrl: string } | null> {
+  const files = await dbSelect(
+    url, key,
+    `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}` +
+    `&order=${FILE_PAGE_ORDER}&select=id,storage_path,mime_type,page_no,rotation_deg`,
+  );
+  if (files.length === 0) return null;
+  await ensurePageNumbers(url, key, files);
+
+  const images: { bytes: Uint8Array; contentType: string }[] = [];
+  const rotationsCW: number[] = [];
+
+  for (const f of files) {
+    try {
+      const got = await downloadFromStorage(url, key, f.storage_path as string);
+      const mimeType = (f.mime_type as string) || got.contentType;
+      images.push({ bytes: got.bytes, contentType: mimeType });
+      rotationsCW.push(typeof f.rotation_deg === 'number' ? f.rotation_deg : 0);
+    } catch (e) {
+      console.warn('[line-ai-excel] buildAndUploadPdf storage fetch failed:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  if (images.length === 0) return null;
+
+  const { pdf, pages } = await buildPdfFromImages(images, rotationsCW);
+  if (pages === 0) return null;
+
+  const pdfPath = `${PDF_PATH_PREFIX}/${batchId}.pdf`;
+  await uploadToStorage(url, key, pdfPath, pdf, 'application/pdf');
+  const signedUrl = await createSignedUrl(url, key, pdfPath, PDF_SIGNED_URL_SECONDS);
+  return { pages, pdfPath, signedUrl };
+}
+
+/** สร้าง LINE Flex message bubble พร้อมปุ่ม "เปิด PDF" */
+function buildPdfFlexMessage(pages: number, signedUrl: string): unknown {
+  return {
+    type: 'flex',
+    altText: `สร้าง PDF แล้ว (${pages} หน้า)`,
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          { type: 'text', text: 'สร้าง PDF แล้ว', weight: 'bold', size: 'lg' },
+          {
+            type: 'text',
+            text: `จำนวนรูป: ${pages} รูป`,
+            size: 'md',
+            color: '#666666',
+            margin: 'sm',
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            action: { type: 'uri', label: 'เปิด PDF', uri: signedUrl },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/** reply Flex message พร้อมปุ่ม "เปิด PDF" — fallback เป็นข้อความถ้า Flex fail */
+async function replyPdfFlex(
+  replyToken: string, pages: number, signedUrl: string, lineToken: string,
+): Promise<void> {
+  const res = await fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+    body: JSON.stringify({ replyToken, messages: [buildPdfFlexMessage(pages, signedUrl)] }),
+  });
+  if (!res.ok) {
+    console.warn('[line-ai-excel] flex reply failed, fallback text:', res.status);
+    await replyLineText(
+      replyToken,
+      `สร้าง PDF แล้ว\nจำนวนรูป: ${pages} รูป\nเปิดไฟล์: ${signedUrl}`,
+      lineToken,
+    );
+  }
+}
+
+/** push Flex message พร้อมปุ่ม "เปิด PDF" ไปที่ targetId (groupId) */
+async function pushPdfFlex(
+  targetId: string, pages: number, signedUrl: string, lineToken: string,
+): Promise<void> {
+  const res = await fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+    body: JSON.stringify({ to: targetId, messages: [buildPdfFlexMessage(pages, signedUrl)] }),
+  });
+  if (!res.ok) {
+    console.warn('[line-ai-excel] flex push failed, fallback text:', res.status);
+    await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+      body: JSON.stringify({
+        to: targetId,
+        messages: [{
+          type: 'text',
+          text: `สร้าง PDF แล้ว\nจำนวนรูป: ${pages} รูป\nเปิดไฟล์: ${signedUrl}`,
+        }],
+      }),
+    });
+  }
+}
+
+/**
+ * ตรวจ batch ที่ last_image_at เกิน AUTO_FINALIZE_MS และยัง status='collecting'
+ * → mark done + สร้าง PDF + push ไป group
+ * ใช้ fire-and-forget (ไม่ block webhook)
+ */
+async function checkAndFinalizeStale(
+  url: string, key: string, lineToken: string,
+): Promise<void> {
+  const cutoff = new Date(Date.now() - AUTO_FINALIZE_MS).toISOString();
+  let staleBatches: Record<string, unknown>[] = [];
+  try {
+    staleBatches = await dbSelect(
+      url, key,
+      `line_ai_excel_batches?status=eq.collecting` +
+      `&last_image_at=lt.${encodeURIComponent(cutoff)}` +
+      `&image_count=gt.0` +
+      `&order=last_image_at.asc&limit=10`,
+    );
+  } catch (e) {
+    console.warn('[line-ai-excel] stale check query failed:', e instanceof Error ? e.message : e);
+    return;
+  }
+
+  for (const batch of staleBatches) {
+    const batchId = batch.id as string;
+    const groupId = batch.group_id as string;
+    console.log(`[line-ai-excel] auto-finalize | batch=${batchId} group=${groupId}`);
+
+    // Atomic lock: collecting → finalizing (กัน double-finalize)
+    const locked = await tryLockBatch(url, key, batchId);
+    if (!locked) {
+      console.log(`[line-ai-excel] batch=${batchId} already locked, skip`);
+      continue;
+    }
+
+    try {
+      const result = await buildAndUploadPdf(url, key, batchId);
+      if (!result) {
+        console.warn(`[line-ai-excel] auto-finalize: no images batch=${batchId}`);
+        await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+          status: 'cancelled', updated_at: new Date().toISOString(),
+        });
+        continue;
+      }
+      const { pages, pdfPath, signedUrl } = result;
+      const nowIso = new Date().toISOString();
+      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+        status: 'finalized',
+        finalized_at: nowIso,
+        pdf_path: pdfPath,
+        pdf_url: signedUrl,
+        updated_at: nowIso,
+      });
+      try {
+        await dbInsert(url, key, 'line_ai_excel_results', {
+          batch_id: batchId,
+          result_text: `PDF auto: ${pdfPath} (${pages}p)`,
+          raw_json: { type: 'pdf_auto', path: pdfPath, pages },
+        });
+      } catch { /* non-critical */ }
+      if (groupId) await pushPdfFlex(groupId, pages, signedUrl, lineToken);
+    } catch (e) {
+      console.error('[line-ai-excel] auto-finalize PDF failed:', e instanceof Error ? e.message : e);
+      // revert ให้ตรวจรอบถัดไปได้
+      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+        status: 'collecting', updated_at: new Date().toISOString(),
+      }).catch(() => {});
+    }
+  }
+}
+
 // ─── Event Processing ─────────────────────────────────────────────────────────
 
-/** รูปในกลุ่ม control → เก็บ batch + Storage */
+/** รูปในกลุ่ม control → เก็บ batch + Storage
+ * @param eventIndex index ของ event ใน webhook payload.events[] — ใช้เป็น tiebreaker ลำดับหน้า
+ */
 async function handleImage(
   ev: LineEvent,
   ctx: { url: string; key: string; lineToken: string },
+  eventIndex = 0,
 ): Promise<void> {
   const { url, key, lineToken } = ctx;
-  const groupId = ev.source?.groupId || '';
-  const userId  = ev.source?.userId  || null;
-  const msgId   = ev.message?.id || '';
+  const groupId    = ev.source?.groupId || '';
+  const userId     = ev.source?.userId  || null;
+  const msgId      = ev.message?.id || '';
+  const eventTs    = typeof ev.timestamp === 'number' ? ev.timestamp : null; // LINE server ms
   if (!groupId || !msgId) return;
 
   // กันซ้ำ: ถ้า message นี้บันทึกแล้ว ข้าม
@@ -1205,8 +1436,8 @@ async function handleImage(
   // 1) ดาวน์โหลดรูปจาก LINE
   const { bytes, contentType } = await downloadLineContent(msgId, lineToken);
 
-  // 2) หา/สร้าง batch
-  const existing = await findActiveBatch(url, key, groupId);
+  // 2) หา/สร้าง batch (แยก per user เพื่อไม่ปนชุดของคนละคน)
+  const existing = await findActiveBatch(url, key, groupId, userId);
   let batchId: string;
   let newCount: number;
   let isFirstImage = false;
@@ -1234,16 +1465,18 @@ async function handleImage(
   const path = `${groupId}/${batchId}/${msgId}.${ext}`;
   await uploadToStorage(url, key, path, bytes, contentType);
 
-  // 4) บันทึก file record
+  // 4) บันทึก file record (page_no จาก newCount — จะ reindex ใหม่ตาม line_event_ts ก่อนใช้)
   await dbInsert(
     url, key, 'line_ai_excel_files',
     {
-      batch_id: batchId,
-      line_message_id: msgId,
-      storage_path: path,
-      mime_type: contentType,
-      page_no: newCount,
-      rotation_deg: 0,
+      batch_id:          batchId,
+      line_message_id:   msgId,
+      line_event_ts:     eventTs,       // LINE event timestamp (ms) — primary sort key
+      line_event_index:  eventIndex,    // index ใน events[] array — tiebreaker
+      storage_path:      path,
+      mime_type:         contentType,
+      page_no:           newCount,      // approximate; ensurePageNumbers() จะ fix race
+      rotation_deg:      0,
     },
   );
 
@@ -1253,9 +1486,26 @@ async function handleImage(
   if (isFirstImage && ev.replyToken) {
     await replyLineText(
       ev.replyToken,
-      'รับรูปแล้ว ส่งเพิ่มได้เลย\nพิมพ์ "อ่าน" เมื่อต้องการให้ AI สรุปเป็นตาราง Excel',
+      'รับรูปแล้ว ส่งเพิ่มได้เลย\nระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที\nหรือพิมพ์ "จบ" / "pdf" เพื่อสร้างทันที',
       lineToken,
     );
+  }
+
+  // 6) ตรวจ stale batches แบบ fire-and-forget (ไม่ block webhook)
+  {
+    const staleCheck = checkAndFinalizeStale(url, key, lineToken);
+    try {
+      // deno-lint-ignore no-explicit-any
+      const rt = (globalThis as any).EdgeRuntime;
+      if (rt?.waitUntil) {
+        rt.waitUntil(staleCheck);
+      } else {
+        staleCheck.catch((e: unknown) =>
+          console.warn('[line-ai-excel] stale check bg error:', e instanceof Error ? e.message : e));
+      }
+    } catch {
+      staleCheck.catch(() => {});
+    }
   }
 }
 
@@ -1271,7 +1521,7 @@ async function loadLatestBatchImages(
   images: { bytes: Uint8Array; contentType: string }[];
   rotationsCW: number[];                                // rotation_deg จาก DB (CW degrees)
 }> {
-  const batch = await findLatestCollectingBatch(url, key, groupId);
+  const batch = await findLatestCollectingBatch(url, key, groupId, null);
   if (!batch) return { batchId: null, fileIds: [], images: [], rotationsCW: [] };
   const batchId = batch.id as string;
 
@@ -1343,13 +1593,24 @@ async function handleText(
     docAi: DocAiConfig | null;
   },
 ): Promise<void> {
-  const { url, key, lineToken, docAi } = ctx;
-  const groupId = ev.source?.groupId || '';
+  const { url, key, lineToken } = ctx;
+  const groupId    = ev.source?.groupId || '';
+  const userId     = ev.source?.userId  || null;
   const replyToken = ev.replyToken;
   if (!replyToken || !groupId) return;
 
   const text = (ev.message?.text || '').trim();
-  const cmd = text.toLowerCase();
+  const cmd  = text.toLowerCase();
+
+  // trigger stale check บน text event ทุกครั้ง (fire-and-forget)
+  {
+    const sc = checkAndFinalizeStale(url, key, lineToken);
+    try {
+      // deno-lint-ignore no-explicit-any
+      const rt = (globalThis as any).EdgeRuntime;
+      if (rt?.waitUntil) rt.waitUntil(sc); else sc.catch(() => {});
+    } catch { sc.catch(() => {}); }
+  }
 
   // ─── help ───
   if (cmd === 'help' || text === 'ช่วยเหลือ') {
@@ -1358,11 +1619,11 @@ async function handleText(
       [
         'วิธีใช้:',
         'ส่งรูปเอกสารหลายใบ แล้วเลือก:',
-        '"อ่าน"    = OCR แล้วสรุปเป็นตาราง Excel (TSV)',
-        '"ocr"     = อ่านข้อความดิบจากเอกสาร',
-        '"pdf"     = รวมรูปเป็นไฟล์ PDF เดียว',
+        '"จบ" หรือ "pdf" = สร้าง PDF จากรูปทั้งหมดในชุด',
         '"รายการ"  = ดูจำนวนรูปและการหมุนแต่ละหน้า',
         '"ล้าง"    = เริ่มชุดใหม่',
+        '',
+        'ระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที',
         '',
         'ปรับการหมุนรูปแต่ละหน้า:',
         '"หมุน 1 ขวา"     = หมุนหน้า 1 CW 90°',
@@ -1381,7 +1642,7 @@ async function handleText(
 
   // ─── รายการ ───
   if (text === 'รายการ' || cmd === 'list') {
-    const batch = await findLatestCollectingBatch(url, key, groupId);
+    const batch = await findLatestCollectingBatch(url, key, groupId, userId);
     if (!batch) {
       await replyLineText(replyToken, 'ยังไม่มีรูปในชุดล่าสุด กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
@@ -1400,13 +1661,12 @@ async function handleText(
     await replyLineText(
       replyToken,
       [
-        `ชุดล่าสุด: ${count} รูป`,
+        `ชุดล่าสุดของคุณ: ${count} รูป`,
         ...pageLines,
         '',
-        'พิมพ์ "pdf" เพื่อสร้าง PDF',
-        'พิมพ์ "อ่าน" เพื่อสรุป Excel',
-        'พิมพ์ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อแก้ทิศรูป',
-        'เลขหน้าอิงตาม PDF ไม่ใช่ตำแหน่งรูปในกริด LINE',
+        'เลขหน้าอิงตาม PDF',
+        'ระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที',
+        'หรือพิมพ์ "จบ" / "pdf" เพื่อสร้างทันที',
         'ถ้าลำดับไม่ตรง ใช้ "สลับ 2 3" หรือ "จัด 1 3 2 4"',
       ].join('\n'),
       lineToken,
@@ -1416,7 +1676,7 @@ async function handleText(
 
   // ─── ล้าง ───
   if (text === 'ล้าง' || cmd === 'clear' || cmd === 'reset') {
-    const batch = await findLatestCollectingBatch(url, key, groupId);
+    const batch = await findLatestCollectingBatch(url, key, groupId, userId);
     if (!batch) {
       await replyLineText(replyToken, 'ไม่มีชุดที่ต้องล้าง', lineToken);
       return;
@@ -1425,13 +1685,81 @@ async function handleText(
       url, key, 'line_ai_excel_batches', `id=eq.${batch.id}`,
       { status: 'cancelled', updated_at: new Date().toISOString() },
     );
-    await replyLineText(replyToken, 'ล้างชุดล่าสุดแล้ว', lineToken);
+    await replyLineText(replyToken, 'ล้างชุดล่าสุดแล้ว ส่งรูปใหม่ได้เลย', lineToken);
+    return;
+  }
+
+  // ─── ชุดใหม่ / new — เริ่มชุดใหม่โดยไม่รวมรูปเก่า ──────────────────────
+  if (text === 'ชุดใหม่' || cmd === 'new') {
+    const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+    if (batch && (batch.image_count as number || 0) > 0) {
+      await replyLineText(
+        replyToken,
+        `ยังมีชุดค้างอยู่ ${batch.image_count} รูป\nกรุณาพิมพ์ "จบ" เพื่อสร้าง PDF และเริ่มชุดใหม่\nหรือพิมพ์ "ล้าง" เพื่อยกเลิกชุดเดิมโดยไม่ได้ PDF`,
+        lineToken,
+      );
+      return;
+    }
+    // ไม่มีชุดค้าง หรือชุดว่าง → พร้อมรับรูปชุดใหม่
+    if (batch) {
+      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batch.id}`, {
+        status: 'cancelled', updated_at: new Date().toISOString(),
+      });
+    }
+    await replyLineText(replyToken, 'พร้อมรับรูปชุดใหม่แล้ว ส่งรูปได้เลย', lineToken);
+    return;
+  }
+
+  // ─── จบ / done / finish — ปิด batch + สร้าง PDF ทันที ────────────────────
+  if (text === 'จบ' || cmd === 'done' || cmd === 'finish') {
+    const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+    if (!batch) {
+      await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
+      return;
+    }
+    const batchId = batch.id as string;
+    // Lock atomic: collecting → finalizing
+    const locked = await tryLockBatch(url, key, batchId);
+    if (!locked) {
+      await replyLineText(replyToken, 'ระบบกำลังสร้าง PDF อยู่ กรุณารอสักครู่', lineToken);
+      return;
+    }
+    try {
+      const result = await buildAndUploadPdf(url, key, batchId);
+      if (!result) {
+        await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+          status: 'collecting', updated_at: new Date().toISOString(),
+        });
+        await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ ไม่พบรูปในชุด', lineToken);
+        return;
+      }
+      const { pages, pdfPath, signedUrl } = result;
+      const nowIso = new Date().toISOString();
+      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+        status: 'finalized', finalized_at: nowIso, pdf_path: pdfPath, pdf_url: signedUrl, updated_at: nowIso,
+      });
+      try {
+        await dbInsert(url, key, 'line_ai_excel_results', {
+          batch_id: batchId,
+          result_text: `PDF: ${pdfPath} (${pages}p)`,
+          raw_json: { type: 'pdf_done', path: pdfPath, pages },
+        });
+      } catch (e) {
+        console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
+      }
+      await replyPdfFlex(replyToken, pages, signedUrl, lineToken);
+    } catch (e) {
+      console.error('[line-ai-excel] จบ PDF error:', e instanceof Error ? e.message : e);
+      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+        status: 'collecting', updated_at: new Date().toISOString(),
+      }).catch(() => {});
+      await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+    }
     return;
   }
 
   // ─── หมุน N ทิศ — "หมุน 1 ขวา" / "rotate 1 right" ─────────────────────────
   {
-    // รองรับ: หมุน {N} {ขวา|ซ้าย|กลับหัว|ตรง} / rotate {N} {right|left|180|reset}
     const rotM =
       text.match(/^หมุน\s*(\d+)\s*(ขวา|ซ้าย|กลับหัว|ตรง)$/i) ||
       text.match(/^rotate\s+(\d+)\s+(right|left|180|reset)$/i);
@@ -1439,15 +1767,13 @@ async function handleText(
     if (rotM) {
       const pageNum    = parseInt(rotM[1], 10);
       const dirRaw     = rotM[2].toLowerCase();
-      // map → CW degrees (0/90/180/270)
       const rotCW =
         dirRaw === 'ขวา'    || dirRaw === 'right' ? 90  :
         dirRaw === 'ซ้าย'   || dirRaw === 'left'  ? 270 :
         dirRaw === 'กลับหัว'|| dirRaw === '180'   ? 180 :
-        0; // ตรง / reset
+        0;
 
-      // ดึง files ของ batch ล่าสุด
-      const batch = await findLatestCollectingBatch(url, key, groupId);
+      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องหมุน กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -1489,7 +1815,7 @@ async function handleText(
     if (swapM) {
       const fromPage = parseInt(swapM[1], 10);
       const toPage = parseInt(swapM[2], 10);
-      const batch = await findLatestCollectingBatch(url, key, groupId);
+      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องสลับ กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -1531,7 +1857,7 @@ async function handleText(
     if (moveM) {
       const fromPage = parseInt(moveM[1], 10);
       const toPage = parseInt(moveM[2], 10);
-      const batch = await findLatestCollectingBatch(url, key, groupId);
+      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องย้าย กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -1578,7 +1904,7 @@ async function handleText(
       text.match(/^order\s+([0-9\s]+)$/i);
 
     if (orderM) {
-      const batch = await findLatestCollectingBatch(url, key, groupId);
+      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องจัดลำดับ กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -1618,10 +1944,9 @@ async function handleText(
     }
   }
 
-  // ─── ocr / OCR / อ่านดิบ ──────────────────────────────────────────────────
-  // OCR ด้วย Document AI → ตอบข้อความดิบ (ใช้ rotation ล่าสุดจาก DB)
+  // ─── ocr / อ่านดิบ — คงไว้สำหรับ debug ──────────────────────────────────
   if (cmd === 'ocr' || text === 'อ่านดิบ') {
-    if (!docAi) {
+    if (!ctx.docAi) {
       await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
       return;
     }
@@ -1631,7 +1956,7 @@ async function handleText(
       return;
     }
     try {
-      const ocrText = await runDocAiOnBatch(docAi, images, rotationsCW);
+      const ocrText = await runDocAiOnBatch(ctx.docAi, images, rotationsCW);
       try {
         await dbInsert(url, key, 'line_ai_excel_results', {
           batch_id: batchId,
@@ -1652,119 +1977,50 @@ async function handleText(
     return;
   }
 
-  // ─── อ่าน / อ่านหัวข้อ / read ─────────────────────────────────────────────
-  // Document AI OCR (ใช้ rotation ล่าสุด) → สรุปเป็น TSV copy วาง Excel ได้
+  // ─── อ่าน / อ่านหัวข้อ / excel / txt — พักไว้ก่อน ──────────────────────
   {
-    const readWithHeader =
-      text === 'อ่านหัวข้อ' || cmd === 'readheader' || cmd === 'read header';
-    const readRowsOnly = text === 'อ่าน' || cmd === 'read';
+    const isReadCmd =
+      text === 'อ่าน' || text === 'อ่านหัวข้อ' || text === 'ไฟล์' ||
+      cmd === 'read' || cmd === 'readheader' || cmd === 'read header' ||
+      cmd === 'excel' || cmd === 'txt';
 
-    if (readRowsOnly || readWithHeader) {
-      if (!docAi) {
-        await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
-        return;
-      }
-      console.log(`[line-ai-excel] อ่าน cmd | group=${groupId}`);
-
-      let extracted: { batchId: string; rows: ExcelRow[]; ocrText: string };
-      try {
-        extracted = await extractRowsFromLatestBatch(
-          url, key, groupId, lineToken, ev.source?.userId || null, docAi,
-        );
-        console.log(`[line-ai-excel] OCR OK | chars=${extracted.ocrText.length}`);
-      } catch (e) {
-        if (e instanceof Error && e.message === 'NO_BATCH') {
-          await replyLineText(replyToken, 'ยังไม่มีรูปให้อ่าน กรุณาส่งรูปเอกสารก่อน', lineToken);
-          return;
-        }
-        await replyLineText(replyToken, mapDocAiError(e), lineToken);
-        return;
-      }
-
-      const { batchId, rows, ocrText } = extracted;
-      const tsv = rowsToTsv(rows, readWithHeader);
-      console.log(`[line-ai-excel] parsed TSV | chars=${tsv.length}`);
-
-      await saveReadResult(url, key, batchId, tsv, ocrText, rows, readWithHeader);
-      await replyTsv(replyToken, tsv, lineToken, groupId);
-      return;
-    }
-  }
-
-  // ─── excel / tsv / ไฟล์ — สร้างไฟล์ TSV พร้อม header สำหรับเปิดใน Excel ─────
-  if (cmd === 'excel' || cmd === 'tsv' || text === 'ไฟล์') {
-    if (!docAi) {
-      await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
-      return;
-    }
-
-    let extracted: { batchId: string; rows: ExcelRow[]; ocrText: string };
-    try {
-      extracted = await extractRowsFromLatestBatch(
-        url, key, groupId, lineToken, ev.source?.userId || null, docAi,
+    if (isReadCmd) {
+      await replyLineText(
+        replyToken,
+        'ฟังก์ชันอ่าน Excel ยังอยู่ระหว่างปรับปรุง ตอนนี้แนะนำใช้ PDF ก่อนครับ\nพิมพ์ "pdf" หรือ "จบ" เพื่อสร้างไฟล์เอกสาร',
+        lineToken,
       );
-    } catch (e) {
-      if (e instanceof Error && e.message === 'NO_BATCH') {
-        await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับสร้างไฟล์ กรุณาส่งรูปเอกสารก่อน', lineToken);
-        return;
-      }
-      await replyLineText(replyToken, mapDocAiError(e), lineToken);
       return;
     }
-
-    const { batchId, rows, ocrText } = extracted;
-    const tsv = rowsToTsv(rows, true);
-    await saveReadResult(url, key, batchId, tsv, ocrText, rows, true);
-
-    const tsvPath = `${TSV_PATH_PREFIX}/${batchId}.tsv`;
-    const bytes = new TextEncoder().encode(tsv);
-    await uploadToStorage(url, key, tsvPath, bytes, 'text/tab-separated-values; charset=utf-8');
-    const signedUrl = await createSignedUrl(url, key, tsvPath, PDF_SIGNED_URL_SECONDS);
-    await replyLineText(
-      replyToken,
-      ['สร้างไฟล์ Excel TSV แล้ว', 'เปิด/ดาวน์โหลด:', signedUrl].join('\n'),
-      lineToken,
-    );
-    return;
   }
 
-  // ─── pdf / ทำpdf / ทำ PDF ───
-  // ─── pdf / ทำpdf / ทำ PDF ───
-  // normalize: เอา space ออก + lowercase → 'pdf' หรือ 'ทำpdf'
+  // ─── pdf / ทำpdf / ทำ PDF — สร้าง PDF ทันที ──────────────────────────────
   {
     const cmdNoSpace = text.replace(/\s+/g, '').toLowerCase();
     if (cmd === 'pdf' || cmdNoSpace === 'pdf' || cmdNoSpace === 'ทำpdf') {
-      // ใช้ loadLatestBatchImages เพื่อดึง rotations ล่าสุดจาก DB
-      const { batchId, images, rotationsCW } = await loadLatestBatchImages(url, key, groupId);
-      if (!batchId || images.length === 0) {
+      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      if (!batch) {
         await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ PDF กรุณาส่งรูปเอกสารก่อน', lineToken);
         return;
       }
-
-      // สร้าง PDF พร้อม rotation ล่าสุด + อัปโหลด + signed URL
+      const batchId = batch.id as string;
       try {
-        const { pdf, pages } = await buildPdfFromImages(images, rotationsCW);
-        if (pages === 0) {
+        const result = await buildAndUploadPdf(url, key, batchId);
+        if (!result) {
           await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
           return;
         }
-        const pdfPath = `${PDF_PATH_PREFIX}/${batchId}.pdf`;
-        await uploadToStorage(url, key, pdfPath, pdf, 'application/pdf');
-        const signedUrl = await createSignedUrl(url, key, pdfPath, PDF_SIGNED_URL_SECONDS);
+        const { pages, pdfPath, signedUrl } = result;
         try {
           await dbInsert(url, key, 'line_ai_excel_results', {
             batch_id: batchId,
             result_text: `PDF created: ${pdfPath} (${pages} pages)`,
-            raw_json: { type: 'pdf', path: pdfPath, pages, rotations: rotationsCW },
+            raw_json: { type: 'pdf', path: pdfPath, pages },
           });
         } catch (e) {
           console.warn('[line-ai-excel] save pdf result failed:', e instanceof Error ? e.message : e);
         }
-        await replyLineText(
-          replyToken,
-          [`สร้าง PDF แล้ว`, `จำนวนหน้า: ${pages} หน้า`, `เปิดไฟล์: ${signedUrl}`].join('\n'),
-          lineToken,
-        );
+        await replyPdfFlex(replyToken, pages, signedUrl, lineToken);
       } catch (e) {
         console.error('[line-ai-excel] PDF error:', e instanceof Error ? e.message : e);
         await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
@@ -1773,7 +2029,7 @@ async function handleText(
     }
   }
 
-  // คำสั่งอื่น — เงียบ (ไม่รบกวน)
+  // คำสั่งอื่น — เงียบ
   console.log('[line-ai-excel] text (no command matched)');
 }
 
@@ -1824,7 +2080,9 @@ Deno.serve(async (req: Request) => {
   const events = payload.events || [];
   const ctx = { url, key, lineToken, geminiKey, docAi };
 
-  for (const ev of events) {
+  // ใช้ index-based loop เพื่อส่ง eventIndex เป็น tiebreaker ลำดับหน้า PDF
+  for (let evIdx = 0; evIdx < events.length; evIdx++) {
+    const ev = events[evIdx];
     try {
       if (ev.type !== 'message' || !ev.source) continue;
       const groupId = ev.source.groupId || '';
@@ -1836,10 +2094,10 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      console.log(`[line-ai-excel] event | type=${msgType}`);
+      console.log(`[line-ai-excel] event[${evIdx}] type=${msgType} ts=${ev.timestamp}`);
 
       if (msgType === 'image') {
-        await handleImage(ev, ctx);
+        await handleImage(ev, ctx, evIdx);
       } else if (msgType === 'text') {
         await handleText(ev, ctx);
       }
