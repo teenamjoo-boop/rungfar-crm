@@ -26,15 +26,20 @@ import { PDFDocument, degrees } from 'https://esm.sh/pdf-lib@1.17.1';
 // LINE_CHANNEL_ACCESS_TOKEN                → token เดิม (download content + reply)
 // LINE_CHANNEL_SECRET                      → ใช้ validate signature
 // LINE_AI_CONTROL_GROUP_ID                 → groupId กลุ่ม AI แยก
-// GEMINI_API_KEY                           → key Google Gemini
-// AI_PROVIDER                              → default 'gemini'
+// GEMINI_API_KEY                           → key Google Gemini (legacy, ไม่ใช้ใน "อ่าน" แล้ว)
+//
+// ─── Document AI OCR (DOCUMENT-AI-OCR-A) ─────────────────────────────────────
+// OCR_PROVIDER                       → 'documentai' (default ใน flow ใหม่)
+// DOCUMENT_AI_PROJECT_ID             → GCP project id
+// DOCUMENT_AI_LOCATION               → เช่น 'us' / 'eu'
+// DOCUMENT_AI_PROCESSOR_ID           → processor id (OCR / Document OCR)
+// GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 → base64 ของ service account JSON ทั้งไฟล์
 
 const STORAGE_BUCKET = 'line-ai-excel-intake';
 const BATCH_WINDOW_MS = 30 * 60 * 1000; // 30 นาที — รวมรูปชุดเดียวกัน
-// Primary model — env GEMINI_MODEL override → gemini-2.0-flash → fallback gemini-1.5-flash
-// ตั้ง optional: npx supabase secrets set GEMINI_MODEL="gemini-2.0-flash"
-const GEMINI_MODEL_PRIMARY  = 'gemini-2.0-flash';  // ลองก่อน
-const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';   // retry อัตโนมัติถ้า 404
+// Gemini (legacy) — ยังเก็บไว้เผื่อ fallback แต่ "อ่าน" ใหม่ใช้ Document AI
+const GEMINI_MODEL_PRIMARY  = 'gemini-2.0-flash';
+const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';
 
 // PDF — เก็บใน bucket เดิม ใต้ path prefix แยก, signed URL อายุ 30 วัน
 const PDF_PATH_PREFIX = 'line-ai-excel-pdf';
@@ -225,6 +230,19 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+/** base64 (มาตรฐาน) → Uint8Array */
+function base64ToBytes(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
+/** base64url encode (สำหรับ JWT) — ไม่มี padding */
+function base64UrlEncode(bytes: Uint8Array): string {
+  return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 /** หา batch ล่าสุดของกลุ่มที่ status='collecting' ภายในหน้าต่างเวลา */
 async function findActiveBatch(
   url: string, key: string, groupId: string,
@@ -379,6 +397,298 @@ function cleanTsv(text: string): string {
   // 4) ลบบรรทัดว่างที่ซ้ำ (เกิน 1 บรรทัด)
   t = t.replace(/\n{3,}/g, '\n\n').trim();
   return t;
+}
+
+// ─── Google Document AI (OCR) ───────────────────────────────────────────────────
+
+interface DocAiConfig {
+  projectId:   string;
+  location:    string;
+  processorId: string;
+  saJson:      Record<string, unknown>; // service account JSON ที่ decode แล้ว
+}
+
+/** อ่าน + validate config Document AI จาก env — null ถ้าไม่ครบ */
+function readDocAiConfig(): DocAiConfig | null {
+  const projectId   = Deno.env.get('DOCUMENT_AI_PROJECT_ID');
+  const location    = Deno.env.get('DOCUMENT_AI_LOCATION');
+  const processorId = Deno.env.get('DOCUMENT_AI_PROCESSOR_ID');
+  const saB64       = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON_BASE64');
+  if (!projectId || !location || !processorId || !saB64) return null;
+  try {
+    const jsonStr = new TextDecoder().decode(base64ToBytes(saB64));
+    const saJson = JSON.parse(jsonStr);
+    if (!saJson.client_email || !saJson.private_key) return null;
+    return { projectId, location, processorId, saJson };
+  } catch (e) {
+    console.error('[line-ai-excel] SA JSON decode failed:', e instanceof Error ? e.message : 'parse error');
+    return null;
+  }
+}
+
+/** แปลง PEM private key (PKCS#8) → CryptoKey สำหรับ RS256 */
+async function importPrivateKey(pem: string): Promise<CryptoKey> {
+  const body = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s+/g, '');
+  const der = base64ToBytes(body);
+  return await crypto.subtle.importKey(
+    'pkcs8',
+    der,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+}
+
+/**
+ * สร้าง OAuth access token จาก service account (JWT grant flow)
+ * ห้าม log private_key / token
+ */
+async function getGoogleAccessToken(sa: Record<string, unknown>): Promise<string> {
+  const clientEmail = sa.client_email as string;
+  const privateKey  = sa.private_key as string;
+  const tokenUri    = (sa.token_uri as string) || 'https://oauth2.googleapis.com/token';
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const claim = {
+    iss: clientEmail,
+    scope: 'https://www.googleapis.com/auth/cloud-platform',
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const enc = new TextEncoder();
+  const headerB64 = base64UrlEncode(enc.encode(JSON.stringify(header)));
+  const claimB64  = base64UrlEncode(enc.encode(JSON.stringify(claim)));
+  const signingInput = `${headerB64}.${claimB64}`;
+
+  const cryptoKey = await importPrivateKey(privateKey);
+  const sigBuf = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', cryptoKey, enc.encode(signingInput),
+  );
+  const jwt = `${signingInput}.${base64UrlEncode(new Uint8Array(sigBuf))}`;
+
+  const res = await fetch(tokenUri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('[line-ai-excel] OAuth token failed:', res.status, errText.slice(0, 200));
+    throw new Error('DOCUMENT_AI_AUTH_ERROR');
+  }
+  const data = await res.json();
+  if (!data.access_token) throw new Error('DOCUMENT_AI_AUTH_ERROR');
+  return data.access_token as string;
+}
+
+/**
+ * ส่ง PDF (หรือรูป) เข้า Document AI :process → คืน OCR text ดิบ
+ * throw: 'DOCUMENT_AI_AUTH_ERROR' | 'DOCUMENT_AI_API_ERROR:{status}' | 'EMPTY_OCR_TEXT'
+ */
+async function runDocumentAiOcr(
+  cfg: DocAiConfig,
+  content: Uint8Array,
+  mimeType: string,
+): Promise<string> {
+  const accessToken = await getGoogleAccessToken(cfg.saJson);
+
+  const endpoint =
+    `https://${cfg.location}-documentai.googleapis.com/v1/projects/${cfg.projectId}` +
+    `/locations/${cfg.location}/processors/${cfg.processorId}:process`;
+
+  console.log(`[line-ai-excel] → Document AI process | mime=${mimeType} bytes=${content.length}`);
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      rawDocument: { content: bytesToBase64(content), mimeType },
+    }),
+  });
+
+  console.log(`[line-ai-excel] Document AI HTTP ${res.status}`);
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('[line-ai-excel] Document AI error:', res.status, errText.slice(0, 300));
+    throw new Error(`DOCUMENT_AI_API_ERROR:${res.status}`);
+  }
+
+  const data = await res.json();
+  const text: string = data?.document?.text || '';
+  console.log(`[line-ai-excel] OCR text length=${text.length}`);
+  if (!text.trim()) throw new Error('EMPTY_OCR_TEXT');
+  return text;
+}
+
+// ─── OCR → TSV (rule/regex parser) ──────────────────────────────────────────────
+
+/** map คำสัญชาติ (ไทย/อังกฤษ/รูปแบบต่าง ๆ) → ไทยมาตรฐาน */
+function normalizeNationality(text: string): string {
+  const t = text.toLowerCase();
+  if (/myanmar|burma|เมียนมา|พม่า/.test(t)) return 'เมียนมา';
+  if (/lao|laos|ลาว/.test(t))               return 'ลาว';
+  if (/cambodia|khmer|กัมพูชา|เขมร/.test(t)) return 'กัมพูชา';
+  if (/vietnam|เวียดนาม/.test(t))           return 'เวียดนาม';
+  return '-';
+}
+
+/**
+ * สรุป OCR text → 1 แถว TSV ด้วย rule/regex เบื้องต้น
+ * ปรัชญา: ห้ามเดา — ถ้าไม่เจอ field ให้ "-" และเติมหมายเหตุ "ตรวจสอบ OCR"
+ *
+ * คืน array ของ 13 ช่อง (ตาม TSV_HEADER)
+ */
+function parseOcrToRow(ocrText: string, hasPhoto: boolean): string[] {
+  const DASH = '-';
+  const notes: string[] = [];
+
+  // รวมข้อความเป็นบรรทัด ลบช่องว่างซ้ำ
+  const raw = ocrText.replace(/\r/g, '');
+  const flat = raw.replace(/[ \t]+/g, ' ');
+
+  // helper: หา match แรกของ pattern, คืน group 1 (trim) หรือ DASH
+  const find = (re: RegExp): string => {
+    const m = flat.match(re);
+    return m && m[1] ? m[1].trim() : DASH;
+  };
+
+  // ── รายชื่อ (MR/MRS/MISS + ตัวอักษรอังกฤษ) ──
+  let name = DASH;
+  const nameM = flat.match(/\b(MR|MRS|MISS|MS)\.?\s+([A-Z][A-Z\s.]{2,40})/);
+  if (nameM) {
+    name = `${nameM[1].toUpperCase()} ${nameM[2].trim().replace(/\s{2,}/g, ' ')}`;
+    // ตัดหางที่อาจติด keyword อื่น
+    name = name.replace(/\s+(NATIONALITY|PASSPORT|NO|DATE|สัญชาติ).*$/i, '').trim();
+  }
+
+  // ── สัญชาติ ──
+  let nationality = DASH;
+  const natM = flat.match(/(?:nationality|สัญชาติ)\s*:?\s*([A-Za-zก-๙]+)/i);
+  if (natM) nationality = normalizeNationality(natM[1]);
+  if (nationality === DASH) {
+    // เผื่อสะกดลอย ๆ ในข้อความ
+    const guess = normalizeNationality(flat);
+    if (guess !== DASH) nationality = guess;
+  }
+
+  // ── เลขประจำตัวต่างด้าว (13 หลัก หรือ ป้ายกำกับ) ──
+  let alienId = find(/(?:เลขประจำตัว(?:คนต่างด้าว|บุคคล)?|alien\s*(?:id|no|number))\s*:?\s*([0-9][0-9\- ]{8,20})/i);
+  if (alienId === DASH) {
+    const m13 = flat.match(/\b(\d{13})\b/); // เลข 13 หลักลอย ๆ
+    if (m13) alienId = m13[1];
+  }
+  alienId = alienId.replace(/[ \-]/g, '') === '' ? DASH : alienId.replace(/\s/g, '');
+
+  // ── เลขคำขอ ──
+  const reqNo = find(/(?:เลขคำขอ|เลขที่คำขอ|request\s*no)\s*:?\s*([0-9][0-9\- ]{6,20})/i)
+    .replace(/\s/g, '');
+
+  // ── ใบอนุญาตทำงานเลขที่ ──
+  const workPermit = find(/(?:ใบอนุญาตทำงาน(?:เลขที่)?|work\s*permit\s*(?:no)?)\s*:?\s*([0-9][0-9\- ]{6,20})/i)
+    .replace(/\s/g, '');
+
+  // ── นายจ้าง ──
+  let employer = find(/(?:นายจ้าง|employer|สถานประกอบการ)\s*:?\s*([^\n]{3,60})/i);
+  // ตัดหางหลังคำสำคัญ
+  if (employer !== DASH) {
+    employer = employer.replace(/\s+(เลขที่|address|ที่อยู่|โทร|tel).*$/i, '').trim();
+  }
+  // ถ้าเจอ "บริษัท ... จำกัด" ให้ดึงรูปแบบนั้น
+  const compM = raw.match(/(บริษัท[^\n]{2,50}?จำกัด)/);
+  if (compM) employer = compM[1].trim();
+
+  // ── วันที่ยื่น ──
+  const submitDate = find(/(?:วันที่ยื่น|วันยื่น|submit(?:ted)?\s*date)\s*:?\s*([0-9]{1,2}[\/\-. ][0-9]{1,2}[\/\-. ][0-9]{2,4})/i);
+
+  // ── วันนัด ──
+  const apptDate = find(/(?:วันนัด|นัดหมาย|appointment)\s*:?\s*([0-9]{1,2}[\/\-. ][0-9]{1,2}[\/\-. ][0-9]{2,4})/i);
+
+  // ── เวลา ──
+  const apptTime = find(/(?:เวลา|time)\s*:?\s*([0-9]{1,2}[:.][0-9]{2}(?:\s*น\.?)?)/i);
+
+  // ── สถานที่ ──
+  let place = find(/(?:สถานที่|สถานที่นัด|location|venue)\s*:?\s*([^\n]{3,50})/i);
+  if (place !== DASH) place = place.replace(/\s+(เวลา|time|วันที่).*$/i, '').trim();
+
+  // ── ประเภทเอกสาร ──
+  let docType = DASH;
+  if (/ต่ออายุ|renew/i.test(flat))            docType = 'ต่ออายุ';
+  else if (/เปลี่ยนนายจ้าง/i.test(flat))      docType = 'เปลี่ยนนายจ้าง';
+  else if (/90\s*วัน/i.test(flat))            docType = '90 วัน';
+  else if (/mou/i.test(flat))                 docType = 'MOU';
+  else if (/นัดถ่ายบัตร|ถ่ายบัตร/i.test(flat)) docType = 'นัดถ่ายบัตร';
+
+  // ── หมายเหตุ: ถ้าจับ field หลักไม่ได้ ให้เตือนตรวจสอบ ──
+  if (name === DASH || (alienId === DASH && reqNo === DASH && workPermit === DASH)) {
+    notes.push('ตรวจสอบ OCR');
+  }
+  const note = notes.length > 0 ? notes.join(', ') : DASH;
+
+  // คอลัมน์ตาม TSV_HEADER:
+  // วันที่ยื่น, รูปถ่าย, นายจ้าง, รายชื่อ, เลขประจำตัวต่างด้าว, สัญชาติ,
+  // เลขคำขอ, ใบอนุญาตทำงานเลขที่, ประเภทเอกสาร, วันนัด, เวลา, สถานที่, หมายเหตุ
+  return [
+    submitDate,
+    hasPhoto ? 'มีรูป' : 'ไม่มีรูป',
+    employer,
+    name,
+    alienId,
+    nationality,
+    reqNo,
+    workPermit,
+    docType,
+    apptDate,
+    apptTime,
+    place,
+    note,
+  ];
+}
+
+/** สร้าง TSV เต็ม (header + 1 แถว) จาก OCR text */
+function ocrToTsv(ocrText: string, hasPhoto: boolean): string {
+  const row = parseOcrToRow(ocrText, hasPhoto);
+  return TSV_HEADER + '\n' + row.join('\t');
+}
+
+/**
+ * รวมรูป batch เป็น PDF (auto-rotate) แล้วส่งเข้า Document AI → คืน OCR text
+ * ใช้ PDF logic เดิม (buildPdfFromImages) — reuse เพื่อให้ทิศตรงเหมือนคำสั่ง pdf
+ * throw error code ที่ mapDocAiError จะแปลงเป็นข้อความ LINE
+ */
+async function runDocAiOnBatch(
+  cfg: DocAiConfig,
+  images: { bytes: Uint8Array; contentType: string }[],
+): Promise<string> {
+  const { pdf, pages } = await buildPdfFromImages(images);
+  console.log(`[line-ai-excel] Document AI input PDF | pages=${pages} bytes=${pdf.length}`);
+  if (pages === 0) throw new Error('IMAGE_LOAD_FAILED');
+  return await runDocumentAiOcr(cfg, pdf, 'application/pdf');
+}
+
+/** แปลง error จาก Document AI flow → ข้อความ LINE (ไม่เปิด secret) */
+function mapDocAiError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  console.error('[line-ai-excel] DocAI flow error:', msg);
+  if (msg.includes('DOCUMENT_AI_AUTH_ERROR')) return 'OCR อ่านไม่สำเร็จ: DOCUMENT_AI_AUTH_ERROR';
+  const apiM = msg.match(/DOCUMENT_AI_API_ERROR:(\d+)/);
+  if (apiM) return `OCR อ่านไม่สำเร็จ: DOCUMENT_AI_API_ERROR_${apiM[1]}`;
+  if (msg.includes('EMPTY_OCR_TEXT'))   return 'OCR อ่านไม่สำเร็จ: EMPTY_OCR_TEXT';
+  if (msg.includes('IMAGE_LOAD_FAILED')) return 'OCR อ่านไม่สำเร็จ: IMAGE_LOAD_FAILED';
+  return 'OCR อ่านไม่สำเร็จ: DOCUMENT_AI_API_ERROR';
 }
 
 // ─── PDF + Image orientation ──────────────────────────────────────────────────
@@ -634,12 +944,53 @@ async function handleImage(
   }
 }
 
+/**
+ * โหลดรูปทั้งหมดของ batch ล่าสุด (collecting) ตามลำดับเวลา
+ * คืน { batch, images } — images[] เรียงตาม created_at.asc
+ * ถ้า batch ไม่มี → batch=null; ถ้าโหลดไม่ได้เลย → images=[]
+ */
+async function loadLatestBatchImages(
+  url: string, key: string, groupId: string,
+): Promise<{ batchId: string | null; images: { bytes: Uint8Array; contentType: string }[] }> {
+  const batch = await findLatestCollectingBatch(url, key, groupId);
+  if (!batch) return { batchId: null, images: [] };
+  const batchId = batch.id as string;
+
+  const files = await dbSelect(
+    url, key,
+    `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc` +
+    `&select=storage_path,mime_type`,
+  );
+  console.log(`[line-ai-excel] batch=${batchId} | file_records=${files.length}`);
+
+  const images: { bytes: Uint8Array; contentType: string }[] = [];
+  for (let fi = 0; fi < files.length; fi++) {
+    const f = files[fi];
+    const storagePath = f.storage_path as string;
+    const storedMime  = (f.mime_type as string) || 'image/jpeg';
+    try {
+      const got = await downloadFromStorage(url, key, storagePath);
+      const mimeType = storedMime.startsWith('image/') ? storedMime : got.contentType;
+      console.log(`[line-ai-excel] img[${fi}] path=${storagePath} bytes=${got.bytes.length} mime=${mimeType}`);
+      images.push({ bytes: got.bytes, contentType: mimeType });
+    } catch (e) {
+      console.warn('[line-ai-excel] storage fetch failed | path=' + storagePath + ':',
+        e instanceof Error ? e.message : e);
+    }
+  }
+  return { batchId, images };
+}
+
 /** คำสั่ง text ในกลุ่ม control */
 async function handleText(
   ev: LineEvent,
-  ctx: { url: string; key: string; lineToken: string; geminiKey: string | undefined },
+  ctx: {
+    url: string; key: string; lineToken: string;
+    geminiKey: string | undefined;
+    docAi: DocAiConfig | null;
+  },
 ): Promise<void> {
-  const { url, key, lineToken, geminiKey } = ctx;
+  const { url, key, lineToken, docAi } = ctx;
   const groupId = ev.source?.groupId || '';
   const replyToken = ev.replyToken;
   if (!replyToken || !groupId) return;
@@ -654,7 +1005,8 @@ async function handleText(
       [
         'วิธีใช้:',
         'ส่งรูปเอกสารหลายใบ แล้วเลือก:',
-        '"อ่าน" = ให้ AI สรุปเป็นตาราง Excel',
+        '"อ่าน" = OCR แล้วสรุปเป็นตาราง Excel',
+        '"ocr" = อ่านข้อความดิบจากเอกสาร',
         '"pdf" = รวมรูปเป็นไฟล์ PDF เดียว',
         '"รายการ" = ดูจำนวนรูปในชุดล่าสุด',
         '"ล้าง" = เริ่มชุดใหม่',
@@ -699,120 +1051,87 @@ async function handleText(
     return;
   }
 
-  // ─── อ่าน / read ───
-  if (text === 'อ่าน' || cmd === 'read') {
-    // ── ตรวจ GEMINI_API_KEY ก่อน ──
-    if (!geminiKey) {
-      console.error('[line-ai-excel] GEMINI_API_KEY not set');
-      await replyLineText(replyToken, 'AI อ่านไม่สำเร็จ: MISSING_GEMINI_API_KEY', lineToken);
+  // ─── ocr / OCR / อ่านดิบ ──────────────────────────────────────────────────
+  // OCR ด้วย Document AI → ตอบข้อความดิบ (ไม่สรุปเป็นตาราง)
+  if (cmd === 'ocr' || text === 'อ่านดิบ') {
+    if (!docAi) {
+      console.error('[line-ai-excel] MISSING_DOCUMENT_AI_CONFIG');
+      await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
+      return;
+    }
+    const { batchId, images } = await loadLatestBatchImages(url, key, groupId);
+    if (!batchId || images.length === 0) {
+      await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับ OCR กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
     }
 
-    // ── model: env override → fallback constant ──
-    // env override → primary → fallback จัดการใน callGemini อัตโนมัติถ้า 404
-    const geminiModel = Deno.env.get('GEMINI_MODEL') || GEMINI_MODEL_PRIMARY;
-    console.log(`[line-ai-excel] อ่าน cmd | group=${groupId} | model=${geminiModel} fallback=${GEMINI_MODEL_FALLBACK}`);
-
-    const batch = await findLatestCollectingBatch(url, key, groupId);
-    if (!batch) {
-      await replyLineText(replyToken, 'ยังไม่มีรูปให้ AI อ่าน', lineToken);
-      return;
-    }
-    const batchId = batch.id as string;
-
-    const files = await dbSelect(
-      url, key,
-      `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc` +
-      `&select=storage_path,mime_type`,
-    );
-    if (files.length === 0) {
-      await replyLineText(replyToken, 'ยังไม่มีรูปให้ AI อ่าน', lineToken);
-      return;
-    }
-    console.log(`[line-ai-excel] batch=${batchId} | file_records=${files.length}`);
-
-    // ── ดึงรูปจาก Storage (รูปเดียวกับที่ pdf ใช้สำเร็จแล้ว) ──
-    const images: { bytes: Uint8Array; contentType: string }[] = [];
-    for (let fi = 0; fi < files.length; fi++) {
-      const f = files[fi];
-      const storagePath = f.storage_path as string;
-      const storedMime  = (f.mime_type as string) || 'image/jpeg';
+    try {
+      const ocrText = await runDocAiOnBatch(docAi, images);
+      // บันทึก raw OCR
       try {
-        const got = await downloadFromStorage(url, key, storagePath);
-        // prefer stored mime, fallback to what Storage returns
-        const mimeType = storedMime.startsWith('image/') ? storedMime : got.contentType;
-        // log EXIF orientation (ข้อมูล debug — ไม่ re-encode สำหรับ Gemini เพราะ Gemini อ่าน EXIF ได้เอง)
-        const kind = detectImageType(got.bytes);
-        if (kind === 'jpg') {
-          const orient = readJpegExifOrientation(got.bytes);
-          console.log(
-            `[line-ai-excel] img[${fi}] path=${storagePath} bytes=${got.bytes.length}` +
-            ` mime=${mimeType} EXIF_orient=${orient}(→${exifToDegreesCCW(orient)}°CCW)`,
-          );
-        } else {
-          console.log(
-            `[line-ai-excel] img[${fi}] path=${storagePath} bytes=${got.bytes.length} mime=${mimeType} kind=${kind}`,
-          );
-        }
-        images.push({ bytes: got.bytes, contentType: mimeType });
+        await dbInsert(url, key, 'line_ai_excel_results', {
+          batch_id: batchId,
+          result_text: ocrText.slice(0, 20000),
+          raw_json: { type: 'ocr_raw', chars: ocrText.length },
+        });
       } catch (e) {
-        console.warn('[line-ai-excel] storage fetch failed | path=' + storagePath + ':',
-          e instanceof Error ? e.message : e);
+        console.warn('[line-ai-excel] save ocr result failed:', e instanceof Error ? e.message : e);
       }
+      const reply = ocrText.length > 4500
+        ? `ข้อความ OCR (${ocrText.length} ตัวอักษร, แสดงช่วงแรก):\n\n` + ocrText.slice(0, 4500) + '\n\n... (ยาวเกิน ตัดบางส่วน)'
+        : `ข้อความ OCR:\n\n${ocrText}`;
+      await replyLineText(replyToken, reply, lineToken);
+    } catch (e) {
+      await replyLineText(replyToken, mapDocAiError(e), lineToken);
+    }
+    return;
+  }
+
+  // ─── อ่าน / read ──────────────────────────────────────────────────────────
+  // Document AI OCR → สรุปเป็น TSV ด้วย rule/regex (ไม่เรียก Gemini)
+  if (text === 'อ่าน' || cmd === 'read') {
+    if (!docAi) {
+      console.error('[line-ai-excel] MISSING_DOCUMENT_AI_CONFIG');
+      await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
+      return;
+    }
+    console.log(`[line-ai-excel] อ่าน cmd (Document AI) | group=${groupId}`);
+
+    const { batchId, images } = await loadLatestBatchImages(url, key, groupId);
+    if (!batchId) {
+      await replyLineText(replyToken, 'ยังไม่มีรูปให้อ่าน กรุณาส่งรูปเอกสารก่อน', lineToken);
+      return;
     }
     if (images.length === 0) {
       console.error('[line-ai-excel] IMAGE_LOAD_FAILED | batch=' + batchId);
-      await replyLineText(replyToken, 'AI อ่านไม่สำเร็จ: IMAGE_LOAD_FAILED', lineToken);
+      await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: IMAGE_LOAD_FAILED', lineToken);
       return;
     }
-    console.log(`[line-ai-excel] sending ${images.length} images to Gemini`);
 
-    // ── เรียก Gemini ──
-    let tsv = '';
-    let raw: unknown = null;
+    // มีรูปคนในชุดไหม → ใช้กำหนดคอลัมน์ "รูปถ่าย"
+    // เกณฑ์เบื้องต้น: ถือว่ามีรูปเสมอเมื่อมี image ในชุด (เอกสารแรงงานมักมีรูปติดเอกสาร)
+    const hasPhoto = images.length > 0;
+
+    let ocrText = '';
     try {
-      const out = await callGemini(geminiKey, images, geminiModel);
-      tsv = cleanTsv(out.text);
-      raw  = out.raw;
-      console.log(`[line-ai-excel] Gemini OK | tsv_chars=${tsv.length}`);
+      ocrText = await runDocAiOnBatch(docAi, images);
+      console.log(`[line-ai-excel] OCR OK | chars=${ocrText.length}`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error('[line-ai-excel] Gemini error:', msg);
-      // ดึง HTTP status ออกจาก error message เพื่อตอบ LINE แบบระบุสาเหตุ
-      // format: "GEMINI_API_ERROR:400: ..." หรือ "INVALID_GEMINI_RESPONSE:..."
-      const statusMatch = msg.match(/GEMINI_API_ERROR:(\d+)/);
-      if (statusMatch) {
-        const status = statusMatch[1];
-        const hint =
-          status === '400' ? 'request ผิดรูปแบบ ตรวจ GEMINI_MODEL' :
-          status === '401' ? 'API key ไม่ถูกต้อง' :
-          status === '403' ? 'ไม่มีสิทธิ์ใช้ Generative Language API' :
-          status === '429' ? 'เกิน quota กรุณารอแล้วลองใหม่' :
-          status === '500' ? 'Gemini server error กรุณาลองใหม่' : '';
-        await replyLineText(
-          replyToken,
-          `AI อ่านไม่สำเร็จ: GEMINI_API_ERROR_${status}${hint ? '\n(' + hint + ')' : ''}`,
-          lineToken,
-        );
-      } else if (msg.includes('INVALID_GEMINI_RESPONSE')) {
-        await replyLineText(replyToken, `AI อ่านไม่สำเร็จ: INVALID_GEMINI_RESPONSE\n(ดู log สำหรับรายละเอียด)`, lineToken);
-      } else {
-        await replyLineText(replyToken, `AI อ่านไม่สำเร็จ: GEMINI_API_ERROR\n${msg.slice(0, 80)}`, lineToken);
-      }
+      await replyLineText(replyToken, mapDocAiError(e), lineToken);
       return;
     }
 
-    if (!tsv) {
-      console.warn('[line-ai-excel] cleanTsv returned empty');
-      await replyLineText(replyToken, 'AI อ่านไม่สำเร็จ: INVALID_GEMINI_RESPONSE\nAI ไม่พบข้อมูลในรูป', lineToken);
-      return;
-    }
+    // สรุปเป็น TSV ด้วย rule/regex
+    const tsv = ocrToTsv(ocrText, hasPhoto);
+    console.log(`[line-ai-excel] parsed TSV | chars=${tsv.length}`);
 
-    // ── บันทึกผล + mark batch read ──
+    // บันทึกผล + mark batch read
     const nowIso = new Date().toISOString();
     try {
       await dbInsert(url, key, 'line_ai_excel_results', {
-        batch_id: batchId, result_text: tsv, raw_json: raw,
+        batch_id: batchId,
+        result_text: tsv,
+        raw_json: { type: 'ocr_tsv', ocr_chars: ocrText.length },
       });
       await dbUpdate(
         url, key, 'line_ai_excel_batches', `id=eq.${batchId}`,
@@ -822,7 +1141,6 @@ async function handleText(
       console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
     }
 
-    // ── ตอบ TSV (LINE limit ~5000 ตัวอักษร) ──
     const reply = tsv.length > 4800
       ? tsv.slice(0, 4800) + '\n\n... (ข้อมูลยาวเกิน ตัดบางส่วน — copy ส่วนที่เห็นได้เลย)'
       : tsv;
@@ -923,8 +1241,11 @@ Deno.serve(async (req: Request) => {
   const channelSecret  = Deno.env.get('LINE_CHANNEL_SECRET');
   const controlGroupId = Deno.env.get('LINE_AI_CONTROL_GROUP_ID') || '';
   const geminiKey      = Deno.env.get('GEMINI_API_KEY');
-  // AI_PROVIDER อ่านไว้เผื่ออนาคต — รอบนี้รองรับ gemini เท่านั้น
-  const _aiProvider    = Deno.env.get('AI_PROVIDER') || 'gemini';
+  // OCR_PROVIDER: 'documentai' (default flow ใหม่) — อ่านไว้ log
+  const ocrProvider    = Deno.env.get('OCR_PROVIDER') || 'documentai';
+  // Document AI config — null ถ้า secrets ไม่ครบ (คำสั่ง อ่าน/ocr จะตอบ MISSING_DOCUMENT_AI_CONFIG)
+  const docAi          = readDocAiConfig();
+  console.log(`[line-ai-excel] ocr_provider=${ocrProvider} docAi_ready=${docAi ? 'yes' : 'no'}`);
 
   if (!url || !key || !lineToken || !channelSecret) {
     console.error('[line-ai-excel] missing required secrets');
@@ -949,7 +1270,7 @@ Deno.serve(async (req: Request) => {
     return new Response('Bad Request', { status: 400 });
   }
   const events = payload.events || [];
-  const ctx = { url, key, lineToken, geminiKey };
+  const ctx = { url, key, lineToken, geminiKey, docAi };
 
   for (const ev of events) {
     try {
