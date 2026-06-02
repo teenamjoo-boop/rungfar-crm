@@ -20,6 +20,8 @@
 
 // pdf-lib รันได้บน Deno / Supabase Edge ผ่าน esm.sh
 import { PDFDocument, degrees, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+// auto-rotate ด้วย Document AI OCR (shared กับ finalize-due) — ไม่ extract Excel
+import { applyAutoRotateToBatch, effectiveRotationCW } from '../_shared/auto-rotate.ts';
 
 // ─── Secrets (inject อัตโนมัติ + ตั้งเอง) ────────────────────────────────────
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  → inject อัตโนมัติ
@@ -1218,14 +1220,26 @@ async function buildPdfFromImages(
 
 // ─── PDF helpers (PDF-only MVP) ───────────────────────────────────────────────
 
-/** โหลดรูปทั้งหมดจาก batchId + สร้าง PDF + upload → คืน path + signedUrl */
+/** โหลดรูปทั้งหมดจาก batchId + สร้าง PDF + upload → คืน path + signedUrl
+ * auto-rotate ด้วย Document AI (cache-aware) ก่อนวางลง PDF — manual rotation ชนะเสมอ
+ */
 async function buildAndUploadPdf(
   url: string, key: string, batchId: string,
 ): Promise<{ pages: number; pdfPath: string; signedUrl: string } | null> {
+  // 1) auto-rotate (cache-aware): เติม auto_rotation_deg ให้ไฟล์ที่ยังไม่เคยตรวจ
+  //    error/ไม่มี config → no-op (ยังสร้าง PDF ได้ตามปกติ)
+  try {
+    await applyAutoRotateToBatch(url, key, batchId, { force: false });
+  } catch (e) {
+    console.warn('[line-ai-excel] auto-rotate skipped:', e instanceof Error ? e.message : e);
+  }
+
+  // 2) โหลด file records (รวม rotation columns) ตาม canonical order
   const files = await dbSelect(
     url, key,
     `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}` +
-    `&order=${FILE_PAGE_ORDER}&select=id,storage_path,mime_type,page_no,rotation_deg`,
+    `&order=${FILE_PAGE_ORDER}` +
+    `&select=id,storage_path,mime_type,page_no,rotation_deg,rotation_locked,auto_rotation_deg`,
   );
   if (files.length === 0) return null;
   await ensurePageNumbers(url, key, files);
@@ -1238,7 +1252,8 @@ async function buildAndUploadPdf(
       const got = await downloadFromStorage(url, key, f.storage_path as string);
       const mimeType = (f.mime_type as string) || got.contentType;
       images.push({ bytes: got.bytes, contentType: mimeType });
-      rotationsCW.push(typeof f.rotation_deg === 'number' ? f.rotation_deg : 0);
+      // effective rotation: manual (locked) ชนะ ไม่งั้นใช้ auto
+      rotationsCW.push(effectiveRotationCW(f));
     } catch (e) {
       console.warn('[line-ai-excel] buildAndUploadPdf storage fetch failed:', e instanceof Error ? e.message : e);
     }
@@ -1563,7 +1578,7 @@ async function loadBatchFiles(
   const files = await dbSelect(
     url, key,
     `line_ai_excel_files?batch_id=eq.${batchId}&order=${FILE_PAGE_ORDER}` +
-    `&select=id,page_no,rotation_deg`,
+    `&select=id,page_no,rotation_deg,rotation_locked,auto_rotation_deg,auto_rotation_confidence`,
   );
   await ensurePageNumbers(url, key, files);
   return files;
@@ -1624,8 +1639,12 @@ async function handleText(
         '"ล้าง"    = เริ่มชุดใหม่',
         '',
         'ระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที',
+        'ระบบจะพยายามปรับหมุนหน้าด้วย OCR/AI ให้อัตโนมัติก่อนสร้าง PDF',
         '',
-        'ปรับการหมุนรูปแต่ละหน้า:',
+        '"ปรับหมุน"      = ตรวจหมุนอัตโนมัติด้วย OCR/AI ทันที',
+        '"ไม่หมุนออโต้"  = ปิดหมุนอัตโนมัติ ใช้ค่าปัจจุบัน',
+        '',
+        'ปรับการหมุนรูปแต่ละหน้า (manual ชนะ auto เสมอ):',
         '"หมุน 1 ขวา"     = หมุนหน้า 1 CW 90°',
         '"หมุน 1 ซ้าย"    = หมุนหน้า 1 CCW 90°',
         '"หมุน 1 กลับหัว" = หมุนหน้า 1 180°',
@@ -1655,8 +1674,15 @@ async function handleText(
       return;
     }
     const pageLines = files.map((f, i) => {
-      const rot = typeof f.rotation_deg === 'number' ? f.rotation_deg : 0;
-      return `หน้า ${i + 1}: ${rot}°${rot === 0 ? '' : ' (หมุนแล้ว)'}`;
+      // manual (locked) ชนะ → แสดง "manual N°"; ไม่งั้นถ้ามี auto → "auto N°"; ไม่งั้น "N°"
+      const locked = f.rotation_locked === true;
+      const manualDeg = typeof f.rotation_deg === 'number' ? f.rotation_deg : 0;
+      const autoDeg = typeof f.auto_rotation_deg === 'number' ? f.auto_rotation_deg : null;
+      let label: string;
+      if (locked) label = `manual ${manualDeg}°`;
+      else if (autoDeg != null) label = `auto ${autoDeg}°`;
+      else label = `0°`;
+      return `หน้า ${i + 1}: ${label}`;
     });
     await replyLineText(
       replyToken,
@@ -1665,6 +1691,8 @@ async function handleText(
         ...pageLines,
         '',
         'เลขหน้าอิงตาม PDF',
+        'ระบบจะพยายามปรับหมุนด้วย OCR/AI ก่อนสร้าง PDF',
+        'ถ้าหน้าไหนยังผิด ใช้ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง"',
         'ระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที',
         'หรือพิมพ์ "จบ" / "pdf" เพื่อสร้างทันที',
         'ถ้าลำดับไม่ตรง ใช้ "สลับ 2 3" หรือ "จัด 1 3 2 4"',
@@ -1758,6 +1786,93 @@ async function handleText(
     return;
   }
 
+  // ─── ปรับหมุน / auto rotate / หมุนออโต้ — ตรวจ orientation ด้วย OCR/AI ───
+  {
+    const cmdNoSpace = cmd.replace(/\s+/g, '');
+    const isAutoRotate =
+      text === 'ปรับหมุน' || text === 'หมุนออโต้' ||
+      cmdNoSpace === 'autorotate' || cmd === 'auto rotate';
+
+    if (isAutoRotate) {
+      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      if (!batch) {
+        await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
+        return;
+      }
+      if (!ctx.docAi) {
+        await replyLineText(
+          replyToken,
+          'ระบบปรับหมุนอัตโนมัติยังไม่พร้อม (ไม่มี OCR config)\nใช้คำสั่ง "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อปรับเอง',
+          lineToken,
+        );
+        return;
+      }
+      const batchId = batch.id as string;
+      // reindex page_no ก่อน เพื่อให้เลขหน้าตรงกับ PDF
+      await loadBatchFiles(url, key, batchId);
+      try {
+        const results = await applyAutoRotateToBatch(url, key, batchId, { force: true });
+        if (results.length === 0) {
+          await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
+          return;
+        }
+        const lines = results.map((r) => {
+          const tag = r.source === 'manual' ? 'manual' : 'auto';
+          return `หน้า ${r.pageNo}: ${tag} ${r.rotationDeg}°`;
+        });
+        await replyLineText(
+          replyToken,
+          [
+            'ตรวจหมุนอัตโนมัติแล้ว',
+            ...lines,
+            '',
+            'หน้าที่เป็น manual จะไม่ถูกปรับอัตโนมัติ',
+            'ถ้าหน้าไหนยังผิด ใช้ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง"',
+            'พิมพ์ "pdf" เพื่อสร้าง PDF ใหม่',
+          ].join('\n'),
+          lineToken,
+        );
+      } catch (e) {
+        console.error('[line-ai-excel] ปรับหมุน error:', e instanceof Error ? e.message : e);
+        await replyLineText(
+          replyToken,
+          'ปรับหมุนอัตโนมัติไม่สำเร็จ\nใช้คำสั่ง "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อปรับเอง',
+          lineToken,
+        );
+      }
+      return;
+    }
+  }
+
+  // ─── ไม่หมุนออโต้ / ปิดหมุนออโต้ — lock ทุกหน้าไว้ที่ค่าปัจจุบัน ──────────
+  {
+    const isDisableAuto =
+      text === 'ไม่หมุนออโต้' || text === 'ปิดหมุนออโต้' || cmd === 'no auto rotate';
+
+    if (isDisableAuto) {
+      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      if (!batch) {
+        await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
+        return;
+      }
+      const batchId = batch.id as string;
+      const files = await loadBatchFiles(url, key, batchId);
+      // lock ทุกไฟล์ที่ค่า effective ปัจจุบัน → auto OCR จะข้ามชุดนี้
+      for (const f of files) {
+        const eff = effectiveRotationCW(f);
+        await dbUpdate(url, key, 'line_ai_excel_files', `id=eq.${f.id}`, {
+          rotation_deg: eff, rotation_locked: true,
+        });
+      }
+      await replyLineText(
+        replyToken,
+        'ปิดการหมุนอัตโนมัติสำหรับชุดนี้แล้ว\nใช้คำสั่ง "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อปรับเอง\nพิมพ์ "pdf" เพื่อสร้าง PDF',
+        lineToken,
+      );
+      return;
+    }
+  }
+
   // ─── หมุน N ทิศ — "หมุน 1 ขวา" / "rotate 1 right" ─────────────────────────
   {
     const rotM =
@@ -1789,9 +1904,10 @@ async function handleText(
         return;
       }
       const fileId = files[pageNum - 1].id as string;
+      // manual override: lock ไว้เพื่อให้ auto OCR ไม่ override หน้านี้
       await dbUpdate(
         url, key, 'line_ai_excel_files', `id=eq.${fileId}`,
-        { rotation_deg: rotCW },
+        { rotation_deg: rotCW, rotation_locked: true },
       );
       const dirLabel =
         rotCW === 90  ? '90° (ขวา)' :
@@ -1799,7 +1915,7 @@ async function handleText(
         rotCW === 180 ? '180° (กลับหัว)' : '0° (ตรง)';
       await replyLineText(
         replyToken,
-        `หมุนหน้า ${pageNum} เป็น ${dirLabel} แล้ว\nพิมพ์ "pdf" เพื่อสร้าง PDF ใหม่`,
+        `หมุนหน้า ${pageNum} เป็น ${dirLabel} แล้ว (manual)\nพิมพ์ "pdf" เพื่อสร้าง PDF ใหม่`,
         lineToken,
       );
       return;

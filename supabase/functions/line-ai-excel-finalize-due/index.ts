@@ -6,6 +6,8 @@
 // =============================================================
 
 import { PDFDocument, degrees, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+// auto-rotate ด้วย Document AI OCR (shared กับ line-ai-excel-helper)
+import { applyAutoRotateToBatch, effectiveRotationCW } from '../_shared/auto-rotate.ts';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const STORAGE_BUCKET       = 'line-ai-excel-intake';
@@ -250,11 +252,19 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
     }
 
     try {
-      // Load files
+      // auto-rotate (cache-aware) ก่อนสร้าง PDF — error/ไม่มี config → no-op
+      try {
+        await applyAutoRotateToBatch(url, key, batchId, { force: false });
+      } catch (e) {
+        console.warn('[finalize-due] auto-rotate skipped:', e instanceof Error ? e.message : e);
+      }
+
+      // Load files (รวม rotation columns) ตาม canonical order
       const files = await dbSelect(
         url, key,
         `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}` +
-        `&order=${FILE_PAGE_ORDER}&select=storage_path,mime_type,rotation_deg`,
+        `&order=${FILE_PAGE_ORDER}` +
+        `&select=storage_path,mime_type,rotation_deg,rotation_locked,auto_rotation_deg`,
       );
       if (files.length === 0) {
         await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
@@ -263,14 +273,14 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
         continue;
       }
 
-      // Download images
+      // Download images — effective rotation: manual (locked) ชนะ ไม่งั้นใช้ auto
       const images: { bytes: Uint8Array; contentType: string }[] = [];
       const rotationsCW: number[] = [];
       for (const f of files) {
         try {
           const got = await downloadFromStorage(url, key, f.storage_path as string);
           images.push({ bytes: got.bytes, contentType: (f.mime_type as string) || got.contentType });
-          rotationsCW.push(typeof f.rotation_deg === 'number' ? f.rotation_deg : 0);
+          rotationsCW.push(effectiveRotationCW(f));
         } catch (e) {
           console.warn('[finalize-due] img download failed:', e instanceof Error ? e.message : e);
         }
