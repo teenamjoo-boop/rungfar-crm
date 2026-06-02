@@ -19,7 +19,7 @@
 // =============================================================
 
 // pdf-lib รันได้บน Deno / Supabase Edge ผ่าน esm.sh
-import { PDFDocument, degrees } from 'https://esm.sh/pdf-lib@1.17.1';
+import { PDFDocument, degrees, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 
 // ─── Secrets (inject อัตโนมัติ + ตั้งเอง) ────────────────────────────────────
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  → inject อัตโนมัติ
@@ -44,16 +44,26 @@ const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';
 // PDF — เก็บใน bucket เดิม ใต้ path prefix แยก, signed URL อายุ 30 วัน
 const PDF_PATH_PREFIX = 'line-ai-excel-pdf';
 const PDF_SIGNED_URL_SECONDS = 30 * 24 * 60 * 60; // 30 วัน
+const TSV_PATH_PREFIX = 'line-ai-excel-tsv';
 // A4 แนวตั้ง (points) + ขอบ
 const A4_W = 595.28;
 const A4_H = 841.89;
 const PDF_MARGIN = 24;
+const FILE_PAGE_ORDER = 'page_no.asc,created_at.asc,id.asc';
 
 // TSV header (8 คอลัมน์ สำหรับ copy วาง Excel เริ่มคอลัมน์ B)
 // คอลัมน์ A ใน Excel ผู้ใช้ใส่เอง (ลำดับ/อื่นๆ) → ห้ามใส่คอลัมน์ลำดับใน TSV
-const TSV_HEADER =
-  'วันที่ยื่น\tรูปถ่าย\tนายจ้าง\tรายชื่อ\t' +
-  'เลขประจำตัวต่างด้าว\tสัญชาติ\tเลขคำขอ\tใบอนุญาตทำงานเลขที่';
+const TSV_COLUMNS = [
+  'วันที่ยื่น',
+  'รูปถ่าย',
+  'นายจ้าง',
+  'รายชื่อ',
+  'เลขประจำตัวต่างด้าว',
+  'สัญชาติ',
+  'เลขคำขอ',
+  'ใบอนุญาตทำงานเลขที่',
+];
+const TSV_HEADER = TSV_COLUMNS.join('\t');
 
 // ─── LINE Webhook Types (เฉพาะที่ใช้) ───────────────────────────────────────
 interface LineSource {
@@ -166,6 +176,31 @@ async function replyLineText(replyToken: string, text: string, token: string): P
     body: JSON.stringify({ replyToken, messages: [{ type: 'text', text }] }),
   });
   if (!res.ok) console.warn('[line-ai-excel] reply failed:', res.status, await res.text());
+}
+
+async function getLineSenderName(
+  token: string, groupId: string, userId: string | null,
+): Promise<string> {
+  if (!userId) return '-';
+  const endpoints = groupId
+    ? [
+        `https://api.line.me/v2/bot/group/${encodeURIComponent(groupId)}/member/${encodeURIComponent(userId)}`,
+        `https://api.line.me/v2/bot/profile/${encodeURIComponent(userId)}`,
+      ]
+    : [`https://api.line.me/v2/bot/profile/${encodeURIComponent(userId)}`];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const name = typeof data.displayName === 'string' ? data.displayName.trim() : '';
+      if (name) return name;
+    } catch (e) {
+      console.warn('[line-ai-excel] LINE profile lookup failed:', e instanceof Error ? e.message : e);
+    }
+  }
+  return '-';
 }
 
 // ─── Storage helpers ─────────────────────────────────────────────────────────
@@ -284,10 +319,8 @@ function buildGeminiPrompt(): string {
     'กฎการอ่าน:',
     '- รายชื่อให้ใช้ภาษาอังกฤษเป็นหลัก เช่น MR / MRS / MISS',
     '- สัญชาติแปลงเป็นไทย เช่น เมียนมา / ลาว / กัมพูชา / เวียดนาม',
-    '- ถ้ามีรูปหน้าคน/รูปถ่ายในชุด คอลัมน์ "รูปถ่าย" = มีรูป',
-    '- ถ้าไม่มีรูปถ่ายคน คอลัมน์ "รูปถ่าย" = ไม่มีรูป',
+    '- คอลัมน์ "รูปถ่าย" = รอมี',
     '- ถ้าอ่านเลขไม่ชัด ให้ใส่ "-"',
-    '- ถ้าไม่มั่นใจ ให้ใส่ "ตรวจสอบ" ในคอลัมน์หมายเหตุ',
     '- ถ้ามีเอกสารของหลายคนในชุด ให้แยกหลายแถว',
     '- ถ้าเป็นเอกสารของคนเดียวหลายใบ ให้รวมเป็นแถวเดียว',
     '- ห้ามสร้างข้อมูลเอง ห้ามเดาชื่อ/เลขที่มองไม่เห็น',
@@ -540,185 +573,398 @@ async function runDocumentAiOcr(
 /** map คำสัญชาติ (ไทย/อังกฤษ/รูปแบบต่าง ๆ) → ไทยมาตรฐาน */
 function normalizeNationality(text: string): string {
   const t = text.toLowerCase();
-  if (/myanmar|burma|เมียนมา|พม่า/.test(t)) return 'เมียนมา';
+  if (/myanmar|burma|burmese|เมียนมา|พม่า/.test(t)) return 'เมียนมา';
   if (/lao|laos|ลาว/.test(t))               return 'ลาว';
-  if (/cambodia|khmer|กัมพูชา|เขมร/.test(t)) return 'กัมพูชา';
-  if (/vietnam|เวียดนาม/.test(t))           return 'เวียดนาม';
+  if (/cambodia|cambodian|khmer|กัมพูชา|เขมร/.test(t)) return 'กัมพูชา';
+  if (/vietnam|vietnamese|เวียดนาม/.test(t)) return 'เวียดนาม';
   return '-';
 }
 
-/**
- * สรุป OCR text → 1 แถว TSV ด้วย rule/regex เบื้องต้น
- * ปรัชญา: ห้ามเดา — ถ้าไม่เจอ field ให้ "-" และเติมหมายเหตุ "ตรวจสอบ OCR"
- *
- * คืน array ของ 13 ช่อง (ตาม TSV_HEADER)
- */
-function parseOcrToRow(ocrText: string, hasPhoto: boolean): string[] {
-  const DASH = '-';
-  const notes: string[] = [];
+type ExcelRow = string[];
 
-  const raw  = ocrText.replace(/\r/g, '');
-  const flat = raw.replace(/[ \t]+/g, ' ');  // ลบช่องว่างซ้ำ แต่ยัง newline ไว้
+function cleanTsvCell(value: string | undefined | null): string {
+  const v = (value || '').replace(/\t/g, ' ').replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return v || '-';
+}
 
-  // helper: หา match แรก → group 1 หรือ DASH
-  const find = (re: RegExp, src = flat): string => {
-    const m = src.match(re);
-    return m && m[1] ? m[1].trim() : DASH;
-  };
+function normalizeOcrNumber(value: string | undefined | null): string {
+  const digits = (value || '').replace(/\D/g, '');
+  return digits || '-';
+}
 
-  // ── รายชื่อ (MR/MRS/MISS + EN ก่อน; fallback Thai name label) ──
-  let name = DASH;
-  const titleM = flat.match(/\b(MR|MRS|MISS|MS)\.?\s+([A-Z][A-Z\s.''-]{1,50})/);
-  if (titleM) {
-    name = `${titleM[1]} ${titleM[2].trim().replace(/\s{2,}/g, ' ')}`;
-    name = name.replace(/\s+(NATIONALITY|PASSPORT|NO\.|DATE|สัญชาติ|ALIEN|DOB).*$/i, '').trim();
+function getLines(text: string): string[] {
+  return text.replace(/\r/g, '\n').split(/\n+/).map(line => line.trim()).filter(Boolean);
+}
+
+function stripKnownLabels(value: string): string {
+  return value
+    .replace(/^(?:ชื่อนายจ้าง\/สถานประกอบการ|ชื่อนายจ้าง|นายจ้าง|employer\s*name|company\s*name|name\s*of\s*employer)\s*:?\s*/i, '')
+    .replace(/^\/?สถานประกอบการ\s*:?\s*/i, '')
+    .replace(/^(?:สัญชาติ|nationality)\s*:?\s*/i, '')
+    .replace(/^(?:ชื่อคนต่างด้าว|ชื่อผู้รับอนุญาตให้ทำงาน|name\s*of\s*(?:applicant|alien|work\s*permit\s*holder)|work\s*permit\s*name)\s*:?\s*/i, '')
+    .replace(/^(?:เลขประจำตัวคนต่างด้าว(?:\/แรงงาน)?|เลขประจำตัวต่างด้าว|alien\s*(?:id|no|number)|identification\s*no\.?)\s*:?\s*/i, '')
+    .replace(/^(?:เลขรับที่|เลขที่รับคำขอ|เลข(?:ที่)?คำขอ|request\s*no\.?|application\s*no\.?)\s*:?\s*/i, '')
+    .replace(/^(?:ใบอนุญาตทำงานเลขที่|work\s*permit\s*(?:no\.?|number)|wp\s*no\.?)\s*:?\s*/i, '')
+    .trim();
+}
+
+function cleanFieldValue(value: string | undefined | null): string {
+  const cleaned = cleanTsvCell(stripKnownLabels(value || ''));
+  if (
+    cleaned === '-' ||
+    /^[:/\\-]+$/.test(cleaned) ||
+    /^(?:\/?สถานประกอบการ|employer\s*name\/company\s*name|company\s*name)$/i.test(cleaned)
+  ) {
+    return '-';
   }
-  if (name === DASH) {
-    // ลอง label thai / EN
-    const labM = find(
-      /(?:ชื่อ(?:คนต่างด้าว|แรงงาน|นายจ้าง)?|alien\s*name|name\s*of\s*(?:foreign\s*worker|applicant)|foreign\s*worker)\s*:?\s*([^\n]{3,60})/i,
-    );
-    if (labM !== DASH) name = labM;
-  }
+  return cleaned;
+}
 
-  // ── สัญชาติ ──
-  let nationality = DASH;
-  const natM = flat.match(/(?:nationality|สัญชาติ|เชื้อชาติ)\s*:?\s*([A-Za-zก-๙]+)/i);
-  if (natM) nationality = normalizeNationality(natM[1]);
-  if (nationality === DASH) nationality = normalizeNationality(flat); // scan ทั้งข้อความ
+function findValueNearLabel(text: string, labels: RegExp[], lookAheadLines = 2): string {
+  const lines = getLines(text);
+  for (let i = 0; i < lines.length; i++) {
+    for (const label of labels) {
+      label.lastIndex = 0;
+      const m = label.exec(lines[i]);
+      if (!m) continue;
 
-  // ── เลขประจำตัวต่างด้าว ──
-  let alienId = find(
-    /(?:เลขประจำตัว(?:คนต่างด้าว|บุคคล)?|alien\s*(?:id|no|number)|identification\s*no\.?)\s*:?\s*([0-9][\d\- ]{7,20})/i,
-  );
-  if (alienId === DASH) {
-    const m13 = flat.match(/\b(\d{13})\b/);
-    if (m13) alienId = m13[1];
-  }
-  alienId = alienId === DASH ? DASH : alienId.replace(/[\s\-]/g, '');
+      const sameLine = cleanFieldValue(lines[i].slice((m.index || 0) + m[0].length));
+      if (sameLine !== '-') return sameLine;
 
-  // ── เลขคำขอ ──
-  let reqNo = find(
-    /(?:เลขคำขอ|เลขที่คำขอ|(?:application|request)\s*no\.?)\s*:?\s*([0-9][\d\- ]{5,20})/i,
-  ).replace(/[\s\-]/g, '');
-
-  // ── ใบอนุญาตทำงานเลขที่ ──
-  let workPermit = find(
-    /(?:ใบอนุญาตทำงาน(?:เลขที่|เลขที่ใบ)?|เลขที่ใบอนุญาต(?:ทำงาน)?|work\s*permit\s*(?:no\.?)?|wp\s*no\.?)\s*:?\s*([0-9][\d\- ]{5,20})/i,
-  ).replace(/[\s\-]/g, '');
-
-  // ── นายจ้าง (บริษัท/หจก. ก่อน จากนั้น label) ──
-  let employer = DASH;
-  const compM = raw.match(/((?:บริษัท|หจก\.?|ห้างหุ้นส่วน)[^\n]{1,60}?(?:จำกัด|ห้าง|จำกัด\s*\(มหาชน\)))/);
-  if (compM) employer = compM[1].trim();
-  if (employer === DASH) {
-    const labE = find(
-      /(?:นายจ้าง|ชื่อนายจ้าง|employer|name\s*of\s*employer|สถานประกอบ(?:การ|กิจการ)?)\s*:?\s*([^\n]{3,60})/i,
-    );
-    if (labE !== DASH) {
-      employer = labE.replace(/\s+(เลขที่|address|ที่อยู่|โทร|tel|เบอร์).*$/i, '').trim();
+      for (let j = 1; j <= lookAheadLines && i + j < lines.length; j++) {
+        const next = cleanFieldValue(lines[i + j]);
+        if (next !== '-') return next;
+      }
     }
   }
+  return '-';
+}
 
-  // ── วันที่ยื่น ──
-  const submitDate = find(
-    /(?:วันที่ยื่น|วัน(?:ที่)?ยื่น|submit(?:ted)?\s*date|วันที่รับคำขอ)\s*:?\s*([0-9]{1,2}[\/\-. /][0-9]{1,2}[\/\-. /][0-9]{2,4})/i,
-  );
-
-  // ── วันนัด ──
-  const apptDate = find(
-    /(?:วันนัด|วันนัดหมาย|นัดหมาย|appointment\s*(?:date)?|date)\s*:?\s*([0-9]{1,2}[\/\-. /][0-9]{1,2}[\/\-. /][0-9]{2,4})/i,
-  );
-
-  // ── เวลา ──
-  const apptTime = find(
-    /(?:เวลา|time)\s*:?\s*([0-9]{1,2}[:.][0-9]{2}(?:\s*(?:น\.?|am|pm))?)/i,
-  );
-
-  // ── สถานที่ ──
-  let place = find(
-    /(?:สถานที่(?:นัด|รับ)?|venue|location|place)\s*:?\s*([^\n]{3,60})/i,
-  );
-  if (place !== DASH) place = place.replace(/\s+(เวลา|time|วันที่).*$/i, '').trim();
-
-  // ── ประเภทเอกสาร ──
-  let docType = DASH;
-  if (/ต่ออายุ|ต่ออนุญาต|renew/i.test(flat))          docType = 'ต่ออายุ';
-  else if (/เปลี่ยนนายจ้าง/i.test(flat))              docType = 'เปลี่ยนนายจ้าง';
-  else if (/90\s*วัน|แจ้ง\s*90/i.test(flat))          docType = '90 วัน';
-  else if (/\bMOU\b/i.test(flat))                     docType = 'MOU';
-  else if (/นัดถ่ายบัตร|ถ่ายบัตร/i.test(flat))        docType = 'นัดถ่ายบัตร';
-  else if (/(?:แจ้งเข้า|นำเข้า|นำออก|OT)/i.test(flat)) docType = 'ตรวจสอบ';
-
-  // ── หมายเหตุ ──
-  if (name === DASH && (alienId === DASH && reqNo === DASH && workPermit === DASH)) {
-    notes.push('ตรวจสอบ OCR');
+function findCompanyName(text: string): string {
+  const labeled = findValueNearLabel(text, [
+    /ชื่อนายจ้าง\/สถานประกอบการ\s*:?\s*/i,
+    /ชื่อนายจ้าง\s*:?\s*/i,
+    /นายจ้าง\s*:?\s*/i,
+    /employer\s*name\s*:?\s*/i,
+    /company\s*name\s*:?\s*/i,
+    /name\s*of\s*employer\s*:?\s*/i,
+  ], 2);
+  if (labeled !== '-') {
+    const companyM = labeled.match(/((?:บริษัท|บจก\.?|หจก\.?|ห้างหุ้นส่วน).{1,90}?(?:จำกัด(?:\s*\(มหาชน\))?|มหาชน|ห้าง))/);
+    return companyM ? cleanFieldValue(companyM[1]) : cleanFieldValue(
+      labeled.replace(/\s+(เลขที่|address|ที่อยู่|โทร|tel|เบอร์|สัญชาติ|nationality).*$/i, ''),
+    );
   }
-  const note = notes.length > 0 ? notes.join(', ') : DASH;
 
-  // ── ทำความสะอาด: ห้ามให้ค่า field มี tab (จะทำลาย TSV) ──
-  const clean = (v: string) => v.replace(/\t/g, ' ').replace(/\n/g, ' ').trim() || DASH;
+  const forbidden = /ดำเนินการโดย|ที่อยู่|สถานที่ทำงาน|ผู้รับเงิน|ใบเสร็จ|หน่วยงาน|กรม|กระทรวง|receipt|payment|address/i;
+  const lines = getLines(text);
+  for (const line of lines) {
+    if (forbidden.test(line)) continue;
+    const companyM = line.match(/((?:บริษัท|บจก\.?|หจก\.?|ห้างหุ้นส่วน)[^\n]{1,80}?(?:จำกัด(?:\s*\(มหาชน\))?|มหาชน|ห้าง))/);
+    if (companyM) return cleanFieldValue(companyM[1]);
+  }
+  return '-';
+}
 
-  // คอลัมน์ตาม TSV_HEADER (13 ช่อง)
+function findNationalityNear(text: string): string {
+  const lines = getLines(text);
+  const labelRe = /(?:สัญชาติ|nationality)\s*:?\s*/i;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(labelRe);
+    if (!m) continue;
+    const sameLine = lines[i].slice((m.index || 0) + m[0].length);
+    const sameLineNationality = normalizeNationality(sameLine);
+    if (sameLineNationality !== '-') return sameLineNationality;
+
+    const nearby = [lines[i + 1] || '', lines[i + 2] || ''].join(' ');
+    const countryHits = nearby.match(/myanmar|burma|burmese|เมียนมา|พม่า|lao|laos|ลาว|cambodia|cambodian|กัมพูชา|vietnam|vietnamese|เวียดนาม/gi) || [];
+    if (new Set(countryHits.map(hit => normalizeNationality(hit))).size > 1) continue;
+    const normalized = normalizeNationality(nearby);
+    if (normalized !== '-') return normalized;
+  }
+  return '-';
+}
+
+function findLabeledNumber(
+  text: string,
+  label: RegExp,
+  minDigits: number,
+  maxDigits: number,
+  forbiddenNear?: RegExp,
+): string {
+  const matches = [...text.matchAll(label)];
+  for (const m of matches) {
+    const start = Math.max(0, (m.index || 0) - 20);
+    const end = Math.min(text.length, (m.index || 0) + m[0].length + 120);
+    const near = text.slice(start, end);
+    const beforeLabel = text.slice(start, m.index || 0);
+    if (forbiddenNear?.test(beforeLabel)) continue;
+    const numM = near.match(/([0-9][0-9\s\-]{5,25}[0-9])/);
+    const digits = normalizeOcrNumber(numM?.[1]);
+    if (/payment\s*date|วันที่|เวลา|time/i.test(near) && digits.length <= 12) continue;
+    if (digits !== '-' && digits.length >= minDigits && digits.length <= maxDigits) return digits;
+  }
+  return '-';
+}
+
+function findAlienId(text: string): string {
+  const id = findLabeledNumber(
+    text,
+    /เลขประจำตัวคนต่างด้าว(?:\/แรงงาน)?|เลขประจำตัวต่างด้าว|alien\s*(?:id|no|number)|identification\s*no\.?/gi,
+    13,
+    13,
+    /เลขประจำตัวนายจ้าง|employer\s*id|tax\s*id|เลขผู้เสียภาษี|เลขบริษัท|เลขนายจ้าง|bill\s*payment|receipt|เลขใบเสร็จ|เลขคำขอ|request\s*no|application\s*no|work\s*permit/i,
+  );
+  return id.length === 13 ? id : '-';
+}
+
+function findRequestNo(text: string): string {
+  return findLabeledNumber(
+    text,
+    /เลขรับที่|เลขที่รับคำขอ|เลข(?:ที่)?คำขอ|เลขที่\s*(?=[0-9\s\-]{10,20})|application\s*no\.?|request\s*no\.?/gi,
+    10,
+    18,
+    /receipt|bill\s*payment|payment\s*date|ใบเสร็จ|เลขใบเสร็จ|ผู้รับเงิน|เลขประจำตัวนายจ้าง|เลขประจำตัวคนต่างด้าว|work\s*permit|ใบอนุญาตทำงาน/i,
+  );
+}
+
+function findWorkPermitNo(text: string): string {
+  return findLabeledNumber(
+    text,
+    /ใบอนุญาตทำงานเลขที่|เลขที่ใบอนุญาตทำงาน|work\s*permit\s*(?:no\.?|number)|wp\s*no\.?/gi,
+    10,
+    18,
+    /เลขคำขอ|application\s*no|request\s*no|receipt|bill\s*payment/i,
+  );
+}
+
+function cleanPersonName(title: string, body: string): string {
+  const cleanedBody = body
+    .replace(/\s+(NATIONALITY|PASSPORT|WORK|PERMIT|APPLICATION|REQUEST|ALIEN|IDENTIFICATION|NO\.?|DATE|DOB|SEX|สัญชาติ|เลข).*$/i, '')
+    .replace(/[^A-Z\s.'-]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  if (!cleanedBody) return '-';
+  return cleanTsvCell(`${title.toUpperCase().replace(/\.$/, '')} ${cleanedBody}`);
+}
+
+function findPersonMatches(ocrText: string): { name: string; index: number }[] {
+  const flat = ocrText.replace(/\r/g, '\n');
+  const matches: { name: string; index: number }[] = [];
+  const labelRe =
+    /(?:ชื่อคนต่างด้าว|ชื่อผู้รับอนุญาตให้ทำงาน|name\s*of\s*(?:applicant|alien|work\s*permit\s*holder)|work\s*permit\s*name)\s*:?\s*([^\n]{3,90})/gi;
+  for (const m of flat.matchAll(labelRe)) {
+    const named = m[1].match(/\b(MR|MRS|MISS|MS)\.?\s+([A-Z][A-Z\s.'-]{1,60})/i);
+    if (!named) continue;
+    const name = cleanPersonName(named[1], named[2]);
+    if (name !== '-' && !matches.some(existing => existing.name === name)) {
+      matches.push({ name, index: m.index || 0 });
+    }
+  }
+  if (matches.length > 0) return matches.sort((a, b) => a.index - b.index);
+
+  const re = /\b(MR|MRS|MISS|MS)\.?\s+([A-Z][A-Z\s.'-]{1,60})/gi;
+  for (const m of flat.matchAll(re)) {
+    const name = cleanPersonName(m[1], m[2]);
+    if (name !== '-' && !matches.some(existing => existing.name === name)) {
+      matches.push({ name, index: m.index || 0 });
+    }
+  }
+  return matches;
+}
+
+function contextForPerson(ocrText: string, people: { name: string; index: number }[], idx: number): string {
+  const prev = idx > 0 ? people[idx - 1].index : 0;
+  const next = idx + 1 < people.length ? people[idx + 1].index : ocrText.length;
+  const start = Math.max(0, Math.floor((prev + people[idx].index) / 2) - 400);
+  const end = Math.min(ocrText.length, Math.floor((people[idx].index + next) / 2) + 800);
+  return ocrText.slice(start, end);
+}
+
+function normalizePersonKey(name: string): string {
+  return name.replace(/[^A-Z]/gi, '').toUpperCase();
+}
+
+function isSimilarPersonName(a: string, b: string): boolean {
+  const ka = normalizePersonKey(a);
+  const kb = normalizePersonKey(b);
+  if (!ka || !kb) return false;
+  return ka === kb || ka.startsWith(kb) || kb.startsWith(ka);
+}
+
+function pickLongerValue(a: string, b: string): string {
+  if (a === '-') return b;
+  if (b === '-') return a;
+  return b.length > a.length ? b : a;
+}
+
+function mergeRows(rows: ExcelRow[]): ExcelRow[] {
+  const merged: ExcelRow[] = [];
+  for (const row of rows) {
+    const existing = merged.find(candidate => isSimilarPersonName(candidate[3], row[3]));
+    if (!existing) {
+      merged.push([...row]);
+      continue;
+    }
+
+    existing[0] = pickLongerValue(existing[0], row[0]);
+    existing[1] = 'รอมี';
+    existing[2] = pickLongerValue(existing[2], row[2]);
+    existing[3] = pickLongerValue(existing[3], row[3]);
+    existing[4] = existing[4] !== '-' ? existing[4] : row[4];
+    existing[5] = existing[5] !== '-' ? existing[5] : row[5];
+    existing[6] = existing[6] !== '-' ? existing[6] : row[6];
+    existing[7] = existing[7] !== '-' ? existing[7] : row[7];
+  }
+  return merged;
+}
+
+function buildExcelRow(
+  text: string, fullText: string, senderName: string, name: string,
+): ExcelRow {
+  const employerFromText = findCompanyName(text);
+  const employer = employerFromText !== '-' ? employerFromText : findCompanyName(fullText);
+  const nationalityFromText = findNationalityNear(text);
+  const nationality = nationalityFromText !== '-' ? nationalityFromText : findNationalityNear(fullText);
+  const alienIdFromText = findAlienId(text);
+  const alienId = alienIdFromText !== '-' ? alienIdFromText : findAlienId(fullText);
+  const reqNoFromText = findRequestNo(text);
+  const reqNo = reqNoFromText !== '-' ? reqNoFromText : findRequestNo(fullText);
+  const workPermitFromText = findWorkPermitNo(text);
+  const workPermit = workPermitFromText !== '-' ? workPermitFromText : findWorkPermitNo(fullText);
+
   return [
-    clean(submitDate), clean(hasPhoto ? 'มีรูป' : 'ไม่มีรูป'),
-    clean(employer),   clean(name),
-    clean(alienId),    clean(nationality),
-    clean(reqNo),      clean(workPermit),
-    clean(docType),    clean(apptDate),
-    clean(apptTime),   clean(place),
-    clean(note),
+    cleanTsvCell(senderName),
+    'รอมี',
+    cleanTsvCell(employer),
+    cleanTsvCell(name),
+    cleanTsvCell(alienId),
+    cleanTsvCell(nationality),
+    cleanTsvCell(reqNo),
+    cleanTsvCell(workPermit),
   ];
 }
 
-/**
- * สร้าง TSV (header + 1 data row) จาก OCR text
- * ใช้ tab จริงคั่น — copy วาง Excel แล้วช่องตรง
- */
-function ocrToTsv(ocrText: string, hasPhoto: boolean): string {
-  const row = parseOcrToRow(ocrText, hasPhoto);
-  // กันค่า undefined/null ก่อน join (defense)
-  return TSV_HEADER + '\n' + row.map(v => v ?? '-').join('\t');
+function parseOcrToRows(ocrText: string, senderName: string): ExcelRow[] {
+  const raw = ocrText.replace(/\r/g, '\n');
+  const people = findPersonMatches(raw);
+
+  if (people.length === 0) {
+    const row = buildExcelRow(raw, raw, senderName, '-');
+    const hasUsefulData = row.slice(2).some(v => v !== '-');
+    return hasUsefulData ? [row] : [[cleanTsvCell(senderName), 'รอมี', '-', '-', '-', '-', '-', '-']];
+  }
+
+  const rows = people.map((person, idx) => {
+    const context = contextForPerson(raw, people, idx);
+    return buildExcelRow(context, raw, senderName, person.name);
+  });
+  return mergeRows(rows);
 }
 
-/**
- * ส่ง TSV text กลับ LINE โดยแบ่งข้อความถ้ายาวเกิน limit
- * ตัดที่ขอบแถว (ไม่ตัดกลางแถว) — แต่ละส่วนยัง copy Excel ได้
- */
-async function replyTsv(
-  replyToken: string, tsv: string, lineToken: string,
-): Promise<void> {
+function rowsToTsv(rows: ExcelRow[], includeHeader: boolean): string {
+  const body = rows.map(row => row.map(cleanTsvCell).join('\t')).join('\n');
+  return includeHeader ? `${TSV_HEADER}\n${body}` : body;
+}
+
+function splitTsvForLine(tsv: string): string[] {
   const LIMIT = 4800;
-  if (tsv.length <= LIMIT) {
-    await replyLineText(replyToken, tsv, lineToken);
-    return;
-  }
-  // แบ่งตามแถว
-  const rows  = tsv.split('\n');
-  const header = rows[0];
+  if (tsv.length <= LIMIT) return [tsv];
+
+  const rows = tsv.split('\n');
   const parts: string[] = [];
-  let cur = header;
-  for (let i = 1; i < rows.length; i++) {
-    const candidate = cur + '\n' + rows[i];
-    if (candidate.length > LIMIT && cur !== header) {
+  let cur = '';
+  for (const row of rows) {
+    const candidate = cur ? `${cur}\n${row}` : row;
+    if (candidate.length > LIMIT && cur) {
       parts.push(cur);
-      cur = header + '\n' + rows[i]; // header นำทุกส่วน
+      cur = row;
     } else {
       cur = candidate;
     }
   }
-  if (cur !== header) parts.push(cur);
+  if (cur) parts.push(cur);
+  return parts;
+}
 
+async function replyLineTextParts(replyToken: string, parts: string[], token: string): Promise<void> {
+  const messages = parts.slice(0, 5).map(text => ({ type: 'text', text }));
+  const res = await fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ replyToken, messages }),
+  });
+  if (!res.ok) console.warn('[line-ai-excel] reply parts failed:', res.status, await res.text());
+}
+
+async function pushLineTextParts(targetId: string, parts: string[], token: string): Promise<void> {
+  for (let i = 0; i < parts.length; i += 5) {
+    const messages = parts.slice(i, i + 5).map(text => ({ type: 'text', text }));
+    const res = await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ to: targetId, messages }),
+    });
+    if (!res.ok) {
+      console.warn('[line-ai-excel] push TSV parts failed:', res.status, await res.text());
+      return;
+    }
+  }
+}
+
+async function replyTsv(replyToken: string, tsv: string, lineToken: string, targetId?: string): Promise<void> {
+  const parts = splitTsvForLine(tsv);
   if (parts.length === 1) {
     await replyLineText(replyToken, parts[0], lineToken);
     return;
   }
-  // LINE reply รองรับ 5 messages ต่อครั้ง — ส่งส่วนแรก reply, ส่วนที่เหลือ push
-  // ในรอบนี้ตัดแค่ส่วนแรก (reply) พร้อมแจ้งว่ายาว
-  const first = `ตาราง Excel ส่วน 1/${parts.length}:\n\n${parts[0]}`;
-  await replyLineText(replyToken, first, lineToken);
-  // ส่งส่วนที่เหลือโดยใช้ push message ถ้ามี groupId — รอบนี้แค่ตอบส่วนแรก
-  console.log(`[line-ai-excel] TSV too long, only first part sent (${parts.length} total)`);
+  await replyLineTextParts(replyToken, parts, lineToken);
+  if (parts.length > 5 && targetId) {
+    await pushLineTextParts(targetId, parts.slice(5), lineToken);
+  }
+}
+
+async function extractRowsFromLatestBatch(
+  url: string,
+  key: string,
+  groupId: string,
+  lineToken: string,
+  userId: string | null,
+  docAi: DocAiConfig,
+): Promise<{ batchId: string; rows: ExcelRow[]; ocrText: string }> {
+  const { batchId, images, rotationsCW } = await loadLatestBatchImages(url, key, groupId);
+  if (!batchId) throw new Error('NO_BATCH');
+  if (images.length === 0) throw new Error('IMAGE_LOAD_FAILED');
+
+  const ocrText = await runDocAiOnBatch(docAi, images, rotationsCW);
+  const senderName = await getLineSenderName(lineToken, groupId, userId);
+  const rows = parseOcrToRows(ocrText, senderName);
+  return { batchId, rows, ocrText };
+}
+
+async function saveReadResult(
+  url: string,
+  key: string,
+  batchId: string,
+  tsv: string,
+  ocrText: string,
+  rows: ExcelRow[],
+  header: boolean,
+): Promise<void> {
+  const nowIso = new Date().toISOString();
+  try {
+    await dbInsert(url, key, 'line_ai_excel_results', {
+      batch_id: batchId,
+      result_text: tsv,
+      raw_json: { type: 'ocr_tsv', ocr_chars: ocrText.length, rows: rows.length, header },
+    });
+    await dbUpdate(
+      url, key, 'line_ai_excel_batches', `id=eq.${batchId}`,
+      { status: 'read', read_at: nowIso, updated_at: nowIso },
+    );
+  } catch (e) {
+    console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
+  }
 }
 
 /**
@@ -924,6 +1170,7 @@ async function buildPdfFromImages(
 
     // ─ วาดบนหน้า A4 ─
     const page = doc.addPage([A4_W, A4_H]);
+    page.drawRectangle({ x: 0, y: 0, width: A4_W, height: A4_H, color: rgb(1, 1, 1) });
     drawImageOnPage(page, embedded, (opts) => page.drawImage(embedded, opts), totalCCW, idx);
     pages++;
   }
@@ -990,7 +1237,14 @@ async function handleImage(
   // 4) บันทึก file record
   await dbInsert(
     url, key, 'line_ai_excel_files',
-    { batch_id: batchId, line_message_id: msgId, storage_path: path, mime_type: contentType },
+    {
+      batch_id: batchId,
+      line_message_id: msgId,
+      storage_path: path,
+      mime_type: contentType,
+      page_no: newCount,
+      rotation_deg: 0,
+    },
   );
 
   console.log(`[line-ai-excel] stored image | batch=${batchId} count=${newCount}`);
@@ -1006,8 +1260,7 @@ async function handleImage(
 }
 
 /**
- * โหลดรูปทั้งหมดของ batch ล่าสุด (collecting) ตามลำดับเวลา
- * คืน { batch, images } — images[] เรียงตาม created_at.asc
+ * โหลดรูปทั้งหมดของ batch ล่าสุด (collecting) ตามลำดับ page_no, created_at, id
  * ถ้า batch ไม่มี → batch=null; ถ้าโหลดไม่ได้เลย → images=[]
  */
 async function loadLatestBatchImages(
@@ -1024,9 +1277,10 @@ async function loadLatestBatchImages(
 
   const files = await dbSelect(
     url, key,
-    `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc` +
-    `&select=id,storage_path,mime_type,rotation_deg`,
+    `line_ai_excel_files?batch_id=eq.${batchId}&order=${FILE_PAGE_ORDER}` +
+    `&select=id,storage_path,mime_type,page_no,rotation_deg`,
   );
+  await ensurePageNumbers(url, key, files);
   console.log(`[line-ai-excel] batch=${batchId} | file_records=${files.length}`);
 
   const images: { bytes: Uint8Array; contentType: string }[] = [];
@@ -1051,6 +1305,33 @@ async function loadLatestBatchImages(
     }
   }
   return { batchId, fileIds, images, rotationsCW };
+}
+
+async function loadBatchFiles(
+  url: string, key: string, batchId: string,
+): Promise<Record<string, unknown>[]> {
+  const files = await dbSelect(
+    url, key,
+    `line_ai_excel_files?batch_id=eq.${batchId}&order=${FILE_PAGE_ORDER}` +
+    `&select=id,page_no,rotation_deg`,
+  );
+  await ensurePageNumbers(url, key, files);
+  return files;
+}
+
+async function ensurePageNumbers(
+  url: string, key: string, files: Record<string, unknown>[],
+): Promise<void> {
+  for (let i = 0; i < files.length; i++) {
+    const expected = i + 1;
+    if (files[i].page_no !== expected) {
+      files[i].page_no = expected;
+      await dbUpdate(
+        url, key, 'line_ai_excel_files', `id=eq.${files[i].id}`,
+        { page_no: expected },
+      );
+    }
+  }
 }
 
 /** คำสั่ง text ในกลุ่ม control */
@@ -1088,6 +1369,9 @@ async function handleText(
         '"หมุน 1 ซ้าย"    = หมุนหน้า 1 CCW 90°',
         '"หมุน 1 กลับหัว" = หมุนหน้า 1 180°',
         '"หมุน 1 ตรง"     = reset หน้า 1 เป็น 0°',
+        '"สลับ 2 3"       = สลับลำดับหน้า 2 กับ 3',
+        '"ย้าย 4 ไป 1"    = ย้ายหน้า 4 ไปเป็นหน้า 1',
+        '"จัด 1 3 2 4"    = ตั้งลำดับหน้า PDF ใหม่',
         'แล้ว "pdf" ใหม่เพื่อสร้าง PDF ที่หมุนแล้ว',
       ].join('\n'),
       lineToken,
@@ -1103,10 +1387,7 @@ async function handleText(
       return;
     }
     const batchId = batch.id as string;
-    const files = await dbSelect(
-      url, key,
-      `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc&select=id,rotation_deg`,
-    );
+    const files = await loadBatchFiles(url, key, batchId);
     const count = files.length;
     if (count === 0) {
       await replyLineText(replyToken, 'ยังไม่มีรูปในชุดล่าสุด กรุณาส่งรูปเอกสารก่อน', lineToken);
@@ -1125,6 +1406,8 @@ async function handleText(
         'พิมพ์ "pdf" เพื่อสร้าง PDF',
         'พิมพ์ "อ่าน" เพื่อสรุป Excel',
         'พิมพ์ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อแก้ทิศรูป',
+        'เลขหน้าอิงตาม PDF ไม่ใช่ตำแหน่งรูปในกริด LINE',
+        'ถ้าลำดับไม่ตรง ใช้ "สลับ 2 3" หรือ "จัด 1 3 2 4"',
       ].join('\n'),
       lineToken,
     );
@@ -1170,10 +1453,7 @@ async function handleText(
         return;
       }
       const batchId = batch.id as string;
-      const files = await dbSelect(
-        url, key,
-        `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc&select=id`,
-      );
+      const files = await loadBatchFiles(url, key, batchId);
       if (pageNum < 1 || pageNum > files.length) {
         await replyLineText(
           replyToken,
@@ -1194,6 +1474,144 @@ async function handleText(
       await replyLineText(
         replyToken,
         `หมุนหน้า ${pageNum} เป็น ${dirLabel} แล้ว\nพิมพ์ "pdf" เพื่อสร้าง PDF ใหม่`,
+        lineToken,
+      );
+      return;
+    }
+  }
+
+  // ─── สลับ A B — "สลับ 2 3" / "swap 2 3" ───────────────────────────────────
+  {
+    const swapM =
+      text.match(/^สลับ\s*(\d+)\s+(\d+)$/i) ||
+      text.match(/^swap\s+(\d+)\s+(\d+)$/i);
+
+    if (swapM) {
+      const fromPage = parseInt(swapM[1], 10);
+      const toPage = parseInt(swapM[2], 10);
+      const batch = await findLatestCollectingBatch(url, key, groupId);
+      if (!batch) {
+        await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องสลับ กรุณาส่งรูปก่อน', lineToken);
+        return;
+      }
+      const batchId = batch.id as string;
+      const files = await loadBatchFiles(url, key, batchId);
+      if (
+        fromPage < 1 || fromPage > files.length ||
+        toPage < 1 || toPage > files.length
+      ) {
+        await replyLineText(
+          replyToken,
+          `สลับไม่ได้: มีทั้งหมด ${files.length} หน้า`,
+          lineToken,
+        );
+        return;
+      }
+      if (fromPage !== toPage) {
+        const a = fromPage - 1;
+        const b = toPage - 1;
+        await dbUpdate(url, key, 'line_ai_excel_files', `id=eq.${files[a].id}`, { page_no: toPage });
+        await dbUpdate(url, key, 'line_ai_excel_files', `id=eq.${files[b].id}`, { page_no: fromPage });
+      }
+      await replyLineText(
+        replyToken,
+        `สลับหน้า ${fromPage} กับ ${toPage} แล้ว\nพิมพ์ "รายการ" เพื่อตรวจลำดับ หรือ "pdf" เพื่อสร้าง PDF ใหม่`,
+        lineToken,
+      );
+      return;
+    }
+  }
+
+  // ─── ย้าย A ไป B — "ย้าย 4 ไป 1" / "move 4 to 1" ─────────────────────────
+  {
+    const moveM =
+      text.match(/^ย้าย\s*(\d+)\s*ไป\s*(\d+)$/i) ||
+      text.match(/^move\s+(\d+)\s+to\s+(\d+)$/i);
+
+    if (moveM) {
+      const fromPage = parseInt(moveM[1], 10);
+      const toPage = parseInt(moveM[2], 10);
+      const batch = await findLatestCollectingBatch(url, key, groupId);
+      if (!batch) {
+        await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องย้าย กรุณาส่งรูปก่อน', lineToken);
+        return;
+      }
+      const batchId = batch.id as string;
+      const files = await loadBatchFiles(url, key, batchId);
+      if (
+        fromPage < 1 || fromPage > files.length ||
+        toPage < 1 || toPage > files.length
+      ) {
+        await replyLineText(
+          replyToken,
+          `ย้ายไม่ได้: มีทั้งหมด ${files.length} หน้า`,
+          lineToken,
+        );
+        return;
+      }
+
+      if (fromPage !== toPage) {
+        const reordered = [...files];
+        const [moved] = reordered.splice(fromPage - 1, 1);
+        reordered.splice(toPage - 1, 0, moved);
+        for (let i = 0; i < reordered.length; i++) {
+          await dbUpdate(
+            url, key, 'line_ai_excel_files', `id=eq.${reordered[i].id}`,
+            { page_no: i + 1 },
+          );
+        }
+      }
+
+      await replyLineText(
+        replyToken,
+        `ย้ายหน้า ${fromPage} ไป ${toPage} แล้ว\nพิมพ์ "รายการ" เพื่อตรวจลำดับ หรือ "pdf" เพื่อสร้าง PDF ใหม่`,
+        lineToken,
+      );
+      return;
+    }
+  }
+
+  // ─── จัดลำดับทั้งหมด — "จัด 1 3 2 4" / "order 1 3 2 4" ───────────────────
+  {
+    const orderM =
+      text.match(/^จัด\s+([0-9\s]+)$/i) ||
+      text.match(/^order\s+([0-9\s]+)$/i);
+
+    if (orderM) {
+      const batch = await findLatestCollectingBatch(url, key, groupId);
+      if (!batch) {
+        await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องจัดลำดับ กรุณาส่งรูปก่อน', lineToken);
+        return;
+      }
+      const batchId = batch.id as string;
+      const files = await loadBatchFiles(url, key, batchId);
+      const requested = orderM[1].trim().split(/\s+/).map(n => parseInt(n, 10));
+      const count = files.length;
+      const valid =
+        requested.length === count &&
+        requested.every(n => Number.isInteger(n) && n >= 1 && n <= count) &&
+        new Set(requested).size === count;
+
+      if (!valid) {
+        await replyLineText(
+          replyToken,
+          `จัดลำดับไม่ได้: ต้องใส่เลขครบทุกหน้า 1-${count} ห้ามซ้ำ ห้ามขาด`,
+          lineToken,
+        );
+        return;
+      }
+
+      for (let i = 0; i < requested.length; i++) {
+        const oldPage = requested[i];
+        await dbUpdate(
+          url, key, 'line_ai_excel_files', `id=eq.${files[oldPage - 1].id}`,
+          { page_no: i + 1 },
+        );
+      }
+
+      await replyLineText(
+        replyToken,
+        'จัดลำดับหน้าใหม่แล้ว พิมพ์ “pdf” เพื่อสร้าง PDF ใหม่',
         lineToken,
       );
       return;
@@ -1234,58 +1652,79 @@ async function handleText(
     return;
   }
 
-  // ─── อ่าน / read ──────────────────────────────────────────────────────────
+  // ─── อ่าน / อ่านหัวข้อ / read ─────────────────────────────────────────────
   // Document AI OCR (ใช้ rotation ล่าสุด) → สรุปเป็น TSV copy วาง Excel ได้
-  if (text === 'อ่าน' || cmd === 'read') {
+  {
+    const readWithHeader =
+      text === 'อ่านหัวข้อ' || cmd === 'readheader' || cmd === 'read header';
+    const readRowsOnly = text === 'อ่าน' || cmd === 'read';
+
+    if (readRowsOnly || readWithHeader) {
+      if (!docAi) {
+        await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
+        return;
+      }
+      console.log(`[line-ai-excel] อ่าน cmd | group=${groupId}`);
+
+      let extracted: { batchId: string; rows: ExcelRow[]; ocrText: string };
+      try {
+        extracted = await extractRowsFromLatestBatch(
+          url, key, groupId, lineToken, ev.source?.userId || null, docAi,
+        );
+        console.log(`[line-ai-excel] OCR OK | chars=${extracted.ocrText.length}`);
+      } catch (e) {
+        if (e instanceof Error && e.message === 'NO_BATCH') {
+          await replyLineText(replyToken, 'ยังไม่มีรูปให้อ่าน กรุณาส่งรูปเอกสารก่อน', lineToken);
+          return;
+        }
+        await replyLineText(replyToken, mapDocAiError(e), lineToken);
+        return;
+      }
+
+      const { batchId, rows, ocrText } = extracted;
+      const tsv = rowsToTsv(rows, readWithHeader);
+      console.log(`[line-ai-excel] parsed TSV | chars=${tsv.length}`);
+
+      await saveReadResult(url, key, batchId, tsv, ocrText, rows, readWithHeader);
+      await replyTsv(replyToken, tsv, lineToken, groupId);
+      return;
+    }
+  }
+
+  // ─── excel / tsv / ไฟล์ — สร้างไฟล์ TSV พร้อม header สำหรับเปิดใน Excel ─────
+  if (cmd === 'excel' || cmd === 'tsv' || text === 'ไฟล์') {
     if (!docAi) {
       await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
       return;
     }
-    console.log(`[line-ai-excel] อ่าน cmd | group=${groupId}`);
 
-    const { batchId, images, rotationsCW } = await loadLatestBatchImages(url, key, groupId);
-    if (!batchId) {
-      await replyLineText(replyToken, 'ยังไม่มีรูปให้อ่าน กรุณาส่งรูปเอกสารก่อน', lineToken);
-      return;
-    }
-    if (images.length === 0) {
-      console.error('[line-ai-excel] IMAGE_LOAD_FAILED | batch=' + batchId);
-      await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: IMAGE_LOAD_FAILED', lineToken);
-      return;
-    }
-
-    // เอกสารแรงงานมักมีรูปถ่ายติดเอกสาร — ถือว่ามีรูปถ้ามี image ในชุด
-    const hasPhoto = images.length > 0;
-
-    let ocrText = '';
+    let extracted: { batchId: string; rows: ExcelRow[]; ocrText: string };
     try {
-      ocrText = await runDocAiOnBatch(docAi, images, rotationsCW);
-      console.log(`[line-ai-excel] OCR OK | chars=${ocrText.length}`);
+      extracted = await extractRowsFromLatestBatch(
+        url, key, groupId, lineToken, ev.source?.userId || null, docAi,
+      );
     } catch (e) {
+      if (e instanceof Error && e.message === 'NO_BATCH') {
+        await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับสร้างไฟล์ กรุณาส่งรูปเอกสารก่อน', lineToken);
+        return;
+      }
       await replyLineText(replyToken, mapDocAiError(e), lineToken);
       return;
     }
 
-    const tsv = ocrToTsv(ocrText, hasPhoto);
-    console.log(`[line-ai-excel] parsed TSV | chars=${tsv.length}`);
+    const { batchId, rows, ocrText } = extracted;
+    const tsv = rowsToTsv(rows, true);
+    await saveReadResult(url, key, batchId, tsv, ocrText, rows, true);
 
-    const nowIso = new Date().toISOString();
-    try {
-      await dbInsert(url, key, 'line_ai_excel_results', {
-        batch_id: batchId,
-        result_text: tsv,
-        raw_json: { type: 'ocr_tsv', ocr_chars: ocrText.length },
-      });
-      await dbUpdate(
-        url, key, 'line_ai_excel_batches', `id=eq.${batchId}`,
-        { status: 'read', read_at: nowIso, updated_at: nowIso },
-      );
-    } catch (e) {
-      console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
-    }
-
-    // ส่ง TSV — แบ่งข้อความถ้ายาวเกิน (ตัดที่ขอบแถว ห้ามตัดกลางแถว)
-    await replyTsv(replyToken, tsv, lineToken);
+    const tsvPath = `${TSV_PATH_PREFIX}/${batchId}.tsv`;
+    const bytes = new TextEncoder().encode(tsv);
+    await uploadToStorage(url, key, tsvPath, bytes, 'text/tab-separated-values; charset=utf-8');
+    const signedUrl = await createSignedUrl(url, key, tsvPath, PDF_SIGNED_URL_SECONDS);
+    await replyLineText(
+      replyToken,
+      ['สร้างไฟล์ Excel TSV แล้ว', 'เปิด/ดาวน์โหลด:', signedUrl].join('\n'),
+      lineToken,
+    );
     return;
   }
 
