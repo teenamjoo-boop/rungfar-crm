@@ -49,10 +49,11 @@ const A4_W = 595.28;
 const A4_H = 841.89;
 const PDF_MARGIN = 24;
 
-// TSV header (คอลัมน์ที่ต้องการ) — ใช้ทั้งใน prompt และ fallback
+// TSV header (8 คอลัมน์ สำหรับ copy วาง Excel เริ่มคอลัมน์ B)
+// คอลัมน์ A ใน Excel ผู้ใช้ใส่เอง (ลำดับ/อื่นๆ) → ห้ามใส่คอลัมน์ลำดับใน TSV
 const TSV_HEADER =
-  'วันที่ยื่น\tรูปถ่าย\tนายจ้าง\tรายชื่อ\tเลขประจำตัวต่างด้าว\tสัญชาติ\t' +
-  'เลขคำขอ\tใบอนุญาตทำงานเลขที่\tประเภทเอกสาร\tวันนัด\tเวลา\tสถานที่\tหมายเหตุ';
+  'วันที่ยื่น\tรูปถ่าย\tนายจ้าง\tรายชื่อ\t' +
+  'เลขประจำตัวต่างด้าว\tสัญชาติ\tเลขคำขอ\tใบอนุญาตทำงานเลขที่';
 
 // ─── LINE Webhook Types (เฉพาะที่ใช้) ───────────────────────────────────────
 interface LineSource {
@@ -556,112 +557,168 @@ function parseOcrToRow(ocrText: string, hasPhoto: boolean): string[] {
   const DASH = '-';
   const notes: string[] = [];
 
-  // รวมข้อความเป็นบรรทัด ลบช่องว่างซ้ำ
-  const raw = ocrText.replace(/\r/g, '');
-  const flat = raw.replace(/[ \t]+/g, ' ');
+  const raw  = ocrText.replace(/\r/g, '');
+  const flat = raw.replace(/[ \t]+/g, ' ');  // ลบช่องว่างซ้ำ แต่ยัง newline ไว้
 
-  // helper: หา match แรกของ pattern, คืน group 1 (trim) หรือ DASH
-  const find = (re: RegExp): string => {
-    const m = flat.match(re);
+  // helper: หา match แรก → group 1 หรือ DASH
+  const find = (re: RegExp, src = flat): string => {
+    const m = src.match(re);
     return m && m[1] ? m[1].trim() : DASH;
   };
 
-  // ── รายชื่อ (MR/MRS/MISS + ตัวอักษรอังกฤษ) ──
+  // ── รายชื่อ (MR/MRS/MISS + EN ก่อน; fallback Thai name label) ──
   let name = DASH;
-  const nameM = flat.match(/\b(MR|MRS|MISS|MS)\.?\s+([A-Z][A-Z\s.]{2,40})/);
-  if (nameM) {
-    name = `${nameM[1].toUpperCase()} ${nameM[2].trim().replace(/\s{2,}/g, ' ')}`;
-    // ตัดหางที่อาจติด keyword อื่น
-    name = name.replace(/\s+(NATIONALITY|PASSPORT|NO|DATE|สัญชาติ).*$/i, '').trim();
+  const titleM = flat.match(/\b(MR|MRS|MISS|MS)\.?\s+([A-Z][A-Z\s.''-]{1,50})/);
+  if (titleM) {
+    name = `${titleM[1]} ${titleM[2].trim().replace(/\s{2,}/g, ' ')}`;
+    name = name.replace(/\s+(NATIONALITY|PASSPORT|NO\.|DATE|สัญชาติ|ALIEN|DOB).*$/i, '').trim();
+  }
+  if (name === DASH) {
+    // ลอง label thai / EN
+    const labM = find(
+      /(?:ชื่อ(?:คนต่างด้าว|แรงงาน|นายจ้าง)?|alien\s*name|name\s*of\s*(?:foreign\s*worker|applicant)|foreign\s*worker)\s*:?\s*([^\n]{3,60})/i,
+    );
+    if (labM !== DASH) name = labM;
   }
 
   // ── สัญชาติ ──
   let nationality = DASH;
-  const natM = flat.match(/(?:nationality|สัญชาติ)\s*:?\s*([A-Za-zก-๙]+)/i);
+  const natM = flat.match(/(?:nationality|สัญชาติ|เชื้อชาติ)\s*:?\s*([A-Za-zก-๙]+)/i);
   if (natM) nationality = normalizeNationality(natM[1]);
-  if (nationality === DASH) {
-    // เผื่อสะกดลอย ๆ ในข้อความ
-    const guess = normalizeNationality(flat);
-    if (guess !== DASH) nationality = guess;
-  }
+  if (nationality === DASH) nationality = normalizeNationality(flat); // scan ทั้งข้อความ
 
-  // ── เลขประจำตัวต่างด้าว (13 หลัก หรือ ป้ายกำกับ) ──
-  let alienId = find(/(?:เลขประจำตัว(?:คนต่างด้าว|บุคคล)?|alien\s*(?:id|no|number))\s*:?\s*([0-9][0-9\- ]{8,20})/i);
+  // ── เลขประจำตัวต่างด้าว ──
+  let alienId = find(
+    /(?:เลขประจำตัว(?:คนต่างด้าว|บุคคล)?|alien\s*(?:id|no|number)|identification\s*no\.?)\s*:?\s*([0-9][\d\- ]{7,20})/i,
+  );
   if (alienId === DASH) {
-    const m13 = flat.match(/\b(\d{13})\b/); // เลข 13 หลักลอย ๆ
+    const m13 = flat.match(/\b(\d{13})\b/);
     if (m13) alienId = m13[1];
   }
-  alienId = alienId.replace(/[ \-]/g, '') === '' ? DASH : alienId.replace(/\s/g, '');
+  alienId = alienId === DASH ? DASH : alienId.replace(/[\s\-]/g, '');
 
   // ── เลขคำขอ ──
-  const reqNo = find(/(?:เลขคำขอ|เลขที่คำขอ|request\s*no)\s*:?\s*([0-9][0-9\- ]{6,20})/i)
-    .replace(/\s/g, '');
+  let reqNo = find(
+    /(?:เลขคำขอ|เลขที่คำขอ|(?:application|request)\s*no\.?)\s*:?\s*([0-9][\d\- ]{5,20})/i,
+  ).replace(/[\s\-]/g, '');
 
   // ── ใบอนุญาตทำงานเลขที่ ──
-  const workPermit = find(/(?:ใบอนุญาตทำงาน(?:เลขที่)?|work\s*permit\s*(?:no)?)\s*:?\s*([0-9][0-9\- ]{6,20})/i)
-    .replace(/\s/g, '');
+  let workPermit = find(
+    /(?:ใบอนุญาตทำงาน(?:เลขที่|เลขที่ใบ)?|เลขที่ใบอนุญาต(?:ทำงาน)?|work\s*permit\s*(?:no\.?)?|wp\s*no\.?)\s*:?\s*([0-9][\d\- ]{5,20})/i,
+  ).replace(/[\s\-]/g, '');
 
-  // ── นายจ้าง ──
-  let employer = find(/(?:นายจ้าง|employer|สถานประกอบการ)\s*:?\s*([^\n]{3,60})/i);
-  // ตัดหางหลังคำสำคัญ
-  if (employer !== DASH) {
-    employer = employer.replace(/\s+(เลขที่|address|ที่อยู่|โทร|tel).*$/i, '').trim();
-  }
-  // ถ้าเจอ "บริษัท ... จำกัด" ให้ดึงรูปแบบนั้น
-  const compM = raw.match(/(บริษัท[^\n]{2,50}?จำกัด)/);
+  // ── นายจ้าง (บริษัท/หจก. ก่อน จากนั้น label) ──
+  let employer = DASH;
+  const compM = raw.match(/((?:บริษัท|หจก\.?|ห้างหุ้นส่วน)[^\n]{1,60}?(?:จำกัด|ห้าง|จำกัด\s*\(มหาชน\)))/);
   if (compM) employer = compM[1].trim();
+  if (employer === DASH) {
+    const labE = find(
+      /(?:นายจ้าง|ชื่อนายจ้าง|employer|name\s*of\s*employer|สถานประกอบ(?:การ|กิจการ)?)\s*:?\s*([^\n]{3,60})/i,
+    );
+    if (labE !== DASH) {
+      employer = labE.replace(/\s+(เลขที่|address|ที่อยู่|โทร|tel|เบอร์).*$/i, '').trim();
+    }
+  }
 
   // ── วันที่ยื่น ──
-  const submitDate = find(/(?:วันที่ยื่น|วันยื่น|submit(?:ted)?\s*date)\s*:?\s*([0-9]{1,2}[\/\-. ][0-9]{1,2}[\/\-. ][0-9]{2,4})/i);
+  const submitDate = find(
+    /(?:วันที่ยื่น|วัน(?:ที่)?ยื่น|submit(?:ted)?\s*date|วันที่รับคำขอ)\s*:?\s*([0-9]{1,2}[\/\-. /][0-9]{1,2}[\/\-. /][0-9]{2,4})/i,
+  );
 
   // ── วันนัด ──
-  const apptDate = find(/(?:วันนัด|นัดหมาย|appointment)\s*:?\s*([0-9]{1,2}[\/\-. ][0-9]{1,2}[\/\-. ][0-9]{2,4})/i);
+  const apptDate = find(
+    /(?:วันนัด|วันนัดหมาย|นัดหมาย|appointment\s*(?:date)?|date)\s*:?\s*([0-9]{1,2}[\/\-. /][0-9]{1,2}[\/\-. /][0-9]{2,4})/i,
+  );
 
   // ── เวลา ──
-  const apptTime = find(/(?:เวลา|time)\s*:?\s*([0-9]{1,2}[:.][0-9]{2}(?:\s*น\.?)?)/i);
+  const apptTime = find(
+    /(?:เวลา|time)\s*:?\s*([0-9]{1,2}[:.][0-9]{2}(?:\s*(?:น\.?|am|pm))?)/i,
+  );
 
   // ── สถานที่ ──
-  let place = find(/(?:สถานที่|สถานที่นัด|location|venue)\s*:?\s*([^\n]{3,50})/i);
+  let place = find(
+    /(?:สถานที่(?:นัด|รับ)?|venue|location|place)\s*:?\s*([^\n]{3,60})/i,
+  );
   if (place !== DASH) place = place.replace(/\s+(เวลา|time|วันที่).*$/i, '').trim();
 
   // ── ประเภทเอกสาร ──
   let docType = DASH;
-  if (/ต่ออายุ|renew/i.test(flat))            docType = 'ต่ออายุ';
-  else if (/เปลี่ยนนายจ้าง/i.test(flat))      docType = 'เปลี่ยนนายจ้าง';
-  else if (/90\s*วัน/i.test(flat))            docType = '90 วัน';
-  else if (/mou/i.test(flat))                 docType = 'MOU';
-  else if (/นัดถ่ายบัตร|ถ่ายบัตร/i.test(flat)) docType = 'นัดถ่ายบัตร';
+  if (/ต่ออายุ|ต่ออนุญาต|renew/i.test(flat))          docType = 'ต่ออายุ';
+  else if (/เปลี่ยนนายจ้าง/i.test(flat))              docType = 'เปลี่ยนนายจ้าง';
+  else if (/90\s*วัน|แจ้ง\s*90/i.test(flat))          docType = '90 วัน';
+  else if (/\bMOU\b/i.test(flat))                     docType = 'MOU';
+  else if (/นัดถ่ายบัตร|ถ่ายบัตร/i.test(flat))        docType = 'นัดถ่ายบัตร';
+  else if (/(?:แจ้งเข้า|นำเข้า|นำออก|OT)/i.test(flat)) docType = 'ตรวจสอบ';
 
-  // ── หมายเหตุ: ถ้าจับ field หลักไม่ได้ ให้เตือนตรวจสอบ ──
-  if (name === DASH || (alienId === DASH && reqNo === DASH && workPermit === DASH)) {
+  // ── หมายเหตุ ──
+  if (name === DASH && (alienId === DASH && reqNo === DASH && workPermit === DASH)) {
     notes.push('ตรวจสอบ OCR');
   }
   const note = notes.length > 0 ? notes.join(', ') : DASH;
 
-  // คอลัมน์ตาม TSV_HEADER:
-  // วันที่ยื่น, รูปถ่าย, นายจ้าง, รายชื่อ, เลขประจำตัวต่างด้าว, สัญชาติ,
-  // เลขคำขอ, ใบอนุญาตทำงานเลขที่, ประเภทเอกสาร, วันนัด, เวลา, สถานที่, หมายเหตุ
+  // ── ทำความสะอาด: ห้ามให้ค่า field มี tab (จะทำลาย TSV) ──
+  const clean = (v: string) => v.replace(/\t/g, ' ').replace(/\n/g, ' ').trim() || DASH;
+
+  // คอลัมน์ตาม TSV_HEADER (13 ช่อง)
   return [
-    submitDate,
-    hasPhoto ? 'มีรูป' : 'ไม่มีรูป',
-    employer,
-    name,
-    alienId,
-    nationality,
-    reqNo,
-    workPermit,
-    docType,
-    apptDate,
-    apptTime,
-    place,
-    note,
+    clean(submitDate), clean(hasPhoto ? 'มีรูป' : 'ไม่มีรูป'),
+    clean(employer),   clean(name),
+    clean(alienId),    clean(nationality),
+    clean(reqNo),      clean(workPermit),
+    clean(docType),    clean(apptDate),
+    clean(apptTime),   clean(place),
+    clean(note),
   ];
 }
 
-/** สร้าง TSV เต็ม (header + 1 แถว) จาก OCR text */
+/**
+ * สร้าง TSV (header + 1 data row) จาก OCR text
+ * ใช้ tab จริงคั่น — copy วาง Excel แล้วช่องตรง
+ */
 function ocrToTsv(ocrText: string, hasPhoto: boolean): string {
   const row = parseOcrToRow(ocrText, hasPhoto);
-  return TSV_HEADER + '\n' + row.join('\t');
+  // กันค่า undefined/null ก่อน join (defense)
+  return TSV_HEADER + '\n' + row.map(v => v ?? '-').join('\t');
+}
+
+/**
+ * ส่ง TSV text กลับ LINE โดยแบ่งข้อความถ้ายาวเกิน limit
+ * ตัดที่ขอบแถว (ไม่ตัดกลางแถว) — แต่ละส่วนยัง copy Excel ได้
+ */
+async function replyTsv(
+  replyToken: string, tsv: string, lineToken: string,
+): Promise<void> {
+  const LIMIT = 4800;
+  if (tsv.length <= LIMIT) {
+    await replyLineText(replyToken, tsv, lineToken);
+    return;
+  }
+  // แบ่งตามแถว
+  const rows  = tsv.split('\n');
+  const header = rows[0];
+  const parts: string[] = [];
+  let cur = header;
+  for (let i = 1; i < rows.length; i++) {
+    const candidate = cur + '\n' + rows[i];
+    if (candidate.length > LIMIT && cur !== header) {
+      parts.push(cur);
+      cur = header + '\n' + rows[i]; // header นำทุกส่วน
+    } else {
+      cur = candidate;
+    }
+  }
+  if (cur !== header) parts.push(cur);
+
+  if (parts.length === 1) {
+    await replyLineText(replyToken, parts[0], lineToken);
+    return;
+  }
+  // LINE reply รองรับ 5 messages ต่อครั้ง — ส่งส่วนแรก reply, ส่วนที่เหลือ push
+  // ในรอบนี้ตัดแค่ส่วนแรก (reply) พร้อมแจ้งว่ายาว
+  const first = `ตาราง Excel ส่วน 1/${parts.length}:\n\n${parts[0]}`;
+  await replyLineText(replyToken, first, lineToken);
+  // ส่งส่วนที่เหลือโดยใช้ push message ถ้ามี groupId — รอบนี้แค่ตอบส่วนแรก
+  console.log(`[line-ai-excel] TSV too long, only first part sent (${parts.length} total)`);
 }
 
 /**
@@ -672,8 +729,9 @@ function ocrToTsv(ocrText: string, hasPhoto: boolean): string {
 async function runDocAiOnBatch(
   cfg: DocAiConfig,
   images: { bytes: Uint8Array; contentType: string }[],
+  userRotationsCW: number[] = [],
 ): Promise<string> {
-  const { pdf, pages } = await buildPdfFromImages(images);
+  const { pdf, pages } = await buildPdfFromImages(images, userRotationsCW);
   console.log(`[line-ai-excel] Document AI input PDF | pages=${pages} bytes=${pdf.length}`);
   if (pages === 0) throw new Error('IMAGE_LOAD_FAILED');
   return await runDocumentAiOcr(cfg, pdf, 'application/pdf');
@@ -820,12 +878,13 @@ function drawImageOnPage(
 
 /**
  * รวมรูปหลายใบเป็น PDF เดียว — 1 รูป = 1 หน้า A4 แนวตั้ง
- * auto-rotate ตาม EXIF Orientation (JPEG เท่านั้น)
+ * userRotationsCW: การหมุน CW จาก DB (0/90/180/270) — override EXIF auto-detect
+ * ลำดับ: auto EXIF (JPEG) + user CW → combined CCW สำหรับ pdf-lib
  * fit รูปในกรอบ (รักษาสัดส่วน, ไม่ crop), จัดกึ่งกลาง, พื้นหลังขาว
- * คืน Uint8Array ของ PDF + จำนวนหน้าที่ embed สำเร็จ
  */
 async function buildPdfFromImages(
   images: { bytes: Uint8Array; contentType: string }[],
+  userRotationsCW: number[] = [],
 ): Promise<{ pdf: Uint8Array; pages: number }> {
   const doc = await PDFDocument.create();
   let pages = 0;
@@ -854,16 +913,18 @@ async function buildPdfFromImages(
       continue;
     }
 
-    // ─ auto-rotate EXIF (JPEG only; PNG default = 0) ─
+    // ─ combine EXIF + user rotation ─
+    // ถ้า LINE ตัด EXIF → exifOrient=1 → exifCCW=0 → ใช้ user rotation อย่างเดียว
     const exifOrient = kind === 'jpg' ? readJpegExifOrientation(img.bytes) : 1;
-    const rotateCCW  = exifToDegreesCCW(exifOrient);
-    if (exifOrient !== 1) {
-      console.log(`[line-ai-excel] img[${idx}] EXIF orient=${exifOrient} → rotate ${rotateCCW}° CCW`);
-    }
+    const exifCCW    = exifToDegreesCCW(exifOrient);          // CCW จาก EXIF
+    const userCW     = userRotationsCW[idx] ?? 0;             // CW จาก user command
+    const userCCW    = (360 - userCW) % 360;                  // แปลง user CW → CCW
+    const totalCCW   = (exifCCW + userCCW) % 360;             // รวม: EXIF + user
+    console.log(`[line-ai-excel] img[${idx}] EXIF=${exifCCW}°CCW userCW=${userCW}° → totalCCW=${totalCCW}°`);
 
-    // ─ วาดบนหน้า A4 พร้อม auto-rotate ─
+    // ─ วาดบนหน้า A4 ─
     const page = doc.addPage([A4_W, A4_H]);
-    drawImageOnPage(page, embedded, (opts) => page.drawImage(embedded, opts), rotateCCW, idx);
+    drawImageOnPage(page, embedded, (opts) => page.drawImage(embedded, opts), totalCCW, idx);
     pages++;
   }
 
@@ -951,34 +1012,45 @@ async function handleImage(
  */
 async function loadLatestBatchImages(
   url: string, key: string, groupId: string,
-): Promise<{ batchId: string | null; images: { bytes: Uint8Array; contentType: string }[] }> {
+): Promise<{
+  batchId: string | null;
+  fileIds: string[];                                    // id ของแต่ละ file (ใช้ update rotation)
+  images: { bytes: Uint8Array; contentType: string }[];
+  rotationsCW: number[];                                // rotation_deg จาก DB (CW degrees)
+}> {
   const batch = await findLatestCollectingBatch(url, key, groupId);
-  if (!batch) return { batchId: null, images: [] };
+  if (!batch) return { batchId: null, fileIds: [], images: [], rotationsCW: [] };
   const batchId = batch.id as string;
 
   const files = await dbSelect(
     url, key,
     `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc` +
-    `&select=storage_path,mime_type`,
+    `&select=id,storage_path,mime_type,rotation_deg`,
   );
   console.log(`[line-ai-excel] batch=${batchId} | file_records=${files.length}`);
 
   const images: { bytes: Uint8Array; contentType: string }[] = [];
+  const fileIds: string[] = [];
+  const rotationsCW: number[] = [];
+
   for (let fi = 0; fi < files.length; fi++) {
     const f = files[fi];
     const storagePath = f.storage_path as string;
     const storedMime  = (f.mime_type as string) || 'image/jpeg';
+    const rotCW       = typeof f.rotation_deg === 'number' ? f.rotation_deg : 0;
     try {
       const got = await downloadFromStorage(url, key, storagePath);
       const mimeType = storedMime.startsWith('image/') ? storedMime : got.contentType;
-      console.log(`[line-ai-excel] img[${fi}] path=${storagePath} bytes=${got.bytes.length} mime=${mimeType}`);
+      console.log(`[line-ai-excel] img[${fi}] path=${storagePath} bytes=${got.bytes.length} rot=${rotCW}°CW`);
       images.push({ bytes: got.bytes, contentType: mimeType });
+      fileIds.push(f.id as string);
+      rotationsCW.push(rotCW);
     } catch (e) {
       console.warn('[line-ai-excel] storage fetch failed | path=' + storagePath + ':',
         e instanceof Error ? e.message : e);
     }
   }
-  return { batchId, images };
+  return { batchId, fileIds, images, rotationsCW };
 }
 
 /** คำสั่ง text ในกลุ่ม control */
@@ -1005,11 +1077,18 @@ async function handleText(
       [
         'วิธีใช้:',
         'ส่งรูปเอกสารหลายใบ แล้วเลือก:',
-        '"อ่าน" = OCR แล้วสรุปเป็นตาราง Excel',
-        '"ocr" = อ่านข้อความดิบจากเอกสาร',
-        '"pdf" = รวมรูปเป็นไฟล์ PDF เดียว',
-        '"รายการ" = ดูจำนวนรูปในชุดล่าสุด',
-        '"ล้าง" = เริ่มชุดใหม่',
+        '"อ่าน"    = OCR แล้วสรุปเป็นตาราง Excel (TSV)',
+        '"ocr"     = อ่านข้อความดิบจากเอกสาร',
+        '"pdf"     = รวมรูปเป็นไฟล์ PDF เดียว',
+        '"รายการ"  = ดูจำนวนรูปและการหมุนแต่ละหน้า',
+        '"ล้าง"    = เริ่มชุดใหม่',
+        '',
+        'ปรับการหมุนรูปแต่ละหน้า:',
+        '"หมุน 1 ขวา"     = หมุนหน้า 1 CW 90°',
+        '"หมุน 1 ซ้าย"    = หมุนหน้า 1 CCW 90°',
+        '"หมุน 1 กลับหัว" = หมุนหน้า 1 180°',
+        '"หมุน 1 ตรง"     = reset หน้า 1 เป็น 0°',
+        'แล้ว "pdf" ใหม่เพื่อสร้าง PDF ที่หมุนแล้ว',
       ].join('\n'),
       lineToken,
     );
@@ -1019,17 +1098,33 @@ async function handleText(
   // ─── รายการ ───
   if (text === 'รายการ' || cmd === 'list') {
     const batch = await findLatestCollectingBatch(url, key, groupId);
-    const count = batch ? (batch.image_count as number) || 0 : 0;
-    if (!batch || count === 0) {
+    if (!batch) {
       await replyLineText(replyToken, 'ยังไม่มีรูปในชุดล่าสุด กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
     }
+    const batchId = batch.id as string;
+    const files = await dbSelect(
+      url, key,
+      `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc&select=id,rotation_deg`,
+    );
+    const count = files.length;
+    if (count === 0) {
+      await replyLineText(replyToken, 'ยังไม่มีรูปในชุดล่าสุด กรุณาส่งรูปเอกสารก่อน', lineToken);
+      return;
+    }
+    const pageLines = files.map((f, i) => {
+      const rot = typeof f.rotation_deg === 'number' ? f.rotation_deg : 0;
+      return `หน้า ${i + 1}: ${rot}°${rot === 0 ? '' : ' (หมุนแล้ว)'}`;
+    });
     await replyLineText(
       replyToken,
       [
         `ชุดล่าสุด: ${count} รูป`,
-        'พิมพ์ "อ่าน" เพื่อให้ AI อ่านชุดนี้',
-        'พิมพ์ "ล้าง" เพื่อล้างชุดนี้',
+        ...pageLines,
+        '',
+        'พิมพ์ "pdf" เพื่อสร้าง PDF',
+        'พิมพ์ "อ่าน" เพื่อสรุป Excel',
+        'พิมพ์ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อแก้ทิศรูป',
       ].join('\n'),
       lineToken,
     );
@@ -1051,23 +1146,74 @@ async function handleText(
     return;
   }
 
+  // ─── หมุน N ทิศ — "หมุน 1 ขวา" / "rotate 1 right" ─────────────────────────
+  {
+    // รองรับ: หมุน {N} {ขวา|ซ้าย|กลับหัว|ตรง} / rotate {N} {right|left|180|reset}
+    const rotM =
+      text.match(/^หมุน\s*(\d+)\s*(ขวา|ซ้าย|กลับหัว|ตรง)$/i) ||
+      text.match(/^rotate\s+(\d+)\s+(right|left|180|reset)$/i);
+
+    if (rotM) {
+      const pageNum    = parseInt(rotM[1], 10);
+      const dirRaw     = rotM[2].toLowerCase();
+      // map → CW degrees (0/90/180/270)
+      const rotCW =
+        dirRaw === 'ขวา'    || dirRaw === 'right' ? 90  :
+        dirRaw === 'ซ้าย'   || dirRaw === 'left'  ? 270 :
+        dirRaw === 'กลับหัว'|| dirRaw === '180'   ? 180 :
+        0; // ตรง / reset
+
+      // ดึง files ของ batch ล่าสุด
+      const batch = await findLatestCollectingBatch(url, key, groupId);
+      if (!batch) {
+        await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องหมุน กรุณาส่งรูปก่อน', lineToken);
+        return;
+      }
+      const batchId = batch.id as string;
+      const files = await dbSelect(
+        url, key,
+        `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc&select=id`,
+      );
+      if (pageNum < 1 || pageNum > files.length) {
+        await replyLineText(
+          replyToken,
+          `ไม่พบหน้าที่ ${pageNum} (มีทั้งหมด ${files.length} หน้า)`,
+          lineToken,
+        );
+        return;
+      }
+      const fileId = files[pageNum - 1].id as string;
+      await dbUpdate(
+        url, key, 'line_ai_excel_files', `id=eq.${fileId}`,
+        { rotation_deg: rotCW },
+      );
+      const dirLabel =
+        rotCW === 90  ? '90° (ขวา)' :
+        rotCW === 270 ? '270° (ซ้าย)' :
+        rotCW === 180 ? '180° (กลับหัว)' : '0° (ตรง)';
+      await replyLineText(
+        replyToken,
+        `หมุนหน้า ${pageNum} เป็น ${dirLabel} แล้ว\nพิมพ์ "pdf" เพื่อสร้าง PDF ใหม่`,
+        lineToken,
+      );
+      return;
+    }
+  }
+
   // ─── ocr / OCR / อ่านดิบ ──────────────────────────────────────────────────
-  // OCR ด้วย Document AI → ตอบข้อความดิบ (ไม่สรุปเป็นตาราง)
+  // OCR ด้วย Document AI → ตอบข้อความดิบ (ใช้ rotation ล่าสุดจาก DB)
   if (cmd === 'ocr' || text === 'อ่านดิบ') {
     if (!docAi) {
-      console.error('[line-ai-excel] MISSING_DOCUMENT_AI_CONFIG');
       await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
       return;
     }
-    const { batchId, images } = await loadLatestBatchImages(url, key, groupId);
+    const { batchId, images, rotationsCW } = await loadLatestBatchImages(url, key, groupId);
     if (!batchId || images.length === 0) {
       await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับ OCR กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
     }
-
     try {
-      const ocrText = await runDocAiOnBatch(docAi, images);
-      // บันทึก raw OCR
+      const ocrText = await runDocAiOnBatch(docAi, images, rotationsCW);
       try {
         await dbInsert(url, key, 'line_ai_excel_results', {
           batch_id: batchId,
@@ -1078,7 +1224,8 @@ async function handleText(
         console.warn('[line-ai-excel] save ocr result failed:', e instanceof Error ? e.message : e);
       }
       const reply = ocrText.length > 4500
-        ? `ข้อความ OCR (${ocrText.length} ตัวอักษร, แสดงช่วงแรก):\n\n` + ocrText.slice(0, 4500) + '\n\n... (ยาวเกิน ตัดบางส่วน)'
+        ? `ข้อความ OCR (${ocrText.length} ตัวอักษร, แสดงช่วงแรก):\n\n` +
+          ocrText.slice(0, 4500) + '\n\n... (ยาวเกิน ตัดบางส่วน)'
         : `ข้อความ OCR:\n\n${ocrText}`;
       await replyLineText(replyToken, reply, lineToken);
     } catch (e) {
@@ -1088,16 +1235,15 @@ async function handleText(
   }
 
   // ─── อ่าน / read ──────────────────────────────────────────────────────────
-  // Document AI OCR → สรุปเป็น TSV ด้วย rule/regex (ไม่เรียก Gemini)
+  // Document AI OCR (ใช้ rotation ล่าสุด) → สรุปเป็น TSV copy วาง Excel ได้
   if (text === 'อ่าน' || cmd === 'read') {
     if (!docAi) {
-      console.error('[line-ai-excel] MISSING_DOCUMENT_AI_CONFIG');
       await replyLineText(replyToken, 'OCR อ่านไม่สำเร็จ: MISSING_DOCUMENT_AI_CONFIG', lineToken);
       return;
     }
-    console.log(`[line-ai-excel] อ่าน cmd (Document AI) | group=${groupId}`);
+    console.log(`[line-ai-excel] อ่าน cmd | group=${groupId}`);
 
-    const { batchId, images } = await loadLatestBatchImages(url, key, groupId);
+    const { batchId, images, rotationsCW } = await loadLatestBatchImages(url, key, groupId);
     if (!batchId) {
       await replyLineText(replyToken, 'ยังไม่มีรูปให้อ่าน กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
@@ -1108,24 +1254,21 @@ async function handleText(
       return;
     }
 
-    // มีรูปคนในชุดไหม → ใช้กำหนดคอลัมน์ "รูปถ่าย"
-    // เกณฑ์เบื้องต้น: ถือว่ามีรูปเสมอเมื่อมี image ในชุด (เอกสารแรงงานมักมีรูปติดเอกสาร)
+    // เอกสารแรงงานมักมีรูปถ่ายติดเอกสาร — ถือว่ามีรูปถ้ามี image ในชุด
     const hasPhoto = images.length > 0;
 
     let ocrText = '';
     try {
-      ocrText = await runDocAiOnBatch(docAi, images);
+      ocrText = await runDocAiOnBatch(docAi, images, rotationsCW);
       console.log(`[line-ai-excel] OCR OK | chars=${ocrText.length}`);
     } catch (e) {
       await replyLineText(replyToken, mapDocAiError(e), lineToken);
       return;
     }
 
-    // สรุปเป็น TSV ด้วย rule/regex
     const tsv = ocrToTsv(ocrText, hasPhoto);
     console.log(`[line-ai-excel] parsed TSV | chars=${tsv.length}`);
 
-    // บันทึกผล + mark batch read
     const nowIso = new Date().toISOString();
     try {
       await dbInsert(url, key, 'line_ai_excel_results', {
@@ -1141,84 +1284,54 @@ async function handleText(
       console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
     }
 
-    const reply = tsv.length > 4800
-      ? tsv.slice(0, 4800) + '\n\n... (ข้อมูลยาวเกิน ตัดบางส่วน — copy ส่วนที่เห็นได้เลย)'
-      : tsv;
-    await replyLineText(replyToken, reply, lineToken);
+    // ส่ง TSV — แบ่งข้อความถ้ายาวเกิน (ตัดที่ขอบแถว ห้ามตัดกลางแถว)
+    await replyTsv(replyToken, tsv, lineToken);
     return;
   }
 
   // ─── pdf / ทำpdf / ทำ PDF ───
+  // ─── pdf / ทำpdf / ทำ PDF ───
   // normalize: เอา space ออก + lowercase → 'pdf' หรือ 'ทำpdf'
-  const cmdNoSpace = text.replace(/\s+/g, '').toLowerCase();
-  if (cmd === 'pdf' || cmdNoSpace === 'pdf' || cmdNoSpace === 'ทำpdf') {
-    const batch = await findLatestCollectingBatch(url, key, groupId);
-    if (!batch) {
-      await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ PDF กรุณาส่งรูปเอกสารก่อน', lineToken);
-      return;
-    }
-    const batchId = batch.id as string;
-    const files = await dbSelect(
-      url, key,
-      `line_ai_excel_files?batch_id=eq.${batchId}&order=created_at.asc` +
-      `&select=storage_path,mime_type`,
-    );
-    if (files.length === 0) {
-      await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ PDF กรุณาส่งรูปเอกสารก่อน', lineToken);
-      return;
-    }
-
-    // ดึงรูปทั้งหมดตามลำดับเวลา (created_at.asc) → เรียงหน้า PDF ตามลำดับที่ส่ง
-    const images: { bytes: Uint8Array; contentType: string }[] = [];
-    for (const f of files) {
-      try {
-        const got = await downloadFromStorage(url, key, f.storage_path as string);
-        images.push(got);
-      } catch (e) {
-        console.warn('[line-ai-excel] storage fetch failed:', e instanceof Error ? e.message : e);
-      }
-    }
-    if (images.length === 0) {
-      await replyLineText(replyToken, 'ไม่สามารถโหลดรูปจากที่เก็บได้ กรุณาส่งรูปใหม่', lineToken);
-      return;
-    }
-
-    // สร้าง PDF + อัปโหลด + signed URL
-    try {
-      const { pdf, pages } = await buildPdfFromImages(images);
-      if (pages === 0) {
-        await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+  {
+    const cmdNoSpace = text.replace(/\s+/g, '').toLowerCase();
+    if (cmd === 'pdf' || cmdNoSpace === 'pdf' || cmdNoSpace === 'ทำpdf') {
+      // ใช้ loadLatestBatchImages เพื่อดึง rotations ล่าสุดจาก DB
+      const { batchId, images, rotationsCW } = await loadLatestBatchImages(url, key, groupId);
+      if (!batchId || images.length === 0) {
+        await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ PDF กรุณาส่งรูปเอกสารก่อน', lineToken);
         return;
       }
-      const pdfPath = `${PDF_PATH_PREFIX}/${batchId}.pdf`;
-      await uploadToStorage(url, key, pdfPath, pdf, 'application/pdf');
-      const signedUrl = await createSignedUrl(url, key, pdfPath, PDF_SIGNED_URL_SECONDS);
 
-      // บันทึกผลลง results (ใช้ตารางเดิม — เรียบง่าย)
+      // สร้าง PDF พร้อม rotation ล่าสุด + อัปโหลด + signed URL
       try {
-        await dbInsert(url, key, 'line_ai_excel_results', {
-          batch_id: batchId,
-          result_text: `PDF created: ${pdfPath} (${pages} pages)`,
-          raw_json: { type: 'pdf', path: pdfPath, pages, signed_url_seconds: PDF_SIGNED_URL_SECONDS },
-        });
+        const { pdf, pages } = await buildPdfFromImages(images, rotationsCW);
+        if (pages === 0) {
+          await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+          return;
+        }
+        const pdfPath = `${PDF_PATH_PREFIX}/${batchId}.pdf`;
+        await uploadToStorage(url, key, pdfPath, pdf, 'application/pdf');
+        const signedUrl = await createSignedUrl(url, key, pdfPath, PDF_SIGNED_URL_SECONDS);
+        try {
+          await dbInsert(url, key, 'line_ai_excel_results', {
+            batch_id: batchId,
+            result_text: `PDF created: ${pdfPath} (${pages} pages)`,
+            raw_json: { type: 'pdf', path: pdfPath, pages, rotations: rotationsCW },
+          });
+        } catch (e) {
+          console.warn('[line-ai-excel] save pdf result failed:', e instanceof Error ? e.message : e);
+        }
+        await replyLineText(
+          replyToken,
+          [`สร้าง PDF แล้ว`, `จำนวนหน้า: ${pages} หน้า`, `เปิดไฟล์: ${signedUrl}`].join('\n'),
+          lineToken,
+        );
       } catch (e) {
-        console.warn('[line-ai-excel] save pdf result failed:', e instanceof Error ? e.message : e);
+        console.error('[line-ai-excel] PDF error:', e instanceof Error ? e.message : e);
+        await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
       }
-
-      await replyLineText(
-        replyToken,
-        [
-          'สร้าง PDF แล้ว',
-          `จำนวนหน้า: ${pages} หน้า`,
-          `เปิดไฟล์: ${signedUrl}`,
-        ].join('\n'),
-        lineToken,
-      );
-    } catch (e) {
-      console.error('[line-ai-excel] PDF error:', e instanceof Error ? e.message : e);
-      await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+      return;
     }
-    return;
   }
 
   // คำสั่งอื่น — เงียบ (ไม่รบกวน)
