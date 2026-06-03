@@ -72,6 +72,42 @@ async function tryLockBatch(url: string, key: string, batchId: string): Promise<
   return Array.isArray(rows) && rows.length > 0;
 }
 
+/**
+ * ก่อน finalize: รวม collecting batch ซ้ำของ group+user (จาก album/race) เข้า canonical
+ *   - ย้าย file records ของ sibling → canonical (storage_path เดิม ใช้ต่อได้)
+ *   - cancel sibling → tryLockBatch รอบหลังจะ skip
+ * → กัน auto finalize ส่ง card หลายใบ
+ */
+async function mergeSiblingCollectingBatches(
+  url: string, key: string, canonicalId: string, groupId: string, userId: string | null,
+): Promise<void> {
+  let path =
+    `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
+    `&status=eq.collecting&id=neq.${encodeURIComponent(canonicalId)}&select=id`;
+  if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
+  try {
+    const siblings = await dbSelect(url, key, path);
+    if (siblings.length === 0) return;
+    console.log(`[finalize-due] merge ${siblings.length} sibling batch(es) → ${canonicalId}`);
+    for (const sib of siblings) {
+      const sibId = sib.id as string;
+      try {
+        await dbUpdate(url, key, 'line_ai_excel_files', `batch_id=eq.${encodeURIComponent(sibId)}`, {
+          batch_id: canonicalId,
+        });
+        await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${encodeURIComponent(sibId)}`, {
+          status: 'cancelled', updated_at: new Date().toISOString(),
+        });
+        console.log(`[finalize-due] merged batch ${sibId} → ${canonicalId}`);
+      } catch (e) {
+        console.warn(`[finalize-due] merge ${sibId}→${canonicalId} failed:`, e instanceof Error ? e.message : e);
+      }
+    }
+  } catch (e) {
+    console.warn('[finalize-due] mergeSiblingCollectingBatches failed:', e instanceof Error ? e.message : e);
+  }
+}
+
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 async function downloadFromStorage(url: string, key: string, path: string): Promise<{ bytes: Uint8Array; contentType: string }> {
   const res = await fetch(`${url}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
@@ -334,7 +370,8 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
   for (const batch of staleBatches) {
     const batchId = batch.id as string;
     const groupId = batch.group_id as string;
-    console.log(`[finalize-due] processing batch=${batchId} group=${groupId}`);
+    const userId  = (batch.user_id as string | null) ?? null;
+    console.log(`[finalize-due] processing batch=${batchId} group=${groupId} user=${userId ?? '-'}`);
 
     // Atomic lock
     const locked = await tryLockBatch(url, key, batchId);
@@ -342,6 +379,10 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
       console.log(`[finalize-due] batch=${batchId} already locked, skip`);
       continue;
     }
+
+    // safety net: รวม collecting batch ซ้ำของ group+user เข้า batch นี้ก่อนสร้างไฟล์
+    // → กัน album ที่ถูกแยก batch ส่ง card หลายใบ
+    await mergeSiblingCollectingBatches(url, key, batchId, groupId, userId);
 
     try {
       // [PDF-only mode] auto-rotate ปิดชั่วคราว — ไม่เรียก Document AI OCR เพื่อประหยัดค่า Google AI

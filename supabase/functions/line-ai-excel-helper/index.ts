@@ -307,6 +307,124 @@ async function findActiveBatch(
   return rows.length > 0 ? rows[0] : null;
 }
 
+/** list collecting batches ของ group+user ภายในหน้าต่างเวลา (เก่า→ใหม่) */
+async function listCollectingBatches(
+  url: string, key: string, groupId: string, userId: string | null,
+): Promise<Record<string, unknown>[]> {
+  const cutoff = new Date(Date.now() - BATCH_WINDOW_MS).toISOString();
+  let path =
+    `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
+    `&status=eq.collecting&last_image_at=gte.${encodeURIComponent(cutoff)}` +
+    `&order=created_at.asc,id.asc&select=id,image_count,created_at`;
+  if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
+  return await dbSelect(url, key, path);
+}
+
+/**
+ * รวม batch ที่ซ้ำ (จาก album/race) เข้า canonical:
+ *   - ย้าย file records ของ extra → canonical (storage_path เดิม ใช้ต่อได้)
+ *   - cancel extra batch
+ * idempotent: เรียกซ้ำได้ ไม่พัง
+ */
+async function mergeBatchesInto(
+  url: string, key: string, canonicalId: string, extraIds: string[],
+): Promise<void> {
+  for (const exId of extraIds) {
+    if (exId === canonicalId) continue;
+    try {
+      await dbUpdate(url, key, 'line_ai_excel_files', `batch_id=eq.${encodeURIComponent(exId)}`, {
+        batch_id: canonicalId,
+      });
+      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${encodeURIComponent(exId)}`, {
+        status: 'cancelled', updated_at: new Date().toISOString(),
+      });
+      console.log(`[line-ai-excel] merged batch ${exId} → ${canonicalId}`);
+    } catch (e) {
+      console.warn(`[line-ai-excel] merge ${exId}→${canonicalId} failed:`, e instanceof Error ? e.message : e);
+    }
+  }
+}
+
+/** อัปเดต image_count ของ batch จากจำนวน file จริง (กัน count เพี้ยนหลัง merge/race) */
+async function recountBatchImages(url: string, key: string, batchId: string): Promise<number> {
+  const files = await dbSelect(
+    url, key,
+    `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}&select=id`,
+  );
+  return files.length;
+}
+
+/**
+ * หา/สร้าง canonical collecting batch ของ group+user แบบกัน race:
+ *   - มี collecting batch อยู่แล้ว → ใช้ตัวเก่าสุดเป็น canonical, merge ตัวซ้ำเข้ามา
+ *   - ไม่มี → สร้างใหม่ แล้ว re-check กัน concurrent create (ถ้าแพ้ → ใช้ canonical ที่เก่ากว่า)
+ * คืน { batchId, wasCreated } — wasCreated=true เฉพาะผู้สร้าง canonical จริง (ใช้คุม ack ไม่ให้ซ้ำ)
+ */
+async function resolveCollectingBatch(
+  url: string, key: string, groupId: string, userId: string | null, nowIso: string,
+): Promise<{ batchId: string; wasCreated: boolean }> {
+  // 1) มี collecting batch อยู่แล้ว?
+  const existing = await listCollectingBatches(url, key, groupId, userId);
+  if (existing.length > 0) {
+    const canonicalId = existing[0].id as string;
+    if (existing.length > 1) {
+      const extraIds = existing.slice(1).map(b => b.id as string);
+      console.log(`[line-ai-excel] found ${existing.length} collecting batches → merge into ${canonicalId}`);
+      await mergeBatchesInto(url, key, canonicalId, extraIds);
+    }
+    console.log(`[line-ai-excel] append existing batch ${canonicalId} group=${groupId} user=${userId ?? '-'}`);
+    return { batchId: canonicalId, wasCreated: false };
+  }
+
+  // 2) ไม่มี → สร้างใหม่
+  const created = await dbInsert(
+    url, key, 'line_ai_excel_batches',
+    { group_id: groupId, user_id: userId, status: 'collecting', image_count: 0, last_image_at: nowIso },
+  );
+  const newId = created[0].id as string;
+  console.log(`[line-ai-excel] create new batch ${newId} group=${groupId} user=${userId ?? '-'} (no active batch)`);
+
+  // 3) re-check กัน concurrent create (album ยิงพร้อมกันหลาย instance)
+  const after = await listCollectingBatches(url, key, groupId, userId);
+  if (after.length > 1) {
+    const canonicalId = after[0].id as string;
+    const extraIds = after.slice(1).map(b => b.id as string);
+    if (canonicalId !== newId) {
+      // batch เราไม่ใช่ canonical → merge ทุกตัวที่ไม่ใช่ canonical (รวมของเรา) เข้า canonical
+      console.log(`[line-ai-excel] concurrent create detected → canonical=${canonicalId}, our=${newId} merged`);
+      await mergeBatchesInto(url, key, canonicalId, extraIds);
+      return { batchId: canonicalId, wasCreated: false };
+    }
+    // เราเป็น canonical → merge ตัวซ้ำที่เหลือเข้าเรา
+    console.log(`[line-ai-excel] concurrent create detected → we are canonical=${newId}`);
+    await mergeBatchesInto(url, key, newId, extraIds);
+  }
+  return { batchId: newId, wasCreated: true };
+}
+
+/**
+ * ก่อน finalize: รวม collecting batch ซ้ำของ group+user เข้า canonical แล้ว cancel ตัวอื่น
+ * → กัน auto finalize ส่ง card หลายใบจาก album ที่ถูกแยก batch
+ */
+async function mergeSiblingCollectingBatches(
+  url: string, key: string, canonicalId: string, groupId: string, userId: string | null,
+): Promise<void> {
+  let path =
+    `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
+    `&status=eq.collecting&id=neq.${encodeURIComponent(canonicalId)}&select=id`;
+  if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
+  try {
+    const siblings = await dbSelect(url, key, path);
+    if (siblings.length > 0) {
+      const ids = siblings.map(b => b.id as string);
+      console.log(`[line-ai-excel] finalize merge ${ids.length} sibling batch(es) → ${canonicalId}`);
+      await mergeBatchesInto(url, key, canonicalId, ids);
+    }
+  } catch (e) {
+    console.warn('[line-ai-excel] mergeSiblingCollectingBatches failed:', e instanceof Error ? e.message : e);
+  }
+}
+
 /** หา batch ล่าสุดของกลุ่ม+user ที่ collecting (ไม่จำกัดเวลา) — ใช้กับคำสั่ง ล้าง/จบ */
 async function findLatestCollectingBatch(
   url: string, key: string, groupId: string, userId: string | null,
@@ -1517,6 +1635,25 @@ function buildPdfExcelFlexMessage(pages: number, pdfUrl: string, xlsxUrl: string
   };
 }
 
+/** reply PDF+Excel Flex card (สำหรับคำสั่ง "จบ") — fallback text ถ้า Flex fail */
+async function replyPdfExcelFlex(
+  replyToken: string, pages: number, pdfUrl: string, xlsxUrl: string, lineToken: string,
+): Promise<void> {
+  const res = await fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+    body: JSON.stringify({ replyToken, messages: [buildPdfExcelFlexMessage(pages, pdfUrl, xlsxUrl)] }),
+  });
+  if (!res.ok) {
+    console.warn('[line-ai-excel] flex reply (pdf+xlsx) failed, fallback text:', res.status);
+    await replyLineText(
+      replyToken,
+      `เอกสาร PDF + Excel พร้อมแล้ว\nจำนวนรูป: ${pages} รูป\nPDF: ${pdfUrl}\nExcel: ${xlsxUrl}`,
+      lineToken,
+    );
+  }
+}
+
 /** push PDF+Excel Flex card */
 async function pushPdfExcelFlex(
   targetId: string, pages: number, pdfUrl: string, xlsxUrl: string, lineToken: string,
@@ -1573,6 +1710,11 @@ async function checkAndFinalizeStale(
       console.log(`[line-ai-excel] batch=${batchId} already locked, skip`);
       continue;
     }
+
+    // safety net: รวม collecting batch ซ้ำของ group+user เข้า batch นี้ก่อนสร้างไฟล์
+    // → กัน album ที่ถูกแยก batch ส่ง card หลายใบ
+    const userId = (batch.user_id as string | null) ?? null;
+    await mergeSiblingCollectingBatches(url, key, batchId, groupId, userId);
 
     try {
       // ── PDF (critical) ──
@@ -1655,36 +1797,16 @@ async function handleImage(
   // 1) ดาวน์โหลดรูปจาก LINE
   const { bytes, contentType } = await downloadLineContent(msgId, lineToken);
 
-  // 2) หา/สร้าง batch (แยก per user เพื่อไม่ปนชุดของคนละคน)
-  const existing = await findActiveBatch(url, key, groupId, userId);
-  let batchId: string;
-  let newCount: number;
-  let isFirstImage = false;
+  // 2) หา/สร้าง canonical batch แบบกัน race (album แยก batch / concurrent webhook)
   const nowIso = new Date().toISOString();
-
-  if (existing) {
-    batchId  = existing.id as string;
-    newCount = ((existing.image_count as number) || 0) + 1;
-    await dbUpdate(
-      url, key, 'line_ai_excel_batches', `id=eq.${batchId}`,
-      { image_count: newCount, last_image_at: nowIso, updated_at: nowIso },
-    );
-  } else {
-    const created = await dbInsert(
-      url, key, 'line_ai_excel_batches',
-      { group_id: groupId, user_id: userId, status: 'collecting', image_count: 1, last_image_at: nowIso },
-    );
-    batchId  = created[0].id as string;
-    newCount = 1;
-    isFirstImage = true;
-  }
+  const { batchId, wasCreated } = await resolveCollectingBatch(url, key, groupId, userId, nowIso);
 
   // 3) อัปโหลด Storage
   const ext  = extFromContentType(contentType);
   const path = `${groupId}/${batchId}/${msgId}.${ext}`;
   await uploadToStorage(url, key, path, bytes, contentType);
 
-  // 4) บันทึก file record (page_no จาก newCount — จะ reindex ใหม่ตาม line_event_ts ก่อนใช้)
+  // 4) บันทึก file record (page_no = approximate; ensurePageNumbers() จะ reindex ตาม line_event_ts)
   await dbInsert(
     url, key, 'line_ai_excel_files',
     {
@@ -1694,23 +1816,32 @@ async function handleImage(
       line_event_index:  eventIndex,    // index ใน events[] array — tiebreaker
       storage_path:      path,
       mime_type:         contentType,
-      page_no:           newCount,      // approximate; ensurePageNumbers() จะ fix race
+      page_no:           0,             // ensurePageNumbers() จะ fix
       rotation_deg:      0,
     },
   );
 
-  console.log(`[line-ai-excel] stored image | batch=${batchId} count=${newCount}`);
+  // 5) recount image_count จากไฟล์จริง (กันเพี้ยนหลัง merge/race) + อัปเดต last_image_at
+  const newCount = await recountBatchImages(url, key, batchId);
+  await dbUpdate(
+    url, key, 'line_ai_excel_batches', `id=eq.${batchId}`,
+    { image_count: newCount, last_image_at: nowIso, updated_at: nowIso },
+  );
 
-  // 5) reply เฉพาะรูปแรกของ batch (กันรก)
-  if (isFirstImage && ev.replyToken) {
+  console.log(`[line-ai-excel] stored image | group=${groupId} user=${userId ?? '-'} batch=${batchId} status=collecting count=${newCount} wasCreated=${wasCreated}`);
+
+  // 6) reply ack เฉพาะผู้สร้าง canonical batch (รูปแรกจริง) — กัน ack ซ้ำจาก album เดียวกัน
+  if (wasCreated && ev.replyToken) {
     await replyLineText(
       ev.replyToken,
-      'รับรูปแล้ว ส่งเพิ่มได้เลยค่ะ\nระบบจะสร้าง PDF / Excel \nอัตโนมัติหลังไม่มีรูปใหม่ประมาณ 30-90 วินาที\n\nสร้างทันที พิมพ์ "pdf" หรือ "Excel"\nถ้ารูปหมุนผิด ใช้ "หมุน N ขวา/ซ้าย"\nขอบคุณค่ะ',
+      'รับรูปแล้ว ส่งเพิ่มได้เลยค่ะ\nระบบจะสร้าง PDF + Excel\nอัตโนมัติหลังไม่มีรูปใหม่\nประมาณ 30-90 วินาที\n\n(กรณีสร้างทันทีก่อน90วิ พิมพ์ "จบ"\nกรณีหมุนรูป พิมพ์ "หมุน เลขรูป\nขวา/ซ้าย")\nขอบคุณค่ะ 🙏🏻',
       lineToken,
     );
+  } else if (!wasCreated) {
+    console.log(`[line-ai-excel] suppress duplicate ack | batch=${batchId} (append, not first)`);
   }
 
-  // 6) ตรวจ stale batches แบบ fire-and-forget (ไม่ block webhook)
+  // 7) ตรวจ stale batches แบบ fire-and-forget (ไม่ block webhook)
   {
     const staleCheck = checkAndFinalizeStale(url, key, lineToken);
     try {
@@ -1958,7 +2089,7 @@ async function handleText(
     return;
   }
 
-  // ─── จบ / done / finish — ปิด batch + สร้าง PDF ทันที ────────────────────
+  // ─── จบ / done / finish — ปิด batch + สร้าง PDF + Excel ทันที (card เดียว) ──
   if (text === 'จบ' || cmd === 'done' || cmd === 'finish') {
     const batch = await findLatestCollectingBatch(url, key, groupId, userId);
     if (!batch) {
@@ -1969,10 +2100,11 @@ async function handleText(
     // Lock atomic: collecting → finalizing
     const locked = await tryLockBatch(url, key, batchId);
     if (!locked) {
-      await replyLineText(replyToken, 'ระบบกำลังสร้าง PDF อยู่ กรุณารอสักครู่', lineToken);
+      await replyLineText(replyToken, 'ระบบกำลังสร้างไฟล์อยู่ กรุณารอสักครู่', lineToken);
       return;
     }
     try {
+      // ── PDF (critical) ──
       const result = await buildAndUploadPdf(url, key, batchId);
       if (!result) {
         await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
@@ -1981,27 +2113,38 @@ async function handleText(
         await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ ไม่พบรูปในชุด', lineToken);
         return;
       }
-      const { pages, pdfPath, signedUrl } = result;
+      const { pages, pdfPath, signedUrl: pdfUrl } = result;
       const nowIso = new Date().toISOString();
+      // mark finalized ทันที — กัน auto ส่งซ้ำ
       await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
-        status: 'finalized', finalized_at: nowIso, pdf_path: pdfPath, pdf_url: signedUrl, updated_at: nowIso,
+        status: 'finalized', finalized_at: nowIso, pdf_path: pdfPath, pdf_url: pdfUrl, updated_at: nowIso,
       });
+
+      // ── Excel (non-critical) — fail ไม่ทำให้ PDF พัง ──
+      const xlsxResult = await buildAndUploadExcel(url, key, batchId);
+
       try {
         await dbInsert(url, key, 'line_ai_excel_results', {
           batch_id: batchId,
-          result_text: `PDF: ${pdfPath} (${pages}p)`,
-          raw_json: { type: 'pdf_done', path: pdfPath, pages },
+          result_text: `PDF+Excel done: ${pdfPath} (${pages}p) xlsx=${xlsxResult ? 'ok' : 'fail'}`,
+          raw_json: { type: 'pdf_excel_done', path: pdfPath, pages, xlsx: xlsxResult?.xlsxPath ?? null },
         });
       } catch (e) {
         console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
       }
-      await replyPdfFlex(replyToken, pages, signedUrl, lineToken);
+
+      // ── ส่ง card เดียว: PDF+Excel ถ้า Excel สำเร็จ, PDF-only ถ้า Excel fail ──
+      if (xlsxResult) {
+        await replyPdfExcelFlex(replyToken, pages, pdfUrl, xlsxResult.signedUrl, lineToken);
+      } else {
+        await replyPdfFlex(replyToken, pages, pdfUrl, lineToken);
+      }
     } catch (e) {
       console.error('[line-ai-excel] จบ PDF error:', e instanceof Error ? e.message : e);
       await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
         status: 'collecting', updated_at: new Date().toISOString(),
       }).catch(() => {});
-      await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+      await replyLineText(replyToken, 'สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่', lineToken);
     }
     return;
   }
