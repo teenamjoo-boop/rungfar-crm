@@ -13,7 +13,7 @@ import { applyAutoRotateToBatch, effectiveRotationCW } from '../_shared/auto-rot
 const STORAGE_BUCKET       = 'line-ai-excel-intake';
 const PDF_PATH_PREFIX      = 'line-ai-excel-pdf';
 const PDF_SIGNED_URL_SECS  = 30 * 24 * 60 * 60; // 30 วัน
-const AUTO_FINALIZE_MS     = 45 * 1000;           // 45 วินาที
+const AUTO_FINALIZE_MS     = 30 * 1000;           // 30 วินาที (idle threshold — cron ยิงทุก 1 นาที → รอจริง 30–90 วิ)
 // ต้องตรงกับ FILE_PAGE_ORDER ใน line-ai-excel-helper เสมอ
 const FILE_PAGE_ORDER =
   'line_event_ts.asc.nullslast,' +
