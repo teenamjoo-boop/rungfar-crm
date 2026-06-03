@@ -1490,12 +1490,11 @@ function buildPdfExcelFlexMessage(pages: number, pdfUrl: string, xlsxUrl: string
                   { type: 'text', text: `จำนวนรูป: ${pages} รูป`, size: 'xs', color: '#777777' },
                 ],
               },
-              // Excel icon (ขวา) — กล่องเขียว "XLS"
+              // Excel icon (ขวา) — รูป Excel
               {
-                type: 'box', layout: 'vertical', width: '44px', height: '44px',
-                cornerRadius: '8px', backgroundColor: '#1D6F42',
-                justifyContent: 'center', alignItems: 'center', flex: 0,
-                contents: [{ type: 'text', text: 'XLS', color: '#FFFFFF', weight: 'bold', size: 'xs', align: 'center' }],
+                type: 'image',
+                url: 'https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2009_14_20%20PM.png',
+                size: '44px', aspectRatio: '1:1', aspectMode: 'cover', flex: 0,
               },
             ],
           },
@@ -2463,7 +2462,7 @@ async function handleText(
                 contents: [
                   {
                     type: 'image',
-                    url: 'https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2002_52_40%20PM.png',
+                    url: 'https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2009_14_20%20PM.png',
                     size: '44px', aspectRatio: '1:1', aspectMode: 'cover', flex: 0,
                   },
                   {
