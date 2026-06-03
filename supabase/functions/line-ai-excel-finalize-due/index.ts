@@ -193,19 +193,55 @@ async function buildPdfFromImages(
 async function pushPdfFlex(targetId: string, pages: number, signedUrl: string, lineToken: string): Promise<void> {
   const flexMsg = {
     type: 'flex',
-    altText: `สร้าง PDF แล้ว (${pages} รูป)`,
+    altText: `📄 เอกสาร PDF พร้อมแล้ว (${pages} รูป)`,
     contents: {
       type: 'bubble',
       body: {
-        type: 'box', layout: 'vertical',
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FFFFFF',
+        paddingAll: '20px',
         contents: [
-          { type: 'text', text: 'สร้าง PDF แล้ว', weight: 'bold', size: 'lg' },
-          { type: 'text', text: `จำนวนรูป: ${pages} รูป`, size: 'md', color: '#666666', margin: 'sm' },
+          {
+            type: 'box',
+            layout: 'horizontal',
+            spacing: 'md',
+            alignItems: 'center',
+            contents: [
+              {
+                type: 'box',
+                layout: 'vertical',
+                width: '52px',
+                height: '52px',
+                cornerRadius: '8px',
+                backgroundColor: '#E53935',
+                justifyContent: 'center',
+                alignItems: 'center',
+                contents: [{ type: 'text', text: 'PDF', color: '#FFFFFF', weight: 'bold', size: 'sm', align: 'center' }],
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                flex: 1,
+                contents: [
+                  { type: 'text', text: '📄 เอกสาร PDF พร้อมแล้ว', weight: 'bold', size: 'md', color: '#333333', wrap: true },
+                  { type: 'text', text: `จำนวนรูป: ${pages} รูป`, size: 'sm', color: '#777777', margin: 'xs' },
+                  { type: 'text', text: 'ชุดเอกสาร PDF', size: 'xs', color: '#999999' },
+                ],
+              },
+            ],
+          },
+          { type: 'separator', margin: 'lg', color: '#E5E5E5' },
+          { type: 'text', text: 'กดปุ่มด้านล่างเพื่อเปิดไฟล์', size: 'xs', color: '#AAAAAA', align: 'center', margin: 'md' },
         ],
       },
       footer: {
-        type: 'box', layout: 'vertical',
-        contents: [{ type: 'button', style: 'primary', action: { type: 'uri', label: 'เปิด PDF', uri: signedUrl } }],
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FFFFFF',
+        paddingAll: '16px',
+        paddingTop: '4px',
+        contents: [{ type: 'button', style: 'primary', color: '#E53935', height: 'sm', action: { type: 'uri', label: 'เปิด PDF', uri: signedUrl } }],
       },
     },
   };
@@ -252,12 +288,14 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
     }
 
     try {
-      // auto-rotate (cache-aware) ก่อนสร้าง PDF — error/ไม่มี config → no-op
-      try {
-        await applyAutoRotateToBatch(url, key, batchId, { force: false });
-      } catch (e) {
-        console.warn('[finalize-due] auto-rotate skipped:', e instanceof Error ? e.message : e);
-      }
+      // [PDF-only mode] auto-rotate ปิดชั่วคราว — ไม่เรียก Document AI OCR เพื่อประหยัดค่า Google AI
+      // ถ้าต้องการเปิดใหม่: uncomment บล็อก try/catch ด้านล่าง และ comment บรรทัด log
+      // try {
+      //   await applyAutoRotateToBatch(url, key, batchId, { force: false });
+      // } catch (e) {
+      //   console.warn('[finalize-due] auto-rotate skipped:', e instanceof Error ? e.message : e);
+      // }
+      console.log(`[finalize-due] PDF-only mode: auto-rotate skipped batch=${batchId}`);
 
       // Load files (รวม rotation columns) ตาม canonical order
       const files = await dbSelect(

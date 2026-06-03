@@ -43,9 +43,8 @@ const DOC_KEYWORDS = [
 
 // threshold สำหรับตัดสินใจหมุน
 const MIN_BEST_SCORE   = 25;   // ถ้าคะแนนดีสุดยังต่ำกว่านี้ = OCR อ่านอะไรไม่ค่อยได้ → ไม่หมุน
-const WIN_MARGIN       = 1.25; // คะแนนดีสุดต้องชนะอันดับสองอย่างน้อย 25%
-const UPRIGHT_TEXT_LEN = 80;   // 0° ถ้าได้ข้อความยาวพอ + keyword → ถือว่า upright (early exit)
-const UPRIGHT_KEYWORDS = 2;
+const WIN_MARGIN       = 1.20; // คะแนนดีสุดต้องชนะอันดับสองอย่างน้อย 20%
+// (ไม่มี early-exit แล้ว — ตรวจทุก candidate เพื่อกัน 0° ชนะด้วยข้อความเอียงน้อย)
 
 export interface DocAiConfig {
   projectId:   string;
@@ -251,38 +250,43 @@ async function detectBestRotationCW(
 
   const candidates = [0, 90, 180, 270];
   const results: { cw: number; s: TextScore }[] = [];
+  let ocrErrors = 0;
 
+  // ตรวจทุก candidate เสมอ (ไม่มี early-exit) เพื่อกัน 0° ชนะด้วยข้อความเอียงเล็กน้อย
   for (const cw of candidates) {
     let text = '';
     try {
       const jpeg = await rotateCwToJpeg(base, cw);
       text = await ocrImage(cfg, accessToken, jpeg);
     } catch (e) {
-      console.warn(`[auto-rotate] OCR candidate ${cw}° failed:`, e instanceof Error ? e.message : e);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`[auto-rotate] OCR candidate ${cw}° failed: ${msg}`);
+      ocrErrors++;
       results.push({ cw, s: { score: -1, textLen: 0, keywordHits: 0 } });
       continue;
     }
     const s = scoreText(text);
     console.log(`[auto-rotate] cand cw=${cw}° score=${s.score.toFixed(1)} len=${s.textLen} kw=${s.keywordHits}`);
     results.push({ cw, s });
+  }
 
-    // early-exit: 0° อ่านชัดอยู่แล้ว → ประหยัด ไม่ต้องลองมุมอื่น
-    if (cw === 0 && s.textLen >= UPRIGHT_TEXT_LEN && s.keywordHits >= UPRIGHT_KEYWORDS) {
-      return { rotationDeg: 0, confidence: 0.9, reason: 'upright_early_exit' };
-    }
+  // ทุก candidate OCR ล้มเหลว
+  if (ocrErrors === candidates.length) {
+    return { rotationDeg: 0, confidence: 0, reason: 'all_ocr_failed' };
   }
 
   const sorted = [...results].sort((a, b) => b.s.score - a.s.score);
   const best = sorted[0];
   const second = sorted[1] || { cw: -1, s: { score: 0, textLen: 0, keywordHits: 0 } };
 
-  // best เป็น 0° อยู่แล้ว
-  if (best.cw === 0) {
-    return { rotationDeg: 0, confidence: 0.6, reason: 'best_is_upright' };
-  }
   // OCR อ่านอะไรแทบไม่ได้เลย → ไม่หมุน
   if (best.s.score < MIN_BEST_SCORE) {
     return { rotationDeg: 0, confidence: 0, reason: 'low_text_all_angles' };
+  }
+  // best เป็น 0° อยู่แล้ว
+  if (best.cw === 0) {
+    const margin = second.s.score > 0 ? best.s.score / second.s.score : 999;
+    return { rotationDeg: 0, confidence: margin >= WIN_MARGIN ? 0.7 : 0.4, reason: 'best_is_upright' };
   }
   // ชนะไม่ชัดพอ → ไม่หมุน (กันหมุนมั่ว)
   if (best.s.score < second.s.score * WIN_MARGIN) {
@@ -366,7 +370,8 @@ export async function applyAutoRotateToBatch(
       console.log(`[auto-rotate] batch=${batchId} page=${pageNo} → ${det.rotationDeg}° (${det.reason}, conf=${det.confidence.toFixed(2)})`);
       out.push({ fileId, pageNo, source: 'auto', rotationDeg: det.rotationDeg, confidence: det.confidence, reason: det.reason });
     } catch (e) {
-      console.warn(`[auto-rotate] detect failed batch=${batchId} page=${pageNo}:`, e instanceof Error ? e.message : e);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      console.warn(`[auto-rotate] detect failed batch=${batchId} file_id=${fileId} page=${pageNo}: ${errMsg}`);
       // fallback: ใช้ค่า cache เดิม/0 — ไม่ทำให้ PDF fail
       out.push({ fileId, pageNo, source: 'auto-fail', rotationDeg: cachedAuto ?? 0, confidence: cachedConf, reason: 'ocr_error' });
     }

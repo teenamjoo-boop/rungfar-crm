@@ -303,13 +303,32 @@ async function findActiveBatch(
   return rows.length > 0 ? rows[0] : null;
 }
 
-/** หา batch ล่าสุดของกลุ่ม+user ที่ collecting (ไม่จำกัดเวลา) — ใช้กับคำสั่ง รายการ/ล้าง/pdf */
+/** หา batch ล่าสุดของกลุ่ม+user ที่ collecting (ไม่จำกัดเวลา) — ใช้กับคำสั่ง ล้าง/จบ */
 async function findLatestCollectingBatch(
   url: string, key: string, groupId: string, userId: string | null,
 ): Promise<Record<string, unknown> | null> {
   let path =
     `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
     `&status=eq.collecting&order=last_image_at.desc&limit=1`;
+  if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
+  const rows = await dbSelect(url, key, path);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+/**
+ * หา batch ล่าสุดของกลุ่ม+user ไม่ว่าสถานะใด:
+ *   collecting ก่อน → ถ้าไม่มีให้ดู finalized ล่าสุด
+ * ใช้กับคำสั่ง รายการ/pdf/หมุน/สลับ/ย้าย/จัด/ปรับหมุน
+ */
+async function findLatestAnyBatch(
+  url: string, key: string, groupId: string, userId: string | null,
+): Promise<Record<string, unknown> | null> {
+  const collecting = await findLatestCollectingBatch(url, key, groupId, userId);
+  if (collecting) return collecting;
+  // ไม่มี collecting → ลอง finalized ล่าสุด
+  let path =
+    `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
+    `&status=eq.finalized&order=finalized_at.desc.nullslast&limit=1`;
   if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
   const rows = await dbSelect(url, key, path);
   return rows.length > 0 ? rows[0] : null;
@@ -1226,13 +1245,14 @@ async function buildPdfFromImages(
 async function buildAndUploadPdf(
   url: string, key: string, batchId: string,
 ): Promise<{ pages: number; pdfPath: string; signedUrl: string } | null> {
-  // 1) auto-rotate (cache-aware): เติม auto_rotation_deg ให้ไฟล์ที่ยังไม่เคยตรวจ
-  //    error/ไม่มี config → no-op (ยังสร้าง PDF ได้ตามปกติ)
-  try {
-    await applyAutoRotateToBatch(url, key, batchId, { force: false });
-  } catch (e) {
-    console.warn('[line-ai-excel] auto-rotate skipped:', e instanceof Error ? e.message : e);
-  }
+  // [PDF-only mode] auto-rotate ปิดชั่วคราว — ไม่เรียก Document AI OCR เพื่อประหยัดค่า Google AI
+  // ถ้าต้องการเปิดใหม่: uncomment บล็อกด้านล่าง และ comment บรรทัด log
+  // try {
+  //   await applyAutoRotateToBatch(url, key, batchId, { force: false });
+  // } catch (e) {
+  //   console.warn('[line-ai-excel] auto-rotate skipped:', e instanceof Error ? e.message : e);
+  // }
+  console.log('[line-ai-excel] PDF-only mode: auto-rotate skipped (OCR disabled)');
 
   // 2) โหลด file records (รวม rotation columns) ตาม canonical order
   const files = await dbSelect(
@@ -1270,34 +1290,100 @@ async function buildAndUploadPdf(
   return { pages, pdfPath, signedUrl };
 }
 
-/** สร้าง LINE Flex message bubble พร้อมปุ่ม "เปิด PDF" */
+/** สร้าง LINE Flex message การ์ดไฟล์ PDF พร้อมปุ่ม "เปิด PDF" */
 function buildPdfFlexMessage(pages: number, signedUrl: string): unknown {
   return {
     type: 'flex',
-    altText: `สร้าง PDF แล้ว (${pages} หน้า)`,
+    altText: `📄 เอกสาร PDF พร้อมแล้ว (${pages} รูป)`,
     contents: {
       type: 'bubble',
       body: {
         type: 'box',
         layout: 'vertical',
+        backgroundColor: '#FFFFFF',
+        paddingAll: '20px',
         contents: [
-          { type: 'text', text: 'สร้าง PDF แล้ว', weight: 'bold', size: 'lg' },
+          {
+            type: 'box',
+            layout: 'horizontal',
+            spacing: 'md',
+            alignItems: 'center',
+            contents: [
+              // กล่อง icon PDF สีแดง
+              {
+                type: 'box',
+                layout: 'vertical',
+                width: '52px',
+                height: '52px',
+                cornerRadius: '8px',
+                backgroundColor: '#E53935',
+                justifyContent: 'center',
+                alignItems: 'center',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'PDF',
+                    color: '#FFFFFF',
+                    weight: 'bold',
+                    size: 'sm',
+                    align: 'center',
+                  },
+                ],
+              },
+              // ข้อความหลัก + รอง
+              {
+                type: 'box',
+                layout: 'vertical',
+                flex: 1,
+                contents: [
+                  {
+                    type: 'text',
+                    text: '📄 เอกสาร PDF พร้อมแล้ว',
+                    weight: 'bold',
+                    size: 'md',
+                    color: '#333333',
+                    wrap: true,
+                  },
+                  {
+                    type: 'text',
+                    text: `จำนวนรูป: ${pages} รูป`,
+                    size: 'sm',
+                    color: '#777777',
+                    margin: 'xs',
+                  },
+                  {
+                    type: 'text',
+                    text: 'ชุดเอกสาร PDF',
+                    size: 'xs',
+                    color: '#999999',
+                  },
+                ],
+              },
+            ],
+          },
+          { type: 'separator', margin: 'lg', color: '#E5E5E5' },
           {
             type: 'text',
-            text: `จำนวนรูป: ${pages} รูป`,
-            size: 'md',
-            color: '#666666',
-            margin: 'sm',
+            text: 'กดปุ่มด้านล่างเพื่อเปิดไฟล์',
+            size: 'xs',
+            color: '#AAAAAA',
+            align: 'center',
+            margin: 'md',
           },
         ],
       },
       footer: {
         type: 'box',
         layout: 'vertical',
+        backgroundColor: '#FFFFFF',
+        paddingAll: '16px',
+        paddingTop: '4px',
         contents: [
           {
             type: 'button',
             style: 'primary',
+            color: '#E53935',
+            height: 'sm',
             action: { type: 'uri', label: 'เปิด PDF', uri: signedUrl },
           },
         ],
@@ -1501,7 +1587,7 @@ async function handleImage(
   if (isFirstImage && ev.replyToken) {
     await replyLineText(
       ev.replyToken,
-      'รับรูปแล้ว ส่งเพิ่มได้เลย\nระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที\nหรือพิมพ์ "จบ" / "pdf" เพื่อสร้างทันที',
+      'รับรูปแล้ว ส่งเพิ่มได้เลย\nระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที\nถ้าต้องการสร้างทันทีพิมพ์ "จบ" หรือ "pdf"\nถ้ารูปหมุนผิด ใช้ "หมุน N ขวา/ซ้าย"',
       lineToken,
     );
   }
@@ -1641,7 +1727,8 @@ async function handleText(
         'ระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที',
         'ระบบจะพยายามปรับหมุนหน้าด้วย OCR/AI ให้อัตโนมัติก่อนสร้าง PDF',
         '',
-        '"ปรับหมุน"      = ตรวจหมุนอัตโนมัติด้วย OCR/AI ทันที',
+        '"ปรับหมุน"       = ตรวจหมุนอัตโนมัติด้วย OCR/AI ทันที',
+        '"ตรวจหมุนใหม่"  = ล้าง cache แล้วตรวจ OCR ใหม่',
         '"ไม่หมุนออโต้"  = ปิดหมุนอัตโนมัติ ใช้ค่าปัจจุบัน',
         '',
         'ปรับการหมุนรูปแต่ละหน้า (manual ชนะ auto เสมอ):',
@@ -1661,40 +1748,55 @@ async function handleText(
 
   // ─── รายการ ───
   if (text === 'รายการ' || cmd === 'list') {
-    const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+    const batch = await findLatestAnyBatch(url, key, groupId, userId);
     if (!batch) {
       await replyLineText(replyToken, 'ยังไม่มีรูปในชุดล่าสุด กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
     }
     const batchId = batch.id as string;
+    const batchStatus = batch.status as string;
     const files = await loadBatchFiles(url, key, batchId);
     const count = files.length;
     if (count === 0) {
       await replyLineText(replyToken, 'ยังไม่มีรูปในชุดล่าสุด กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
     }
+    const statusLabel = batchStatus === 'finalized' ? 'finalized (สร้าง PDF แล้ว)' : 'collecting (กำลังรวบรวม)';
     const pageLines = files.map((f, i) => {
-      // manual (locked) ชนะ → แสดง "manual N°"; ไม่งั้นถ้ามี auto → "auto N°"; ไม่งั้น "N°"
       const locked = f.rotation_locked === true;
       const manualDeg = typeof f.rotation_deg === 'number' ? f.rotation_deg : 0;
       const autoDeg = typeof f.auto_rotation_deg === 'number' ? f.auto_rotation_deg : null;
+      const autoConf = typeof f.auto_rotation_confidence === 'number' ? f.auto_rotation_confidence : 0;
       let label: string;
-      if (locked) label = `manual ${manualDeg}°`;
-      else if (autoDeg != null) label = `auto ${autoDeg}°`;
-      else label = `0°`;
+      if (locked) {
+        label = `manual ${manualDeg}°`;
+      } else if (autoDeg != null) {
+        const confStr = autoConf > 0 ? ` conf ${autoConf.toFixed(2)}` : '';
+        label = `auto ${autoDeg}°${confStr}`;
+      } else {
+        label = `0° (ยังไม่ตรวจ)`;
+      }
       return `หน้า ${i + 1}: ${label}`;
     });
+    const footerLines = batchStatus === 'finalized'
+      ? [
+          '',
+          'สร้าง PDF แล้ว ยังสามารถพิมพ์ "pdf" เพื่อสร้างใหม่ได้หลังหมุน/จัดหน้า',
+        ]
+      : [
+          '',
+          'ระบบจะพยายามปรับหมุนด้วย OCR/AI ก่อนสร้าง PDF',
+          'ระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที',
+          'หรือพิมพ์ "จบ" / "pdf" เพื่อสร้างทันที',
+        ];
     await replyLineText(
       replyToken,
       [
         `ชุดล่าสุดของคุณ: ${count} รูป`,
+        `สถานะ: ${statusLabel}`,
         ...pageLines,
-        '',
-        'เลขหน้าอิงตาม PDF',
-        'ระบบจะพยายามปรับหมุนด้วย OCR/AI ก่อนสร้าง PDF',
+        ...footerLines,
         'ถ้าหน้าไหนยังผิด ใช้ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง"',
-        'ระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที',
-        'หรือพิมพ์ "จบ" / "pdf" เพื่อสร้างทันที',
         'ถ้าลำดับไม่ตรง ใช้ "สลับ 2 3" หรือ "จัด 1 3 2 4"',
       ].join('\n'),
       lineToken,
@@ -1786,15 +1888,17 @@ async function handleText(
     return;
   }
 
-  // ─── ปรับหมุน / auto rotate / หมุนออโต้ — ตรวจ orientation ด้วย OCR/AI ───
+  // ─── ปรับหมุน / ตรวจหมุนใหม่ / auto rotate — ตรวจ orientation ด้วย OCR/AI ───
   {
     const cmdNoSpace = cmd.replace(/\s+/g, '');
     const isAutoRotate =
       text === 'ปรับหมุน' || text === 'หมุนออโต้' ||
-      cmdNoSpace === 'autorotate' || cmd === 'auto rotate';
+      text === 'ตรวจหมุนใหม่' || text === 'รีเช็กหมุน' ||
+      cmdNoSpace === 'autorotate' || cmd === 'auto rotate' ||
+      cmdNoSpace === 'rerotate';
 
     if (isAutoRotate) {
-      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
         return;
@@ -1808,6 +1912,15 @@ async function handleText(
         return;
       }
       const batchId = batch.id as string;
+      // [PDF-only mode] ปิด OCR auto-rotate ชั่วคราว — ไม่เสียค่า Google AI
+      // ถ้าต้องการเปิดใหม่: ลบ 3 บรรทัดด้านล่าง และ uncomment บล็อก try/catch
+      console.log('[line-ai-excel] PDF-only mode: ปรับหมุน/ตรวจหมุน OCR skipped');
+      await replyLineText(
+        replyToken,
+        'ระบบอยู่ในโหมด PDF-only ชั่วคราว (ปิด OCR auto-rotate)\nใช้คำสั่ง "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อปรับการหมุนเอง\nพิมพ์ "pdf" เพื่อสร้าง PDF',
+        lineToken,
+      );
+      /* [PDF-only mode] บล็อก OCR ด้านล่าง — uncomment เมื่อเปิด auto-rotate คืน
       // reindex page_no ก่อน เพื่อให้เลขหน้าตรงกับ PDF
       await loadBatchFiles(url, key, batchId);
       try {
@@ -1816,30 +1929,27 @@ async function handleText(
           await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
           return;
         }
+        let hasOcrError = false;
         const lines = results.map((r) => {
-          const tag = r.source === 'manual' ? 'manual' : 'auto';
-          return `หน้า ${r.pageNo}: ${tag} ${r.rotationDeg}°`;
+          if (r.source === 'manual') return `หน้า ${r.pageNo}: manual ${r.rotationDeg}°`;
+          if (r.source === 'auto-fail') { hasOcrError = true; return `หน้า ${r.pageNo}: OCR error fallback ${r.rotationDeg}°`; }
+          if (r.source === 'none') return `หน้า ${r.pageNo}: ไม่มี OCR ${r.rotationDeg}°`;
+          const confStr = r.confidence > 0 ? ` confidence ${r.confidence.toFixed(2)}` : '';
+          let note = '';
+          if (r.reason === 'no_clear_winner')          note = ' ไม่มั่นใจ จึงไม่หมุน';
+          else if (r.reason === 'low_text_all_angles') note = ' อ่านข้อความน้อยทุกมุม';
+          else if (r.reason === 'all_ocr_failed')      { note = ' OCR ไม่สำเร็จ'; hasOcrError = true; }
+          else if (r.reason === 'decode_failed' || r.reason === 'decode_not_image') note = ' decode ไม่ได้';
+          return `หน้า ${r.pageNo}: auto ${r.rotationDeg}°${confStr}${note}`;
         });
-        await replyLineText(
-          replyToken,
-          [
-            'ตรวจหมุนอัตโนมัติแล้ว',
-            ...lines,
-            '',
-            'หน้าที่เป็น manual จะไม่ถูกปรับอัตโนมัติ',
-            'ถ้าหน้าไหนยังผิด ใช้ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง"',
-            'พิมพ์ "pdf" เพื่อสร้าง PDF ใหม่',
-          ].join('\n'),
-          lineToken,
-        );
+        const footer = ['', 'หน้าที่เป็น manual จะไม่ถูกปรับอัตโนมัติ', 'ถ้าหน้าไหนยังผิด ใช้ "หมุน N ขวา/ซ้าย/กลับหัว/ตรง"', 'พิมพ์ "pdf" เพื่อสร้าง PDF ใหม่'];
+        if (hasOcrError) footer.push('บางหน้าตรวจ OCR ไม่สำเร็จ จึงไม่หมุนอัตโนมัติ');
+        await replyLineText(replyToken, ['ตรวจหมุนอัตโนมัติแล้ว', ...lines, ...footer].join('\n'), lineToken);
       } catch (e) {
         console.error('[line-ai-excel] ปรับหมุน error:', e instanceof Error ? e.message : e);
-        await replyLineText(
-          replyToken,
-          'ปรับหมุนอัตโนมัติไม่สำเร็จ\nใช้คำสั่ง "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อปรับเอง',
-          lineToken,
-        );
+        await replyLineText(replyToken, 'ปรับหมุนอัตโนมัติไม่สำเร็จ\nใช้คำสั่ง "หมุน N ขวา/ซ้าย/กลับหัว/ตรง" เพื่อปรับเอง', lineToken);
       }
+      */ // end [PDF-only mode] comment — ลบบรรทัดนี้เมื่อเปิด auto-rotate คืน
       return;
     }
   }
@@ -1850,7 +1960,7 @@ async function handleText(
       text === 'ไม่หมุนออโต้' || text === 'ปิดหมุนออโต้' || cmd === 'no auto rotate';
 
     if (isDisableAuto) {
-      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
         return;
@@ -1888,7 +1998,7 @@ async function handleText(
         dirRaw === 'กลับหัว'|| dirRaw === '180'   ? 180 :
         0;
 
-      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องหมุน กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -1931,7 +2041,7 @@ async function handleText(
     if (swapM) {
       const fromPage = parseInt(swapM[1], 10);
       const toPage = parseInt(swapM[2], 10);
-      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องสลับ กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -1973,7 +2083,7 @@ async function handleText(
     if (moveM) {
       const fromPage = parseInt(moveM[1], 10);
       const toPage = parseInt(moveM[2], 10);
-      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องย้าย กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -2020,7 +2130,7 @@ async function handleText(
       text.match(/^order\s+([0-9\s]+)$/i);
 
     if (orderM) {
-      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ไม่พบ batch ที่ต้องจัดลำดับ กรุณาส่งรูปก่อน', lineToken);
         return;
@@ -2114,7 +2224,7 @@ async function handleText(
   {
     const cmdNoSpace = text.replace(/\s+/g, '').toLowerCase();
     if (cmd === 'pdf' || cmdNoSpace === 'pdf' || cmdNoSpace === 'ทำpdf') {
-      const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ PDF กรุณาส่งรูปเอกสารก่อน', lineToken);
         return;
