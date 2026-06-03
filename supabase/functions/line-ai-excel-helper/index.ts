@@ -2283,6 +2283,14 @@ Deno.serve(async (req: Request) => {
   const lineToken      = Deno.env.get('LINE_CHANNEL_ACCESS_TOKEN');
   const channelSecret  = Deno.env.get('LINE_CHANNEL_SECRET');
   const controlGroupId = Deno.env.get('LINE_AI_CONTROL_GROUP_ID') || '';
+  // PDF_ALLOWED_GROUP_IDS: comma-separated group IDs เพิ่มเติม (นอกเหนือจาก LINE_AI_CONTROL_GROUP_ID)
+  // รวมกัน: LINE_AI_CONTROL_GROUP_ID + PDF_ALLOWED_GROUP_IDS → allowed ทั้งหมด
+  const allowedGroupRaw = Deno.env.get('PDF_ALLOWED_GROUP_IDS') || '';
+  const allowedGroupIds: Set<string> = new Set([
+    ...(controlGroupId ? [controlGroupId] : []),
+    ...allowedGroupRaw.split(',').map(s => s.trim()).filter(Boolean),
+  ]);
+  console.log(`[line-ai-excel] allowed_groups=${allowedGroupIds.size} (${[...allowedGroupIds].join(',')})`);
   const geminiKey      = Deno.env.get('GEMINI_API_KEY');
   // OCR_PROVIDER: 'documentai' (default flow ใหม่) — อ่านไว้ log
   const ocrProvider    = Deno.env.get('OCR_PROVIDER') || 'documentai';
@@ -2323,9 +2331,14 @@ Deno.serve(async (req: Request) => {
       const groupId = ev.source.groupId || '';
       const msgType = ev.message?.type || '';
 
-      // ── ทำงานเฉพาะกลุ่ม control เท่านั้น — กลุ่มอื่น/แชทอื่น ignore ──
-      if (!groupId || groupId !== controlGroupId) {
-        console.log('[line-ai-excel] ignore non-control source');
+      // ── ทำงานเฉพาะกลุ่มที่อนุญาต (PDF_ALLOWED_GROUP_IDS หรือ LINE_AI_CONTROL_GROUP_ID) ──
+      if (!groupId || !allowedGroupIds.has(groupId)) {
+        console.log(
+          `[line-ai-excel] ignore non-allowed source` +
+          ` type=${ev.source?.type || 'unknown'}` +
+          ` groupId=${groupId || '(none)'}` +
+          ` userId=${ev.source?.userId || '(none)'}`,
+        );
         continue;
       }
 
