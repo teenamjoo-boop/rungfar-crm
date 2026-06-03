@@ -1290,95 +1290,64 @@ async function buildAndUploadPdf(
   return { pages, pdfPath, signedUrl };
 }
 
-/** สร้าง LINE Flex message การ์ดไฟล์ PDF พร้อมปุ่ม "เปิด PDF" */
+/** สร้าง LINE Flex message การ์ดไฟล์ PDF แบบ compact พร้อมปุ่ม "เปิด PDF" */
 function buildPdfFlexMessage(pages: number, signedUrl: string): unknown {
   return {
     type: 'flex',
     altText: `📄 เอกสาร PDF พร้อมแล้ว (${pages} รูป)`,
     contents: {
       type: 'bubble',
+      size: 'kilo',
       body: {
         type: 'box',
         layout: 'vertical',
         backgroundColor: '#FFFFFF',
-        paddingAll: '20px',
+        paddingAll: '12px',
+        paddingBottom: '8px',
+        spacing: 'sm',
         contents: [
+          // แถว icon + ข้อความ
           {
             type: 'box',
             layout: 'horizontal',
-            spacing: 'md',
+            spacing: 'sm',
             alignItems: 'center',
             contents: [
-              // กล่อง icon PDF สีแดง
+              // icon PDF จาก Storage
               {
-                type: 'box',
-                layout: 'vertical',
-                width: '52px',
-                height: '52px',
-                cornerRadius: '8px',
-                backgroundColor: '#E53935',
-                justifyContent: 'center',
-                alignItems: 'center',
-                contents: [
-                  {
-                    type: 'text',
-                    text: 'PDF',
-                    color: '#FFFFFF',
-                    weight: 'bold',
-                    size: 'sm',
-                    align: 'center',
-                  },
-                ],
+                type: 'image',
+                url: 'https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2002_52_40%20PM.png',
+                size: '44px',
+                aspectRatio: '1:1',
+                aspectMode: 'cover',
+                flex: 0,
               },
-              // ข้อความหลัก + รอง
+              // ข้อความ
               {
                 type: 'box',
                 layout: 'vertical',
                 flex: 1,
+                spacing: 'none',
                 contents: [
                   {
                     type: 'text',
-                    text: '📄 เอกสาร PDF พร้อมแล้ว',
+                    text: 'เอกสาร PDF',
                     weight: 'bold',
-                    size: 'md',
+                    size: 'sm',
                     color: '#333333',
-                    wrap: true,
+                    wrap: false,
                   },
                   {
                     type: 'text',
                     text: `จำนวนรูป: ${pages} รูป`,
-                    size: 'sm',
-                    color: '#777777',
-                    margin: 'xs',
-                  },
-                  {
-                    type: 'text',
-                    text: 'ชุดเอกสาร PDF',
                     size: 'xs',
-                    color: '#999999',
+                    color: '#777777',
                   },
                 ],
               },
             ],
           },
-          { type: 'separator', margin: 'lg', color: '#E5E5E5' },
-          {
-            type: 'text',
-            text: 'กดปุ่มด้านล่างเพื่อเปิดไฟล์',
-            size: 'xs',
-            color: '#AAAAAA',
-            align: 'center',
-            margin: 'md',
-          },
-        ],
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: '#FFFFFF',
-        paddingAll: '16px',
-        paddingTop: '4px',
-        contents: [
+          // ปุ่ม เปิด PDF
           {
             type: 'button',
             style: 'primary',
