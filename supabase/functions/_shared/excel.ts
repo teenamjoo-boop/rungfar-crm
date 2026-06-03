@@ -55,10 +55,16 @@ export async function buildXlsxFromImages(images: XlsxImageInput[]): Promise<Uin
     let data = src.bytes;
     let w = 0, h = 0;  // ขนาดจริงหลังหมุน (px)
 
+    // imagescript.rotate(deg) หมุน "ทวนเข็ม" (CCW) ตรงข้ามทิศ CW ที่ PDF ใช้
+    // → invert เฉพาะตอนหมุนรูปสำหรับ Excel ให้ผลตรงกับ PDF
+    //   right CW=90 → 270 | left CW=270 → 90 | flip 180 → 180 | ตรง 0 → 0
+    //   (ค่า rotationCW ใน DB/batch ไม่เปลี่ยน — invert แค่ตอน pre-rotate ภาพ)
+    const excelRotateDeg = (360 - (((src.rotationCW % 360) + 360) % 360)) % 360;
+
     try {
       const img = await Image.decode(data);
-      if (src.rotationCW !== 0) {
-        img.rotate(src.rotationCW);           // imagescript uses CW degrees
+      if (excelRotateDeg !== 0) {
+        img.rotate(excelRotateDeg);           // CCW: ใช้ค่าที่ invert แล้วให้ตรงทิศ PDF
         data = isPng ? await img.encodePNG() : await img.encodeJPEG(85);
       }
       w = img.width; h = img.height;          // dims หลังหมุนแล้ว
