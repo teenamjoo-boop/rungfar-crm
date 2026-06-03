@@ -1556,7 +1556,7 @@ async function handleImage(
   if (isFirstImage && ev.replyToken) {
     await replyLineText(
       ev.replyToken,
-      'รับรูปแล้ว ส่งเพิ่มได้เลย\nระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 1-2 นาที\nถ้าต้องการสร้างทันทีพิมพ์ "จบ" หรือ "pdf"\nถ้ารูปหมุนผิด ใช้ "หมุน N ขวา/ซ้าย"',
+      'รับรูปแล้ว ส่งเพิ่มได้เลยค่ะ\nระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 30-90 วินาที\n\nถ้าต้องการสร้างทันที พิมพ์ "จบ" หรือ "pdf"\nถ้ารูปหมุนผิด ใช้ "หมุน N ขวา/ซ้าย"',
       lineToken,
     );
   }
@@ -1952,20 +1952,37 @@ async function handleText(
     }
   }
 
-  // ─── หมุน N ทิศ — "หมุน 1 ขวา" / "rotate 1 right" ─────────────────────────
+  // ─── หมุน [หน้า...] ทิศ ─────────────────────────────────────────────────────
+  // รองรับ: "หมุน 2 ขวา" / "หมุน 2 3 5 7 ซ้าย" / "หมุน 2,3,5 ซ้าย" /
+  //         "หมุน 2-3-5-7 ซ้าย" / "หมุน 2 ถึง 7 ซ้าย" / "rotate 2 right"
   {
     const rotM =
-      text.match(/^หมุน\s*(\d+)\s*(ขวา|ซ้าย|กลับหัว|ตรง)$/i) ||
-      text.match(/^rotate\s+(\d+)\s+(right|left|180|reset)$/i);
+      text.match(/^หมุน\s+([\d][\d\s,\-]*|[\d]+\s*ถึง\s*[\d]+)\s*(ขวา|ซ้าย|กลับหัว|ตรง)$/i) ||
+      text.match(/^rotate\s+([\d][\d\s,\-]*)\s+(right|left|180|reset)$/i);
 
     if (rotM) {
-      const pageNum    = parseInt(rotM[1], 10);
-      const dirRaw     = rotM[2].toLowerCase();
+      const pagesRaw = rotM[1].trim();
+      const dirRaw   = rotM[2].toLowerCase();
       const rotCW =
-        dirRaw === 'ขวา'    || dirRaw === 'right' ? 90  :
-        dirRaw === 'ซ้าย'   || dirRaw === 'left'  ? 270 :
-        dirRaw === 'กลับหัว'|| dirRaw === '180'   ? 180 :
+        dirRaw === 'ขวา'     || dirRaw === 'right' ? 90  :
+        dirRaw === 'ซ้าย'    || dirRaw === 'left'  ? 270 :
+        dirRaw === 'กลับหัว' || dirRaw === '180'   ? 180 :
         0;
+
+      // parse page numbers: range "N ถึง M" หรือ space/comma/dash คั่น
+      let pageNums: number[];
+      const rangeM = pagesRaw.match(/^(\d+)\s*ถึง\s*(\d+)$/);
+      if (rangeM) {
+        const from = parseInt(rangeM[1], 10);
+        const to   = parseInt(rangeM[2], 10);
+        pageNums = [];
+        for (let i = Math.min(from, to); i <= Math.max(from, to); i++) pageNums.push(i);
+      } else {
+        // split ด้วย space, comma, หรือ dash แล้ว dedupe + sort
+        pageNums = [...new Set(
+          pagesRaw.split(/[\s,\-]+/).map(s => parseInt(s, 10)).filter(n => !isNaN(n) && n > 0),
+        )].sort((a, b) => a - b);
+      }
 
       const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
@@ -1974,29 +1991,38 @@ async function handleText(
       }
       const batchId = batch.id as string;
       const files = await loadBatchFiles(url, key, batchId);
-      if (pageNum < 1 || pageNum > files.length) {
-        await replyLineText(
-          replyToken,
-          `ไม่พบหน้าที่ ${pageNum} (มีทั้งหมด ${files.length} หน้า)`,
-          lineToken,
-        );
-        return;
-      }
-      const fileId = files[pageNum - 1].id as string;
-      // manual override: lock ไว้เพื่อให้ auto OCR ไม่ override หน้านี้
-      await dbUpdate(
-        url, key, 'line_ai_excel_files', `id=eq.${fileId}`,
-        { rotation_deg: rotCW, rotation_locked: true },
-      );
+
       const dirLabel =
         rotCW === 90  ? '90° (ขวา)' :
         rotCW === 270 ? '270° (ซ้าย)' :
         rotCW === 180 ? '180° (กลับหัว)' : '0° (ตรง)';
-      await replyLineText(
-        replyToken,
-        `หมุนหน้า ${pageNum} เป็น ${dirLabel} แล้ว (manual)\nพิมพ์ "pdf" เพื่อสร้าง PDF ใหม่`,
-        lineToken,
-      );
+
+      const rotated: number[] = [];
+      const skipped: number[] = [];
+
+      for (const pageNum of pageNums) {
+        if (pageNum < 1 || pageNum > files.length) {
+          skipped.push(pageNum);
+          continue;
+        }
+        const fileId = files[pageNum - 1].id as string;
+        // manual override: lock ไว้เพื่อให้ auto OCR ไม่ override หน้านี้
+        await dbUpdate(
+          url, key, 'line_ai_excel_files', `id=eq.${fileId}`,
+          { rotation_deg: rotCW, rotation_locked: true },
+        );
+        rotated.push(pageNum);
+      }
+
+      const replyLines: string[] = [];
+      if (rotated.length > 0) {
+        replyLines.push(`หมุนหน้า ${rotated.join(', ')} เป็น ${dirLabel} แล้ว (manual)`);
+      }
+      for (const p of skipped) {
+        replyLines.push(`ข้ามหน้า ${p} เพราะไม่มีในชุดรูปนี้ (มีทั้งหมด ${files.length} หน้า)`);
+      }
+      replyLines.push('พิมพ์ "pdf" เพื่อสร้าง PDF ใหม่');
+      await replyLineText(replyToken, replyLines.join('\n'), lineToken);
       return;
     }
   }
@@ -2198,7 +2224,8 @@ async function handleText(
         await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ PDF กรุณาส่งรูปเอกสารก่อน', lineToken);
         return;
       }
-      const batchId = batch.id as string;
+      const batchId     = batch.id as string;
+      const batchStatus = batch.status as string;
       try {
         const result = await buildAndUploadPdf(url, key, batchId);
         if (!result) {
@@ -2206,11 +2233,24 @@ async function handleText(
           return;
         }
         const { pages, pdfPath, signedUrl } = result;
+        const nowIso = new Date().toISOString();
+        // ถ้า batch ยังเป็น collecting → mark finalized ทันทีเพื่อกัน cron ส่ง PDF ซ้ำ
+        // ถ้าเป็น finalized แล้ว (re-create หลังหมุน) → update path ใหม่เท่านั้น
+        if (batchStatus === 'collecting') {
+          await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+            status: 'finalized', finalized_at: nowIso,
+            pdf_path: pdfPath, pdf_url: signedUrl, updated_at: nowIso,
+          });
+        } else {
+          await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+            pdf_path: pdfPath, pdf_url: signedUrl, updated_at: nowIso,
+          });
+        }
         try {
           await dbInsert(url, key, 'line_ai_excel_results', {
             batch_id: batchId,
             result_text: `PDF created: ${pdfPath} (${pages} pages)`,
-            raw_json: { type: 'pdf', path: pdfPath, pages },
+            raw_json: { type: 'pdf_manual', path: pdfPath, pages },
           });
         } catch (e) {
           console.warn('[line-ai-excel] save pdf result failed:', e instanceof Error ? e.message : e);
