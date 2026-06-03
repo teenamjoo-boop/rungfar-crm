@@ -22,6 +22,9 @@
 import { PDFDocument, degrees, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 // auto-rotate ด้วย Document AI OCR (shared กับ finalize-due) — ไม่ extract Excel
 import { applyAutoRotateToBatch, effectiveRotationCW } from '../_shared/auto-rotate.ts';
+// XLSX builder — รูปเรียงลง Excel ไม่มี OCR
+import { buildXlsxFromImages } from '../_shared/excel.ts';
+import type { XlsxImageInput } from '../_shared/excel.ts';
 
 // ─── Secrets (inject อัตโนมัติ + ตั้งเอง) ────────────────────────────────────
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  → inject อัตโนมัติ
@@ -44,8 +47,9 @@ const AUTO_FINALIZE_MS   = 45 * 1000;      // 45 วินาที — auto PDF
 const GEMINI_MODEL_PRIMARY  = 'gemini-2.0-flash';
 const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';
 
-// PDF — เก็บใน bucket เดิม ใต้ path prefix แยก, signed URL อายุ 30 วัน
-const PDF_PATH_PREFIX = 'line-ai-excel-pdf';
+// PDF / XLSX — เก็บใน bucket เดิม ใต้ path prefix แยก, signed URL อายุ 30 วัน
+const PDF_PATH_PREFIX  = 'line-ai-excel-pdf';
+const XLSX_PATH_PREFIX = 'line-ai-excel-xlsx';
 const PDF_SIGNED_URL_SECONDS = 30 * 24 * 60 * 60; // 30 วัน
 const TSV_PATH_PREFIX = 'line-ai-excel-tsv';
 // A4 แนวตั้ง (points) + ขอบ
@@ -1290,6 +1294,52 @@ async function buildAndUploadPdf(
   return { pages, pdfPath, signedUrl };
 }
 
+/**
+ * สร้าง Excel (.xlsx) จากรูปใน batch แล้วอัปโหลด Storage
+ * ใช้ rotation เดียวกับ PDF (manual ชนะ) — ไม่มี OCR
+ * error → return null (ไม่ throw ไม่ทำให้ PDF พัง)
+ */
+async function buildAndUploadExcel(
+  url: string, key: string, batchId: string,
+): Promise<{ xlsxPath: string; signedUrl: string } | null> {
+  try {
+    const files = await dbSelect(
+      url, key,
+      `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}` +
+      `&order=${FILE_PAGE_ORDER}` +
+      `&select=id,storage_path,mime_type,page_no,rotation_deg,rotation_locked,auto_rotation_deg`,
+    );
+    if (files.length === 0) return null;
+    await ensurePageNumbers(url, key, files);
+
+    const xlsxImages: XlsxImageInput[] = [];
+    for (const f of files) {
+      try {
+        const got = await downloadFromStorage(url, key, f.storage_path as string);
+        xlsxImages.push({
+          bytes:       got.bytes,
+          contentType: (f.mime_type as string) || got.contentType,
+          rotationCW:  effectiveRotationCW(f),
+        });
+      } catch (e) {
+        console.warn('[line-ai-excel] buildAndUploadExcel img fetch failed:', e instanceof Error ? e.message : e);
+      }
+    }
+    if (xlsxImages.length === 0) return null;
+
+    const xlsxBytes = await buildXlsxFromImages(xlsxImages);
+    const xlsxPath  = `${XLSX_PATH_PREFIX}/${batchId}.xlsx`;
+    await uploadToStorage(url, key, xlsxPath, xlsxBytes,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const signedUrl = await createSignedUrl(url, key, xlsxPath, PDF_SIGNED_URL_SECONDS);
+    console.log(`[line-ai-excel] Excel built batch=${batchId} pages=${xlsxImages.length}`);
+    return { xlsxPath, signedUrl };
+  } catch (e) {
+    console.error('[line-ai-excel] buildAndUploadExcel error:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
 /** สร้าง LINE Flex message การ์ดไฟล์ PDF แบบ compact พร้อมปุ่ม "เปิด PDF" */
 function buildPdfFlexMessage(pages: number, signedUrl: string): unknown {
   return {
@@ -1405,9 +1455,94 @@ async function pushPdfFlex(
   }
 }
 
+/** สร้าง Flex card PDF+Excel (2 ปุ่ม) */
+function buildPdfExcelFlexMessage(pages: number, pdfUrl: string, xlsxUrl: string): unknown {
+  return {
+    type: 'flex',
+    altText: `📄 เอกสาร PDF + Excel พร้อมแล้ว (${pages} รูป)`,
+    contents: {
+      type: 'bubble',
+      size: 'kilo',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FFFFFF',
+        paddingAll: '12px',
+        paddingBottom: '8px',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'box',
+            layout: 'horizontal',
+            spacing: 'sm',
+            alignItems: 'center',
+            contents: [
+              // PDF icon (ซ้าย)
+              {
+                type: 'image',
+                url: 'https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2002_52_40%20PM.png',
+                size: '44px', aspectRatio: '1:1', aspectMode: 'cover', flex: 0,
+              },
+              {
+                type: 'box', layout: 'vertical', flex: 1, spacing: 'none',
+                contents: [
+                  { type: 'text', text: 'เอกสาร PDF + Excel', weight: 'bold', size: 'sm', color: '#333333', wrap: false },
+                  { type: 'text', text: `จำนวนรูป: ${pages} รูป`, size: 'xs', color: '#777777' },
+                ],
+              },
+              // Excel icon (ขวา) — กล่องเขียว "XLS"
+              {
+                type: 'box', layout: 'vertical', width: '44px', height: '44px',
+                cornerRadius: '8px', backgroundColor: '#1D6F42',
+                justifyContent: 'center', alignItems: 'center', flex: 0,
+                contents: [{ type: 'text', text: 'XLS', color: '#FFFFFF', weight: 'bold', size: 'xs', align: 'center' }],
+              },
+            ],
+          },
+          {
+            type: 'box', layout: 'horizontal', spacing: 'sm',
+            contents: [
+              {
+                type: 'button', style: 'primary', color: '#E53935', height: 'sm', flex: 1,
+                action: { type: 'uri', label: 'เปิด PDF', uri: pdfUrl },
+              },
+              {
+                type: 'button', style: 'primary', color: '#1D6F42', height: 'sm', flex: 1,
+                action: { type: 'uri', label: 'เปิด Excel', uri: xlsxUrl },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+}
+
+/** push PDF+Excel Flex card */
+async function pushPdfExcelFlex(
+  targetId: string, pages: number, pdfUrl: string, xlsxUrl: string, lineToken: string,
+): Promise<void> {
+  const res = await fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+    body: JSON.stringify({ to: targetId, messages: [buildPdfExcelFlexMessage(pages, pdfUrl, xlsxUrl)] }),
+  });
+  if (!res.ok) {
+    console.warn('[line-ai-excel] flex push (pdf+xlsx) failed, fallback text:', res.status);
+    await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+      body: JSON.stringify({
+        to: targetId,
+        messages: [{ type: 'text', text: `เอกสาร PDF + Excel พร้อมแล้ว\nจำนวนรูป: ${pages} รูป\nPDF: ${pdfUrl}\nExcel: ${xlsxUrl}` }],
+      }),
+    });
+  }
+}
+
 /**
  * ตรวจ batch ที่ last_image_at เกิน AUTO_FINALIZE_MS และยัง status='collecting'
- * → mark done + สร้าง PDF + push ไป group
+ * → mark done + สร้าง PDF + Excel + push ไป group
  * ใช้ fire-and-forget (ไม่ block webhook)
  */
 async function checkAndFinalizeStale(
@@ -1441,31 +1576,46 @@ async function checkAndFinalizeStale(
     }
 
     try {
-      const result = await buildAndUploadPdf(url, key, batchId);
-      if (!result) {
+      // ── PDF (critical) ──
+      const pdfResult = await buildAndUploadPdf(url, key, batchId);
+      if (!pdfResult) {
         console.warn(`[line-ai-excel] auto-finalize: no images batch=${batchId}`);
         await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
           status: 'cancelled', updated_at: new Date().toISOString(),
         });
         continue;
       }
-      const { pages, pdfPath, signedUrl } = result;
+      const { pages, pdfPath, signedUrl: pdfUrl } = pdfResult;
       const nowIso = new Date().toISOString();
       await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
-        status: 'finalized',
-        finalized_at: nowIso,
-        pdf_path: pdfPath,
-        pdf_url: signedUrl,
-        updated_at: nowIso,
+        status: 'finalized', finalized_at: nowIso,
+        pdf_path: pdfPath, pdf_url: pdfUrl, updated_at: nowIso,
       });
+
+      // ── Excel (non-critical) — PDF fail ไม่ได้เพราะ Excel fail ──
+      const xlsxResult = await buildAndUploadExcel(url, key, batchId);
+      if (xlsxResult) {
+        console.log(`[line-ai-excel] auto-finalize Excel ok batch=${batchId}`);
+      } else {
+        console.warn(`[line-ai-excel] auto-finalize Excel skipped/failed batch=${batchId}`);
+      }
+
       try {
         await dbInsert(url, key, 'line_ai_excel_results', {
           batch_id: batchId,
-          result_text: `PDF auto: ${pdfPath} (${pages}p)`,
-          raw_json: { type: 'pdf_auto', path: pdfPath, pages },
+          result_text: `PDF+Excel auto: ${pdfPath} (${pages}p) xlsx=${xlsxResult ? 'ok' : 'fail'}`,
+          raw_json: { type: 'pdf_excel_auto', path: pdfPath, pages, xlsx: xlsxResult?.xlsxPath ?? null },
         });
       } catch { /* non-critical */ }
-      if (groupId) await pushPdfFlex(groupId, pages, signedUrl, lineToken);
+
+      // ── ส่ง card เดียว: PDF+Excel ถ้า Excel สำเร็จ, PDF-only ถ้า Excel fail ──
+      if (groupId) {
+        if (xlsxResult) {
+          await pushPdfExcelFlex(groupId, pages, pdfUrl, xlsxResult.signedUrl, lineToken);
+        } else {
+          await pushPdfFlex(groupId, pages, pdfUrl, lineToken);
+        }
+      }
     } catch (e) {
       console.error('[line-ai-excel] auto-finalize PDF failed:', e instanceof Error ? e.message : e);
       // revert ให้ตรวจรอบถัดไปได้
@@ -1556,7 +1706,7 @@ async function handleImage(
   if (isFirstImage && ev.replyToken) {
     await replyLineText(
       ev.replyToken,
-      'รับรูปแล้ว ส่งเพิ่มได้เลยค่ะ\nระบบจะสร้าง PDF อัตโนมัติหลังไม่มีรูปใหม่ประมาณ 30-90 วินาที\n\nถ้าต้องการสร้างทันที พิมพ์ "จบ" หรือ "pdf"\nถ้ารูปหมุนผิด ใช้ "หมุน N ขวา/ซ้าย"',
+      'รับรูปแล้ว ส่งเพิ่มได้เลยค่ะ\nระบบจะสร้าง PDF / Excel \nอัตโนมัติหลังไม่มีรูปใหม่ประมาณ 30-90 วินาที\n\nสร้างทันที พิมพ์ "pdf" หรือ "Excel"\nถ้ารูปหมุนผิด ใช้ "หมุน N ขวา/ซ้าย"\nขอบคุณค่ะ',
       lineToken,
     );
   }
@@ -2198,12 +2348,13 @@ async function handleText(
     return;
   }
 
-  // ─── อ่าน / อ่านหัวข้อ / excel / txt — พักไว้ก่อน ──────────────────────
+  // ─── อ่าน / อ่านหัวข้อ / txt — พักไว้ก่อน ──────────────────────
+  // NOTE: excel/xlsx ถูกย้ายไป handler สร้าง Excel ด้านล่างแล้ว (ห้ามดักที่นี่)
   {
     const isReadCmd =
       text === 'อ่าน' || text === 'อ่านหัวข้อ' || text === 'ไฟล์' ||
       cmd === 'read' || cmd === 'readheader' || cmd === 'read header' ||
-      cmd === 'excel' || cmd === 'txt';
+      cmd === 'txt';
 
     if (isReadCmd) {
       await replyLineText(
@@ -2259,6 +2410,87 @@ async function handleText(
       } catch (e) {
         console.error('[line-ai-excel] PDF error:', e instanceof Error ? e.message : e);
         await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+      }
+      return;
+    }
+  }
+
+  // ─── excel / xlsx / จบexcel — สร้าง Excel อย่างเดียว (สำหรับเทส) ──────────
+  {
+    const cmdNoSpace2 = text.replace(/\s+/g, '').toLowerCase();
+    if (cmd === 'excel' || cmd === 'xlsx' || cmdNoSpace2 === 'excel' ||
+        cmdNoSpace2 === 'xlsx' || cmdNoSpace2 === 'จบexcel') {
+      const batch = await findLatestAnyBatch(url, key, groupId, userId);
+      if (!batch) {
+        await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ Excel กรุณาส่งรูปเอกสารก่อน', lineToken);
+        return;
+      }
+      const batchId     = batch.id as string;
+      const batchStatus = batch.status as string;
+      const xlsxResult = await buildAndUploadExcel(url, key, batchId);
+      if (!xlsxResult) {
+        await replyLineText(replyToken, 'สร้าง Excel ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+        return;
+      }
+      // mark finalized เพื่อกัน auto finalize ส่ง PDF+Excel card ซ้ำ (ถ้ายัง collecting)
+      if (batchStatus === 'collecting') {
+        const nowIso = new Date().toISOString();
+        await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+          status: 'finalized', finalized_at: nowIso, updated_at: nowIso,
+        });
+        try {
+          await dbInsert(url, key, 'line_ai_excel_results', {
+            batch_id: batchId,
+            result_text: `Excel manual: ${xlsxResult.xlsxPath}`,
+            raw_json: { type: 'xlsx_manual', path: xlsxResult.xlsxPath },
+          });
+        } catch (e) {
+          console.warn('[line-ai-excel] save xlsx result failed:', e instanceof Error ? e.message : e);
+        }
+      }
+      // reply Flex card Excel-only (single button)
+      const excelFlex = {
+        type: 'flex',
+        altText: '📊 Excel พร้อมแล้ว',
+        contents: {
+          type: 'bubble', size: 'kilo',
+          body: {
+            type: 'box', layout: 'vertical', backgroundColor: '#FFFFFF',
+            paddingAll: '12px', paddingBottom: '8px', spacing: 'sm',
+            contents: [
+              {
+                type: 'box', layout: 'horizontal', spacing: 'sm', alignItems: 'center',
+                contents: [
+                  {
+                    type: 'image',
+                    url: 'https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2002_52_40%20PM.png',
+                    size: '44px', aspectRatio: '1:1', aspectMode: 'cover', flex: 0,
+                  },
+                  {
+                    type: 'box', layout: 'vertical', flex: 1, spacing: 'none',
+                    contents: [
+                      { type: 'text', text: 'ไฟล์ Excel', weight: 'bold', size: 'sm', color: '#333333' },
+                      { type: 'text', text: 'รูปเรียงใน worksheet Documents', size: 'xs', color: '#777777' },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: 'button', style: 'primary', color: '#1D6F42', height: 'sm',
+                action: { type: 'uri', label: 'เปิด Excel', uri: xlsxResult.signedUrl },
+              },
+            ],
+          },
+        },
+      };
+      const res = await fetch('https://api.line.me/v2/bot/message/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+        body: JSON.stringify({ replyToken, messages: [excelFlex] }),
+      });
+      if (!res.ok) {
+        console.warn('[line-ai-excel] excel flex reply failed:', res.status);
+        await replyLineText(replyToken, `Excel พร้อมแล้ว\nเปิดไฟล์: ${xlsxResult.signedUrl}`, lineToken);
       }
       return;
     }

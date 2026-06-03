@@ -8,10 +8,14 @@
 import { PDFDocument, degrees, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 // auto-rotate ด้วย Document AI OCR (shared กับ line-ai-excel-helper)
 import { applyAutoRotateToBatch, effectiveRotationCW } from '../_shared/auto-rotate.ts';
+// XLSX builder — รูปเรียงลง Excel ไม่มี OCR
+import { buildXlsxFromImages } from '../_shared/excel.ts';
+import type { XlsxImageInput } from '../_shared/excel.ts';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const STORAGE_BUCKET       = 'line-ai-excel-intake';
 const PDF_PATH_PREFIX      = 'line-ai-excel-pdf';
+const XLSX_PATH_PREFIX     = 'line-ai-excel-xlsx';
 const PDF_SIGNED_URL_SECS  = 30 * 24 * 60 * 60; // 30 วัน
 const AUTO_FINALIZE_MS     = 30 * 1000;           // 30 วินาที (idle threshold — cron ยิงทุก 1 นาที → รอจริง 30–90 วิ)
 // ต้องตรงกับ FILE_PAGE_ORDER ใน line-ai-excel-helper เสมอ
@@ -251,6 +255,68 @@ async function pushPdfFlex(targetId: string, pages: number, signedUrl: string, l
   }
 }
 
+/** push PDF+Excel Flex card (2 ปุ่ม) */
+async function pushPdfExcelFlex(targetId: string, pages: number, pdfUrl: string, xlsxUrl: string, lineToken: string): Promise<void> {
+  const flexMsg = {
+    type: 'flex',
+    altText: `📄 เอกสาร PDF + Excel พร้อมแล้ว (${pages} รูป)`,
+    contents: {
+      type: 'bubble', size: 'kilo',
+      body: {
+        type: 'box', layout: 'vertical', backgroundColor: '#FFFFFF',
+        paddingAll: '12px', paddingBottom: '8px', spacing: 'sm',
+        contents: [
+          {
+            type: 'box', layout: 'horizontal', spacing: 'sm', alignItems: 'center',
+            contents: [
+              // PDF icon (ซ้าย)
+              {
+                type: 'image',
+                url: 'https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2002_52_40%20PM.png',
+                size: '44px', aspectRatio: '1:1', aspectMode: 'cover', flex: 0,
+              },
+              {
+                type: 'box', layout: 'vertical', flex: 1, spacing: 'none',
+                contents: [
+                  { type: 'text', text: 'เอกสาร PDF + Excel', weight: 'bold', size: 'sm', color: '#333333', wrap: false },
+                  { type: 'text', text: `จำนวนรูป: ${pages} รูป`, size: 'xs', color: '#777777' },
+                ],
+              },
+              // Excel icon (ขวา) — กล่องเขียว "XLS"
+              {
+                type: 'box', layout: 'vertical', width: '44px', height: '44px',
+                cornerRadius: '8px', backgroundColor: '#1D6F42',
+                justifyContent: 'center', alignItems: 'center', flex: 0,
+                contents: [{ type: 'text', text: 'XLS', color: '#FFFFFF', weight: 'bold', size: 'xs', align: 'center' }],
+              },
+            ],
+          },
+          {
+            type: 'box', layout: 'horizontal', spacing: 'sm',
+            contents: [
+              { type: 'button', style: 'primary', color: '#E53935', height: 'sm', flex: 1, action: { type: 'uri', label: 'เปิด PDF', uri: pdfUrl } },
+              { type: 'button', style: 'primary', color: '#1D6F42', height: 'sm', flex: 1, action: { type: 'uri', label: 'เปิด Excel', uri: xlsxUrl } },
+            ],
+          },
+        ],
+      },
+    },
+  };
+  const res2 = await fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+    body: JSON.stringify({ to: targetId, messages: [flexMsg] }),
+  });
+  if (!res2.ok) {
+    console.warn('[finalize-due] flex push (pdf+xlsx) failed, fallback text:', res2.status);
+    await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+      body: JSON.stringify({ to: targetId, messages: [{ type: 'text', text: `เอกสาร PDF + Excel พร้อมแล้ว\nจำนวนรูป: ${pages} รูป\nPDF: ${pdfUrl}\nExcel: ${xlsxUrl}` }] }),
+    });
+  }
+}
+
 // ─── Core finalize logic ─────────────────────────────────────────────────────
 async function finalizeDueBatches(url: string, key: string, lineToken: string): Promise<number> {
   const cutoff = new Date(Date.now() - AUTO_FINALIZE_MS).toISOString();
@@ -322,34 +388,52 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
         continue;
       }
 
-      // Build PDF
+      // ── Build PDF (critical) ──
       const { pdf, pages } = await buildPdfFromImages(images, rotationsCW);
       if (pages === 0) throw new Error('PDF has 0 pages');
 
-      // Upload + signed URL
       const pdfPath = `${PDF_PATH_PREFIX}/${batchId}.pdf`;
       await uploadToStorage(url, key, pdfPath, pdf, 'application/pdf');
-      const signedUrl = await createSignedUrl(url, key, pdfPath, PDF_SIGNED_URL_SECS);
+      const pdfUrl = await createSignedUrl(url, key, pdfPath, PDF_SIGNED_URL_SECS);
 
-      // Update batch status
       const nowIso = new Date().toISOString();
       await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
-        status: 'finalized',
-        finalized_at: nowIso,
-        pdf_path: pdfPath,
-        pdf_url: signedUrl,
-        updated_at: nowIso,
+        status: 'finalized', finalized_at: nowIso,
+        pdf_path: pdfPath, pdf_url: pdfUrl, updated_at: nowIso,
       });
+
+      // ── Build Excel (non-critical) ──
+      let xlsxUrl: string | null = null;
+      let xlsxPath: string | null = null;
+      try {
+        const xlsxImages: XlsxImageInput[] = images.map((img, i) => ({
+          bytes: img.bytes, contentType: img.contentType, rotationCW: rotationsCW[i] ?? 0,
+        }));
+        const xlsxBytes = await buildXlsxFromImages(xlsxImages);
+        xlsxPath = `${XLSX_PATH_PREFIX}/${batchId}.xlsx`;
+        await uploadToStorage(url, key, xlsxPath, xlsxBytes,
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        xlsxUrl = await createSignedUrl(url, key, xlsxPath, PDF_SIGNED_URL_SECS);
+        console.log(`[finalize-due] Excel ok batch=${batchId}`);
+      } catch (xe) {
+        console.error('[finalize-due] Excel build failed (PDF ok):', xe instanceof Error ? xe.message : xe);
+      }
 
       // Save result log (non-critical)
       await dbInsert(url, key, 'line_ai_excel_results', {
         batch_id: batchId,
-        result_text: `PDF auto: ${pdfPath} (${pages}p)`,
-        raw_json: { type: 'pdf_auto', path: pdfPath, pages },
+        result_text: `PDF+Excel auto: ${pdfPath} (${pages}p) xlsx=${xlsxPath ?? 'fail'}`,
+        raw_json: { type: 'pdf_excel_auto', path: pdfPath, pages, xlsx: xlsxPath },
       });
 
-      // Push LINE Flex
-      if (groupId) await pushPdfFlex(groupId, pages, signedUrl, lineToken);
+      // ── Push LINE card ──
+      if (groupId) {
+        if (xlsxUrl) {
+          await pushPdfExcelFlex(groupId, pages, pdfUrl, xlsxUrl, lineToken);
+        } else {
+          await pushPdfFlex(groupId, pages, pdfUrl, lineToken);
+        }
+      }
 
       finalized++;
       console.log(`[finalize-due] done batch=${batchId} pages=${pages}`);
