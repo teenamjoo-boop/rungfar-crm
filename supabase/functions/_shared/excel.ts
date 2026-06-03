@@ -15,10 +15,13 @@ import { zipSync } from 'https://esm.sh/fflate@0.8.2';
 import { Image } from 'https://deno.land/x/imagescript@1.2.15/mod.ts';
 
 // ─── Layout ─────────────────────────────────────────────────
-// 45 rows × 15 pt/row = 675 pt ≈ 23.8 cm (fits A4 portrait ≈ 29.7 cm)
-const ROWS_PER_IMAGE = 45;
-const GAP_ROWS       = 3;   // blank rows between images
-const IMG_COL_END    = 10;  // A–K (0-indexed inclusive)
+// ใช้ oneCellAnchor + explicit extent (cx,cy) ที่คำนวณจากขนาดรูปจริง
+// → รักษาสัดส่วนภาพ ไม่บีบยืด และคุมความกว้างได้แน่นอน
+const EMU_PER_PX      = 9525;  // 1 px = 9525 EMU (96 DPI)
+const TARGET_WIDTH_PX = 550;   // ความกว้างรูปใน Excel (≤ 650)
+const PX_PER_ROW      = 20;    // default row height 15pt ≈ 20px @96dpi
+const GAP_ROWS        = 3;     // แถวเว้นว่างระหว่างรูป
+const FALLBACK_RATIO  = 1.414; // ถ้า decode dims ไม่ได้ → สมมติ A4 แนวตั้ง (h/w)
 
 // ─── Public types ────────────────────────────────────────────
 export interface XlsxImageInput {
@@ -36,29 +39,49 @@ export interface XlsxImageInput {
 export async function buildXlsxFromImages(images: XlsxImageInput[]): Promise<Uint8Array> {
   const enc = new TextEncoder();
 
-  // ── 1. Pre-rotate images ──────────────────────────────────
-  interface Media { filename: string; data: Uint8Array; ext: 'jpg' | 'png'; }
+  // ── 1. Pre-rotate + วัดขนาด + คำนวณตำแหน่ง ────────────────
+  // คงลำดับรูปเดิม / คง manual rotation เดิม (rotationCW)
+  interface Media {
+    filename: string; data: Uint8Array; ext: 'jpg' | 'png';
+    cx: number; cy: number; fromRow: number;  // EMU + row position
+  }
   const media: Media[] = [];
+  let cursorRow = 0;  // แถวเริ่มของรูปถัดไป (stack จากบนลงล่าง)
 
   for (let i = 0; i < images.length; i++) {
     const src  = images[i];
     const isPng = src.contentType.includes('png');
     const ext: 'jpg' | 'png' = isPng ? 'png' : 'jpg';
     let data = src.bytes;
+    let w = 0, h = 0;  // ขนาดจริงหลังหมุน (px)
 
-    if (src.rotationCW !== 0) {
-      try {
-        const img = await Image.decode(data);
+    try {
+      const img = await Image.decode(data);
+      if (src.rotationCW !== 0) {
         img.rotate(src.rotationCW);           // imagescript uses CW degrees
         data = isPng ? await img.encodePNG() : await img.encodeJPEG(85);
-      } catch (e) {
-        console.warn(
-          `[excel] image ${i + 1} rotate(${src.rotationCW}°) failed, using original:`,
-          e instanceof Error ? e.message : String(e),
-        );
       }
+      w = img.width; h = img.height;          // dims หลังหมุนแล้ว
+    } catch (e) {
+      console.warn(
+        `[excel] image ${i + 1} decode/rotate failed, using original + fallback size:`,
+        e instanceof Error ? e.message : String(e),
+      );
     }
-    media.push({ filename: `image${i + 1}.${ext}`, data, ext });
+
+    // ขนาดที่จะแสดง: กว้างคงที่ ~550px, สูงตามสัดส่วนจริง (ไม่บีบยืด)
+    const dispW = TARGET_WIDTH_PX;
+    const dispH = (w > 0 && h > 0)
+      ? Math.round(TARGET_WIDTH_PX * h / w)
+      : Math.round(TARGET_WIDTH_PX * FALLBACK_RATIO);
+
+    const cx = dispW * EMU_PER_PX;
+    const cy = dispH * EMU_PER_PX;
+    const fromRow = cursorRow;
+    const rowsForImage = Math.ceil(dispH / PX_PER_ROW);
+    cursorRow = fromRow + rowsForImage + GAP_ROWS;
+
+    media.push({ filename: `image${i + 1}.${ext}`, data, ext, cx, cy, fromRow });
   }
 
   // ── 2. XML strings ────────────────────────────────────────
@@ -108,13 +131,11 @@ export async function buildXlsxFromImages(images: XlsxImageInput[]): Promise<Uin
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
 </Relationships>`;
 
-  // drawing: one twoCellAnchor per image
-  const anchors = media.map((_, idx) => {
-    const fromRow = idx * (ROWS_PER_IMAGE + GAP_ROWS);
-    const toRow   = fromRow + ROWS_PER_IMAGE - 1;
-    return `  <xdr:twoCellAnchor editAs="oneCell">
-    <xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${fromRow}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
-    <xdr:to><xdr:col>${IMG_COL_END}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${toRow}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>
+  // drawing: one oneCellAnchor per image — ขนาดจาก explicit extent (รักษาสัดส่วน)
+  const anchors = media.map((m, idx) => {
+    return `  <xdr:oneCellAnchor>
+    <xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${m.fromRow}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
+    <xdr:ext cx="${m.cx}" cy="${m.cy}"/>
     <xdr:pic>
       <xdr:nvPicPr>
         <xdr:cNvPr id="${idx + 2}" name="Image ${idx + 1}"/>
@@ -125,12 +146,12 @@ export async function buildXlsxFromImages(images: XlsxImageInput[]): Promise<Uin
         <a:stretch><a:fillRect/></a:stretch>
       </xdr:blipFill>
       <xdr:spPr>
-        <a:xfrm><a:off x="0" y="0"/><a:ext cx="6858000" cy="9144000"/></a:xfrm>
+        <a:xfrm><a:off x="0" y="0"/><a:ext cx="${m.cx}" cy="${m.cy}"/></a:xfrm>
         <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
       </xdr:spPr>
     </xdr:pic>
     <xdr:clientData/>
-  </xdr:twoCellAnchor>`;
+  </xdr:oneCellAnchor>`;
   }).join('\n');
 
   const drawingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
