@@ -45,6 +45,9 @@ const BATCH_WINDOW_MS    = 30 * 60 * 1000; // 30 นาที — รวมร�
 const AUTO_FINALIZE_MS   = 45 * 1000;      // 45 วินาที — auto PDF หลังไม่มีรูปใหม่
 // auto finalize จะไม่สร้าง PDF+Excel ถ้ารูปเกินจำนวนนี้ (กัน timeout/พัง) — "pdf" ยังสร้างได้
 const MAX_IMAGES_PER_BATCH_FOR_AUTO = 15;
+// ถ้ารูปใหม่ห่างจากรูปล่าสุดใน batch เดิมเกินค่านี้ → เริ่ม batch ใหม่ (แยกชุดของคนละรอบส่ง)
+// album เดียวกันรูปห่างกัน < 1 วิ จึงไม่แตก; การแชร์รอบใหม่มักห่าง > 10 วิ
+const BATCH_SPLIT_GAP_SECONDS = 10;
 // Gemini (legacy) — ยังเก็บไว้เผื่อ fallback แต่ "อ่าน" ใหม่ใช้ Document AI
 const GEMINI_MODEL_PRIMARY  = 'gemini-2.0-flash';
 const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';
@@ -317,7 +320,7 @@ async function listCollectingBatches(
   let path =
     `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
     `&status=eq.collecting&last_image_at=gte.${encodeURIComponent(cutoff)}` +
-    `&order=created_at.asc,id.asc&select=id,image_count,created_at`;
+    `&order=created_at.asc,id.asc&select=id,image_count,created_at,last_image_at`;
   if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
   return await dbSelect(url, key, path);
 }
@@ -356,48 +359,68 @@ async function recountBatchImages(url: string, key: string, batchId: string): Pr
   return files.length;
 }
 
+/** gap (วินาที) ระหว่าง now กับ last_image_at ของ batch — ใช้ตัดสินว่า append หรือเริ่มชุดใหม่ */
+function batchGapSeconds(batch: Record<string, unknown>, nowMs: number): number {
+  const lia = batch.last_image_at ? Date.parse(batch.last_image_at as string) : 0;
+  if (!lia) return Number.POSITIVE_INFINITY;
+  return (nowMs - lia) / 1000;
+}
+
 /**
- * หา/สร้าง canonical collecting batch ของ group+user แบบกัน race:
- *   - มี collecting batch อยู่แล้ว → ใช้ตัวเก่าสุดเป็น canonical, merge ตัวซ้ำเข้ามา
- *   - ไม่มี → สร้างใหม่ แล้ว re-check กัน concurrent create (ถ้าแพ้ → ใช้ canonical ที่เก่ากว่า)
- * คืน { batchId, wasCreated } — wasCreated=true เฉพาะผู้สร้าง canonical จริง (ใช้คุม ack ไม่ให้ซ้ำ)
+ * หา/สร้าง canonical collecting batch ของ group+user แบบกัน race + แยกชุดตาม gap:
+ *   - มี collecting batch ที่ "active" (รูปล่าสุดห่าง ≤ gap) → append เข้าตัวเก่าสุด, merge ตัว active ซ้ำ
+ *   - ไม่มี active (มีแต่ batch idle > gap หรือไม่มีเลย) → สร้าง batch ใหม่ (แยกชุดของคนละรอบส่ง)
+ *   - re-check กัน concurrent create เฉพาะ batch ที่ active (album ยิงพร้อมกัน)
+ * คืน { batchId, wasCreated } — wasCreated=true เฉพาะผู้สร้าง canonical จริง (คุม ack ไม่ให้ซ้ำ)
  */
 async function resolveCollectingBatch(
   url: string, key: string, groupId: string, userId: string | null, nowIso: string,
 ): Promise<{ batchId: string; wasCreated: boolean }> {
-  // 1) มี collecting batch อยู่แล้ว?
+  const nowMs = Date.parse(nowIso) || Date.now();
   const existing = await listCollectingBatches(url, key, groupId, userId);
-  if (existing.length > 0) {
-    const canonicalId = existing[0].id as string;
-    if (existing.length > 1) {
-      const extraIds = existing.slice(1).map(b => b.id as string);
-      console.log(`[line-ai-excel] found ${existing.length} collecting batches → merge into ${canonicalId}`);
+
+  // batch ที่ยัง active = รูปล่าสุดห่างไม่เกิน gap → append ได้ (album/ส่งต่อเนื่อง)
+  const appendable = existing.filter(b => batchGapSeconds(b, nowMs) <= BATCH_SPLIT_GAP_SECONDS);
+
+  if (appendable.length > 0) {
+    const canonicalId = appendable[0].id as string;
+    const gapS = batchGapSeconds(appendable[0], nowMs).toFixed(1);
+    const cnt = (appendable[0].image_count as number) || 0;
+    // album ที่ถูกแยกหลาย batch สด ๆ → รวมตัว active ซ้ำเข้า canonical
+    if (appendable.length > 1) {
+      const extraIds = appendable.slice(1).map(b => b.id as string);
+      console.log(`[line-ai-excel] found ${appendable.length} active batches → merge into ${canonicalId}`);
       await mergeBatchesInto(url, key, canonicalId, extraIds);
     }
-    console.log(`[line-ai-excel] append existing batch ${canonicalId} group=${groupId} user=${userId ?? '-'}`);
+    console.log(`[line-ai-excel] append existing batch | group=${groupId} user=${userId ?? '-'} batch=${canonicalId} gapSeconds=${gapS} image_count=${cnt} (gap<=${BATCH_SPLIT_GAP_SECONDS}s)`);
     return { batchId: canonicalId, wasCreated: false };
   }
 
-  // 2) ไม่มี → สร้างใหม่
+  // ไม่มี active → เริ่มชุดใหม่
+  if (existing.length > 0) {
+    const minGap = Math.min(...existing.map(b => batchGapSeconds(b, nowMs))).toFixed(1);
+    console.log(`[line-ai-excel] create new batch because gap > ${BATCH_SPLIT_GAP_SECONDS}s | group=${groupId} user=${userId ?? '-'} prevGapSeconds=${minGap} (prev batch idle, แยกชุดใหม่)`);
+  } else {
+    console.log(`[line-ai-excel] create new batch | group=${groupId} user=${userId ?? '-'} (no active batch)`);
+  }
+
   const created = await dbInsert(
     url, key, 'line_ai_excel_batches',
     { group_id: groupId, user_id: userId, status: 'collecting', image_count: 0, last_image_at: nowIso },
   );
   const newId = created[0].id as string;
-  console.log(`[line-ai-excel] create new batch ${newId} group=${groupId} user=${userId ?? '-'} (no active batch)`);
 
-  // 3) re-check กัน concurrent create (album ยิงพร้อมกันหลาย instance)
+  // re-check กัน concurrent create — เฉพาะ batch ที่ active (เพิ่งสร้างพร้อมกัน) ไม่ยุ่งกับ batch idle เก่า
   const after = await listCollectingBatches(url, key, groupId, userId);
-  if (after.length > 1) {
-    const canonicalId = after[0].id as string;
-    const extraIds = after.slice(1).map(b => b.id as string);
+  const freshAfter = after.filter(b => batchGapSeconds(b, Date.now()) <= BATCH_SPLIT_GAP_SECONDS);
+  if (freshAfter.length > 1) {
+    const canonicalId = freshAfter[0].id as string;
+    const extraIds = freshAfter.slice(1).map(b => b.id as string);
     if (canonicalId !== newId) {
-      // batch เราไม่ใช่ canonical → merge ทุกตัวที่ไม่ใช่ canonical (รวมของเรา) เข้า canonical
       console.log(`[line-ai-excel] concurrent create detected → canonical=${canonicalId}, our=${newId} merged`);
       await mergeBatchesInto(url, key, canonicalId, extraIds);
       return { batchId: canonicalId, wasCreated: false };
     }
-    // เราเป็น canonical → merge ตัวซ้ำที่เหลือเข้าเรา
     console.log(`[line-ai-excel] concurrent create detected → we are canonical=${newId}`);
     await mergeBatchesInto(url, key, newId, extraIds);
   }
@@ -405,22 +428,34 @@ async function resolveCollectingBatch(
 }
 
 /**
- * ก่อน finalize: รวม collecting batch ซ้ำของ group+user เข้า canonical แล้ว cancel ตัวอื่น
- * → กัน auto finalize ส่ง card หลายใบจาก album ที่ถูกแยก batch
+ * ก่อน finalize: รวมเฉพาะ collecting batch ซ้ำที่เป็น "album remnant" (รูปล่าสุดใกล้กับ anchor ≤ gap)
+ * เข้า canonical → กัน album แตก card หลายใบ
+ * แต่ "ไม่" รวม batch ของคนละรอบส่ง (gap ห่าง) เพื่อรักษาการแยกชุดตามเวลา
  */
 async function mergeSiblingCollectingBatches(
   url: string, key: string, canonicalId: string, groupId: string, userId: string | null,
+  anchorLastImageAtIso: string | null,
 ): Promise<void> {
   let path =
     `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
-    `&status=eq.collecting&id=neq.${encodeURIComponent(canonicalId)}&select=id`;
+    `&status=eq.collecting&id=neq.${encodeURIComponent(canonicalId)}&select=id,last_image_at`;
   if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
   try {
     const siblings = await dbSelect(url, key, path);
-    if (siblings.length > 0) {
-      const ids = siblings.map(b => b.id as string);
-      console.log(`[line-ai-excel] finalize merge ${ids.length} sibling batch(es) → ${canonicalId}`);
+    if (siblings.length === 0) return;
+    const anchorMs = anchorLastImageAtIso ? Date.parse(anchorLastImageAtIso) : Date.now();
+    // เฉพาะ sibling ที่รูปล่าสุดใกล้ anchor (album remnant) เท่านั้น → ไม่แตะชุดที่ห่างเวลา
+    const toMerge = siblings.filter(s => {
+      const lia = s.last_image_at ? Date.parse(s.last_image_at as string) : 0;
+      return lia > 0 && Math.abs(lia - anchorMs) / 1000 <= BATCH_SPLIT_GAP_SECONDS;
+    });
+    const kept = siblings.length - toMerge.length;
+    if (toMerge.length > 0) {
+      const ids = toMerge.map(b => b.id as string);
+      console.log(`[line-ai-excel] finalize merge ${ids.length} album-remnant batch(es) → ${canonicalId} (keep ${kept} time-split)`);
       await mergeBatchesInto(url, key, canonicalId, ids);
+    } else if (kept > 0) {
+      console.log(`[line-ai-excel] finalize: ${kept} sibling batch(es) kept (time-split, gap>${BATCH_SPLIT_GAP_SECONDS}s)`);
     }
   } catch (e) {
     console.warn('[line-ai-excel] mergeSiblingCollectingBatches failed:', e instanceof Error ? e.message : e);
@@ -1767,10 +1802,10 @@ async function checkAndFinalizeStale(
       continue;
     }
 
-    // safety net: รวม collecting batch ซ้ำของ group+user เข้า batch นี้ก่อนสร้างไฟล์
-    // → กัน album ที่ถูกแยก batch ส่ง card หลายใบ
+    // safety net: รวมเฉพาะ album remnant (gap ใกล้) เข้า batch นี้ ไม่แตะชุดที่แยกตามเวลา
     const userId = (batch.user_id as string | null) ?? null;
-    await mergeSiblingCollectingBatches(url, key, batchId, groupId, userId);
+    const anchorLia = (batch.last_image_at as string | null) ?? null;
+    await mergeSiblingCollectingBatches(url, key, batchId, groupId, userId, anchorLia);
 
     try {
       // ── PDF (critical) ──

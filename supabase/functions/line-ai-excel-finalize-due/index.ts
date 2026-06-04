@@ -20,6 +20,8 @@ const PDF_SIGNED_URL_SECS  = 30 * 24 * 60 * 60; // 30 วัน
 const AUTO_FINALIZE_MS     = 30 * 1000;           // 30 วินาที (idle threshold — cron ยิงทุก 1 นาที → รอจริง 30–90 วิ)
 // auto finalize จะไม่สร้าง PDF+Excel ถ้ารูปเกินจำนวนนี้ (กัน timeout/พัง)
 const MAX_IMAGES_PER_BATCH_FOR_AUTO = 15;
+// ต้องตรงกับ BATCH_SPLIT_GAP_SECONDS ใน line-ai-excel-helper — gate การ merge sibling ตามเวลา
+const BATCH_SPLIT_GAP_SECONDS = 10;
 // ต้องตรงกับ FILE_PAGE_ORDER ใน line-ai-excel-helper เสมอ
 const FILE_PAGE_ORDER =
   'line_event_ts.asc.nullslast,' +
@@ -75,23 +77,35 @@ async function tryLockBatch(url: string, key: string, batchId: string): Promise<
 }
 
 /**
- * ก่อน finalize: รวม collecting batch ซ้ำของ group+user (จาก album/race) เข้า canonical
+ * ก่อน finalize: รวมเฉพาะ "album remnant" (รูปล่าสุดใกล้ anchor ≤ gap) เข้า canonical
  *   - ย้าย file records ของ sibling → canonical (storage_path เดิม ใช้ต่อได้)
  *   - cancel sibling → tryLockBatch รอบหลังจะ skip
- * → กัน auto finalize ส่ง card หลายใบ
+ * → กัน album แตก card หลายใบ แต่ "ไม่" รวมชุดของคนละรอบส่ง (gap ห่าง)
  */
 async function mergeSiblingCollectingBatches(
   url: string, key: string, canonicalId: string, groupId: string, userId: string | null,
+  anchorLastImageAtIso: string | null,
 ): Promise<void> {
   let path =
     `line_ai_excel_batches?group_id=eq.${encodeURIComponent(groupId)}` +
-    `&status=eq.collecting&id=neq.${encodeURIComponent(canonicalId)}&select=id`;
+    `&status=eq.collecting&id=neq.${encodeURIComponent(canonicalId)}&select=id,last_image_at`;
   if (userId) path += `&user_id=eq.${encodeURIComponent(userId)}`;
   try {
     const siblings = await dbSelect(url, key, path);
     if (siblings.length === 0) return;
-    console.log(`[finalize-due] merge ${siblings.length} sibling batch(es) → ${canonicalId}`);
-    for (const sib of siblings) {
+    const anchorMs = anchorLastImageAtIso ? Date.parse(anchorLastImageAtIso) : Date.now();
+    // เฉพาะ sibling ที่รูปล่าสุดใกล้ anchor (album remnant) เท่านั้น
+    const toMerge = siblings.filter(s => {
+      const lia = s.last_image_at ? Date.parse(s.last_image_at as string) : 0;
+      return lia > 0 && Math.abs(lia - anchorMs) / 1000 <= BATCH_SPLIT_GAP_SECONDS;
+    });
+    const kept = siblings.length - toMerge.length;
+    if (toMerge.length === 0) {
+      if (kept > 0) console.log(`[finalize-due] ${kept} sibling batch(es) kept (time-split, gap>${BATCH_SPLIT_GAP_SECONDS}s)`);
+      return;
+    }
+    console.log(`[finalize-due] merge ${toMerge.length} album-remnant batch(es) → ${canonicalId} (keep ${kept} time-split)`);
+    for (const sib of toMerge) {
       const sibId = sib.id as string;
       try {
         await dbUpdate(url, key, 'line_ai_excel_files', `batch_id=eq.${encodeURIComponent(sibId)}`, {
@@ -432,9 +446,9 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
       continue;
     }
 
-    // safety net: รวม collecting batch ซ้ำของ group+user เข้า batch นี้ก่อนสร้างไฟล์
-    // → กัน album ที่ถูกแยก batch ส่ง card หลายใบ
-    await mergeSiblingCollectingBatches(url, key, batchId, groupId, userId);
+    // safety net: รวมเฉพาะ album remnant (gap ใกล้) เข้า batch นี้ ไม่แตะชุดที่แยกตามเวลา
+    const anchorLia = (batch.last_image_at as string | null) ?? null;
+    await mergeSiblingCollectingBatches(url, key, batchId, groupId, userId, anchorLia);
 
     try {
       // [PDF-only mode] auto-rotate ปิดชั่วคราว — ไม่เรียก Document AI OCR เพื่อประหยัดค่า Google AI
