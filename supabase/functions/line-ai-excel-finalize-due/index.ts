@@ -23,8 +23,11 @@ const MAX_IMAGES_PER_BATCH_FOR_AUTO = 15;
 // ต้องตรงกับ BATCH_SPLIT_GAP_SECONDS ใน line-ai-excel-helper — gate การ merge sibling ตามเวลา
 const BATCH_SPLIT_GAP_SECONDS = 10;
 // ต้องตรงกับ FILE_PAGE_ORDER ใน line-ai-excel-helper เสมอ
+// ต้องตรงกับ FILE_PAGE_ORDER ใน line-ai-excel-helper เสมอ (PDF/Excel ใช้ลำดับเดียวกัน 100%)
+// line_message_id (Snowflake-like) เป็น global tiebreaker กัน concurrent webhook ลำดับเพี้ยน
 const FILE_PAGE_ORDER =
   'line_event_ts.asc.nullslast,' +
+  'line_message_id.asc.nullslast,' +
   'line_event_index.asc.nullslast,' +
   'created_at.asc,' +
   'id.asc';
@@ -460,12 +463,12 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
       // }
       console.log(`[finalize-due] PDF-only mode: auto-rotate skipped batch=${batchId}`);
 
-      // Load files (รวม rotation columns) ตาม canonical order
+      // Load files (รวม rotation columns) ตาม canonical order — PDF/Excel ใช้ array เดียวกัน 100%
       const files = await dbSelect(
         url, key,
         `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}` +
         `&order=${FILE_PAGE_ORDER}` +
-        `&select=storage_path,mime_type,rotation_deg,rotation_locked,auto_rotation_deg`,
+        `&select=id,storage_path,mime_type,rotation_deg,rotation_locked,auto_rotation_deg,line_message_id,line_event_ts`,
       );
       if (files.length === 0) {
         await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
@@ -473,6 +476,10 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
         });
         continue;
       }
+      console.log(
+        `[finalize-due] ordered pages batch=${batchId} (${files.length}) | ` +
+        files.map((f, i) => `p${i + 1}:fileId=${f.id} msgId=${f.line_message_id ?? '-'} ts=${f.line_event_ts ?? '-'}`).join(' | '),
+      );
 
       // Download images — effective rotation: manual (locked) ชนะ ไม่งั้นใช้ auto
       const images: { bytes: Uint8Array; contentType: string }[] = [];

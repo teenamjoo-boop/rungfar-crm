@@ -61,10 +61,16 @@ const TSV_PATH_PREFIX = 'line-ai-excel-tsv';
 const A4_W = 595.28;
 const A4_H = 841.89;
 const PDF_MARGIN = 24;
-// Source of truth: LINE event timestamp → event index → created_at → id
+// Source of truth (ลำดับหน้า): LINE event timestamp → message.id → event index → created_at → id
+//   - line_event_ts:    เวลา event จาก LINE (รูป album มัก ts เท่ากัน)
+//   - line_message_id:  message.id เป็น Snowflake-like เรียงตามเวลาส่งจริง (global, กัน concurrent webhook เพี้ยน)
+//                       ภายใน batch เดียว ความยาวเท่ากัน → lexicographic = chronological
+//   - line_event_index: tiebreaker ภายใน webhook request เดียว
+//   - created_at/id:    fallback สุดท้าย (อย่าเชื่อ created_at อย่างเดียว — concurrent upload เพี้ยนได้)
 // page_no ถูก reindex หลัง sort นี้เสมอ ห้ามใช้ page_no เป็น primary sort
 const FILE_PAGE_ORDER =
   'line_event_ts.asc.nullslast,' +
+  'line_message_id.asc.nullslast,' +
   'line_event_index.asc.nullslast,' +
   'created_at.asc,' +
   'id.asc';
@@ -97,6 +103,7 @@ interface LineMessage {
 interface LineEvent {
   type: string;             // 'message' | ...
   timestamp?: number;       // LINE server timestamp (Unix ms) — ใช้เป็น sort key
+  webhookEventId?: string;  // unique id ของ event (ใช้ debug/trace ลำดับ ไม่ใช้ sort)
   replyToken?: string;
   source?: LineSource;
   message?: LineMessage;
@@ -1418,10 +1425,11 @@ async function buildAndUploadPdf(
     url, key,
     `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}` +
     `&order=${FILE_PAGE_ORDER}` +
-    `&select=id,storage_path,mime_type,page_no,rotation_deg,rotation_locked,auto_rotation_deg`,
+    `&select=id,storage_path,mime_type,page_no,rotation_deg,rotation_locked,auto_rotation_deg,line_message_id,line_event_ts`,
   );
   if (files.length === 0) return null;
   await ensurePageNumbers(url, key, files);
+  logOrderedFiles('PDF', batchId, files);
 
   const images: { bytes: Uint8Array; contentType: string }[] = [];
   const rotationsCW: number[] = [];
@@ -1462,10 +1470,11 @@ async function buildAndUploadExcel(
       url, key,
       `line_ai_excel_files?batch_id=eq.${encodeURIComponent(batchId)}` +
       `&order=${FILE_PAGE_ORDER}` +
-      `&select=id,storage_path,mime_type,page_no,rotation_deg,rotation_locked,auto_rotation_deg`,
+      `&select=id,storage_path,mime_type,page_no,rotation_deg,rotation_locked,auto_rotation_deg,line_message_id,line_event_ts`,
     );
     if (files.length === 0) return null;
     await ensurePageNumbers(url, key, files);
+    logOrderedFiles('Excel', batchId, files);
 
     const xlsxImages: XlsxImageInput[] = [];
     for (const f of files) {
@@ -1873,6 +1882,7 @@ async function handleImage(
   const userId     = ev.source?.userId  || null;
   const msgId      = ev.message?.id || '';
   const eventTs    = typeof ev.timestamp === 'number' ? ev.timestamp : null; // LINE server ms
+  const webhookEventId = ev.webhookEventId || '-';
   if (!groupId || !msgId) return;
 
   // กันซ้ำ: ถ้า message นี้บันทึกแล้ว ข้าม
@@ -1919,7 +1929,11 @@ async function handleImage(
     { image_count: newCount, last_image_at: nowIso, updated_at: nowIso },
   );
 
-  console.log(`[line-ai-excel] stored image | group=${groupId} user=${userId ?? '-'} batch=${batchId} status=collecting count=${newCount} wasCreated=${wasCreated}`);
+  console.log(
+    `[line-ai-excel] stored image | group=${groupId} user=${userId ?? '-'} batch=${batchId}` +
+    ` msgId=${msgId} webhookEventId=${webhookEventId} eventTs=${eventTs ?? '-'} createdAt=${nowIso}` +
+    ` status=collecting count=${newCount} wasCreated=${wasCreated}`,
+  );
 
   // 6) reply ack เฉพาะผู้สร้าง canonical batch (รูปแรกจริง) — กัน ack ซ้ำจาก album เดียวกัน
   if (wasCreated && ev.replyToken) {
@@ -2004,7 +2018,7 @@ async function loadBatchFiles(
   const files = await dbSelect(
     url, key,
     `line_ai_excel_files?batch_id=eq.${batchId}&order=${FILE_PAGE_ORDER}` +
-    `&select=id,page_no,rotation_deg,rotation_locked,auto_rotation_deg,auto_rotation_confidence`,
+    `&select=id,page_no,rotation_deg,rotation_locked,auto_rotation_deg,auto_rotation_confidence,line_message_id,line_event_ts`,
   );
   await ensurePageNumbers(url, key, files);
   return files;
@@ -2023,6 +2037,14 @@ async function ensurePageNumbers(
       );
     }
   }
+}
+
+/** log ลำดับหน้าจริงที่จะใช้สร้างไฟล์ (PDF/Excel ใช้ลำดับเดียวกัน) — debug ลำดับเพี้ยน */
+function logOrderedFiles(label: string, batchId: string, files: Record<string, unknown>[]): void {
+  const rows = files.map((f, i) =>
+    `p${i + 1}:fileId=${f.id} msgId=${f.line_message_id ?? '-'} ts=${f.line_event_ts ?? '-'}`,
+  );
+  console.log(`[line-ai-excel] ${label} ordered pages batch=${batchId} (${files.length}) | ${rows.join(' | ')}`);
 }
 
 /** คำสั่ง text ในกลุ่ม control */
@@ -2395,7 +2417,13 @@ async function handleText(
           skipped.push(pageNum);
           continue;
         }
-        const fileId = files[pageNum - 1].id as string;
+        const target = files[pageNum - 1];
+        const fileId = target.id as string;
+        // manual rotation ผูกกับ file record (fileId) ไม่ใช่ตำแหน่ง — log mapping ให้ตรวจได้
+        console.log(
+          `[line-ai-excel] rotate map | page=${pageNum} → fileId=${fileId}` +
+          ` msgId=${target.line_message_id ?? '-'} rotCW=${rotCW}° (manual lock)`,
+        );
         // manual override: lock ไว้เพื่อให้ auto OCR ไม่ override หน้านี้
         await dbUpdate(
           url, key, 'line_ai_excel_files', `id=eq.${fileId}`,
