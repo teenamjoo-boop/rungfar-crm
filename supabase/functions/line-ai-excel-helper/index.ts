@@ -48,6 +48,9 @@ const MAX_IMAGES_PER_BATCH_FOR_AUTO = 15;
 // ถ้ารูปใหม่ห่างจากรูปล่าสุดใน batch เดิมเกินค่านี้ → เริ่ม batch ใหม่ (แยกชุดของคนละรอบส่ง)
 // album เดียวกันรูปห่างกัน < 1 วิ จึงไม่แตก; การแชร์รอบใหม่มักห่าง > 10 วิ
 const BATCH_SPLIT_GAP_SECONDS = 10;
+// ก่อน manual finalize (pdf/excel/xlsx/จบ): ถ้ารูปล่าสุดเพิ่งเข้ามา < ค่านี้ → รอให้ image events
+// ที่ส่งรัว ๆ เข้า DB ครบก่อนสร้างไฟล์ (กัน PDF ขาดรูปจาก race)
+const MANUAL_FINALIZE_SETTLE_SECONDS = 8;
 // Gemini (legacy) — ยังเก็บไว้เผื่อ fallback แต่ "อ่าน" ใหม่ใช้ Document AI
 const GEMINI_MODEL_PRIMARY  = 'gemini-2.0-flash';
 const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';
@@ -467,6 +470,68 @@ async function mergeSiblingCollectingBatches(
   } catch (e) {
     console.warn('[line-ai-excel] mergeSiblingCollectingBatches failed:', e instanceof Error ? e.message : e);
   }
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** อ่าน last_image_at ปัจจุบันของ batch (ms) — 0 ถ้าไม่มี */
+async function fetchBatchLastImageMs(url: string, key: string, batchId: string): Promise<number> {
+  try {
+    const rows = await dbSelect(
+      url, key,
+      `line_ai_excel_batches?id=eq.${encodeURIComponent(batchId)}&select=last_image_at&limit=1`,
+    );
+    const lia = rows[0]?.last_image_at ? Date.parse(rows[0].last_image_at as string) : 0;
+    return isNaN(lia) ? 0 : lia;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * ก่อน manual finalize (pdf/excel/xlsx/จบ): กัน race ที่ image events ยังเข้า DB ไม่ครบ
+ *   - ถ้ารูปล่าสุดเพิ่งเข้ามา < SETTLE → รอจนกว่ารูปจะ "นิ่ง" (ไม่มีรูปใหม่ภายใน SETTLE) หรือครบ cap
+ *   - merge sibling collecting batches (album remnant)
+ *   - recount image count จาก records จริง
+ * คืน { count } = afterSettleCount (ใช้ค่านี้เท่านั้น ห้ามใช้ count เก่า)
+ */
+async function settleBeforeManualFinalize(
+  url: string, key: string, cmdLabel: string,
+  groupId: string, userId: string | null, batch: Record<string, unknown>,
+): Promise<{ count: number }> {
+  const batchId = batch.id as string;
+  const beforeSettleCount = await recountBatchImages(url, key, batchId);
+
+  const SETTLE_MS  = MANUAL_FINALIZE_SETTLE_SECONDS * 1000;
+  const MAX_WAIT_MS = SETTLE_MS; // จำกัดเวลารอรวมไม่เกิน 1 settle window
+  let lastLiaMs = batch.last_image_at ? Date.parse(batch.last_image_at as string) : 0;
+  if (isNaN(lastLiaMs)) lastLiaMs = 0;
+  let waitedMs = 0;
+
+  // วนรอจนรูปนิ่ง: รูปล่าสุดต้องเก่ากว่า SETTLE (ไม่มีรูปใหม่เข้ามา) หรือชน cap
+  while (waitedMs < MAX_WAIT_MS) {
+    const ageMs = lastLiaMs ? Date.now() - lastLiaMs : Number.POSITIVE_INFINITY;
+    if (ageMs >= SETTLE_MS) break; // นิ่งแล้ว
+    const step = Math.min(SETTLE_MS - ageMs + 200, 1500, MAX_WAIT_MS - waitedMs);
+    if (step <= 0) break;
+    await sleep(step);
+    waitedMs += step;
+    const freshLia = await fetchBatchLastImageMs(url, key, batchId);
+    if (freshLia > lastLiaMs) lastLiaMs = freshLia; // มีรูปใหม่เข้ามา → รอต่อ
+  }
+
+  // merge album remnant (ใช้ last_image_at ล่าสุดเป็น anchor) + recount จาก records จริง
+  const anchorIso = lastLiaMs ? new Date(lastLiaMs).toISOString() : (batch.last_image_at as string | null) ?? null;
+  await mergeSiblingCollectingBatches(url, key, batchId, groupId, userId, anchorIso);
+  const afterSettleCount = await recountBatchImages(url, key, batchId);
+
+  const lastImageAgeMs = lastLiaMs ? Date.now() - lastLiaMs : -1;
+  console.log(
+    `[line-ai-excel] settle | cmd=${cmdLabel} batch=${batchId}` +
+    ` beforeSettleCount=${beforeSettleCount} afterSettleCount=${afterSettleCount}` +
+    ` waitedMs=${waitedMs} lastImageAgeMs=${lastImageAgeMs}`,
+  );
+  return { count: afterSettleCount };
 }
 
 /** หา batch ล่าสุดของกลุ่ม+user ที่ collecting (ไม่จำกัดเวลา) — ใช้กับคำสั่ง ล้าง/จบ */
@@ -2210,10 +2275,11 @@ async function handleText(
       return;
     }
     const batchId = batch.id as string;
-    // oversize: รูปเยอะเกิน → ไม่สร้าง PDF+Excel รวม, แจ้งให้แบ่งชุด (ยัง collecting → "pdf" ใช้ได้)
-    const jobCount = (batch.image_count as number) || 0;
-    if (jobCount > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
-      console.log(`[line-ai-excel] จบ oversize batch=${batchId} count=${jobCount} → reject combined`);
+    // settle: รอ image events ที่ส่งรัว ๆ เข้าครบก่อน + merge sibling + recount (ห้ามใช้ count เก่า)
+    const settled = await settleBeforeManualFinalize(url, key, 'จบ', groupId, userId, batch);
+    // oversize: ใช้ afterSettleCount → ไม่สร้าง PDF+Excel รวม, แจ้งให้แบ่งชุด (ยัง collecting → "pdf" ใช้ได้)
+    if (settled.count > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
+      console.log(`[line-ai-excel] จบ oversize batch=${batchId} count=${settled.count} → reject combined`);
       await replyLineText(replyToken, OVERSIZE_WARN_TEXT, lineToken);
       return;
     }
@@ -2634,10 +2700,10 @@ async function handleText(
     }
   }
 
-  // ─── pdf / ทำpdf / ทำ PDF — สร้าง PDF ทันที ──────────────────────────────
+  // ─── pdf / ทำpdf / จบpdf — สร้าง PDF อย่างเดียว ทันที ────────────────────
   {
     const cmdNoSpace = text.replace(/\s+/g, '').toLowerCase();
-    if (cmd === 'pdf' || cmdNoSpace === 'pdf' || cmdNoSpace === 'ทำpdf') {
+    if (cmd === 'pdf' || cmdNoSpace === 'pdf' || cmdNoSpace === 'ทำpdf' || cmdNoSpace === 'จบpdf') {
       const batch = await findLatestAnyBatch(url, key, groupId, userId);
       if (!batch) {
         await replyLineText(replyToken, 'ยังไม่มีรูปสำหรับทำ PDF กรุณาส่งรูปเอกสารก่อน', lineToken);
@@ -2645,6 +2711,8 @@ async function handleText(
       }
       const batchId     = batch.id as string;
       const batchStatus = batch.status as string;
+      // settle: รอ image events ที่ส่งรัว ๆ เข้าครบ + merge sibling + recount ก่อนสร้าง (กัน PDF ขาดรูป)
+      await settleBeforeManualFinalize(url, key, 'pdf', groupId, userId, batch);
       try {
         const result = await buildAndUploadPdf(url, key, batchId);
         if (!result) {
@@ -2695,10 +2763,11 @@ async function handleText(
       }
       const batchId     = batch.id as string;
       const batchStatus = batch.status as string;
-      // oversize: Excel รองรับไม่เกิน 15 รูปต่อชุด
-      const xlCount = (batch.image_count as number) || 0;
-      if (xlCount > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
-        console.log(`[line-ai-excel] excel oversize batch=${batchId} count=${xlCount} → reject`);
+      // settle: รอ image events ที่ส่งรัว ๆ เข้าครบ + merge sibling + recount (ห้ามใช้ count เก่า)
+      const settledXl = await settleBeforeManualFinalize(url, key, cmd === 'xlsx' || cmdNoSpace2 === 'xlsx' ? 'xlsx' : 'excel', groupId, userId, batch);
+      // oversize: ใช้ afterSettleCount — Excel รองรับไม่เกิน 15 รูปต่อชุด
+      if (settledXl.count > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
+        console.log(`[line-ai-excel] excel oversize batch=${batchId} count=${settledXl.count} → reject`);
         await replyLineText(
           replyToken,
           `Excel รองรับไม่เกิน ${MAX_IMAGES_PER_BATCH_FOR_AUTO} รูปต่อชุด กรุณาแบ่งชุด`,
