@@ -43,6 +43,8 @@ import type { XlsxImageInput } from '../_shared/excel.ts';
 const STORAGE_BUCKET = 'line-ai-excel-intake';
 const BATCH_WINDOW_MS    = 30 * 60 * 1000; // 30 นาที — รวมรูปชุดเดียวกัน
 const AUTO_FINALIZE_MS   = 45 * 1000;      // 45 วินาที — auto PDF หลังไม่มีรูปใหม่
+// auto finalize จะไม่สร้าง PDF+Excel ถ้ารูปเกินจำนวนนี้ (กัน timeout/พัง) — "pdf" ยังสร้างได้
+const MAX_IMAGES_PER_BATCH_FOR_AUTO = 15;
 // Gemini (legacy) — ยังเก็บไว้เผื่อ fallback แต่ "อ่าน" ใหม่ใช้ Document AI
 const GEMINI_MODEL_PRIMARY  = 'gemini-2.0-flash';
 const GEMINI_MODEL_FALLBACK = 'gemini-1.5-flash';
@@ -1676,6 +1678,52 @@ async function pushPdfExcelFlex(
   }
 }
 
+/** ข้อความเตือนเมื่อรูปใน batch มากเกินไปสำหรับ auto finalize */
+const OVERSIZE_WARN_TEXT =
+  'รูปชุดนี้มีจำนวนมากเกินไปค่ะ\n' +
+  `กรุณาแบ่งส่งใหม่เป็นชุดละไม่เกิน ${MAX_IMAGES_PER_BATCH_FOR_AUTO} รูป\n` +
+  'หรือพิมพ์ "pdf" หากต้องการสร้าง PDF อย่างเดียว';
+
+/** เคยเตือน oversize สำหรับ batch นี้แล้วหรือยัง (กัน spam ทุกรอบ cron) */
+async function oversizeAlreadyWarned(url: string, key: string, batchId: string): Promise<boolean> {
+  try {
+    const rows = await dbSelect(
+      url, key,
+      `line_ai_excel_results?batch_id=eq.${encodeURIComponent(batchId)}` +
+      `&result_text=eq.OVERSIZE_WARN&select=id&limit=1`,
+    );
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** push ข้อความเตือน oversize ไป group + บันทึก sentinel กันเตือนซ้ำ */
+async function warnOversizeOnce(
+  url: string, key: string, batchId: string, groupId: string, lineToken: string,
+): Promise<void> {
+  if (await oversizeAlreadyWarned(url, key, batchId)) {
+    console.log(`[line-ai-excel] oversize already warned batch=${batchId}, skip`);
+    return;
+  }
+  if (groupId) {
+    await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+      body: JSON.stringify({ to: groupId, messages: [{ type: 'text', text: OVERSIZE_WARN_TEXT }] }),
+    }).catch((e) => console.warn('[line-ai-excel] oversize warn push failed:', e instanceof Error ? e.message : e));
+  }
+  try {
+    await dbInsert(url, key, 'line_ai_excel_results', {
+      batch_id: batchId,
+      result_text: 'OVERSIZE_WARN',
+      raw_json: { type: 'oversize_warn', max: MAX_IMAGES_PER_BATCH_FOR_AUTO },
+    });
+  } catch (e) {
+    console.warn('[line-ai-excel] oversize warn log failed:', e instanceof Error ? e.message : e);
+  }
+}
+
 /**
  * ตรวจ batch ที่ last_image_at เกิน AUTO_FINALIZE_MS และยัง status='collecting'
  * → mark done + สร้าง PDF + Excel + push ไป group
@@ -1702,7 +1750,15 @@ async function checkAndFinalizeStale(
   for (const batch of staleBatches) {
     const batchId = batch.id as string;
     const groupId = batch.group_id as string;
-    console.log(`[line-ai-excel] auto-finalize | batch=${batchId} group=${groupId}`);
+    const imgCount = (batch.image_count as number) || 0;
+    console.log(`[line-ai-excel] auto-finalize | batch=${batchId} group=${groupId} count=${imgCount}`);
+
+    // oversize: รูปเยอะเกิน → ไม่ lock ไม่สร้าง ไม่ finalize, เตือนครั้งเดียว (batch ยัง collecting → "pdf" ใช้ได้)
+    if (imgCount > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
+      console.log(`[line-ai-excel] batch=${batchId} oversize (${imgCount}>${MAX_IMAGES_PER_BATCH_FOR_AUTO}) → skip auto, warn`);
+      await warnOversizeOnce(url, key, batchId, groupId, lineToken);
+      continue;
+    }
 
     // Atomic lock: collecting → finalizing (กัน double-finalize)
     const locked = await tryLockBatch(url, key, batchId);
@@ -2097,6 +2153,13 @@ async function handleText(
       return;
     }
     const batchId = batch.id as string;
+    // oversize: รูปเยอะเกิน → ไม่สร้าง PDF+Excel รวม, แจ้งให้แบ่งชุด (ยัง collecting → "pdf" ใช้ได้)
+    const jobCount = (batch.image_count as number) || 0;
+    if (jobCount > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
+      console.log(`[line-ai-excel] จบ oversize batch=${batchId} count=${jobCount} → reject combined`);
+      await replyLineText(replyToken, OVERSIZE_WARN_TEXT, lineToken);
+      return;
+    }
     // Lock atomic: collecting → finalizing
     const locked = await tryLockBatch(url, key, batchId);
     if (!locked) {
@@ -2569,6 +2632,17 @@ async function handleText(
       }
       const batchId     = batch.id as string;
       const batchStatus = batch.status as string;
+      // oversize: Excel รองรับไม่เกิน 15 รูปต่อชุด
+      const xlCount = (batch.image_count as number) || 0;
+      if (xlCount > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
+        console.log(`[line-ai-excel] excel oversize batch=${batchId} count=${xlCount} → reject`);
+        await replyLineText(
+          replyToken,
+          `Excel รองรับไม่เกิน ${MAX_IMAGES_PER_BATCH_FOR_AUTO} รูปต่อชุด กรุณาแบ่งชุด`,
+          lineToken,
+        );
+        return;
+      }
       const xlsxResult = await buildAndUploadExcel(url, key, batchId);
       if (!xlsxResult) {
         await replyLineText(replyToken, 'สร้าง Excel ไม่สำเร็จ กรุณาลองใหม่', lineToken);

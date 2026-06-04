@@ -18,6 +18,8 @@ const PDF_PATH_PREFIX      = 'line-ai-excel-pdf';
 const XLSX_PATH_PREFIX     = 'line-ai-excel-xlsx';
 const PDF_SIGNED_URL_SECS  = 30 * 24 * 60 * 60; // 30 วัน
 const AUTO_FINALIZE_MS     = 30 * 1000;           // 30 วินาที (idle threshold — cron ยิงทุก 1 นาที → รอจริง 30–90 วิ)
+// auto finalize จะไม่สร้าง PDF+Excel ถ้ารูปเกินจำนวนนี้ (กัน timeout/พัง)
+const MAX_IMAGES_PER_BATCH_FOR_AUTO = 15;
 // ต้องตรงกับ FILE_PAGE_ORDER ใน line-ai-excel-helper เสมอ
 const FILE_PAGE_ORDER =
   'line_event_ts.asc.nullslast,' +
@@ -352,6 +354,48 @@ async function pushPdfExcelFlex(targetId: string, pages: number, pdfUrl: string,
   }
 }
 
+/** ข้อความเตือนเมื่อรูปใน batch มากเกินไปสำหรับ auto finalize */
+const OVERSIZE_WARN_TEXT =
+  'รูปชุดนี้มีจำนวนมากเกินไปค่ะ\n' +
+  `กรุณาแบ่งส่งใหม่เป็นชุดละไม่เกิน ${MAX_IMAGES_PER_BATCH_FOR_AUTO} รูป\n` +
+  'หรือพิมพ์ "pdf" หากต้องการสร้าง PDF อย่างเดียว';
+
+/** เคยเตือน oversize สำหรับ batch นี้แล้วหรือยัง (กัน spam ทุกรอบ cron) */
+async function oversizeAlreadyWarned(url: string, key: string, batchId: string): Promise<boolean> {
+  try {
+    const rows = await dbSelect(
+      url, key,
+      `line_ai_excel_results?batch_id=eq.${encodeURIComponent(batchId)}` +
+      `&result_text=eq.OVERSIZE_WARN&select=id&limit=1`,
+    );
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** push ข้อความเตือน oversize ไป group + บันทึก sentinel กันเตือนซ้ำ */
+async function warnOversizeOnce(
+  url: string, key: string, batchId: string, groupId: string, lineToken: string,
+): Promise<void> {
+  if (await oversizeAlreadyWarned(url, key, batchId)) {
+    console.log(`[finalize-due] oversize already warned batch=${batchId}, skip`);
+    return;
+  }
+  if (groupId) {
+    await fetch('https://api.line.me/v2/bot/message/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lineToken}` },
+      body: JSON.stringify({ to: groupId, messages: [{ type: 'text', text: OVERSIZE_WARN_TEXT }] }),
+    }).catch((e) => console.warn('[finalize-due] oversize warn push failed:', e instanceof Error ? e.message : e));
+  }
+  await dbInsert(url, key, 'line_ai_excel_results', {
+    batch_id: batchId,
+    result_text: 'OVERSIZE_WARN',
+    raw_json: { type: 'oversize_warn', max: MAX_IMAGES_PER_BATCH_FOR_AUTO },
+  });
+}
+
 // ─── Core finalize logic ─────────────────────────────────────────────────────
 async function finalizeDueBatches(url: string, key: string, lineToken: string): Promise<number> {
   const cutoff = new Date(Date.now() - AUTO_FINALIZE_MS).toISOString();
@@ -371,7 +415,15 @@ async function finalizeDueBatches(url: string, key: string, lineToken: string): 
     const batchId = batch.id as string;
     const groupId = batch.group_id as string;
     const userId  = (batch.user_id as string | null) ?? null;
-    console.log(`[finalize-due] processing batch=${batchId} group=${groupId} user=${userId ?? '-'}`);
+    const imgCount = (batch.image_count as number) || 0;
+    console.log(`[finalize-due] processing batch=${batchId} group=${groupId} user=${userId ?? '-'} count=${imgCount}`);
+
+    // oversize: รูปเยอะเกิน → ไม่ lock ไม่สร้าง ไม่ finalize, เตือนครั้งเดียว (batch ยัง collecting → "pdf" ใช้ได้)
+    if (imgCount > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
+      console.log(`[finalize-due] batch=${batchId} oversize (${imgCount}>${MAX_IMAGES_PER_BATCH_FOR_AUTO}) → skip auto, warn`);
+      await warnOversizeOnce(url, key, batchId, groupId, lineToken);
+      continue;
+    }
 
     // Atomic lock
     const locked = await tryLockBatch(url, key, batchId);
