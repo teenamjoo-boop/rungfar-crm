@@ -100,8 +100,10 @@ interface LineSource {
 }
 interface LineMessage {
   id: string;
-  type: string;             // 'image' | 'text' | ...
+  type: string;             // 'image' | 'text' | 'sticker' | ...
   text?: string;
+  packageId?: string;       // sticker — เก็บไว้ดูอนาคต (ตอนนี้ไม่ filter)
+  stickerId?: string;       // sticker — เก็บไว้ดูอนาคต (ตอนนี้ไม่ filter)
 }
 interface LineEvent {
   type: string;             // 'message' | ...
@@ -2112,6 +2114,106 @@ function logOrderedFiles(label: string, batchId: string, files: Record<string, u
   console.log(`[line-ai-excel] ${label} ordered pages batch=${batchId} (${files.length}) | ${rows.join(' | ')}`);
 }
 
+/**
+ * Core finalize รวม PDF+Excel จาก batch ที่ให้มา (ใช้โดยคำสั่ง "จบ" และ sticker)
+ *   settle → oversize check → lock → build PDF + Excel → finalized → reply card เดียว 2 ปุ่ม
+ * ผู้เรียกต้องหา batch (collecting) มาให้แล้ว และจัดการเคส "ไม่มี batch" เอง
+ */
+async function runCombinedFinalize(
+  url: string, key: string, lineToken: string, replyToken: string,
+  groupId: string, userId: string | null,
+  batch: Record<string, unknown>, cmdLabel: string,
+): Promise<void> {
+  const batchId = batch.id as string;
+  // settle: รอ image events ที่ส่งรัว ๆ เข้าครบก่อน + merge sibling + recount (ห้ามใช้ count เก่า)
+  const settled = await settleBeforeManualFinalize(url, key, cmdLabel, groupId, userId, batch);
+  // oversize: ใช้ afterSettleCount → ไม่สร้าง PDF+Excel รวม, แจ้งให้แบ่งชุด (ยัง collecting → "pdf" ใช้ได้)
+  if (settled.count > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
+    console.log(`[line-ai-excel] ${cmdLabel} oversize batch=${batchId} count=${settled.count} → reject combined`);
+    await replyLineText(replyToken, OVERSIZE_WARN_TEXT, lineToken);
+    return;
+  }
+  // Lock atomic: collecting → finalizing
+  const locked = await tryLockBatch(url, key, batchId);
+  if (!locked) {
+    await replyLineText(replyToken, 'ระบบกำลังสร้างไฟล์อยู่ กรุณารอสักครู่', lineToken);
+    return;
+  }
+  try {
+    // ── PDF (critical) ──
+    const result = await buildAndUploadPdf(url, key, batchId);
+    if (!result) {
+      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+        status: 'collecting', updated_at: new Date().toISOString(),
+      });
+      await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ ไม่พบรูปในชุด', lineToken);
+      return;
+    }
+    const { pages, pdfPath, signedUrl: pdfUrl } = result;
+    const nowIso = new Date().toISOString();
+    // mark finalized ทันที — กัน auto ส่งซ้ำ
+    await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+      status: 'finalized', finalized_at: nowIso, pdf_path: pdfPath, pdf_url: pdfUrl, updated_at: nowIso,
+    });
+
+    // ── Excel (non-critical) — fail ไม่ทำให้ PDF พัง ──
+    const xlsxResult = await buildAndUploadExcel(url, key, batchId);
+
+    try {
+      await dbInsert(url, key, 'line_ai_excel_results', {
+        batch_id: batchId,
+        result_text: `PDF+Excel done (${cmdLabel}): ${pdfPath} (${pages}p) xlsx=${xlsxResult ? 'ok' : 'fail'}`,
+        raw_json: { type: 'pdf_excel_done', trigger: cmdLabel, path: pdfPath, pages, xlsx: xlsxResult?.xlsxPath ?? null },
+      });
+    } catch (e) {
+      console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
+    }
+
+    console.log(`[line-ai-excel] ${cmdLabel} finalized success | batch=${batchId} pages=${pages} xlsx=${xlsxResult ? 'ok' : 'fail'}`);
+
+    // ── ส่ง card เดียว: PDF+Excel ถ้า Excel สำเร็จ, PDF-only ถ้า Excel fail ──
+    if (xlsxResult) {
+      await replyPdfExcelFlex(replyToken, pages, pdfUrl, xlsxResult.signedUrl, lineToken);
+    } else {
+      await replyPdfFlex(replyToken, pages, pdfUrl, lineToken);
+    }
+  } catch (e) {
+    console.error(`[line-ai-excel] ${cmdLabel} finalize error:`, e instanceof Error ? e.message : e);
+    await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
+      status: 'collecting', updated_at: new Date().toISOString(),
+    }).catch(() => {});
+    await replyLineText(replyToken, 'สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่', lineToken);
+  }
+}
+
+/**
+ * sticker message → ทำงานเหมือนพิมพ์ "จบ" (สร้าง PDF + Excel)
+ * ถ้าไม่มี batch collecting → เงียบ (ไม่ตอบ ไม่ spam)
+ */
+async function handleSticker(
+  ev: LineEvent,
+  ctx: { url: string; key: string; lineToken: string },
+): Promise<void> {
+  const { url, key, lineToken } = ctx;
+  const groupId    = ev.source?.groupId || '';
+  const userId     = ev.source?.userId  || null;
+  const replyToken = ev.replyToken;
+  const packageId = ev.message?.packageId ?? '-';
+  const stickerId = ev.message?.stickerId ?? '-';
+  if (!groupId || !replyToken) return;
+
+  // หา batch ที่ยัง collecting ของ group+user (ไม่แตะ finalized)
+  const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+  if (!batch) {
+    // ไม่มีชุดรูปค้าง → เงียบ ไม่ตอบ เพื่อไม่ spam กลุ่ม
+    console.log(`[line-ai-excel] sticker no active batch (silent) | group=${groupId} user=${userId ?? '-'} packageId=${packageId} stickerId=${stickerId}`);
+    return;
+  }
+  const batchId = batch.id as string;
+  console.log(`[line-ai-excel] sticker finalize trigger | group=${groupId} user=${userId ?? '-'} batch=${batchId} packageId=${packageId} stickerId=${stickerId}`);
+  await runCombinedFinalize(url, key, lineToken, replyToken, groupId, userId, batch, 'sticker');
+}
+
 /** คำสั่ง text ในกลุ่ม control */
 async function handleText(
   ev: LineEvent,
@@ -2274,64 +2376,7 @@ async function handleText(
       await replyLineText(replyToken, 'ยังไม่มีรูปในชุด กรุณาส่งรูปเอกสารก่อน', lineToken);
       return;
     }
-    const batchId = batch.id as string;
-    // settle: รอ image events ที่ส่งรัว ๆ เข้าครบก่อน + merge sibling + recount (ห้ามใช้ count เก่า)
-    const settled = await settleBeforeManualFinalize(url, key, 'จบ', groupId, userId, batch);
-    // oversize: ใช้ afterSettleCount → ไม่สร้าง PDF+Excel รวม, แจ้งให้แบ่งชุด (ยัง collecting → "pdf" ใช้ได้)
-    if (settled.count > MAX_IMAGES_PER_BATCH_FOR_AUTO) {
-      console.log(`[line-ai-excel] จบ oversize batch=${batchId} count=${settled.count} → reject combined`);
-      await replyLineText(replyToken, OVERSIZE_WARN_TEXT, lineToken);
-      return;
-    }
-    // Lock atomic: collecting → finalizing
-    const locked = await tryLockBatch(url, key, batchId);
-    if (!locked) {
-      await replyLineText(replyToken, 'ระบบกำลังสร้างไฟล์อยู่ กรุณารอสักครู่', lineToken);
-      return;
-    }
-    try {
-      // ── PDF (critical) ──
-      const result = await buildAndUploadPdf(url, key, batchId);
-      if (!result) {
-        await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
-          status: 'collecting', updated_at: new Date().toISOString(),
-        });
-        await replyLineText(replyToken, 'สร้าง PDF ไม่สำเร็จ ไม่พบรูปในชุด', lineToken);
-        return;
-      }
-      const { pages, pdfPath, signedUrl: pdfUrl } = result;
-      const nowIso = new Date().toISOString();
-      // mark finalized ทันที — กัน auto ส่งซ้ำ
-      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
-        status: 'finalized', finalized_at: nowIso, pdf_path: pdfPath, pdf_url: pdfUrl, updated_at: nowIso,
-      });
-
-      // ── Excel (non-critical) — fail ไม่ทำให้ PDF พัง ──
-      const xlsxResult = await buildAndUploadExcel(url, key, batchId);
-
-      try {
-        await dbInsert(url, key, 'line_ai_excel_results', {
-          batch_id: batchId,
-          result_text: `PDF+Excel done: ${pdfPath} (${pages}p) xlsx=${xlsxResult ? 'ok' : 'fail'}`,
-          raw_json: { type: 'pdf_excel_done', path: pdfPath, pages, xlsx: xlsxResult?.xlsxPath ?? null },
-        });
-      } catch (e) {
-        console.warn('[line-ai-excel] save result failed:', e instanceof Error ? e.message : e);
-      }
-
-      // ── ส่ง card เดียว: PDF+Excel ถ้า Excel สำเร็จ, PDF-only ถ้า Excel fail ──
-      if (xlsxResult) {
-        await replyPdfExcelFlex(replyToken, pages, pdfUrl, xlsxResult.signedUrl, lineToken);
-      } else {
-        await replyPdfFlex(replyToken, pages, pdfUrl, lineToken);
-      }
-    } catch (e) {
-      console.error('[line-ai-excel] จบ PDF error:', e instanceof Error ? e.message : e);
-      await dbUpdate(url, key, 'line_ai_excel_batches', `id=eq.${batchId}`, {
-        status: 'collecting', updated_at: new Date().toISOString(),
-      }).catch(() => {});
-      await replyLineText(replyToken, 'สร้างไฟล์ไม่สำเร็จ กรุณาลองใหม่', lineToken);
-    }
+    await runCombinedFinalize(url, key, lineToken, replyToken, groupId, userId, batch, 'จบ');
     return;
   }
 
@@ -2928,6 +2973,9 @@ Deno.serve(async (req: Request) => {
         await handleImage(ev, ctx, evIdx);
       } else if (msgType === 'text') {
         await handleText(ev, ctx);
+      } else if (msgType === 'sticker') {
+        // sticker อะไรก็ได้ = trigger เหมือนพิมพ์ "จบ"
+        await handleSticker(ev, ctx);
       }
     } catch (evErr) {
       console.error('[line-ai-excel] event error:', evErr instanceof Error ? evErr.message : evErr);
