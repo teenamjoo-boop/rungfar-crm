@@ -2187,31 +2187,54 @@ async function runCombinedFinalize(
 }
 
 /**
- * sticker message → ทำงานเหมือนพิมพ์ "จบ" (สร้าง PDF + Excel)
- * ถ้าไม่มี batch collecting → เงียบ (ไม่ตอบ ไม่ spam)
+ * sticker message (ใครในกลุ่มส่งก็ได้) → ทำงานเหมือนพิมพ์ "จบ" (สร้าง PDF + Excel)
+ * การเลือก batch:
+ *   1) batch ที่ยัง collecting ของ "คนส่ง sticker" เองก่อน (own batch)
+ *   2) ถ้าไม่มี → fallback เป็น latest collecting batch ของทั้งกลุ่ม (ใครส่งรูปก็ได้)
+ *      เลือกจาก last_image_at ล่าสุด — รองรับเคส A ส่งรูป, B ส่ง sticker เพื่อจบชุด
+ * ถ้าไม่มี batch collecting เลย → เงียบ (ไม่ตอบ ไม่ spam)
+ *
+ * NOTE: ส่ง "userId ของเจ้าของ batch" (ไม่ใช่คนส่ง sticker) เข้า runCombinedFinalize
+ *       เพื่อให้ settle / merge sibling ทำงานกับ batch ที่ถูกต้อง
  */
 async function handleSticker(
   ev: LineEvent,
   ctx: { url: string; key: string; lineToken: string },
 ): Promise<void> {
   const { url, key, lineToken } = ctx;
-  const groupId    = ev.source?.groupId || '';
-  const userId     = ev.source?.userId  || null;
-  const replyToken = ev.replyToken;
+  const groupId      = ev.source?.groupId || '';
+  const senderUserId = ev.source?.userId  || null;
+  const replyToken   = ev.replyToken;
   const packageId = ev.message?.packageId ?? '-';
   const stickerId = ev.message?.stickerId ?? '-';
   if (!groupId || !replyToken) return;
 
-  // หา batch ที่ยัง collecting ของ group+user (ไม่แตะ finalized)
-  const batch = await findLatestCollectingBatch(url, key, groupId, userId);
+  // 1) batch ของคนส่ง sticker เองก่อน
+  let batch = senderUserId
+    ? await findLatestCollectingBatch(url, key, groupId, senderUserId)
+    : null;
+  let selectionReason = 'own batch';
+
+  // 2) ไม่มี → fallback latest collecting batch ของทั้งกลุ่ม (ไม่ผูก userId คนส่ง sticker)
   if (!batch) {
-    // ไม่มีชุดรูปค้าง → เงียบ ไม่ตอบ เพื่อไม่ spam กลุ่ม
-    console.log(`[line-ai-excel] sticker no active batch (silent) | group=${groupId} user=${userId ?? '-'} packageId=${packageId} stickerId=${stickerId}`);
+    batch = await findLatestCollectingBatch(url, key, groupId, null);
+    selectionReason = 'latest group batch fallback';
+  }
+
+  if (!batch) {
+    // ไม่มีชุดรูปค้างในกลุ่ม → เงียบ ไม่ตอบ เพื่อไม่ spam กลุ่ม
+    console.log(`[line-ai-excel] sticker no active batch silent | group=${groupId} sender=${senderUserId ?? '-'} packageId=${packageId} stickerId=${stickerId}`);
     return;
   }
+
   const batchId = batch.id as string;
-  console.log(`[line-ai-excel] sticker finalize trigger | group=${groupId} user=${userId ?? '-'} batch=${batchId} packageId=${packageId} stickerId=${stickerId}`);
-  await runCombinedFinalize(url, key, lineToken, replyToken, groupId, userId, batch, 'sticker');
+  const batchOwnerUserId = (batch.user_id as string | null) ?? null;
+  console.log(
+    `[line-ai-excel] sticker finalize trigger | group=${groupId} sender=${senderUserId ?? '-'}` +
+    ` batch=${batchId} batchOwner=${batchOwnerUserId ?? '-'} reason="${selectionReason}"` +
+    ` packageId=${packageId} stickerId=${stickerId}`,
+  );
+  await runCombinedFinalize(url, key, lineToken, replyToken, groupId, batchOwnerUserId, batch, 'sticker');
 }
 
 /** คำสั่ง text ในกลุ่ม control */
