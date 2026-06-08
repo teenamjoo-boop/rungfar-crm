@@ -8,52 +8,122 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --p:#F26522;--pd:#D4501A;--pl:#FF8C4A;--pp:#FFF4EE;--pp2:#FFE8D6;
-  --w:#fff;--bg:#F7F8FA;
-  --g0:#FAFAFA;--g1:#F4F4F5;--g2:#E4E4E7;--g3:#D1D5DB;--g4:#9CA3AF;
-  --g5:#6B7280;--g6:#4B5563;--g7:#374151;--g8:#1F2937;--g9:#111827;
+  /* CORPORATE THEME: primary = dark navy, accent = corporate red, neutrals = white/gray */
+  --p:#1F3B5C;--pd:#16293F;--pl:#2E5582;--pp:#EEF2F7;--pp2:#DCE5EF;
+  --ac:#C8102E;--acd:#A00C24;--acp:#FCE9EC; /* accent (corporate red) */
+  --w:#fff;--bg:#F4F6F8;
+  --g0:#FAFAFA;--g1:#F1F3F5;--g2:#E2E6EA;--g3:#CBD2D9;--g4:#9AA5B1;
+  --g5:#677787;--g6:#4A5763;--g7:#37424C;--g8:#1F2A33;--g9:#10171D;
   --grn:#15803D;--grnb:#DCFCE7;--blu:#1D4ED8;--blub:#DBEAFE;
   --amb:#B45309;--ambb:#FEF3C7;--red:#DC2626;--redb:#FEE2E2;
   --pur:#7C3AED;--purb:#EDE9FE;
   --font:'Prompt','Sarabun',sans-serif;--mono:'IBM Plex Mono',monospace;
-  --s1:0 1px 3px rgba(0,0,0,.08);--s2:0 4px 6px rgba(0,0,0,.06);
-  --s3:0 10px 15px rgba(0,0,0,.08);--s4:0 20px 25px rgba(0,0,0,.1);
-  --r:8px;--rl:12px;--rx:16px;
+  --s1:0 1px 2px rgba(16,23,29,.06);--s2:0 2px 6px rgba(16,23,29,.08);
+  --s3:0 6px 16px rgba(16,23,29,.10);--s4:0 16px 32px rgba(16,23,29,.16);
+  --r:6px;--rl:8px;--rx:10px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px;line-height:1.5}
-#loginScreen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#fff8f4 0%,#fff 60%,#fff4ee 100%)}
-#loginScreen::before{content:'';position:absolute;top:-200px;right:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(242,101,34,.08) 0%,transparent 70%)}
-#loginScreen::after{content:'';position:absolute;bottom:-150px;left:-150px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(242,101,34,.06) 0%,transparent 70%)}
-.ll{display:none}
-.llc{display:none}
-.ll-feats{display:none}
-.lr{width:100%;max-width:440px;padding:20px;position:relative;z-index:1}
-.lri{width:100%}
-/* Login card */
-.l-card{background:#fff;border-radius:24px;padding:40px;box-shadow:0 8px 40px rgba(242,101,34,.12),0 2px 8px rgba(0,0,0,.06);border:1px solid rgba(242,101,34,.1)}
-.l-header{text-align:center;margin-bottom:32px}
-.l-logo-wrap{width:90px;height:90px;border-radius:50%;overflow:hidden;margin:0 auto 16px;box-shadow:0 4px 16px rgba(242,101,34,.25)}
-.l-logo-wrap img{width:100%;height:100%;object-fit:cover}
-.l-company{font-size:18px;font-weight:800;color:var(--g9);letter-spacing:-.3px;margin-bottom:3px}
-.l-company span{color:var(--p)}
-.l-system{font-size:12px;color:var(--g5);letter-spacing:.3px}
-.lr-title{display:none}
-.lr-sub{display:none}
-.lfl{font-size:11px;font-weight:700;color:var(--g6);letter-spacing:.3px;margin-bottom:6px;margin-top:16px;text-transform:uppercase}
-.linput{width:100%;background:var(--g0);border:1.5px solid var(--g2);color:var(--g9);padding:12px 14px;border-radius:10px;font-family:var(--font);font-size:14px;outline:none;transition:all .2s}
-.linput:focus{border-color:var(--p);background:#fff;box-shadow:0 0 0 3px rgba(242,101,34,.12)}
-.linput::placeholder{color:var(--g4)}
-.lbtn{width:100%;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;border:none;padding:14px;border-radius:10px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-top:20px;box-shadow:0 4px 14px rgba(242,101,34,.35);transition:all .2s;letter-spacing:.2px}
-.lbtn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(242,101,34,.45)}
+/* ===== LOGIN — RUNGFAR sky theme: พื้นฟ้าทั้งหน้า + shell กลางจอ + glass card + slideshow ===== */
+#loginScreen{--lsky:#12B5E5;--lsky2:#0796C9;--lskyd:#0E7FA6;--lorg:#F47C20;--lorgs:#FFE7D6;--ltext:#1F2A37;
+  position:fixed;inset:0;z-index:9999;display:flex;align-items:stretch;justify-content:center;overflow:hidden;
+  background:radial-gradient(120% 78% at 76% 6%,rgba(255,255,255,.16),transparent 56%),linear-gradient(145deg,#16BEEC 0%,#0796C9 52%,#0A6E96 100%)}
+#loginScreen::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 1px,transparent 1px,transparent 26px),repeating-linear-gradient(45deg,rgba(255,255,255,.028) 0,rgba(255,255,255,.028) 1px,transparent 1px,transparent 26px)}
+#loginScreen::after{content:'';position:absolute;top:0;bottom:0;left:0;width:5px;background:var(--lorg);z-index:2}
+/* shell — จำกัดความกว้าง + จัดกลางแนวนอน ลดความห่างซ้าย/ขวา */
+.lg-shell{position:relative;z-index:1;width:100%;max-width:1340px;margin:0 auto;display:flex;align-items:center;gap:84px;padding:40px 60px}
+/* ── ฝั่งซ้าย: brand + slideshow preview ── */
+.lg-left{flex:1.3;min-width:0;color:#fff;display:flex;flex-direction:column;justify-content:center}
+.lg-leftin{width:100%;animation:lgFade .5s ease both}
+.lg-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:5px 13px;border-radius:20px;margin-bottom:18px}
+.lg-eyebrow::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--lorg)}
+.lg-brandname{font-size:36px;font-weight:800;line-height:1.14;letter-spacing:-.5px;margin-bottom:12px}
+.lg-brandname span{color:#FFE0C6}
+.lg-acc{width:56px;height:4px;border-radius:3px;background:var(--lorg);margin-bottom:16px}
+.lg-desc{font-size:14.5px;line-height:1.7;color:rgba(255,255,255,.93);max-width:500px;margin-bottom:30px}
+/* slideshow — ใหญ่ขึ้น + ghost card ด้านหลัง + floating chip ให้มีมิติ */
+.lg-show{position:relative;width:100%;max-width:540px;min-height:322px;margin-top:2px}
+.lg-show::after{content:'';position:absolute;left:30px;right:-16px;top:22px;bottom:-16px;border-radius:18px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.20);z-index:0}
+.lg-pfloat{position:absolute;right:-6px;top:-16px;z-index:3;display:flex;align-items:center;gap:8px;background:#fff;border-radius:11px;padding:8px 12px;box-shadow:0 12px 28px rgba(7,70,100,.30);font-size:11px;font-weight:700;color:var(--ltext);animation:lgFloat 5s ease-in-out infinite}
+.lg-pflive{width:8px;height:8px;border-radius:50%;background:#15803D;box-shadow:0 0 0 3px rgba(21,128,61,.18)}
+.lg-slide{position:absolute;left:0;right:0;top:0;z-index:1;opacity:0;transform:translateY(16px) scale(.98);transition:opacity .55s ease,transform .55s ease;pointer-events:none}
+.lg-slide.on{opacity:1;transform:none;pointer-events:auto}
+.lg-pcard{background:rgba(255,255,255,.98);border:1px solid rgba(255,255,255,.7);border-radius:18px;box-shadow:0 22px 50px rgba(7,70,100,.38);padding:19px 21px;color:var(--ltext);animation:lgFloat 6s ease-in-out infinite}
+.lg-phead{display:flex;align-items:center;gap:12px;margin-bottom:13px;padding-bottom:12px;border-bottom:1px solid #E6EEF3}
+.lg-pic{width:40px;height:40px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#E8F7FC;color:var(--lsky2)}
+.lg-pic.org{background:var(--lorgs);color:var(--lorg)}
+.lg-pic.grn{background:#DCFCE7;color:#15803D}
+.lg-pic svg{width:21px;height:21px}
+.lg-ptit{font-size:14.5px;font-weight:800;color:var(--ltext)}
+.lg-psub{font-size:11px;color:#566573;margin-top:1px}
+.lg-prow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F0F4F7;font-size:12px}
+.lg-prow:last-child{border-bottom:none}
+.lg-pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--lsky)}
+.lg-pdot.g{background:#15803D}.lg-pdot.o{background:var(--lorg)}
+.lg-pgrow{flex:1;min-width:0;color:#2B3640;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-ppill{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;background:#E8F7FC;color:var(--lsky2);white-space:nowrap}
+.lg-ppill.g{background:#DCFCE7;color:#15803D}.lg-ppill.o{background:var(--lorgs);color:var(--lorg)}
+.lg-pstats{display:flex;gap:10px;margin-bottom:12px}
+.lg-pstat{flex:1;background:#F4FAFC;border:1px solid #E6EEF3;border-radius:10px;padding:10px 11px;text-align:center}
+.lg-pn{font-size:19px;font-weight:800;color:var(--ltext)}
+.lg-pl{font-size:9px;color:#566573;text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+.lg-pbadges{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap}
+.lg-pbadge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:7px;background:#EEF4F8;color:#37424C;border:1px solid #E1E9EF}
+.lg-pclock{text-align:center;padding:2px 0 8px}
+.lg-pclock .t{font-size:30px;font-weight:800;letter-spacing:2px;color:var(--ltext);font-family:Arial,Helvetica,sans-serif}
+.lg-pclock .d{font-size:10.5px;color:#566573;margin-top:2px}
+.lg-pbtns{display:flex;gap:10px;margin:2px 0 12px}
+.lg-pbtn{flex:1;text-align:center;font-size:11.5px;font-weight:700;padding:10px;border-radius:9px;color:#fff}
+.lg-pbtn.in{background:#15803D}.lg-pbtn.out{background:var(--lsky2)}
+.lg-dots{display:flex;gap:8px;margin-top:22px}
+.lg-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;transition:all .25s;border:none;padding:0}
+.lg-dot:hover{background:rgba(255,255,255,.85)}
+.lg-dot.on{width:26px;border-radius:6px;background:var(--lorg);box-shadow:0 2px 8px rgba(244,124,32,.55)}
+/* ── ฝั่งขวา: glass login card ── */
+.lg-right{flex:1;max-width:440px;position:relative;z-index:1;display:flex;align-items:center;justify-content:center}
+.lg-form{width:100%;max-width:404px;background:rgba(255,255,255,.84);backdrop-filter:blur(18px) saturate(125%);-webkit-backdrop-filter:blur(18px) saturate(125%);border:1px solid rgba(255,255,255,.5);border-top:3px solid var(--lorg);border-radius:18px;padding:36px 34px 38px;box-shadow:0 26px 64px rgba(6,60,88,.42),0 0 0 1px rgba(255,255,255,.18) inset;animation:lgFade .4s ease both}
+.lg-langrow{display:flex;justify-content:flex-end;gap:6px;margin-bottom:14px}
+/* โลโก้วงกลมล้วน — ไม่มีกล่อง/พื้นขาว/ขอบ (PNG โปร่งใสอยู่แล้ว) shadow เบาตามวงกลม */
+.l-logo-wrap{width:68px;height:68px;border-radius:50%;overflow:hidden;margin:2px 0 16px;background:transparent;border:none;box-shadow:0 4px 14px rgba(6,60,88,.20)}
+.l-logo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.l-company{font-size:20.5px;font-weight:800;color:var(--ltext);letter-spacing:-.3px;margin-bottom:4px}
+.l-company span{color:var(--lsky2)}
+.l-system{font-size:12.5px;color:#5A6B78;letter-spacing:.2px;padding-bottom:15px;margin-bottom:6px;border-bottom:1px solid rgba(31,42,55,.12);position:relative}
+.l-system::after{content:'';position:absolute;left:0;bottom:-1px;width:46px;height:2px;background:var(--lorg)}
+.lfl{font-size:11px;font-weight:700;color:var(--ltext);letter-spacing:.4px;margin-bottom:6px;margin-top:15px;text-transform:uppercase}
+.linput{width:100%;background:rgba(255,255,255,.92);border:1.5px solid #D2DEE6;color:var(--ltext);padding:12px 14px;border-radius:10px;font-family:var(--font);font-size:14px;outline:none;transition:all .18s;box-shadow:0 1px 2px rgba(6,60,88,.04) inset}
+.linput:hover{border-color:#BCCEDA}
+.linput:focus{border-color:var(--lsky);background:#fff;box-shadow:0 0 0 3px rgba(18,181,229,.22),0 1px 2px rgba(6,60,88,.06)}
+.linput::placeholder{color:#90A4AE}
+.lbtn{width:100%;background:linear-gradient(135deg,#12B5E5,#0796C9);color:#fff;border:none;padding:13px;border-radius:9px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-top:22px;box-shadow:0 8px 20px rgba(6,60,88,.30);transition:all .18s;letter-spacing:.3px}
+.lbtn:hover{background:linear-gradient(135deg,#0796C9,#0E7FA6);transform:translateY(-1px);box-shadow:0 11px 26px rgba(6,60,88,.38)}
 .lbtn:active{transform:translateY(0)}
-.lerr{font-size:12px;color:var(--red);min-height:16px;margin-top:8px}
-/* Slide animation for company name */
-@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.lerr{font-size:12px;color:#B91C1C;min-height:16px;margin-top:9px;font-weight:600}
+#loginScreen .lang-btn{background:rgba(255,255,255,.55);border:1.5px solid rgba(31,42,55,.14);color:#5A6B78;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .18s}
+#loginScreen .lang-btn:hover{border-color:var(--lsky);color:var(--lsky2)}
+#loginScreen .lang-btn.active{background:var(--lsky);border-color:var(--lsky);color:#fff}
+@keyframes lgFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.l-company{animation:slideUp .6s ease both}
-.l-system{animation:slideUp .6s .15s ease both;opacity:0;animation-fill-mode:forwards}
-.l-card{animation:fadeIn .4s ease both}
+/* login loading spinner — แทน emoji นาฬิกาทราย */
+.lspin{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:7px;border:2px solid rgba(18,181,229,.28);border-top-color:var(--lsky);border-radius:50%;animation:lspin .7s linear infinite}
+@keyframes lspin{to{transform:rotate(360deg)}}
+/* ── Responsive: tablet/mobile จัดแนวตั้ง, preview ย่อ, login เต็มกว้าง ── */
+@media (max-width:980px){
+  #loginScreen{align-items:flex-start}
+  .lg-shell{flex-direction:column;align-items:stretch;gap:26px;padding:34px 26px 44px;max-width:620px}
+  .lg-left{flex:none;width:100%}
+  .lg-brandname{font-size:28px}
+  .lg-desc{margin-bottom:20px}
+  .lg-show{max-width:100%;min-height:296px}
+  .lg-right{flex:none;width:100%;max-width:100%}
+  .lg-form{max-width:440px;margin:0 auto}
+}
+@media (max-width:600px){
+  .lg-show,.lg-dots{display:none}
+  .lg-desc{margin-bottom:2px}
+  .lg-brandname{font-size:25px}
+}
 #appScreen{display:none;height:100vh;width:100%}
 .app{display:flex;height:100vh;overflow:hidden}
 .sidebar{width:235px;background:#fff;border-right:1px solid var(--g2);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
@@ -68,14 +138,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .ni{display:flex;align-items:center;gap:8px;padding:8px 14px;color:var(--g6);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
 .ni:hover{background:var(--pp);color:var(--pd)}
 .ni.on{background:var(--pp);color:var(--p);border-left-color:var(--p);font-weight:600}
-.ni .ic{font-size:14px;width:17px;text-align:center;flex-shrink:0}
+.ni .ic{width:18px;height:18px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;color:var(--g5)}
+.ni:hover .ic,.ni.on .ic{color:var(--p)}
+.ni .ic svg{width:17px;height:17px;display:block}
 .nbadge{margin-left:auto;font-size:10px;font-family:var(--mono);font-weight:600;padding:1px 6px;border-radius:20px;background:var(--red);color:#fff}
 .nbadge.ok{background:var(--grn)}
 .gi{display:flex;align-items:center;gap:6px;padding:6px 14px 6px 30px;color:var(--g5);font-size:12px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
 .gi:hover{background:var(--pp);color:var(--pd)}
 .gi .gdot{width:5px;height:5px;border-radius:50%;background:var(--p);flex-shrink:0}
 .sfoot{padding:12px 14px;border-top:1px solid var(--g1);margin-top:auto;display:flex;align-items:center;gap:9px}
-.sfav{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--pd));display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700;flex-shrink:0}
+.sfav{width:32px;height:32px;border-radius:var(--r);background:var(--p);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700;flex-shrink:0}
 .sfname{font-size:12px;font-weight:600;color:var(--g8)}
 .sfrole{font-size:10px;color:var(--g5);margin-top:1px}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
@@ -85,8 +157,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .content{flex:1;overflow-y:auto;padding:18px 22px}
 .view{display:none}.view.on{display:block}
 .btn{padding:8px 16px;border-radius:var(--r);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
-.btn-p{background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;box-shadow:0 2px 8px rgba(242,101,34,.25)}
-.btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(242,101,34,.35)}
+.btn-p{background:var(--p);color:#fff;box-shadow:none}
+.btn-p:hover{background:var(--pd)}
 .btn-g{background:#fff;border:1.5px solid var(--g2);color:var(--g7)}
 .btn-g:hover{background:var(--g0);border-color:var(--g3)}
 .btn-sm{padding:5px 11px;font-size:12px}
@@ -94,12 +166,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .bic:hover{background:var(--g1);color:var(--g7)}
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 .sc{background:#fff;border-radius:var(--rx);padding:16px 18px;cursor:pointer;transition:all .2s;box-shadow:var(--s1);border:1px solid var(--g2);position:relative;overflow:hidden}
-.sc:hover{box-shadow:var(--s2);transform:translateY(-2px)}
-.sc::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--rx) var(--rx) 0 0}
-.sc.c1::after{background:linear-gradient(90deg,var(--p),var(--pl))}
-.sc.c2::after{background:linear-gradient(90deg,#D97706,#FBBF24)}
-.sc.c3::after{background:linear-gradient(90deg,#15803D,#22C55E)}
-.sc.c4::after{background:linear-gradient(90deg,#1D4ED8,#60A5FA)}
+.sc:hover{box-shadow:var(--s2);border-color:var(--g3)}
+.sc::after{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:var(--rx) 0 0 var(--rx)}
+.sc.c1::after{background:var(--p)}
+.sc.c2::after{background:var(--ac)}
+.sc.c3::after{background:var(--g5)}
+.sc.c4::after{background:var(--pl)}
 .sc-num{font-size:30px;font-weight:800;font-family:Arial,Helvetica,Tahoma,sans-serif;line-height:1;color:var(--g9);font-feature-settings:"zero" 0;font-variant-numeric:normal}
 .sc-lbl{font-size:11px;color:var(--g5);text-transform:uppercase;letter-spacing:.7px;margin-top:4px;font-weight:600}
 .sc-sub{font-size:11px;color:var(--g4);margin-top:5px}
@@ -116,12 +188,12 @@ thead th{background:var(--g0);padding:9px 13px;text-align:left;font-size:11px;fo
 td{padding:10px 13px;border-bottom:1px solid var(--g1);font-size:13px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--pp)}
-.row-selected td{background:#fff4ee !important}
+.row-selected td{background:var(--pp) !important}
 .toolbar{display:flex;gap:7px;align-items:center;margin-bottom:13px;flex-wrap:wrap}
 .srch{position:relative;flex:1;min-width:180px}
 .srch svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g4)}
 input.si{width:100%;background:#fff;border:1.5px solid var(--g2);color:var(--g9);padding:8px 11px 8px 33px;border-radius:var(--r);font-family:var(--font);font-size:13px;outline:none;transition:all .2s}
-input.si:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(242,101,34,.1)}
+input.si:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(31,59,92,.12)}
 input.si::placeholder{color:var(--g4)}
 select.fi{background:#fff;border:1.5px solid var(--g2);color:var(--g7);padding:8px 10px;border-radius:var(--r);font-family:var(--font);font-size:12px;outline:none;cursor:pointer;transition:border-color .2s}
 select.fi:focus{border-color:var(--p)}
@@ -184,7 +256,7 @@ select.fi:focus{border-color:var(--p)}
 .fgi.full{grid-column:1/-1}
 .fl{font-size:11px;font-weight:700;color:var(--g6);text-transform:uppercase;letter-spacing:.4px}
 .fi2{background:var(--g0);border:1.5px solid var(--g2);color:var(--g9);padding:8px 11px;border-radius:var(--r);font-family:var(--font);font-size:13px;outline:none;transition:all .2s;width:100%}
-.fi2:focus{border-color:var(--p);background:#fff;box-shadow:0 0 0 3px rgba(242,101,34,.1)}
+.fi2:focus{border-color:var(--p);background:#fff;box-shadow:0 0 0 3px rgba(31,59,92,.12)}
 select.fi2{cursor:pointer}
 textarea.fi2{resize:vertical;min-height:65px}
 .fsec{margin-bottom:18px}
@@ -195,7 +267,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 .svl{display:flex;flex-wrap:wrap;gap:6px}
 .svt{padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--g2);background:#fff;color:var(--g6);transition:all .2s;font-family:var(--font)}
 .svt:hover{border-color:var(--p);color:var(--p)}
-.svt.on{background:var(--p);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(242,101,34,.3)}
+.svt.on{background:var(--p);color:#fff;border-color:transparent;box-shadow:none}
 .photo-up{border:2px dashed var(--g3);border-radius:var(--rl);padding:14px;text-align:center;cursor:pointer;transition:all .2s}
 .photo-up:hover{border-color:var(--p);background:var(--pp)}
 .photo-prev{width:76px;height:96px;object-fit:cover;border-radius:8px;border:2px solid var(--g2)}
@@ -366,28 +438,76 @@ textarea.fi2{resize:vertical;min-height:65px}
 <body>
 <!-- LOGIN -->
 <div id="loginScreen">
-  <div class="lr">
-    <div class="lri">
-      <div class="l-card">
-        <div class="l-header">
-          <div class="l-logo-wrap">
-            <img id="llLogo" src="" alt="Rungfar">
+  <div class="lg-shell">
+  <!-- ฝั่งซ้าย: brand + slideshow preview (visual mockup เท่านั้น ไม่ผูก data จริง) -->
+  <div class="lg-left">
+    <div class="lg-leftin">
+      <span class="lg-eyebrow">RUNGFAR Labor CRM</span>
+      <div class="lg-brandname">ระบบจัดการ<br><span>แรงงานต่างด้าว</span></div>
+      <div class="lg-acc"></div>
+      <div class="lg-desc">บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ</div>
+      <div class="lg-show" id="lgShow">
+        <div class="lg-pfloat"><span class="lg-pflive"></span>ระบบพร้อมใช้งาน</div>
+        <!-- Slide 1: CRM & Documents -->
+        <div class="lg-slide on">
+          <div class="lg-pcard">
+            <div class="lg-phead"><div class="lg-pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></div><div><div class="lg-ptit">CRM &amp; Documents</div><div class="lg-psub">จัดการข้อมูลลูกค้า เอกสารแรงงาน และสถานะดำเนินงาน</div></div></div>
+            <div class="lg-pstats">
+              <div class="lg-pstat"><div class="lg-pn">459</div><div class="lg-pl">ลูกค้าทั้งหมด</div></div>
+              <div class="lg-pstat"><div class="lg-pn">2</div><div class="lg-pl">ใกล้หมดอายุ</div></div>
+            </div>
+            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">นาย A · Passport</span><span class="lg-ppill g">เอกสารครบ</span></div>
+            <div class="lg-prow"><span class="lg-pdot"></span><span class="lg-pgrow">นาง B · Work Permit</span><span class="lg-ppill">กำลังดำเนินการ</span></div>
+            <div class="lg-prow"><span class="lg-pdot o"></span><span class="lg-pgrow">นาย C · VISA</span><span class="lg-ppill o">รอตรวจ</span></div>
+            <div class="lg-pbadges"><span class="lg-pbadge">VISA</span><span class="lg-pbadge">Work Permit</span><span class="lg-pbadge">Passport</span></div>
           </div>
-          <div class="l-company">บริษัท <span>รุ่งฟ้า รุ่งฟ้า</span> จำกัด</div>
-          <div class="l-system">ระบบจัดการแรงงานต่างด้าว</div>
         </div>
-        <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:14px">
-          <button class="lang-btn" id="llLangTH" onclick="setLang('th')">🇹🇭 ไทย</button>
-          <button class="lang-btn" id="llLangMY" onclick="setLang('my')">🇲🇲 မြန်မာ</button>
+        <!-- Slide 2: Attendance Tracking -->
+        <div class="lg-slide">
+          <div class="lg-pcard">
+            <div class="lg-phead"><div class="lg-pic grn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><div><div class="lg-ptit">Attendance Tracking</div><div class="lg-psub">ตอกบัตรเข้าออก ตรวจสอบเวลา และประวัติรายวัน</div></div></div>
+            <div class="lg-pclock"><div class="t">08:30</div><div class="d">วันนี้ · GPS อยู่ในพื้นที่</div></div>
+            <div class="lg-pbtns"><div class="lg-pbtn in">เข้างาน 08:30</div><div class="lg-pbtn out">ออกงาน 17:30</div></div>
+            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">พนักงานเข้างานแล้ว</span><span class="lg-ppill g">42 คน</span></div>
+            <div class="lg-prow"><span class="lg-pdot"></span><span class="lg-pgrow">มาสาย</span><span class="lg-ppill">0 คน</span></div>
+          </div>
         </div>
-        <div class="lfl" id="lfl_user">ชื่อผู้ใช้</div>
-        <input id="lu" class="linput" type="text" placeholder="กรอกชื่อผู้ใช้" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()">
-        <div class="lfl" id="lfl_pass">รหัสผ่าน</div>
-        <input id="lp" class="linput" type="password" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()">
-        <div class="lerr" id="lerr"></div>
-        <button class="lbtn" onclick="doLogin()">เข้าสู่ระบบ →</button>
+        <!-- Slide 3: LINE Notification -->
+        <div class="lg-slide">
+          <div class="lg-pcard">
+            <div class="lg-phead"><div class="lg-pic org"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div><div><div class="lg-ptit">LINE Notification</div><div class="lg-psub">แจ้งเตือนเข้างาน ออกงาน และเอกสารสำคัญผ่าน LINE</div></div></div>
+            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">แจ้งเตือนเข้างาน</span><span class="lg-ppill">08:30</span></div>
+            <div class="lg-prow"><span class="lg-pdot"></span><span class="lg-pgrow">แจ้งเตือนออกงาน</span><span class="lg-ppill">17:30</span></div>
+            <div class="lg-prow"><span class="lg-pdot o"></span><span class="lg-pgrow">เอกสารใกล้หมดอายุ</span><span class="lg-ppill o">วันนี้</span></div>
+            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">ส่งเข้ากลุ่ม LINE</span><span class="lg-ppill g">สำเร็จ</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="lg-dots" id="lgDots">
+        <button class="lg-dot on" type="button" aria-label="สไลด์ 1"></button>
+        <button class="lg-dot" type="button" aria-label="สไลด์ 2"></button>
+        <button class="lg-dot" type="button" aria-label="สไลด์ 3"></button>
       </div>
     </div>
+  </div>
+  <!-- ฝั่งขวา: login panel แนวตั้ง -->
+  <div class="lg-right">
+    <div class="lg-form">
+      <div class="lg-langrow">
+        <button class="lang-btn" id="llLangTH" onclick="setLang('th')">ไทย</button>
+        <button class="lang-btn" id="llLangMY" onclick="setLang('my')">မြန်မာ</button>
+      </div>
+      <div class="l-logo-wrap"><img id="llLogo" src="" alt="Rungfar"></div>
+      <div class="l-company">บริษัท <span>รุ่งฟ้า รุ่งฟ้า</span> จำกัด</div>
+      <div class="l-system">ระบบจัดการแรงงานต่างด้าว</div>
+      <div class="lfl" id="lfl_user">ชื่อผู้ใช้</div>
+      <input id="lu" class="linput" type="text" placeholder="กรอกชื่อผู้ใช้" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()">
+      <div class="lfl" id="lfl_pass">รหัสผ่าน</div>
+      <input id="lp" class="linput" type="password" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="lerr" id="lerr"></div>
+      <button class="lbtn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -403,21 +523,21 @@ textarea.fi2{resize:vertical;min-height:65px}
   </div>
   <div class="nsec" id="sideMain">
     <div class="nlbl">เมนูหลัก</div>
-    <div class="ni" onclick="gv('dash')"><span class="ic">📊</span>แดชบอร์ด</div>
-    <div class="ni" onclick="gv('customers')"><span class="ic">👥</span>ลูกค้าทั้งหมด <span class="nbadge ok" id="nbTotal">0</span></div>
-    <div class="ni" onclick="gv('alerts')"><span class="ic">🔔</span>แจ้งเตือน <span class="nbadge" id="nbAlert">0</span></div>
-    <div class="ni" onclick="gv('employers')"><span class="ic">🏢</span>นายจ้าง/บริษัท</div>
+    <div class="ni" onclick="gv('dash')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="13" y="7" width="3" height="10"/></svg></span>แดชบอร์ด</div>
+    <div class="ni" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้าทั้งหมด <span class="nbadge ok" id="nbTotal">0</span></div>
+    <div class="ni" onclick="gv('alerts')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>แจ้งเตือน <span class="nbadge" id="nbAlert">0</span></div>
+    <div class="ni" onclick="gv('employers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg></span>นายจ้าง/บริษัท</div>
   </div>
   <div class="nsec" id="sideGroups"></div>
   <div class="nsec" id="sideSys">
     <div class="nlbl" id="sideSysLbl">ระบบ</div>
-    <div class="ni" id="niGroups" onclick="gv('groups')"><span class="ic">🗂️</span>จัดการกลุ่ม</div>
-    <div class="ni" id="niImport" onclick="gv('import')"><span class="ic">📥</span>นำเข้า Excel/CSV</div>
-    <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic">⚙️</span>ตั้งค่าแจ้งเตือน</div>
-    <div class="ni" id="niUsers" onclick="gv('users')"><span class="ic">👤</span>จัดการผู้ใช้</div>
-    <div class="ni" id="niSecLog" onclick="gv('seclog')" style="display:none"><span class="ic">🔐</span>ประวัติการเข้าใช้งาน</div>
-    <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic">📋</span>ตอกบัตรพนักงาน</div>
-    <div class="ni" id="niLogout" onclick="doLogout()"><span class="ic">🚪</span>ออกจากระบบ</div>
+    <div class="ni" id="niGroups" onclick="gv('groups')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>จัดการกลุ่ม</div>
+    <div class="ni" id="niImport" onclick="gv('import')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>นำเข้า Excel/CSV</div>
+    <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>ตั้งค่าแจ้งเตือน</div>
+    <div class="ni" id="niUsers" onclick="gv('users')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg></span>จัดการผู้ใช้</div>
+    <div class="ni" id="niSecLog" onclick="gv('seclog')" style="display:none"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>ประวัติการเข้าใช้งาน</div>
+    <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg></span>ตอกบัตรพนักงาน</div>
+    <div class="ni" id="niLogout" onclick="doLogout()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></span>ออกจากระบบ</div>
   </div>
   <div class="sfoot">
     <div class="sfav" id="sfav">A</div>
@@ -1717,7 +1837,7 @@ async function doLogin(){
   const p=document.getElementById('lp').value;
   const err=document.getElementById('lerr');
   if(!u||!p){err.textContent='กรุณากรอกข้อมูลให้ครบ';return;}
-  err.innerHTML='<span style="color:var(--p)">⏳ กำลังเชื่อมต่อ...</span>';
+  err.innerHTML='<span style="color:#0796C9;font-weight:600"><span class="lspin"></span>กำลังเชื่อมต่อ...</span>';
   const devInfo={
     user_agent:navigator.userAgent||null,
     device_type:getDeviceType(),
@@ -2051,7 +2171,7 @@ function renderDash(){
   const grpRows=groups.map(g=>({g,cnt:customers.filter(c=>c.group_id===g.id).length})).sort((a,b)=>b.cnt-a.cnt);
   const urg=[];customers.forEach(c=>getExps(c).forEach(x=>{const d=du(x.d);if(d!==null&&d<=x.w)urg.push({c,x,d});}));urg.sort((a,b)=>a.d-b.d);
   const natD=[{l:'🇲🇲',v:mm},{l:'🇰🇭',v:kh},{l:'🇱🇦',v:la},{l:'🇻🇳',v:vn}];
-  const natC=['#F26522','#1D4ED8','#15803D','#DC2626'];const natMax=Math.max(mm,kh,la,vn,1);
+  const natC=['#1F3B5C','#1D4ED8','#15803D','#DC2626'];const natMax=Math.max(mm,kh,la,vn,1);
   const ab=document.getElementById('abanner');
   if(al.length>0){ab.style.display='flex';ab.innerHTML=`⚠️ ${T('bannerFmt').replace('{n}',`<strong>${al.length}</strong>`)} — <span style="cursor:pointer;text-decoration:underline" onclick="gv('alerts')">${T('bannerSeeAll')}</span>`;}
   else ab.style.display='none';
@@ -5525,6 +5645,32 @@ async function attNotifyLine(type,savedLog){
     document.getElementById('appScreen').style.display='none';
     setLang(curLang);
   }
+})();
+
+// ─── LOGIN SLIDESHOW (isolated — แตะเฉพาะ visual ฝั่งซ้ายของ login เท่านั้น ไม่ยุ่ง logic/auth) ───
+(function(){
+  var show=document.getElementById('lgShow');
+  var dotsWrap=document.getElementById('lgDots');
+  if(!show||!dotsWrap)return;
+  var slides=show.querySelectorAll('.lg-slide');
+  var dots=dotsWrap.querySelectorAll('.lg-dot');
+  if(slides.length<2)return;
+  var i=0,timer=null;
+  function render(n){
+    for(var k=0;k<slides.length;k++)slides[k].classList.toggle('on',k===n);
+    for(var d=0;d<dots.length;d++)dots[d].classList.toggle('on',d===n);
+  }
+  function go(n){i=(n+slides.length)%slides.length;render(i);}
+  function tick(){
+    var ls=document.getElementById('loginScreen');
+    if(ls&&ls.style.display==='none')return; // หยุดเมื่อเข้า app แล้ว (login ซ่อน)
+    go(i+1);
+  }
+  function start(){if(!timer)timer=setInterval(tick,4200);}
+  for(var d=0;d<dots.length;d++){(function(idx){
+    dots[idx].addEventListener('click',function(){go(idx);});
+  })(d);}
+  render(0);start();
 })();
 </script>
 </body>
