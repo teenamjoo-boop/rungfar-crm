@@ -1746,7 +1746,8 @@ async function doLogin(){
       logLoginActivity({...devInfo,username:u,login_status:'failed',fail_reason:'wrong_credentials'});
       return;
     }
-    curUser=found[0];
+    // RLS-HARDEN-2C/2D: normalize role → admin/staff เท่านั้น ก่อนเก็บ session
+    curUser={...found[0],role:normalizeRole(found[0].role)};
     localStorage.setItem('crm_sess',JSON.stringify({user:curUser,exp:Date.now()+8*3600000}));
     // SEC-D: log successful login (fire-and-forget)
     logLoginActivity({...devInfo,user_id:curUser.id,username:curUser.username,full_name:curUser.full_name,role:curUser.role,branch_id:curUser.branch_id||null,login_status:'success',fail_reason:null});
@@ -1762,19 +1763,59 @@ async function doLogin(){
     }
   }
 }
-function doLogout(){
+// RLS-HARDEN-2C/2D: normalize role → เหลือแค่ admin / staff (legacy 'employee' หรืออื่น ๆ = staff)
+function normalizeRole(r){return r==='admin'?'admin':'staff';}
+
+// RLS-HARDEN-2D: เคลียร์ทุก state ที่เกี่ยวกับ user/session ในที่เดียว (ใช้ตอน logout + session invalid)
+function clearSessionState(){
   localStorage.removeItem('crm_sess');
   curUser=null;
-  // RLS-HARDEN-2D: clear user cache + pending state + reset view on logout
+  curEmpInfo=null;          // BRANCH-LIGHT: ข้อมูลพนักงาน staff ต้องถูกล้างด้วย
   appUsers=[];
   _pendingDelUserId=null;
   curView='dash';
   const lum=document.getElementById('loadUsersModal');if(lum)lum.style.display='none';
   const dum=document.getElementById('delUserModal');if(dum)dum.style.display='none';
+}
+function doLogout(){
+  clearSessionState();
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('appScreen').style.display='none';
 }
+// (legacy) checkSess — trust localStorage อย่างเดียว ไม่ใช้ใน boot แล้ว (ดู validateSession)
 function checkSess(){try{const s=JSON.parse(localStorage.getItem('crm_sess')||'null');if(s&&s.exp>Date.now()){curUser=s.user;return true;}}catch(e){}return false;}
+
+// RLS-HARDEN-2C/2D: validate session กับ DB ก่อนเข้า app — ไม่ trust localStorage อย่างเดียว
+// คืน true ถ้า session ใช้ได้ (และ set curUser เป็นข้อมูลสดจาก DB) / false ถ้าต้องกลับ login
+async function validateSession(){
+  let s=null;
+  try{s=JSON.parse(localStorage.getItem('crm_sess')||'null');}catch(e){}
+  // 1) ไม่มี session หรือหมดอายุ → ออก
+  if(!s||!s.user||!(s.exp>Date.now())){clearSessionState();return false;}
+  // 2) re-validate กับ DB: user ยังมีอยู่ + active + role valid (ผ่าน RPC SECURITY DEFINER)
+  try{
+    const r=await sb('rpc/app_verify_session','POST',{
+      p_user_id:String(s.user.id),
+      p_username:s.user.username
+    });
+    if(r&&r.id!=null){
+      // valid → ใช้ข้อมูลสดจาก DB (role/full_name/branch อาจเปลี่ยน) + normalize role
+      curUser={...r,role:normalizeRole(r.role)};
+      localStorage.setItem('crm_sess',JSON.stringify({user:curUser,exp:s.exp})); // คง exp เดิม
+      return true;
+    }
+    // คืน null/ว่าง → user ถูกลบ/inactive/role invalid/ไม่มี row → logout + clear
+    console.warn('[SEC] session invalid (user removed/inactive/role) → back to login');
+    clearSessionState();
+    return false;
+  }catch(e){
+    // RPC ยังไม่ deploy (404) หรือ network error → fail-open: คง session เดิม (ไม่ทำให้ใช้งานไม่ได้)
+    // ไม่ลด security ต่ำกว่าปัจจุบัน เพราะ login ก็ผ่าน RPC เช่นกัน
+    console.warn('[SEC] app_verify_session unavailable, fallback to local session:',e.message);
+    curUser={...s.user,role:normalizeRole(s.user.role)};
+    return true;
+  }
+}
 
 async function showApp(){
   document.getElementById('loginScreen').style.display='none';
@@ -5472,8 +5513,19 @@ async function attNotifyLine(type,savedLog){
 //   - ห้ามให้ LINE fail block การบันทึกตอกบัตร
 // =============================================================
 
-// INIT
-if(checkSess()){showApp();}else{document.getElementById('loginScreen').style.display='flex';setLang(curLang);}
+// INIT — RLS-HARDEN-2C/2D: validate session กับ DB ก่อนเข้า app (ไม่ trust localStorage อย่างเดียว)
+(async function(){
+  let ok=false;
+  try{ok=await validateSession();}catch(e){console.warn('[SEC] validateSession error:',e.message);ok=false;}
+  if(ok){
+    showApp();
+  }else{
+    clearSessionState();
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('appScreen').style.display='none';
+    setLang(curLang);
+  }
+})();
 </script>
 </body>
 </html>
