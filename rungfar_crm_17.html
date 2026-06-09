@@ -23,7 +23,9 @@
   --grn:#20B26B;--grnb:#DCFCE7;--blu:#2563EB;--blub:#DBEAFE;
   --amb:#F59E0B;--ambb:#FEF3C7;--red:#EF4444;--redb:#FEE2E2;
   --pur:#7C3AED;--purb:#EDE9FE;
-  --font:'Prompt','Sarabun',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --font:'Prompt','Sarabun',sans-serif;
+  /* numeric/code UI — Tahoma/Arial: เลข 0 ทรงปกติ ไม่มีจุด/ไม่ slashed (เลี่ยง dotted-zero ของ IBM Plex Mono) */
+  --mono:Tahoma,Arial,Helvetica,'Segoe UI',sans-serif;
   --s1:0 1px 2px rgba(120,70,30,.06);--s2:0 2px 8px rgba(120,70,30,.08);
   --s3:0 8px 20px rgba(120,70,30,.10);--s4:0 18px 40px rgba(120,70,30,.16);
   --r:8px;--rl:12px;--rx:14px;
@@ -203,6 +205,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .er{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--g1);font-size:12px}
 .er:last-child{border-bottom:none}
 .twrap{background:#fff;border:1px solid var(--g2);border-radius:var(--rx);overflow:hidden;box-shadow:var(--s1)}
+.ctbl-scroll{overflow-x:auto}
+.ctbl-scroll table{min-width:1080px}
+/* customer table typography — employer/name บาลานซ์กัน (ไม่ใช้ 800/900) */
+.ctbl-emp{font-size:12px;font-weight:600;color:var(--g7);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctbl-name{font-size:13px;font-weight:600;color:var(--g9)}
+.ctbl-sub{font-size:11px;font-weight:400;color:var(--g5)}
+/* numeric UI — กันเลข 0 slashed/dotted ทุกกรณี (เผื่อ fallback font) */
+.nbadge,.eb,.dr,.do_,.dg_,.bulk-count,.pay-num,.sc-num{font-feature-settings:"zero" 0;font-variant-numeric:normal}
 .tbar2{padding:11px 15px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between}
 table{width:100%;border-collapse:collapse}
 thead th{background:var(--g0);padding:9px 13px;text-align:left;font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--g2);white-space:nowrap}
@@ -570,8 +580,10 @@ textarea.fi2{resize:vertical;min-height:65px}
   <button class="bulk-btn" onclick="clearSelection()" style="margin-left:auto">✕ ยกเลิก</button>
 </div>
 <div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()">📤 Export CSV</button></div></div>
-        <table><thead><tr><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th style="width:40px">รูป</th><th>#</th><th>ชื่อลูกค้า</th><th>ประเภท</th><th>สัญชาติ</th><th>นายจ้าง</th><th>กลุ่ม</th><th>บริการ</th><th>สถานะงาน</th><th>90วัน</th><th>VISA/WP</th><th>จัดการ</th></tr></thead>
+        <div class="ctbl-scroll">
+        <table><thead><tr><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th style="width:44px">#</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th>จัดการ</th></tr></thead>
         <tbody id="tbody"></tbody></table>
+        </div>
         <div id="emptyRow" style="display:none;text-align:center;padding:50px 20px;color:var(--g5)"><div style="font-size:40px;opacity:.3;margin-bottom:10px">🔍</div>ไม่พบข้อมูล</div>
         <div class="pag" id="pag"></div>
       </div>
@@ -1096,6 +1108,7 @@ const LANG = {
     name:'ชื่อลูกค้า', type:'ประเภท', nat:'สัญชาติ', employer:'นายจ้าง',
     group:'กลุ่ม', service:'บริการ', workStatus:'สถานะงาน',
     day90:'90วัน', visawp:'VISA/WP', manage:'จัดการ',
+    tblName:'รายชื่อ', tblReqNo:'เลขคำขอ', tblItems:'รายการ', tblStatus:'สถานะ', tblExp:'ใกล้หมดอายุ', tblRenew:'ต่ออายุล่าสุด', tblPay:'ชำระเงิน', tblNote:'หมายเหตุ',
     noData:'ไม่พบข้อมูล',
     addNew:'เพิ่มลูกค้าใหม่', editInfo:'แก้ไขข้อมูล',
     custType:'ประเภทลูกค้า', freelance:'🧑 ไม่มีนายจ้าง', company:'🏢 ลูกจ้างในนามบริษัท',
@@ -1262,6 +1275,7 @@ const LANG = {
     name:'ဖောက်သည်အမည်', type:'အမျိုးအစား', nat:'နိုင်ငံသားဆိုင်ရာ', employer:'အလုပ်ရှင်',
     group:'အုပ်စု', service:'ဝန်ဆောင်မှု', workStatus:'အလုပ်အခြေအနေ',
     day90:'90 ရက်', visawp:'VISA/WP', manage:'စီမံ',
+    tblName:'အမည်', tblReqNo:'လျှောက်လွှာနံပါတ်', tblItems:'စာရင်း', tblStatus:'အခြေအနေ', tblExp:'သက်တမ်းကုန်', tblRenew:'နောက်ဆုံးသက်တမ်းတိုး', tblPay:'ငွေပေးချေမှု', tblNote:'မှတ်ချက်',
     noData:'ဒေတာမတွေ့ပါ',
     addNew:'ဖောက်သည်အသစ်ထည့်', editInfo:'အချက်အလက်ပြင်ဆင်',
     custType:'ဖောက်သည်အမျိုးအစား', freelance:'🧑 အလုပ်ရှင်မရှိ', company:'🏢 ကုမ္ပဏီဝန်ထမ်း',
@@ -1498,11 +1512,12 @@ function applyLang(){
   const qgrp=document.getElementById('qgrp');if(qgrp&&qgrp.options[0])qgrp.options[0].text=L.allGroup;
   const qbr=document.getElementById('qbr');if(qbr&&qbr.options[0])qbr.options[0].text=L.allBranch;
 
-  // ===== TABLE HEADERS =====
+  // ===== TABLE HEADERS (Round B column order — index-mapped) =====
+  // 0=checkbox 1=# 2=รูป 3=นายจ้าง 4=รายชื่อ 5=เลขต่างด้าว 6=สัญชาติ 7=เลขคำขอ
+  // 8=รายการ 9=สถานะ 10=ใกล้หมดอายุ 11=90วัน 12=ต่ออายุล่าสุด 13=ชำระเงิน 14=หมายเหตุ 15=จัดการ
   const ths=document.querySelectorAll('#view-customers thead th');
-  const hkeys=['',L.name,L.type,L.nat,L.employer,L.group,L.service,L.workStatus,L.day90,L.visawp,L.manage];
-  // th[0]=checkbox, th[1]=รูป skipped (i<2); th[2]=# gets hkeys[0]='' (keep); th[3..12] get L.xxx
-  ths.forEach((th,i)=>{if(i>=2&&hkeys[i-2]!==undefined)th.textContent=hkeys[i-2]||th.textContent;});
+  const hmap={2:L.photo,3:L.employer,4:T('tblName'),5:T('detAlien'),6:L.nat,7:T('tblReqNo'),8:T('tblItems'),9:T('tblStatus'),10:T('tblExp'),11:L.day90,12:T('tblRenew'),13:T('tblPay'),14:T('tblNote'),15:L.manage};
+  ths.forEach((th,i)=>{if(hmap[i]!==undefined)th.textContent=hmap[i];});
 
   // ===== BULK BAR =====
   const bar=document.getElementById('bulkBar');
@@ -1654,9 +1669,6 @@ function applyLang(){
   const brandSub=document.querySelector('.brand-sub');
   if(brandSub)brandSub.textContent=curLang==='my'?'အလုပ်သမား CRM':'Labor CRM';
 
-  // ===== PHOTO TABLE HEADER (th[1] skipped before) =====
-  const custThs=document.querySelectorAll('#view-customers thead th');
-  if(custThs[1])custThs[1].textContent=L.photo||'รูป';
 
   // ===== SETTINGS PAGE TITLE =====
   const std=document.getElementById('settingsTitleDiv');
@@ -2313,19 +2325,27 @@ function renderTable(){
     const ex=(c.services||[]).length>2?`<span class="xb xb-ot">+${(c.services||[]).length-2}</span>`:'';
     const initials=c.name?c.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'?';
     const avatarHtml=c.photo?`<img src="${esc(c.photo)}" class="c-avatar" title="คลิกดูรูปใหญ่" onclick="openPhotoModal(this.src);event.stopPropagation()">`:`<div class="c-avatar-placeholder">${esc(initials)}</div>`;
+    // ── Round B: column order ตาม Excel งานจริง (display only — ใช้เฉพาะ field ที่มี DB) ──
+    const mDash='<span style="color:var(--g4);font-size:11px">—</span>';
+    const reqNo=c.wp_no||c.visa_no||'';
+    const payMap={paid:`<span class="eb eb-ok">${T('payFull')}</span>`,partial:`<span class="eb eb-s">${T('payPart')}</span>`,unpaid:`<span class="eb eb-u">${T('payNo')}</span>`};
+    const payBadge=payMap[c.pay_status]||mDash;
     return`<tr onclick="openDetail(${c.id})" style="cursor:pointer" id="row-${c.id}" class="${selectedIds.has(c.id)?'row-selected':''}">
       <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedIds.has(c.id)?'checked':''} onchange="toggleRow(${c.id},this.checked)"></td>
-      <td onclick="event.stopPropagation()" onclick="openDetail(${c.id})">${avatarHtml}</td>
       <td style="font-size:10px;color:var(--g5);font-family:var(--mono)">${c.id}</td>
-      <td><div style="font-weight:600;font-size:13px">${esc(c.name)}</div>${c.name_th?`<div style="font-size:11px;color:var(--g5)">${esc(c.name_th)}</div>`:''}</td>
-      <td><span class="${c.customer_type==='company'?'ct-comp':'ct-free'}" style="font-size:10px">${c.customer_type==='company'?'🏢':'🧑'}</span></td>
+      <td onclick="event.stopPropagation()">${avatarHtml}</td>
+      <td class="ctbl-emp">${c.employer_id?esc(empN(c.employer_id)):mDash}</td>
+      <td><div class="ctbl-name">${esc(c.name)}</div>${c.name_th?`<div class="ctbl-sub">${esc(c.name_th)}</div>`:''}</td>
+      <td style="font-size:11px;font-family:var(--mono)">${c.alien_id?esc(c.alien_id):mDash}</td>
       <td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td>
-      <td style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.employer_id?esc(empN(c.employer_id)):'<span style="color:var(--g4)">—</span>'}</td>
-      <td>${c.group_id?`<span class="gb">${esc(grpN(c.group_id))}</span>`:'<span style="color:var(--g4);font-size:11px">—</span>'}</td>
+      <td style="font-size:11px;font-family:var(--mono)">${reqNo?esc(reqNo):mDash}</td>
       <td style="max-width:110px">${svcs}${ex}</td>
       <td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700">${wsT(c.work_status||'รับเรื่อง')}</span></td>
-      <td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:'<span style="color:var(--g4);font-size:11px">—</span>'}</td>
-      <td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:'<span style="color:var(--g4);font-size:11px">—</span>'}</td>
+      <td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:mDash}</td>
+      <td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:mDash}</td>
+      <td style="font-size:11px">${c.last_renew?fd(c.last_renew):mDash}</td>
+      <td>${payBadge}</td>
+      <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.note||'')}">${c.note?esc(c.note):mDash}</td>
       <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})" style="font-size:11px">✏️</button><button class="bic" onclick="delCust(${c.id})" style="font-size:11px;color:var(--red)">🗑️</button></div></td>
     </tr>`;
   }).join('');
