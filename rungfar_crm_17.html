@@ -579,7 +579,7 @@ textarea.fi2{resize:vertical;min-height:65px}
   <button class="bulk-btn danger" onclick="doBulkDelete()">🗑️ ลบที่เลือก</button>
   <button class="bulk-btn" onclick="clearSelection()" style="margin-left:auto">✕ ยกเลิก</button>
 </div>
-<div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()">📤 Export CSV</button></div></div>
+<div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()">📤 Export CSV</button><button class="btn btn-g btn-sm" onclick="doExportXlsx()">📑 Export Excel</button></div></div>
         <div class="ctbl-scroll">
         <table><thead><tr><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th style="width:44px">#</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th>จัดการ</th></tr></thead>
         <tbody id="tbody"></tbody></table>
@@ -2629,7 +2629,22 @@ function renderImport(){
     <div id="impPreview" style="margin-top:16px"></div></div>`;
 }
 
-const IMP_FIELDS=[{key:'name',label:'ชื่อ'},{key:'nationality',label:'สัญชาติ'},{key:'passport_no',label:'เลขพาสปอร์ต'},{key:'alien_id',label:'เลขต่างด้าว'},{key:'phone',label:'เบอร์'},{key:'employer_name',label:'นายจ้าง'},{key:'wp_no',label:'เลขคำขอ WP'},{key:'exp_visa',label:'วันหมด VISA'},{key:'exp_wp',label:'วันหมด WP'},{key:'next_90',label:'วัน 90 วัน'},{key:'work_status',label:'สถานะ'}];
+// Round D: เพิ่ม aliases รองรับหัวคอลัมน์ไทยตาม Excel template (จับคู่กับ field ที่มี DB เท่านั้น)
+const IMP_FIELDS=[
+  {key:'name',label:'รายชื่อ',aliases:['รายชื่อ','ชื่อ','ชื่อลูกค้า','ชื่อ-นามสกุล','name']},
+  {key:'employer_name',label:'นายจ้าง',aliases:['นายจ้าง','นายจ้าง/บริษัท','employer']},
+  {key:'alien_id',label:'เลขประจำตัวต่างด้าว',aliases:['เลขประจำตัวต่างด้าว','เลขต่างด้าว','เลขประจำตัว','alien_id','alien']},
+  {key:'nationality',label:'สัญชาติ',aliases:['สัญชาติ','nationality']},
+  {key:'passport_no',label:'เลขพาสปอร์ต',aliases:['เลขพาสปอร์ต','พาสปอร์ต','passport_no','passport']},
+  {key:'wp_no',label:'เลขคำขอ',aliases:['เลขคำขอ','เลขคำขอ wp','wp_no','work permit']},
+  {key:'phone',label:'เบอร์โทร',aliases:['เบอร์โทร','เบอร์','โทรศัพท์','phone']},
+  {key:'services',label:'รายการ',aliases:['รายการ','บริการ','services']},
+  {key:'work_status',label:'สถานะ',aliases:['สถานะ','สถานะงาน','work_status']},
+  {key:'next_90',label:'90 วัน',aliases:['90วัน','90 วัน','รายงาน 90 วัน','next_90']},
+  {key:'exp_visa',label:'วันหมด VISA',aliases:['วันหมด visa','exp_visa','visa']},
+  {key:'exp_wp',label:'วันหมด WP',aliases:['วันหมด wp','exp_wp']},
+  {key:'note',label:'หมายเหตุ',aliases:['หมายเหตุ','remark','note']},
+];
 function normImpStr(s){return String(s||'').trim().toUpperCase().replace(/\s+/g,'');}
 function makeImpKey(pp,al,name,nat,empName){const p=normImpStr(pp);if(p)return 'PP:'+p;const a=normImpStr(al);if(a)return 'AL:'+a;const n=normImpStr(name);if(n)return 'NM:'+n+'|'+normImpStr(nat)+'|'+normImpStr(empName);return null;}
 function buildExistingKeys(){const s=new Set();customers.forEach(c=>{const pp=normImpStr(c.passport_no);if(pp)s.add('PP:'+pp);const al=normImpStr(c.alien_id);if(al)s.add('AL:'+al);const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);s.add('NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:''));}});return s;}
@@ -2641,7 +2656,11 @@ function handleImpFile(e){
     try{
       if(file.name.endsWith('.csv')){const text=new TextDecoder('utf-8').decode(ev.target.result);const lines=text.split('\n').filter(l=>l.trim());impCols=lines[0].split(',').map(c=>c.replace(/^"|"$/g,'').trim());impData=lines.slice(1).map(l=>l.split(',').map(c=>c.replace(/^"|"$/g,'').trim()));}
       else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});impCols=(arr[0]||[]).map(String);impData=arr.slice(1).filter(r=>r.some(c=>c));}
-      impMap={};IMP_FIELDS.forEach(f=>{const found=impCols.findIndex(c=>c.toLowerCase().includes(f.label.substring(0,3).toLowerCase())||c.toLowerCase()===f.key.toLowerCase());if(found>=0)impMap[f.key]=found;});
+      impMap={};const _nz=s=>String(s||'').trim().toLowerCase();const _used=new Set();
+      IMP_FIELDS.forEach(f=>{const al=(f.aliases||[f.label]).map(_nz);
+        let found=impCols.findIndex((c,i)=>!_used.has(i)&&al.includes(_nz(c)));               // exact ก่อน
+        if(found<0)found=impCols.findIndex((c,i)=>!_used.has(i)&&al.some(a=>a.length>=3&&_nz(c).includes(a))); // ค่อย contains
+        if(found>=0){impMap[f.key]=found;_used.add(found);}});
       renderImpPreview();
     }catch(err){toast('ไม่สามารถอ่านไฟล์ได้','err');}
   };reader.readAsArrayBuffer(file);
@@ -2685,14 +2704,19 @@ async function doImport(){
     try{
       let empId=null;
       if(empName){const ef=employers.find(x=>x.name===empName);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
-      const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:get(row,'exp_visa')||null,exp_wp:get(row,'exp_wp')||null,next_90:get(row,'next_90')||null,work_status:get(row,'work_status')||'รับเรื่อง'};
+      const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:get(row,'exp_visa')||null,exp_wp:get(row,'exp_wp')||null,next_90:get(row,'next_90')||null,work_status:get(row,'work_status')||'รับเรื่อง',note:get(row,'note')||null};
+      const _svc=get(row,'services');if(_svc)data.services=_svc.split(/[;,]/).map(s=>s.trim()).filter(Boolean);
       const r=await dbPost('customers',data);
       if(r&&r[0]){customers.unshift(r[0]);if(key)seenInFile.add(key);countNew++;}
     }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'เกิดข้อผิดพลาด'});}
   }
   renderDash();renderSidebar();
+  // Round D: รายงานคอลัมน์ที่ยังไม่รองรับ (ไม่ได้ map เข้า field ที่มี DB) — ไม่ทำให้ import พัง
+  const _mappedIdx=new Set(Object.values(impMap).filter(v=>v!==undefined&&v>=0));
+  const _unsup=impCols.map((c,i)=>({c,i})).filter(x=>x.c&&String(x.c).trim()&&!_mappedIdx.has(x.i)).map(x=>x.c);
+  const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">ฟิลด์เหล่านี้ (เช่น วันที่ยื่น, ใบแพทย์, ประกัน, 100, 900, ตัวแทน, นัดหมาย, เวลา, สถานที่, มีเล่ม, ไม่มีเล่ม, ค่าบัตร, คิวว่าง, วันรับเล่ม) ต้องรอเพิ่มคอลัมน์ใน DB รอบถัดไป</div></div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">📊 สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${skipHTML}</div></div>`;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">📊 สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
@@ -3172,20 +3196,50 @@ async function doBulkDelete(){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'err');}
   finally{hideLoading();}
 }
+// ── Round D: Export column order ตาม Excel template งานจริง (24 คอลัมน์) ──
+// คอลัมน์ที่ยังไม่มี DB (วันที่ยื่น, ใบแพทย์, ประกัน, 100, 900, ตัวแทน, นัดหมาย, เวลา, สถานที่, มีเล่ม, ไม่มีเล่ม, ค่าบัตร, คิวว่าง, วันรับเล่ม) = เว้นว่างไว้ก่อน (รอ Round F + migration)
+const CUST_EXPORT_HEADERS=['ลำดับ','วันที่ยื่น','รูปถ่าย','นายจ้าง','รายชื่อ','เลขประจำตัวต่างด้าว','สัญชาติ','เลขคำขอ','รายการ','สถานะ','ใบแพทย์','ประกัน','100','900','ตัวแทน','นัดหมาย','เวลา','สถานที่','มีเล่ม','ไม่มีเล่ม','ค่าบัตร','คิวว่าง','วันรับเล่ม','หมายเหตุ'];
+function custExportRow(c,idx){
+  return [
+    idx+1,                                  // ลำดับ
+    '',                                     // วันที่ยื่น (ยังไม่มี DB)
+    c.photo?'มีรูป':'',                      // รูปถ่าย (ฝังภาพในไฟล์ไม่ได้ — แสดงตัวบ่งชี้)
+    c.employer_id?empN(c.employer_id):'',    // นายจ้าง
+    c.name||'',                             // รายชื่อ
+    c.alien_id||'',                         // เลขประจำตัวต่างด้าว
+    c.nationality||'',                      // สัญชาติ
+    c.wp_no||c.visa_no||'',                 // เลขคำขอ
+    (c.services||[]).join(';'),             // รายการ
+    c.work_status||'',                      // สถานะ
+    '','','','','','','','','','','','','',  // ใบแพทย์,ประกัน,100,900,ตัวแทน,นัดหมาย,เวลา,สถานที่,มีเล่ม,ไม่มีเล่ม,ค่าบัตร,คิวว่าง,วันรับเล่ม (13 คอลัมน์ ยังไม่มี DB)
+    c.note||''                              // หมายเหตุ
+  ];
+}
+function exportCustomersCSV(list,fname){
+  const csvCell=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  const rows=[CUST_EXPORT_HEADERS.map(csvCell).join(','),...list.map((c,i)=>custExportRow(c,i).map(csvCell).join(','))];
+  const b=new Blob([String.fromCharCode(65279)+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
+}
 function doBulkExport(){
   const sel=filtered.filter(c=>selectedIds.has(c.id));
   if(!sel.length){toast('กรุณาเลือกรายการก่อน','err');return;}
-  const h=['ID','ชื่อ','สัญชาติ','นายจ้าง','กลุ่ม','บริการ','สถานะงาน','90วัน','VISA','WP'];
-  const rows=[h.join(','),...sel.map(c=>[c.id,c.name,c.nationality||'',c.employer_id?empN(c.employer_id):'',c.group_id?grpN(c.group_id):'',(c.services||[]).join(';'),c.work_status||'',c.next_90||'',c.exp_visa||'',c.exp_wp||''].map(v=>`"${v}"`).join(','))];
-  const b=new Blob([String.fromCharCode(65279)+rows.join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`เลือก_${sel.length}_รายการ.csv`;a.click();
+  exportCustomersCSV(sel,`เลือก_${sel.length}_รายการ.csv`);
   toast(`Export ${sel.length} รายการแล้ว`);
 }
 function doExport(){
-  const h=['ID','ชื่อ','สัญชาติ','นายจ้าง','กลุ่ม','บริการ','สถานะงาน','90วัน','VISA','WP'];
-  const rows=[h.join(','),...filtered.map(c=>[c.id,c.name,c.nationality||'',c.employer_id?empN(c.employer_id):'',c.group_id?grpN(c.group_id):'',(c.services||[]).join(';'),c.work_status||'',c.next_90||'',c.exp_visa||'',c.exp_wp||''].map(v=>`"${v}"`).join(','))];
-  const b=new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`Rungfar_CRM_${new Date().toLocaleDateString('th')}.csv`;a.click();toast('Export แล้ว');
+  exportCustomersCSV(filtered,`Rungfar_CRM_${new Date().toLocaleDateString('th')}.csv`);
+  toast('Export CSV แล้ว');
+}
+function doExportXlsx(){
+  try{
+    if(typeof XLSX==='undefined'){toast('โหลดไลบรารี Excel ไม่สำเร็จ','err');return;}
+    const aoa=[CUST_EXPORT_HEADERS,...filtered.map((c,i)=>custExportRow(c,i))];
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ลูกค้า');
+    XLSX.writeFile(wb,`Rungfar_CRM_${new Date().toLocaleDateString('th')}.xlsx`);
+    toast('Export Excel แล้ว');
+  }catch(e){console.error('[export xlsx] failed',e);toast('Export Excel ไม่สำเร็จ','err');}
 }
 
 // ===== ATTENDANCE MODULE (รอบ B — โครง UI) =====
