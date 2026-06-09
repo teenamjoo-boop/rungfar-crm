@@ -8,39 +8,59 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  /* CORPORATE THEME: primary = dark navy, accent = corporate red, neutrals = white/gray */
-  --p:#1F3B5C;--pd:#16293F;--pl:#2E5582;--pp:#EEF2F7;--pp2:#DCE5EF;
-  --ac:#C8102E;--acd:#A00C24;--acp:#FCE9EC; /* accent (corporate red) */
-  --w:#fff;--bg:#F4F6F8;
-  --g0:#FAFAFA;--g1:#F1F3F5;--g2:#E2E6EA;--g3:#CBD2D9;--g4:#9AA5B1;
-  --g5:#677787;--g6:#4A5763;--g7:#37424C;--g8:#1F2A33;--g9:#10171D;
-  --grn:#15803D;--grnb:#DCFCE7;--blu:#1D4ED8;--blub:#DBEAFE;
-  --amb:#B45309;--ambb:#FEF3C7;--red:#DC2626;--redb:#FEE2E2;
+  /* WARM CORPORATE THEME (MeetFlow mood) — orange/coral บนพื้นครีม | light เท่านั้น (dark mode ทำรอบหน้า) */
+  /* === semantic tokens (พร้อมต่อยอด dashboard/sidebar + dark mode ภายหลัง) === */
+  --bg-main:#FFF7EF;--bg-soft:#FFF1E6;--surface:#FFFFFF;--surface-warm:#FFFDF9;
+  --text-main:#241A14;--text-muted:#7A6A5F;--border:#F0DED2;--soft-orange:#FFE4CF;
+  --primary:#FF7A1A;--primary-dark:#E85F00;--accent-coral:#FF5F6D;--accent-pink:#FF7DA8;
+  --success:#20B26B;--warning:#F59E0B;--danger:#EF4444;
+  /* === legacy aliases (โค้ดเดิมใช้ชื่อพวกนี้ — map ไป warm palette ห้ามเปลี่ยนชื่อ) === */
+  --p:var(--primary);--pd:var(--primary-dark);--pl:#FF9A4D;--pp:#FFF1E6;--pp2:var(--soft-orange);
+  --ac:var(--accent-coral);--acd:#E84A57;--acp:#FFE7E9;
+  --w:#fff;--bg:var(--bg-main);
+  --g0:#FCF8F4;--g1:#F8F1EA;--g2:#F0DED2;--g3:#E2CDBE;--g4:#B9A89B;
+  --g5:#7A6A5F;--g6:#5C4E45;--g7:#43382F;--g8:#2E251E;--g9:#241A14;
+  --grn:#20B26B;--grnb:#DCFCE7;--blu:#2563EB;--blub:#DBEAFE;
+  --amb:#F59E0B;--ambb:#FEF3C7;--red:#EF4444;--redb:#FEE2E2;
   --pur:#7C3AED;--purb:#EDE9FE;
   --font:'Prompt','Sarabun',sans-serif;--mono:'IBM Plex Mono',monospace;
-  --s1:0 1px 2px rgba(16,23,29,.06);--s2:0 2px 6px rgba(16,23,29,.08);
-  --s3:0 6px 16px rgba(16,23,29,.10);--s4:0 16px 32px rgba(16,23,29,.16);
-  --r:6px;--rl:8px;--rx:10px;
+  --s1:0 1px 2px rgba(120,70,30,.06);--s2:0 2px 8px rgba(120,70,30,.08);
+  --s3:0 8px 20px rgba(120,70,30,.10);--s4:0 18px 40px rgba(120,70,30,.16);
+  --r:8px;--rl:12px;--rx:14px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px;line-height:1.5}
 /* ===== LOGIN — RUNGFAR sky theme: พื้นฟ้าทั้งหน้า + shell กลางจอ + glass card + slideshow ===== */
-#loginScreen{--lsky:#12B5E5;--lsky2:#0796C9;--lskyd:#0E7FA6;--lorg:#F47C20;--lorgs:#FFE7D6;--ltext:#1F2A37;
+#loginScreen{--lo:#FF7A1A;--lod:#E85F00;--lc:#FF5F6D;--lp:#FF7DA8;--lcream:#FFF7EF;--lcream2:#FFF1E6;--lsurf:#fff;--ltext:#241A14;--lmut:#7A6A5F;--lbor:#F0DED2;--lso:#FFE4CF;
+  /* legacy (slideshow ที่ไม่ใช้แล้ว — map ไป warm กัน ref var หาย) */
+  --lsky:#FF9A4D;--lsky2:#E85F00;--lskyd:#E85F00;--lorg:#FF7A1A;--lorgs:#FFE4CF;
   position:fixed;inset:0;z-index:9999;display:flex;align-items:stretch;justify-content:center;overflow:hidden;
-  background:radial-gradient(120% 78% at 76% 6%,rgba(255,255,255,.16),transparent 56%),linear-gradient(145deg,#16BEEC 0%,#0796C9 52%,#0A6E96 100%)}
-#loginScreen::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 1px,transparent 1px,transparent 26px),repeating-linear-gradient(45deg,rgba(255,255,255,.028) 0,rgba(255,255,255,.028) 1px,transparent 1px,transparent 26px)}
-#loginScreen::after{content:'';position:absolute;top:0;bottom:0;left:0;width:5px;background:var(--lorg);z-index:2}
+  background:
+    radial-gradient(62% 52% at 90% 6%,rgba(255,122,26,.16),transparent 60%),
+    radial-gradient(54% 48% at 4% 98%,rgba(255,95,109,.14),transparent 60%),
+    linear-gradient(160deg,#FFF8F2 0%,#FFF1E6 58%,#FFE7D9 100%)}
+#loginScreen::after{content:'';position:absolute;top:0;bottom:0;left:0;width:5px;background:linear-gradient(180deg,var(--lo),var(--lc));z-index:2}
 /* shell — จำกัดความกว้าง + จัดกลางแนวนอน ลดความห่างซ้าย/ขวา */
 .lg-shell{position:relative;z-index:1;width:100%;max-width:1340px;margin:0 auto;display:flex;align-items:center;gap:84px;padding:40px 60px}
 /* ── ฝั่งซ้าย: brand + slideshow preview ── */
 .lg-left{flex:1.3;min-width:0;color:#fff;display:flex;flex-direction:column;justify-content:center}
 .lg-leftin{width:100%;animation:lgFade .5s ease both}
-.lg-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:5px 13px;border-radius:20px;margin-bottom:18px}
-.lg-eyebrow::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--lorg)}
-.lg-brandname{font-size:36px;font-weight:800;line-height:1.14;letter-spacing:-.5px;margin-bottom:12px}
-.lg-brandname span{color:#FFE0C6}
-.lg-acc{width:56px;height:4px;border-radius:3px;background:var(--lorg);margin-bottom:16px}
-.lg-desc{font-size:14.5px;line-height:1.7;color:rgba(255,255,255,.93);max-width:500px;margin-bottom:30px}
+.lg-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--lod);background:var(--lso);border:1px solid #FFD4B5;padding:5px 13px;border-radius:20px;margin-bottom:18px}
+.lg-eyebrow::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--lo)}
+.lg-brandname{font-size:44px;font-weight:800;line-height:1.1;letter-spacing:-.6px;color:var(--ltext);margin-bottom:14px}
+.lg-brandname span{background:linear-gradient(120deg,#FF8A1A,#FF5F6D);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--lo)}
+.lg-acc{width:54px;height:4px;border-radius:3px;background:linear-gradient(90deg,var(--lo),var(--lc));margin-bottom:18px}
+.lg-desc{font-size:14.5px;line-height:1.7;color:var(--lmut);max-width:480px;margin-bottom:26px}
+/* feature cards (แทน slideshow) */
+.lg-feats{display:flex;flex-direction:column;gap:12px;max-width:470px}
+.lg-fcard{display:flex;align-items:center;gap:14px;background:var(--lsurf);border:1px solid var(--lbor);border-radius:14px;padding:15px 17px;box-shadow:0 6px 18px rgba(150,80,30,.07);transition:all .2s}
+.lg-fcard:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(150,80,30,.13);border-color:#FFD4B5}
+.lg-fic{width:44px;height:44px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--lso);color:var(--lod)}
+.lg-fic svg{width:22px;height:22px}
+.lg-fcard:nth-child(2) .lg-fic{background:#FFE3E6;color:var(--lc)}
+.lg-fcard:nth-child(3) .lg-fic{background:#FFEAD9;color:#DD7A22}
+.lg-ftit{font-size:14px;font-weight:800;color:var(--ltext);margin-bottom:2px}
+.lg-fsub{font-size:12px;color:var(--lmut);line-height:1.5}
 /* slideshow — ใหญ่ขึ้น + ghost card ด้านหลัง + floating chip ให้มีมิติ */
 .lg-show{position:relative;width:100%;max-width:540px;min-height:322px;margin-top:2px}
 .lg-show::after{content:'';position:absolute;left:30px;right:-16px;top:22px;bottom:-16px;border-radius:18px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.20);z-index:0}
@@ -81,32 +101,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .lg-dot.on{width:26px;border-radius:6px;background:var(--lorg);box-shadow:0 2px 8px rgba(244,124,32,.55)}
 /* ── ฝั่งขวา: glass login card ── */
 .lg-right{flex:1;max-width:440px;position:relative;z-index:1;display:flex;align-items:center;justify-content:center}
-.lg-form{width:100%;max-width:404px;background:rgba(255,255,255,.84);backdrop-filter:blur(18px) saturate(125%);-webkit-backdrop-filter:blur(18px) saturate(125%);border:1px solid rgba(255,255,255,.5);border-top:3px solid var(--lorg);border-radius:18px;padding:36px 34px 38px;box-shadow:0 26px 64px rgba(6,60,88,.42),0 0 0 1px rgba(255,255,255,.18) inset;animation:lgFade .4s ease both}
+.lg-form{width:100%;max-width:404px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px) saturate(120%);-webkit-backdrop-filter:blur(10px) saturate(120%);border:1px solid var(--lbor);border-top:3px solid var(--lo);border-radius:18px;padding:36px 34px 38px;box-shadow:0 24px 56px rgba(150,80,30,.16);animation:lgFade .4s ease both}
 .lg-langrow{display:flex;justify-content:flex-end;gap:6px;margin-bottom:14px}
 /* โลโก้วงกลมล้วน — ไม่มีกล่อง/พื้นขาว/ขอบ (PNG โปร่งใสอยู่แล้ว) shadow เบาตามวงกลม */
 .l-logo-wrap{width:68px;height:68px;border-radius:50%;overflow:hidden;margin:2px 0 16px;background:transparent;border:none;box-shadow:0 4px 14px rgba(6,60,88,.20)}
 .l-logo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
 .l-company{font-size:20.5px;font-weight:800;color:var(--ltext);letter-spacing:-.3px;margin-bottom:4px}
-.l-company span{color:var(--lsky2)}
-.l-system{font-size:12.5px;color:#5A6B78;letter-spacing:.2px;padding-bottom:15px;margin-bottom:6px;border-bottom:1px solid rgba(31,42,55,.12);position:relative}
-.l-system::after{content:'';position:absolute;left:0;bottom:-1px;width:46px;height:2px;background:var(--lorg)}
+.l-company span{background:linear-gradient(120deg,#FF8A1A,#FF5F6D);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--lo);font-weight:800}
+.l-system{font-size:12.5px;color:var(--lmut);letter-spacing:.2px;padding-bottom:15px;margin-bottom:6px;border-bottom:1px solid var(--lbor);position:relative}
+.l-system::after{content:'';position:absolute;left:0;bottom:-1px;width:46px;height:2px;background:linear-gradient(90deg,var(--lo),var(--lc))}
 .lfl{font-size:11px;font-weight:700;color:var(--ltext);letter-spacing:.4px;margin-bottom:6px;margin-top:15px;text-transform:uppercase}
-.linput{width:100%;background:rgba(255,255,255,.92);border:1.5px solid #D2DEE6;color:var(--ltext);padding:12px 14px;border-radius:10px;font-family:var(--font);font-size:14px;outline:none;transition:all .18s;box-shadow:0 1px 2px rgba(6,60,88,.04) inset}
-.linput:hover{border-color:#BCCEDA}
-.linput:focus{border-color:var(--lsky);background:#fff;box-shadow:0 0 0 3px rgba(18,181,229,.22),0 1px 2px rgba(6,60,88,.06)}
-.linput::placeholder{color:#90A4AE}
-.lbtn{width:100%;background:linear-gradient(135deg,#12B5E5,#0796C9);color:#fff;border:none;padding:13px;border-radius:9px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-top:22px;box-shadow:0 8px 20px rgba(6,60,88,.30);transition:all .18s;letter-spacing:.3px}
-.lbtn:hover{background:linear-gradient(135deg,#0796C9,#0E7FA6);transform:translateY(-1px);box-shadow:0 11px 26px rgba(6,60,88,.38)}
-.lbtn:active{transform:translateY(0)}
-.lerr{font-size:12px;color:#B91C1C;min-height:16px;margin-top:9px;font-weight:600}
-#loginScreen .lang-btn{background:rgba(255,255,255,.55);border:1.5px solid rgba(31,42,55,.14);color:#5A6B78;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .18s}
-#loginScreen .lang-btn:hover{border-color:var(--lsky);color:var(--lsky2)}
-#loginScreen .lang-btn.active{background:var(--lsky);border-color:var(--lsky);color:#fff}
+.linput{width:100%;background:var(--lcream);border:1.5px solid var(--lbor);color:var(--ltext);padding:12px 14px;border-radius:10px;font-family:var(--font);font-size:14px;outline:none;transition:all .18s;box-shadow:0 1px 2px rgba(150,80,30,.04) inset}
+.linput:hover{border-color:#E8C9B5}
+.linput:focus{border-color:var(--lo);background:#fff;box-shadow:0 0 0 3px rgba(255,122,26,.18),0 1px 2px rgba(150,80,30,.06)}
+.linput::placeholder{color:#B9A89B}
+.lbtn{width:100%;background:linear-gradient(135deg,#FF8A1A 0%,#FF5F6D 100%);color:#fff;border:none;padding:13px;border-radius:10px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-top:22px;box-shadow:0 10px 22px rgba(255,95,80,.32);transition:all .18s;letter-spacing:.3px}
+.lbtn:hover{filter:brightness(1.04);transform:translateY(-1px);box-shadow:0 13px 28px rgba(255,95,80,.4)}
+.lbtn:active{transform:translateY(0);filter:none}
+.lerr{font-size:12px;color:#D8392B;min-height:16px;margin-top:9px;font-weight:600}
+#loginScreen .lang-btn{background:#fff;border:1.5px solid var(--lbor);color:var(--lmut);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .18s}
+#loginScreen .lang-btn:hover{border-color:var(--lo);color:var(--lod)}
+#loginScreen .lang-btn.active{background:var(--lo);border-color:var(--lo);color:#fff}
 @keyframes lgFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 /* login loading spinner — แทน emoji นาฬิกาทราย */
-.lspin{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:7px;border:2px solid rgba(18,181,229,.28);border-top-color:var(--lsky);border-radius:50%;animation:lspin .7s linear infinite}
+.lspin{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:7px;border:2px solid rgba(255,122,26,.28);border-top-color:#FF7A1A;border-radius:50%;animation:lspin .7s linear infinite}
 @keyframes lspin{to{transform:rotate(360deg)}}
 /* ── Responsive: tablet/mobile จัดแนวตั้ง, preview ย่อ, login เต็มกว้าง ── */
 @media (max-width:980px){
@@ -446,47 +466,19 @@ textarea.fi2{resize:vertical;min-height:65px}
       <div class="lg-brandname">ระบบจัดการ<br><span>แรงงานต่างด้าว</span></div>
       <div class="lg-acc"></div>
       <div class="lg-desc">บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ</div>
-      <div class="lg-show" id="lgShow">
-        <div class="lg-pfloat"><span class="lg-pflive"></span>ระบบพร้อมใช้งาน</div>
-        <!-- Slide 1: CRM & Documents -->
-        <div class="lg-slide on">
-          <div class="lg-pcard">
-            <div class="lg-phead"><div class="lg-pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></div><div><div class="lg-ptit">CRM &amp; Documents</div><div class="lg-psub">จัดการข้อมูลลูกค้า เอกสารแรงงาน และสถานะดำเนินงาน</div></div></div>
-            <div class="lg-pstats">
-              <div class="lg-pstat"><div class="lg-pn">459</div><div class="lg-pl">ลูกค้าทั้งหมด</div></div>
-              <div class="lg-pstat"><div class="lg-pn">2</div><div class="lg-pl">ใกล้หมดอายุ</div></div>
-            </div>
-            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">นาย A · Passport</span><span class="lg-ppill g">เอกสารครบ</span></div>
-            <div class="lg-prow"><span class="lg-pdot"></span><span class="lg-pgrow">นาง B · Work Permit</span><span class="lg-ppill">กำลังดำเนินการ</span></div>
-            <div class="lg-prow"><span class="lg-pdot o"></span><span class="lg-pgrow">นาย C · VISA</span><span class="lg-ppill o">รอตรวจ</span></div>
-            <div class="lg-pbadges"><span class="lg-pbadge">VISA</span><span class="lg-pbadge">Work Permit</span><span class="lg-pbadge">Passport</span></div>
-          </div>
+      <div class="lg-feats">
+        <div class="lg-fcard">
+          <div class="lg-fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></div>
+          <div><div class="lg-ftit">CRM &amp; Documents</div><div class="lg-fsub">จัดการลูกค้า เอกสารแรงงาน และสถานะดำเนินงานในที่เดียว</div></div>
         </div>
-        <!-- Slide 2: Attendance Tracking -->
-        <div class="lg-slide">
-          <div class="lg-pcard">
-            <div class="lg-phead"><div class="lg-pic grn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><div><div class="lg-ptit">Attendance Tracking</div><div class="lg-psub">ตอกบัตรเข้าออก ตรวจสอบเวลา และประวัติรายวัน</div></div></div>
-            <div class="lg-pclock"><div class="t">08:30</div><div class="d">วันนี้ · GPS อยู่ในพื้นที่</div></div>
-            <div class="lg-pbtns"><div class="lg-pbtn in">เข้างาน 08:30</div><div class="lg-pbtn out">ออกงาน 17:30</div></div>
-            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">พนักงานเข้างานแล้ว</span><span class="lg-ppill g">42 คน</span></div>
-            <div class="lg-prow"><span class="lg-pdot"></span><span class="lg-pgrow">มาสาย</span><span class="lg-ppill">0 คน</span></div>
-          </div>
+        <div class="lg-fcard">
+          <div class="lg-fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+          <div><div class="lg-ftit">Attendance Tracking</div><div class="lg-fsub">ตอกบัตรเข้า-ออก พร้อมประวัติและรายงานรายวัน</div></div>
         </div>
-        <!-- Slide 3: LINE Notification -->
-        <div class="lg-slide">
-          <div class="lg-pcard">
-            <div class="lg-phead"><div class="lg-pic org"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div><div><div class="lg-ptit">LINE Notification</div><div class="lg-psub">แจ้งเตือนเข้างาน ออกงาน และเอกสารสำคัญผ่าน LINE</div></div></div>
-            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">แจ้งเตือนเข้างาน</span><span class="lg-ppill">08:30</span></div>
-            <div class="lg-prow"><span class="lg-pdot"></span><span class="lg-pgrow">แจ้งเตือนออกงาน</span><span class="lg-ppill">17:30</span></div>
-            <div class="lg-prow"><span class="lg-pdot o"></span><span class="lg-pgrow">เอกสารใกล้หมดอายุ</span><span class="lg-ppill o">วันนี้</span></div>
-            <div class="lg-prow"><span class="lg-pdot g"></span><span class="lg-pgrow">ส่งเข้ากลุ่ม LINE</span><span class="lg-ppill g">สำเร็จ</span></div>
-          </div>
+        <div class="lg-fcard">
+          <div class="lg-fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+          <div><div class="lg-ftit">LINE Notification</div><div class="lg-fsub">แจ้งเตือนงานและการตอกบัตรผ่าน LINE อัตโนมัติ</div></div>
         </div>
-      </div>
-      <div class="lg-dots" id="lgDots">
-        <button class="lg-dot on" type="button" aria-label="สไลด์ 1"></button>
-        <button class="lg-dot" type="button" aria-label="สไลด์ 2"></button>
-        <button class="lg-dot" type="button" aria-label="สไลด์ 3"></button>
       </div>
     </div>
   </div>
@@ -1250,6 +1242,12 @@ const LANG = {
     clfNextLabel:'นัดหมายถัดไป', clfNdateLabel:'วันนัด',
     tlStatusLabel:'สถานะใหม่', tlNoteLabel:'หมายเหตุ',
     seclogNoAccessMsg:'ไม่มีสิทธิ์เข้าถึงหน้านี้',
+    // ── LOGIN LEFT PANEL ──
+    lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
+    lgHeroDesc:'บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ',
+    lgFeat1Sub:'จัดการลูกค้า เอกสารแรงงาน และสถานะดำเนินงานในที่เดียว',
+    lgFeat2Sub:'ตอกบัตรเข้า-ออก พร้อมประวัติและรายงานรายวัน',
+    lgFeat3Sub:'แจ้งเตือนงานและการตอกบัตรผ่าน LINE อัตโนมัติ',
   },
   my: {
     dashboard:'ဒက်ရှ်ဘုတ်', customers:'ဖောက်သည်များ', alerts:'သတိပေးချက်',
@@ -1410,6 +1408,12 @@ const LANG = {
     clfNextLabel:'နောက်ချိန်းဆိုမှု', clfNdateLabel:'ချိန်းဆိုရက်',
     tlStatusLabel:'အခြေအနေအသစ်', tlNoteLabel:'မှတ်ချက်',
     seclogNoAccessMsg:'ဝင်ရောက်ခွင့်မရှိပါ',
+    // ── LOGIN LEFT PANEL ──
+    lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
+    lgHeroDesc:'ဖောက်သည်ဒေတာ၊ စာရွက်စာတမ်း၊ တက်ရောက်မှုနှင့် ကြိုတင်အကြောင်းကြားချက်ကို စနစ်တကျ စီမံပါ',
+    lgFeat1Sub:'ဖောက်သည်၊ လုပ်သားစာရွက်နှင့် အလုပ်အခြေအနေကို တစ်နေရာတည်းတွင် စီမံပါ',
+    lgFeat2Sub:'ဝင်/ထွက် နှိပ်ကတ် မှတ်တမ်းနှင့် နေ့စဉ်အစီရင်ခံ',
+    lgFeat3Sub:'LINE မှတဆင့် အလုပ်နှင့် နှိပ်ကတ်အကြောင်းကြားချက် အလိုအလျောက်',
   }
 };
 
@@ -1580,6 +1584,15 @@ function applyLang(){
   const lbtn=document.querySelector('.lbtn');if(lbtn)lbtn.textContent=L.login;
   const luEl=document.getElementById('lu');if(luEl)luEl.placeholder=L.loginPlUser;
   const lpEl=document.getElementById('lp');if(lpEl)lpEl.placeholder=L.loginPlPass;
+
+  // ===== LOGIN LEFT PANEL =====
+  const lgBrand=document.querySelector('.lg-brandname');
+  if(lgBrand)lgBrand.innerHTML=L.lgHeroTitle+'<br><span>'+L.lgHeroSpan+'</span>';
+  const lgDesc=document.querySelector('.lg-desc');if(lgDesc)lgDesc.textContent=L.lgHeroDesc;
+  const lgFsubs=document.querySelectorAll('.lg-fsub');
+  if(lgFsubs[0])lgFsubs[0].textContent=L.lgFeat1Sub;
+  if(lgFsubs[1])lgFsubs[1].textContent=L.lgFeat2Sub;
+  if(lgFsubs[2])lgFsubs[2].textContent=L.lgFeat3Sub;
 
   // ===== NATIONALITY (qnat filter + f_nat form) =====
   const natMap=[{val:'เมียนมา',k:'natMM'},{val:'กัมพูชา',k:'natKH'},{val:'ลาว',k:'natLA'},{val:'เวียดนาม',k:'natVN'}];
@@ -1837,7 +1850,7 @@ async function doLogin(){
   const p=document.getElementById('lp').value;
   const err=document.getElementById('lerr');
   if(!u||!p){err.textContent='กรุณากรอกข้อมูลให้ครบ';return;}
-  err.innerHTML='<span style="color:#0796C9;font-weight:600"><span class="lspin"></span>กำลังเชื่อมต่อ...</span>';
+  err.innerHTML='<span style="color:#E85F00;font-weight:600"><span class="lspin"></span>กำลังเชื่อมต่อ...</span>';
   const devInfo={
     user_agent:navigator.userAgent||null,
     device_type:getDeviceType(),
