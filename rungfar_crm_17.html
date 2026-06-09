@@ -616,6 +616,7 @@ textarea.fi2{resize:vertical;min-height:65px}
       <button class="tbtn" onclick="swTab(5)">📝 บันทึก</button>
     </div>
     <div id="ct0">
+      <!-- Round C: ลำดับตาม Excel — ประเภท → รูปถ่าย → นายจ้าง → ข้อมูลพื้นฐาน → เจ้าหน้าที่ -->
       <div class="fsec"><div class="fst">ประเภทลูกค้า</div>
         <div style="display:flex;gap:8px">
           <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 13px;border:1.5px solid var(--g2);border-radius:var(--r);cursor:pointer;background:var(--g0)" id="ct-free-lbl">
@@ -628,18 +629,13 @@ textarea.fi2{resize:vertical;min-height:65px}
           </label>
         </div>
       </div>
-      <div class="fsec"><div class="fst">ข้อมูลพื้นฐาน</div>
-        <div class="fg">
-          <div class="fgi full"><label class="fl">ชื่อ-นามสกุล (อังกฤษ) *</label><input class="fi2" id="f_name" placeholder="FIRSTNAME LASTNAME" oninput="checkDup()"></div>
-          <div class="fgi"><label class="fl">ชื่อภาษาไทย</label><input class="fi2" id="f_nameTh" placeholder="ชื่อ นามสกุล"></div>
-          <div class="fgi"><label class="fl">สัญชาติ</label><select class="fi2" id="f_nat"><option value="เมียนมา">🇲🇲 เมียนมา</option><option value="กัมพูชา">🇰🇭 กัมพูชา</option><option value="ลาว">🇱🇦 ลาว</option><option value="เวียดนาม">🇻🇳 เวียดนาม</option></select></div>
-          <div class="fgi"><label class="fl">เลขพาสปอร์ต</label><input class="fi2" id="f_pp" placeholder="AB1234567" oninput="checkDup()"></div>
-          <div class="fgi"><label class="fl">เลขประจำตัวต่างด้าว</label><input class="fi2" id="f_alien" placeholder="6681390XXXXXXX" oninput="checkDup()"></div>
-          <div class="fgi"><label class="fl">วันเกิด</label><input class="fi2" type="date" id="f_dob"></div>
-          <div class="fgi"><label class="fl">เบอร์โทรศัพท์</label><input class="fi2" id="f_phone" placeholder="08X-XXX-XXXX" oninput="checkDup()"></div>
-          <div class="fgi"><label class="fl">กลุ่ม</label><select class="fi2" id="f_grp"><option value="">-- ไม่ระบุ --</option></select></div>
-          <div class="fgi"><label class="fl">สาขา</label><select class="fi2" id="f_branch"><option value="">-- ไม่ระบุ --</option></select></div>
-          <div class="fgi" id="fgi_ws"><label class="fl">สถานะงาน</label><select class="fi2" id="f_ws"></select></div>
+      <div class="fsec"><div class="fst">รูปถ่าย</div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div class="photo-up" onclick="document.getElementById('f_photo').click()" style="width:84px;height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+            <div id="pprev" style="display:none"><img id="pprevImg" class="photo-prev" style="width:76px;height:96px"></div>
+            <div id="pphold">📷<br><span style="font-size:10px;color:var(--g5)">อัปโหลด</span></div>
+          </div>
+          <input type="file" id="f_photo" accept="image/*" style="display:none" onchange="handlePhoto(event)">
         </div>
       </div>
       <div class="fsec" id="empSec"><div class="fst">ข้อมูลนายจ้าง</div>
@@ -651,20 +647,24 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi full"><label class="fl">ที่อยู่</label><input class="fi2" id="f_addr" placeholder="ที่อยู่นายจ้าง"></div>
         </div>
       </div>
+      <div class="fsec"><div class="fst">ข้อมูลพื้นฐาน</div>
+        <div class="fg">
+          <div class="fgi full"><label class="fl">ชื่อ-นามสกุล (อังกฤษ) *</label><input class="fi2" id="f_name" placeholder="FIRSTNAME LASTNAME" oninput="checkDup()"></div>
+          <div class="fgi"><label class="fl">ชื่อภาษาไทย</label><input class="fi2" id="f_nameTh" placeholder="ชื่อ นามสกุล"></div>
+          <div class="fgi"><label class="fl">เลขประจำตัวต่างด้าว</label><input class="fi2" id="f_alien" placeholder="6681390XXXXXXX" oninput="checkDup()"></div>
+          <div class="fgi"><label class="fl">สัญชาติ</label><select class="fi2" id="f_nat"><option value="เมียนมา">🇲🇲 เมียนมา</option><option value="กัมพูชา">🇰🇭 กัมพูชา</option><option value="ลาว">🇱🇦 ลาว</option><option value="เวียดนาม">🇻🇳 เวียดนาม</option></select></div>
+          <div class="fgi"><label class="fl">เลขพาสปอร์ต</label><input class="fi2" id="f_pp" placeholder="AB1234567" oninput="checkDup()"></div>
+          <div class="fgi"><label class="fl">เบอร์โทรศัพท์</label><input class="fi2" id="f_phone" placeholder="08X-XXX-XXXX" oninput="checkDup()"></div>
+          <div class="fgi"><label class="fl">วันเกิด</label><input class="fi2" type="date" id="f_dob"></div>
+          <div class="fgi"><label class="fl">กลุ่ม</label><select class="fi2" id="f_grp"><option value="">-- ไม่ระบุ --</option></select></div>
+          <div class="fgi"><label class="fl">สาขา</label><select class="fi2" id="f_branch"><option value="">-- ไม่ระบุ --</option></select></div>
+        </div>
+      </div>
       <div class="fsec" id="staffSec"><div class="fst">เจ้าหน้าที่รับผิดชอบ</div>
         <div class="fg3">
           <div class="fgi"><label class="fl">คนรับเคส</label><input class="fi2" id="f_sr" placeholder="ชื่อเจ้าหน้าที่"></div>
           <div class="fgi"><label class="fl">คนดูแลเอกสาร</label><input class="fi2" id="f_sd" placeholder="ชื่อเจ้าหน้าที่"></div>
           <div class="fgi"><label class="fl">คนปิดงาน</label><input class="fi2" id="f_sc" placeholder="ชื่อเจ้าหน้าที่"></div>
-        </div>
-      </div>
-      <div class="fsec"><div class="fst">รูปถ่าย</div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div class="photo-up" onclick="document.getElementById('f_photo').click()" style="width:84px;height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
-            <div id="pprev" style="display:none"><img id="pprevImg" class="photo-prev" style="width:76px;height:96px"></div>
-            <div id="pphold">📷<br><span style="font-size:10px;color:var(--g5)">อัปโหลด</span></div>
-          </div>
-          <input type="file" id="f_photo" accept="image/*" style="display:none" onchange="handlePhoto(event)">
         </div>
       </div>
     </div>
@@ -676,6 +676,7 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi"><label class="fl">เลขคำขอ VISA</label><input class="fi2" id="f_visn" placeholder="VISA-XXXXXX"></div>
           <div class="fgi"><label class="fl">เลขใบอนุญาต</label><input class="fi2" id="f_licn" placeholder="ใบอนุญาตทำงาน"></div>
           <div class="fgi"><label class="fl">แหล่งที่มา</label><select class="fi2" id="f_src"><option value="">ไม่ระบุ</option><option value="walk-in">Walk-in</option><option value="referral">แนะนำ</option><option value="online">ออนไลน์</option><option value="repeat">ลูกค้าเก่า</option></select></div>
+          <div class="fgi" id="fgi_ws"><label class="fl">สถานะงาน</label><select class="fi2" id="f_ws"></select></div>
         </div>
       </div>
     </div>
@@ -685,8 +686,8 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi"><label class="fl">พาสปอร์ต</label><input class="fi2" type="date" id="f_epp"></div>
           <div class="fgi"><label class="fl">VISA</label><input class="fi2" type="date" id="f_evis"></div>
           <div class="fgi"><label class="fl">Work Permit</label><input class="fi2" type="date" id="f_ewp"></div>
-          <div class="fgi"><label class="fl">รายงาน 90 วัน (ครั้งถัดไป)</label><input class="fi2" type="date" id="f_e90"></div>
           <div class="fgi"><label class="fl">MOU</label><input class="fi2" type="date" id="f_emou"></div>
+          <div class="fgi"><label class="fl">รายงาน 90 วัน (ครั้งถัดไป)</label><input class="fi2" type="date" id="f_e90"></div>
           <div class="fgi"><label class="fl">ต่ออายุล่าสุด</label><input class="fi2" type="date" id="f_ren"></div>
         </div>
       </div>
@@ -698,8 +699,8 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi"><label class="fl">ชำระแล้ว (บาท)</label><input class="fi2" type="number" id="f_fpaid" placeholder="0" oninput="calcFee()"></div>
           <div class="fgi"><label class="fl">ค้างชำระ (คำนวณอัตโนมัติ)</label><input class="fi2" id="f_fdue" placeholder="0" readonly style="background:#fff;color:var(--red);font-weight:700"></div>
           <div class="fgi"><label class="fl">ช่องทางชำระ</label><select class="fi2" id="f_fpay"><option value="">ไม่ระบุ</option><option value="cash">เงินสด</option><option value="transfer">โอนเงิน</option><option value="other">อื่นๆ</option></select></div>
-          <div class="fgi"><label class="fl">วันที่รับเงิน</label><input class="fi2" type="date" id="f_fpdate"></div>
           <div class="fgi"><label class="fl">สถานะชำระ</label><select class="fi2" id="f_fst"><option value="">ไม่ระบุ</option><option value="paid">ชำระครบแล้ว</option><option value="partial">ชำระบางส่วน</option><option value="unpaid">ยังไม่ชำระ</option></select></div>
+          <div class="fgi"><label class="fl">วันที่รับเงิน</label><input class="fi2" type="date" id="f_fpdate"></div>
         </div>
       </div>
     </div>
@@ -1031,8 +1032,8 @@ let editGid=null,editEid=null,clogCid=null,tlCid=null;
 let _pendingDelUserId=null; // RLS-HARDEN-2D: id ที่รอยืนยันลบ — cleared on cancel/logout
 let empQ=''; // employer search query
 // ── FEATURE FLAGS ──
-const SIMPLE_CUSTOMER_DETAIL=true; // true=ซ่อน timeline/finance/status-history ใน detail modal; false=แสดงครบ
-const CUSTOMER_MVP_MODE=true;      // true=ซ่อน workflow/finance ใน add/edit modal (tab การเงิน, สถานะงาน, เจ้าหน้าที่)
+const SIMPLE_CUSTOMER_DETAIL=true; // true=ซ่อนเฉพาะ finance summary + staff grid ใน detail (สถานะ/ประวัติสถานะ/ประวัติติดต่อ แสดงเสมอแล้ว); false=แสดงครบ
+const CUSTOMER_MVP_MODE=true;      // true=ซ่อน work_status + เจ้าหน้าที่ ใน add/edit modal (Tab การเงิน แสดงแล้ว); false=แสดงครบ
 let curEmpInfo=null; // BRANCH-LIGHT: ข้อมูลพนักงานของ staff ที่ login อยู่ (fetch ในพื้นหลัง)
 function openPhotoModal(src){document.getElementById('photoModalImg').src=src;document.getElementById('photoModal').style.display='flex';}
 function closePhotoModal(){document.getElementById('photoModal').style.display='none';document.getElementById('photoModalImg').src='';}
@@ -1546,13 +1547,13 @@ function applyLang(){
   const tabLabels=['👤 '+L.basicInfo,'📋 '+L.services,'📅 '+L.expiry,'💰 '+L.finance,'📎 '+L.docs,'📝 '+L.notes];
   tbns.forEach((tb,i)=>{if(tabLabels[i])tb.textContent=tabLabels[i];});
 
-  // Form section titles
+  // Form section titles (Round C order: custType, photo, empInfo, basicInfo, staff)
   const fsts=document.querySelectorAll('#cModal .fst');
   if(fsts[0])fsts[0].textContent=L.custType;
-  if(fsts[1])fsts[1].textContent=L.basicInfo;
+  if(fsts[1])fsts[1].textContent=L.photo;
   if(fsts[2])fsts[2].textContent=L.empInfo;
-  if(fsts[3])fsts[3].textContent=L.staff;
-  if(fsts[4])fsts[4].textContent=L.photo;
+  if(fsts[3])fsts[3].textContent=L.basicInfo;
+  if(fsts[4])fsts[4].textContent=L.staff;
 
   // Customer type radio labels
   const ctFree=document.getElementById('ct-free-lbl');
@@ -1721,27 +1722,53 @@ let multiDocEditingId = null; // customer id when editing
 
 function triggerMultiDoc(){document.getElementById('multiDocFile').click();}
 
-function handleMultiDoc(e){
+// ── Round C2: image compression + safe file read (กัน base64 ใหญ่จน save ค้าง) ──
+function readAsDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=()=>rej(new Error('read failed'));r.onload=ev=>res(ev.target.result);r.readAsDataURL(file);});}
+function compressImage(file,maxPx,quality){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onerror=()=>reject(new Error('read failed'));
+    r.onload=ev=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('decode failed'));
+      img.onload=()=>{
+        let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+        if(Math.max(w,h)>maxPx){const s=maxPx/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+        try{
+          const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+          const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+          resolve(cv.toDataURL('image/jpeg',quality));
+        }catch(err){resolve(ev.target.result);} // fallback: ใช้ไฟล์เดิมถ้า canvas ใช้ไม่ได้
+      };
+      img.src=ev.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+function approxBytesFromDataURL(u){const i=u.indexOf(',');return i<0?u.length:Math.round((u.length-i-1)*0.75);}
+const DOC_MAX_BYTES=1.5*1024*1024; // จำกัดต่อไฟล์หลังย่อ
+
+async function handleMultiDoc(e){
   const files=Array.from(e.target.files);
   const type=document.getElementById('newDocType').value;
   const typeLabel={passport_photo:'📘 รูปพาสปอร์ต',visa:'🛂 VISA',wp:'📄 Work Permit',employer_card:'🪪 บัตรนายจ้าง',receipt:'🧾 ใบเสร็จ',photo:'📷 รูปถ่าย',pow:'📜 หนังสือมอบอำนาจ',other:'📎 อื่นๆ'}[type]||'เอกสาร';
   const customLabel=document.getElementById('newDocLabel').value.trim();
-  files.forEach(file=>{
-    if(file.size>5*1024*1024){toast('ไฟล์ '+file.name+' ใหญ่เกิน 5MB','err');return;}
-    const r=new FileReader();
-    r.onload=ev=>{
-      multiDocs.push({
-        id:'doc_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
-        type,
-        label:customLabel||typeLabel,
-        data:ev.target.result,
-        fileType:file.type,
-        name:file.name
-      });
+  for(const file of files){
+    try{
+      let dataUrl,ftype;
+      if(file.type&&file.type.startsWith('image/')){
+        dataUrl=await compressImage(file,1600,0.72);ftype='image/jpeg'; // เอกสาร: max 1600px, q0.72
+      }else{
+        if(file.size>5*1024*1024){toast('ไฟล์ '+file.name+' ใหญ่เกิน 5MB','err');continue;}
+        dataUrl=await readAsDataURL(file);ftype=file.type||'application/octet-stream';
+      }
+      if(!dataUrl){toast('อ่านไฟล์ '+file.name+' ไม่ได้','err');continue;}
+      const bytes=approxBytesFromDataURL(dataUrl);
+      if(bytes>DOC_MAX_BYTES){console.warn('[document upload] skipped large file',file.name,bytes);toast('ไฟล์ '+file.name+' ใหญ่เกิน 1.5MB หลังย่อ ลองถ่าย/สแกนใหม่','err');continue;}
+      multiDocs.push({id:'doc_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),type,label:customLabel||typeLabel,data:dataUrl,fileType:ftype,name:file.name});
       renderMultiDocGrid();
-    };
-    r.readAsDataURL(file);
-  });
+    }catch(err){console.error('[document add] failed',file&&file.name,err);toast('เพิ่มไฟล์ไม่สำเร็จ','err');}
+  }
   e.target.value='';
   document.getElementById('newDocLabel').value='';
 }
@@ -2316,7 +2343,7 @@ function renderTable(){
   const total=filtered.length;
   const rcnt=document.getElementById('rcnt');
   if(rcnt)rcnt.textContent=total;
-  if(!total){document.getElementById('tbody').innerHTML='';document.getElementById('emptyRow').style.display='block';document.getElementById('pag').innerHTML='';return;}
+  if(!total){document.getElementById('tbody').innerHTML='';document.getElementById('emptyRow').style.display='block';document.getElementById('pag').innerHTML='';updateBulkBar();return;}
   document.getElementById('emptyRow').style.display='none';
   const s=(curPage-1)*PG,e=Math.min(s+PG,total);
   document.getElementById('tbody').innerHTML=filtered.slice(s,e).map(c=>{
@@ -2351,6 +2378,7 @@ function renderTable(){
   }).join('');
   const pages=Math.ceil(total/PG);const ss=(curPage-1)*PG+1,ee=Math.min(curPage*PG,total);
   document.getElementById('pag').innerHTML=`<span>${T('pagShow')} ${total?ss:0}–${ee} ${T('pagFrom')} ${total}</span><div class="pbtns"><button class="pb" onclick="goPage(${curPage-1})" ${curPage<=1?'disabled':''}>‹</button>${Array.from({length:Math.min(pages,5)},(_,i)=>{const p=Math.max(1,Math.min(curPage-2,pages-4))+i;return`<button class="pb ${p===curPage?'on':''}" onclick="goPage(${p})">${p}</button>`;}).join('')}<button class="pb" onclick="goPage(${curPage+1})" ${curPage>=pages?'disabled':''}>›</button></div>`;
+  updateBulkBar();
 }
 function goPage(p){const pages=Math.ceil(filtered.length/PG);if(p<1||p>pages)return;curPage=p;renderTable();}
 
@@ -2423,59 +2451,68 @@ function delDoc(k){delete docFiles[k];renderDocGrid();}
 function swTab(n){curTab=n;[0,1,2,3,4,5].forEach(i=>{document.getElementById('ct'+i).style.display=i===n?'block':'none';const _tb=document.querySelectorAll('#cModal .tbtn')[i];if(_tb)_tb.classList.toggle('on',i===n);});}
 function applyMvpModal(){
   if(!CUSTOMER_MVP_MODE)return;
-  // ซ่อน tab 3 (💰 การเงิน)
-  const _tbns=document.querySelectorAll('#cModal .tbtn');
-  if(_tbns[3])_tbns[3].style.display='none';
-  // ซ่อน work_status dropdown
+  // Round C follow-up: คืน Tab การเงินแล้ว (ไม่ซ่อน tab[3] อีกต่อไป)
+  // ยังคงซ่อน work_status dropdown
   const _ws=document.getElementById('fgi_ws');if(_ws)_ws.style.display='none';
-  // ซ่อน เจ้าหน้าที่รับผิดชอบ section
+  // ยังคงซ่อน เจ้าหน้าที่รับผิดชอบ section
   const _sf=document.getElementById('staffSec');if(_sf)_sf.style.display='none';
 }
-function handlePhoto(e){const f=e.target.files[0];if(!f)return;if(f.size>2*1024*1024){toast('ไฟล์ใหญ่เกิน 2MB','err');return;}const r=new FileReader();r.onload=ev=>{photoB64=ev.target.result;document.getElementById('pprevImg').src=photoB64;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';};r.readAsDataURL(f);}
+async function handlePhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  try{
+    if(!(f.type&&f.type.startsWith('image/'))){toast('กรุณาเลือกไฟล์รูปภาพ','err');return;}
+    const dataUrl=await compressImage(f,900,0.76); // รูปลูกค้า: max 900px, q0.76
+    if(!dataUrl){toast('อ่านรูปไม่ได้','err');return;}
+    if(approxBytesFromDataURL(dataUrl)>DOC_MAX_BYTES){toast('รูปใหญ่เกินไป ลองถ่ายใหม่','err');return;}
+    photoB64=dataUrl;
+    document.getElementById('pprevImg').src=photoB64;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';
+  }catch(err){console.error('[photo] failed',err);toast('อ่านรูปไม่ได้','err');}
+  finally{e.target.value='';}
+}
 
 async function saveCustomer(){
-  const name=document.getElementById('f_name').value.trim();if(!name){toast('กรุณากรอกชื่อ','err');return;}
-  const saveBtn=document.querySelector('#cModal .btn-p');
-  if(saveBtn&&saveBtn.disabled)return;
+  // null-safe readers — กัน element ที่อาจถูกซ่อน/ย้าย DOM (Round C hotfix)
+  const V=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const VT=id=>V(id).trim();
+  const VC=id=>{const el=document.getElementById(id);return !!(el&&el.checked);};
+  const name=VT('f_name');if(!name){toast('กรุณากรอกชื่อ','err');return;}
+  const saveBtn=document.querySelector('#cModal .mfoo .btn-p'); // ปุ่มบันทึกหลัก (ไม่ใช่ปุ่ม + เพิ่มไฟล์)
+  if(saveBtn&&saveBtn.disabled)return; // กันกดซ้ำ (double-submit)
   if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ กำลังบันทึก...';}
   showLoading('กำลังบันทึกข้อมูล...');
-  const isComp=document.getElementById('r_comp').checked;let empId=null;
-  if(isComp){
-    const selEid=document.getElementById('f_empId').value;
-    if(selEid)empId=parseInt(selEid);
-    else{const en=document.getElementById('f_emp').value.trim();if(en){try{const r=await dbPost('employers',{name:en,business_type:document.getElementById('f_biz').value.trim(),phone:document.getElementById('f_ephon').value.trim(),address:document.getElementById('f_addr').value.trim()});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;fillSelects();}}catch(e){}}}
-  }
-  const total=parseFloat(document.getElementById('f_ftotal').value)||0;const paid=parseFloat(document.getElementById('f_fpaid').value)||0;
-  const data={name,name_th:document.getElementById('f_nameTh').value.trim(),nationality:document.getElementById('f_nat').value,passport_no:document.getElementById('f_pp').value.trim()||null,alien_id:document.getElementById('f_alien').value.trim()||null,phone:document.getElementById('f_phone').value.trim()||null,dob:document.getElementById('f_dob').value||null,customer_type:isComp?'company':'freelance',group_id:document.getElementById('f_grp').value?parseInt(document.getElementById('f_grp').value):null,branch_id:document.getElementById('f_branch').value?parseInt(document.getElementById('f_branch').value):null,employer_id:empId,work_status:document.getElementById('f_ws').value||'รับเรื่อง',services:selSvcs,wp_no:document.getElementById('f_wpn').value.trim()||null,visa_no:document.getElementById('f_visn').value.trim()||null,license_no:document.getElementById('f_licn').value.trim()||null,source:document.getElementById('f_src').value,staff_receiver:document.getElementById('f_sr').value.trim(),staff_document:document.getElementById('f_sd').value.trim(),staff_closer:document.getElementById('f_sc').value.trim(),exp_passport:document.getElementById('f_epp').value||null,exp_visa:document.getElementById('f_evis').value||null,exp_wp:document.getElementById('f_ewp').value||null,next_90:document.getElementById('f_e90').value||null,exp_mou:document.getElementById('f_emou').value||null,last_renew:document.getElementById('f_ren').value||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:document.getElementById('f_fpay').value,pay_status:document.getElementById('f_fst').value,pay_date:document.getElementById('f_fpdate').value||null,note:document.getElementById('f_note').value.trim(),photo:photoB64,updated_at:new Date().toISOString()};
   try{
+    const isComp=VC('r_comp');let empId=null;
+    if(isComp){
+      const selEid=V('f_empId');
+      if(selEid)empId=parseInt(selEid);
+      else{const en=VT('f_emp');if(en){try{const r=await dbPost('employers',{name:en,business_type:VT('f_biz'),phone:VT('f_ephon'),address:VT('f_addr')});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;fillSelects();}}catch(e){console.error('[customer save] employer create failed',e);}}}
+    }
+    const total=parseFloat(V('f_ftotal'))||0;const paid=parseFloat(V('f_fpaid'))||0;
+    const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),photo:photoB64,updated_at:new Date().toISOString()};
     let savedId=editId;
     if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
     else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}toast('เพิ่มลูกค้าแล้ว');}
-    // Save multiDocs (only new ones, not existing db ones)
-    for(const doc of multiDocs){
-      if(savedId&&!doc.dbId){
-        await dbPost('documents',{customer_id:savedId,doc_type:doc.type,doc_name:doc.label,file_data:doc.data,file_type:doc.fileType||'image/jpeg',uploaded_by:curUser.full_name}).catch(()=>{});
-      }
+    // Save multiDocs (เฉพาะไฟล์ใหม่) พร้อม progress + นับ fail (ไม่ทำให้ save หลักล้ม)
+    const newDocs=multiDocs.filter(d=>!d.dbId);
+    let docFail=0;
+    for(let di=0;di<newDocs.length&&savedId;di++){
+      const doc=newDocs[di];
+      const _lt=document.getElementById('loadingText');if(_lt)_lt.textContent=`กำลังอัปโหลดเอกสาร ${di+1}/${newDocs.length}...`;
+      try{await dbPost('documents',{customer_id:savedId,doc_type:doc.type,doc_name:doc.label,file_data:doc.data,file_type:doc.fileType||'image/jpeg',uploaded_by:curUser.full_name});}
+      catch(err){docFail++;console.error('[customer save] doc upload failed',doc.name,err);}
     }
-    // Delete removed db docs
-    if(editId){
-      const keptDbIds=multiDocs.filter(d=>d.dbId).map(d=>d.dbId);
-      // Will be handled by cascade delete or manual cleanup
-    }
-    if(savedId&&data.work_status)await dbPost('work_timeline',{customer_id:savedId,status:data.work_status,created_by:curUser.full_name}).catch(()=>{});
+    if(savedId&&data.work_status)await dbPost('work_timeline',{customer_id:savedId,status:data.work_status,created_by:curUser.full_name}).catch(e=>console.error('[customer save] timeline insert failed',e));
     document.getElementById('cModal').style.display='none';
-    // Update local array then re-render (no full reload)
-    if(editId){
-      customers=customers.map(c=>c.id===editId?{...c,...data,employer_id:empId}:c);
-    }
     renderSidebar();renderDash();
     if(curView==='customers')doFilter();
+    if(docFail>0)toast(`บันทึกลูกค้าแล้ว แต่ ${docFail} ไฟล์อัปโหลดไม่สำเร็จ`,'err');
   }catch(e){
-    toast('เกิดข้อผิดพลาด: '+e.message,'err');
+    console.error('[customer save] failed',e);
+    toast('เกิดข้อผิดพลาด: '+(e&&e.message?e.message:e),'err');
   }finally{
     hideLoading();
-    const saveBtn=document.querySelector('#cModal .btn-p');
-    if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='💾 บันทึก';}
+    const _sb=document.querySelector('#cModal .mfoo .btn-p');
+    if(_sb){_sb.disabled=false;_sb.textContent='💾 บันทึก';}
   }
 }
 async function delCust(id){
@@ -2497,17 +2534,17 @@ async function openDetail(id){
   detId=id;const c=customers.find(x=>x.id===id);if(!c)return;
   document.getElementById('dTitle').textContent=c.name;
   let docs=[],tl=[],clogs=[];
-  // SIMPLE_CUSTOMER_DETAIL: skip timeline + contact-log fetches เพื่อประหยัด DB round-trips
-  try{[docs,tl,clogs]=await Promise.all([dbGet('documents',`?customer_id=eq.${id}&order=created_at.desc`),SIMPLE_CUSTOMER_DETAIL?Promise.resolve([]):dbGet('work_timeline',`?customer_id=eq.${id}&order=created_at.asc`),SIMPLE_CUSTOMER_DETAIL?Promise.resolve([]):dbGet('contact_logs',`?customer_id=eq.${id}&order=created_at.desc`)]);}catch(e){}
+  // Round C follow-up: fetch timeline + contact-log เสมอ (ใช้แสดงประวัติสถานะ/ประวัติติดต่อ)
+  try{[docs,tl,clogs]=await Promise.all([dbGet('documents',`?customer_id=eq.${id}&order=created_at.desc`),dbGet('work_timeline',`?customer_id=eq.${id}&order=created_at.asc`),dbGet('contact_logs',`?customer_id=eq.${id}&order=created_at.desc`)]);}catch(e){}
   const exps=getExps(c);const curWi=wsIdx(c.work_status||'รับเรื่อง');
   // ── pre-compute sections ที่ซ่อนด้วย SIMPLE_CUSTOMER_DETAIL ──
   // เปลี่ยน SIMPLE_CUSTOMER_DETAIL=false เพื่อเปิด timeline/finance/staff/contact-log/history กลับมา
-  const _updBtn=SIMPLE_CUSTOMER_DETAIL?'':`<button class="btn btn-p btn-sm" onclick="openTLModal(${c.id})">${T('updateStatus')}</button>`;
-  const _tlSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('detTimeline')}</div><div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${wsT(s)}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div></div>`);
+  const _updBtn=`<button class="btn btn-p btn-sm" onclick="openTLModal(${c.id})">${T('updateStatus')}</button>`;
+  const _tlSec=(`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('detTimeline')}</div><div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${wsT(s)}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div></div>`);
   const _finSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detFinance')}</div><div class="pay-sum"><div class="pay-box"><div class="pay-num" style="color:var(--g9)">${Number(c.fee_total||0).toLocaleString()}</div><div class="pay-lbl">${T('detFeeLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:var(--grn)">${Number(c.fee_paid||0).toLocaleString()}</div><div class="pay-lbl">${T('detPaidLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:${c.fee_due>0?'var(--red)':'var(--grn)'}">${Number(c.fee_due||0).toLocaleString()}</div><div class="pay-lbl">${T('detDueLabel')}</div></div><div class="pay-box"><div class="pay-num" style="font-size:13px">${{paid:T('payFull'),partial:T('payPart'),unpaid:T('payNo')}[c.pay_status]||'—'}</div><div class="pay-lbl">${T('detPayStatus')}</div></div></div></div>`);
   const _staffGrid=SIMPLE_CUSTOMER_DETAIL?'':(`<div class="dg4" style="margin-bottom:14px"><div class="df"><div class="dfl">${T('detReceiver')}</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div><div class="df"><div class="dfl">${T('detDocStaff')}</div><div class="dfv">${esc(c.staff_document||'—')}</div></div><div class="df"><div class="dfl">${T('detCloser')}</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div></div>`);
-  const _clogSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}</div>`);
-  const _histSec=(!SIMPLE_CUSTOMER_DETAIL&&tl.length)?(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`):'';
+  const _clogSec=(`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}</div>`);
+  const _histSec=tl.length?(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`):(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div><div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div></div>`);
   document.getElementById('dBody').innerHTML=`
   <div class="dh">
     <div class="dav">${c.photo?`<img src="${esc(c.photo)}">`:(NF[c.nationality]||'👤')}</div>
