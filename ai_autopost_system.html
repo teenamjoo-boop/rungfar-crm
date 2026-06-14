@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rungfa Content Planner</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --ink: #182330;
+      --muted: #667483;
+      --line: #dce3eb;
+      --soft: #eef3f7;
+      --brand: #1769e0;
+      --brand-dark: #0f4aa3;
+      --green: #178060;
+      --orange: #b96f00;
+      --red: #c43c35;
+      --violet: #6d55c7;
+      --shadow: 0 14px 34px rgba(26, 43, 62, .1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: #101822;
+      color: #f7fbff;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 8px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.11);
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #f04f2f;
+      color: white;
+      font-weight: 800;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .brand span {
+      display: block;
+      color: #aeb9c5;
+      font-size: 12px;
+      margin-top: 3px;
+      line-height: 1.35;
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav button {
+      width: 100%;
+      min-height: 40px;
+      padding: 9px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 7px;
+      background: transparent;
+      color: #c8d2dc;
+      text-align: left;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: #202b37;
+      color: white;
+    }
+
+    .nav .ico {
+      width: 21px;
+      text-align: center;
+    }
+
+    .sideBox {
+      margin-top: auto;
+      padding: 12px;
+      background: #1c2632;
+      border-radius: 8px;
+      color: #cbd5df;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 24px;
+      background: rgba(255,255,255,.9);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .topbar p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      min-height: 38px;
+      padding: 8px 12px;
+      border-radius: 7px;
+      background: var(--soft);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      color: white;
+      border-color: var(--brand);
+    }
+
+    .btn.primary:hover { background: var(--brand-dark); }
+    .btn.green { background: var(--green); color: white; border-color: var(--green); }
+    .btn.danger { background: #fff0f0; color: var(--red); border-color: #f0c9c7; }
+    .btn.small { min-height: 32px; padding: 6px 9px; font-size: 12px; }
+
+    .content {
+      padding: 22px 24px 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(28, 42, 58, .05);
+      min-width: 0;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      line-height: 1.35;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(390px, 1.05fr) minmax(390px, .95fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panelHead {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panelHead h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .panelHead span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .panelBody { padding: 16px; }
+
+    .form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px;
+      color: #435260;
+      font-weight: 650;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: white;
+      color: var(--ink);
+      padding: 9px 10px;
+      outline: 0;
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.48;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(23,105,224,.12);
+    }
+
+    .queue {
+      display: grid;
+      gap: 10px;
+    }
+
+    .postCard {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: white;
+      display: grid;
+      gap: 9px;
+    }
+
+    .postCard h3 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .postCard p {
+      margin: 0;
+      color: #435260;
+      font-size: 13px;
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .infoRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: #405060;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      line-height: 1.2;
+    }
+
+    .chip.orange { background: #fff5df; color: var(--orange); border-color: #f0d49a; }
+    .chip.green { background: #e9f7f1; color: var(--green); border-color: #c7eadc; }
+    .chip.violet { background: #f1edff; color: var(--violet); border-color: #ded6ff; }
+    .chip.red { background: #fff0f0; color: var(--red); border-color: #efcdca; }
+
+    .tableWrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1260px;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      padding: 10px 11px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    th {
+      color: #506070;
+      background: #f7f9fb;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .detailBlock {
+      display: grid;
+      gap: 10px;
+    }
+
+    .detailItem {
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfd;
+      font-size: 13px;
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .detailItem strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .companyGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: #435260;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .list li {
+      padding: 8px 10px;
+      background: #fbfcfd;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+
+    .hidden { display: none !important; }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #111821;
+      color: white;
+      box-shadow: var(--shadow);
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+      z-index: 20;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 1240px) {
+      .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        flex-direction: row;
+        align-items: center;
+        overflow-x: auto;
+        padding: 10px;
+      }
+      .brand {
+        border-bottom: 0;
+        padding: 0 10px 0 0;
+        min-width: 218px;
+      }
+      .nav {
+        display: flex;
+        min-width: max-content;
+      }
+      .nav button { width: auto; }
+      .sideBox { display: none; }
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 16px;
+      }
+      .content { padding: 16px; }
+      .companyGrid, .form, .stats { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .actions { width: 100%; justify-content: flex-start; }
+      .btn { flex: 1 1 auto; }
+      .panelHead { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">RF</div>
+        <div>
+          <strong>Rungfa Content Planner</strong>
+          <span>ระบบช่วยวางแผนโพสต์ 7 วัน สำหรับเพจแรงงานต่างด้าว</span>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <button class="active" data-view="dashboard"><span class="ico">▦</span>แดชบอร์ด</button>
+        <button data-view="composer"><span class="ico">✎</span>สร้าง/แก้โพสต์</button>
+        <button data-view="queue"><span class="ico">◷</span>คิวโพสต์</button>
+        <button data-view="company"><span class="ico">▣</span>ข้อมูลบริษัท</button>
+        <button data-view="settings"><span class="ico">⚙</span>ตั้งค่าระบบ</button>
+      </nav>
+      <div class="sideBox">
+        เครื่องมือนี้ใช้สร้างแผนโพสต์ แคปชั่น ข้อความบนภาพ Image Prompt และ Reel Script เท่านั้น ข้อมูลเก็บในเบราว์เซอร์ของเครื่องนี้
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">Rungfa Content Planner</h1>
+          <p id="viewSub">ระบบช่วยวางแผนโพสต์ 7 วัน สำหรับเพจแรงงานต่างด้าว</p>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="generatePlanBtn">สร้างแผนโพสต์ 7 วันแบบเพจคู่แข่ง</button>
+          <button class="btn danger" id="clearQueueBtn">ล้างคิวโพสต์ 7 วัน</button>
+          <button class="btn" id="exportJsonBtn">Export JSON</button>
+          <button class="btn" id="exportCsvBtn">Export CSV</button>
+          <button class="btn" data-jump="composer">เพิ่มโพสต์เอง</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <section id="dashboardView" data-screen="dashboard">
+          <div class="stats">
+            <div class="stat"><span>โพสต์ในคิว</span><strong id="statQueued">0</strong></div>
+            <div class="stat"><span>โพสต์วันนี้</span><strong id="statToday">0</strong></div>
+            <div class="stat"><span>รอทำรูป</span><strong id="statNeedsImage">0</strong></div>
+            <div class="stat"><span>รอถ่ายคลิป</span><strong id="statNeedsVideo">0</strong></div>
+            <div class="stat"><span>พร้อมลง</span><strong id="statReady">0</strong></div>
+            <div class="stat"><span>ลงแล้ว</span><strong id="statPublished">0</strong></div>
+          </div>
+          <div class="grid" style="margin-top:18px">
+            <article class="panel">
+              <div class="panelHead">
+                <div><h2>คิวถัดไป</h2><span>เรียงตามวันและเวลาที่ตั้งไว้</span></div>
+                <button class="btn" data-jump="queue">ดูคิวทั้งหมด</button>
+              </div>
+              <div class="panelBody queue" id="upcomingList"></div>
+            </article>
+            <article class="panel">
+              <div class="panelHead">
+                <div><h2>แนวคอนเทนต์ 7 วัน</h2><span>ใช้แนวทางเพจธุรกิจแรงงานต่างด้าว แต่เขียนใหม่สำหรับรุ่งฟ้า</span></div>
+              </div>
+              <div class="panelBody">
+                <div class="detailBlock" id="planOutline"></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="composerView" data-screen="composer" class="hidden">
+          <div class="grid">
+            <article class="panel">
+              <div class="panelHead">
+                <div><h2>สร้าง/แก้ไขโพสต์</h2><span>กรอกข้อมูลคอนเทนต์ ภาพ คลิป และสถานะงาน</span></div>
+              </div>
+              <div class="panelBody">
+                <div class="form">
+                  <input id="postId" type="hidden">
+                  <div class="field">
+                    <label for="postDate">วันที่โพสต์</label>
+                    <input id="postDate" type="date">
+                  </div>
+                  <div class="field">
+                    <label for="postTime">เวลาโพสต์</label>
+                    <input id="postTime" type="time">
+                  </div>
+                  <div class="field">
+                    <label for="postType">ประเภทคอนเทนต์</label>
+                    <select id="postType"></select>
+                  </div>
+                  <div class="field">
+                    <label for="postFormat">รูปแบบโพสต์</label>
+                    <select id="postFormat"></select>
+                  </div>
+                  <div class="field">
+                    <label for="postStatus">สถานะ</label>
+                    <select id="postStatus">
+                      <option value="needs_image">รอทำรูป</option>
+                      <option value="needs_video">รอถ่ายคลิป</option>
+                      <option value="ready">พร้อมลง</option>
+                      <option value="published">ลงแล้ว</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="attachmentFile">แนบรูปหรือคลิปเองภายหลัง</label>
+                    <input id="attachmentFile" type="file" accept="image/*,video/*">
+                    <span class="chip" id="attachmentLabel">ยังไม่ได้แนบไฟล์</span>
+                  </div>
+                  <div class="field full">
+                    <label for="postTitle">หัวข้อโพสต์</label>
+                    <input id="postTitle" placeholder="เช่น เอกสารแรงงานต่างด้าวต้องเริ่มจากอะไร">
+                  </div>
+                  <div class="field full">
+                    <label for="caption">แคปชั่น</label>
+                    <textarea id="caption" placeholder="ข้อความโพสต์สำหรับเพจ"></textarea>
+                  </div>
+                  <div class="field">
+                    <label for="imageText">ข้อความบนภาพแบบสั้น</label>
+                    <textarea id="imageText" placeholder="เช่น เอกสารแรงงานต่างด้าว ครบ จบในที่เดียว"></textarea>
+                  </div>
+                  <div class="field">
+                    <label for="imageIdea">ไอเดียภาพ</label>
+                    <textarea id="imageIdea" placeholder="อธิบายภาพหรือฉากที่ทีมออกแบบควรทำ"></textarea>
+                  </div>
+                  <div class="field full">
+                    <label for="imagePrompt">Image Prompt สำหรับเอาไปเจนรูปเอง</label>
+                    <textarea id="imagePrompt" placeholder="Prompt สำหรับเครื่องมือสร้างภาพ"></textarea>
+                  </div>
+                  <div class="field full">
+                    <label for="reelScript">Reel Script ถ้าเป็นคลิป</label>
+                    <textarea id="reelScript" placeholder="Hook, บทพูด 30-45 วินาที, ข้อความบนจอ, CTA"></textarea>
+                  </div>
+                  <div class="field full">
+                    <div class="actions">
+                      <button class="btn green" id="savePostBtn">บันทึกเข้าคิว</button>
+                      <button class="btn" id="copyCaptionFromFormBtn">Copy Caption</button>
+                      <button class="btn" id="copyPromptFromFormBtn">Copy Image Prompt</button>
+                      <button class="btn" id="copyScriptFromFormBtn">Copy Reel Script</button>
+                      <button class="btn danger" id="clearFormBtn">ล้างฟอร์ม</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panelHead">
+                <div><h2>พรีวิวคอนเทนต์</h2><span>ข้อความที่จะใช้ส่งต่อให้ทีมทำรูป คลิป และลงเพจ</span></div>
+              </div>
+              <div class="panelBody">
+                <div class="detailBlock">
+                  <div class="detailItem">
+                    <strong>บริษัท</strong>
+                    <span>บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด<br>ศูนย์ประสานงานแรงงานต่างด้าวครบวงจร</span>
+                  </div>
+                  <div class="detailItem">
+                    <strong>แคปชั่น</strong>
+                    <span id="captionPreview">ยังไม่มีข้อมูล</span>
+                  </div>
+                  <div class="detailItem">
+                    <strong>ข้อความบนภาพ</strong>
+                    <span id="imageTextPreview">ยังไม่มีข้อมูล</span>
+                  </div>
+                  <div class="detailItem">
+                    <strong>Image Prompt</strong>
+                    <span id="promptPreview">ยังไม่มีข้อมูล</span>
+                  </div>
+                  <div class="detailItem">
+                    <strong>Reel Script</strong>
+                    <span id="scriptPreview">ยังไม่มีข้อมูล</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="queueView" data-screen="queue" class="hidden">
+          <article class="panel">
+            <div class="panelHead">
+              <div><h2>คิวโพสต์ 7 วัน</h2><span>คัดลอก Caption, Prompt และ Script เพื่อส่งต่อให้ทีมทำงาน</span></div>
+              <div class="actions">
+                <select id="queueFilter">
+                  <option value="all">ทุกสถานะ</option>
+                  <option value="needs_image">รอทำรูป</option>
+                  <option value="needs_video">รอถ่ายคลิป</option>
+                  <option value="ready">พร้อมลง</option>
+                  <option value="published">ลงแล้ว</option>
+                </select>
+              </div>
+            </div>
+            <div class="panelBody">
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>วันที่</th>
+                      <th>เวลา</th>
+                      <th>ประเภท</th>
+                      <th>รูปแบบ</th>
+                      <th>หัวข้อ</th>
+                      <th>สถานะ</th>
+                      <th>Copy Caption</th>
+                      <th>Copy Prompt</th>
+                      <th>Copy Script</th>
+                      <th>แก้ไข</th>
+                    </tr>
+                  </thead>
+                  <tbody id="queueRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section id="companyView" data-screen="company" class="hidden">
+          <div class="grid">
+            <article class="panel">
+              <div class="panelHead">
+                <div><h2>ข้อมูลบริษัทที่ใช้ในคอนเทนต์</h2><span>ฐานข้อความสำหรับแผนโพสต์ 7 วัน</span></div>
+              </div>
+              <div class="panelBody">
+                <div class="detailBlock" id="companyFacts"></div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panelHead">
+                <div><h2>หมวดคอนเทนต์ บริการ และสาขา</h2><span>ข้อมูลอ้างอิงสำหรับ Caption, Prompt และ Script</span></div>
+              </div>
+              <div class="panelBody companyGrid">
+                <div>
+                  <h3 style="margin:0 0 10px;font-size:14px">หมวดคอนเทนต์หลัก</h3>
+                  <ul class="list" id="categoryList"></ul>
+                </div>
+                <div>
+                  <h3 style="margin:0 0 10px;font-size:14px">บริการ</h3>
+                  <ul class="list" id="serviceList"></ul>
+                </div>
+                <div>
+                  <h3 style="margin:0 0 10px;font-size:14px">สาขา</h3>
+                  <ul class="list" id="branchList"></ul>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="settingsView" data-screen="settings" class="hidden">
+          <article class="panel">
+            <div class="panelHead">
+              <div><h2>ตั้งค่าระบบ</h2><span>ไม่มีการเชื่อมต่อฐานข้อมูลหรือโพสต์ออกจากระบบนี้</span></div>
+            </div>
+            <div class="panelBody">
+              <div class="form">
+                <div class="field">
+                  <label for="defaultStartDate">วันเริ่มต้นของแผน 7 วัน</label>
+                  <input id="defaultStartDate" type="date">
+                </div>
+                <div class="field">
+                  <label for="defaultPostTime">เวลาโพสต์เริ่มต้น</label>
+                  <input id="defaultPostTime" type="time" value="09:00">
+                </div>
+                <div class="field full">
+                  <label for="plannerNote">โน้ตทีมคอนเทนต์</label>
+                  <textarea id="plannerNote">โทนโพสต์ควรสุภาพ เข้าใจง่าย เหมาะกับนายจ้างและผู้ประกอบการ เน้นปรึกษาฟรี ไม่มีค่าใช้จ่าย และบริการครบวงจร</textarea>
+                </div>
+                <div class="field full">
+                  <button class="btn primary" id="saveSettingsBtn">บันทึกตั้งค่า</button>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const storageKey = "rungfaContentPlanner.v2";
+
+    const company = {
+      name: "บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด",
+      tagline: "ศูนย์ประสานงานแรงงานต่างด้าวครบวงจร",
+      facts: [
+        "ดูแลเอกสารแรงงานต่างด้าวครบทุกเรื่อง",
+        "ประสบการณ์มากกว่า 10 ปี",
+        "ดูแลมาแล้วกว่า 100,000 เคสทั่วประเทศ",
+        "มีหลายสาขา ใกล้คุณแน่นอน",
+        "มีรถรับส่ง + ที่พักบริการ",
+        "ทักปรึกษาฟรี ไม่มีค่าใช้จ่าย"
+      ],
+      services: [
+        "ทำ Passport",
+        "ต่อ Visa + Work Permit",
+        "MOU 3 สัญชาติ",
+        "เปลี่ยนนายจ้าง / แจ้งเข้า-ออก",
+        "ต่อใบอนุญาต",
+        "รายงานตัว 90 วัน",
+        "แจ้งที่พัก",
+        "เอกสารแรงงานทุกประเภท"
+      ],
+      branches: [
+        "ปทุมธานี",
+        "คลอง 4 ลำลูกกา",
+        "คลอง 8 ลำลูกกา",
+        "อยุธยา 1 / 2 / 3",
+        "นครปฐม",
+        "สระบุรี",
+        "ระยอง"
+      ]
+    };
+
+    const contentCategories = [
+      "ให้ความรู้เอกสารแรงงาน",
+      "โพสต์ขายบริการ",
+      "ปัญหานายจ้าง",
+      "Passport",
+      "Visa + Work Permit",
+      "MOU 3 สัญชาติ",
+      "รายงานตัว 90 วัน",
+      "แจ้งที่พัก",
+      "เปลี่ยนนายจ้าง / แจ้งเข้า-ออก",
+      "สาขา / สำนักงาน",
+      "ความน่าเชื่อถือบริษัท",
+      "คลิปคนจริง / หน้างานจริง",
+      "คลิป AI / Reel Script",
+      "วันสำคัญ / ภาพลักษณ์องค์กร"
+    ];
+
+    const postFormats = ["ภาพนิ่ง", "Carousel", "Reel คนจริง", "Reel AI"];
+
+    const planOutline = [
+      "Day 1: อินโฟกราฟิกให้ความรู้",
+      "Day 2: โพสต์ขายบริการรวม",
+      "Day 3: โพสต์ปัญหานายจ้าง",
+      "Day 4: คลิปคนจริง / หน้างานจริง",
+      "Day 5: โพสต์บริการเฉพาะทาง",
+      "Day 6: โพสต์ความน่าเชื่อถือ / สาขา",
+      "Day 7: โพสต์สรุปบริการครบ จบในที่เดียว"
+    ];
+
+    const defaultState = {
+      settings: {
+        defaultStartDate: toDateInput(new Date()),
+        defaultPostTime: "09:00",
+        plannerNote: "โทนโพสต์ควรสุภาพ เข้าใจง่าย เหมาะกับนายจ้างและผู้ประกอบการ เน้นปรึกษาฟรี ไม่มีค่าใช้จ่าย และบริการครบวงจร"
+      },
+      posts: []
+    };
+
+    let state = normalizeState(loadState());
+    const els = {};
+    document.querySelectorAll("[id]").forEach(el => els[el.id] = el);
+
+    const views = {
+      dashboard: ["Rungfa Content Planner", "ระบบช่วยวางแผนโพสต์ 7 วัน สำหรับเพจแรงงานต่างด้าว"],
+      composer: ["สร้าง/แก้ไขโพสต์", "สร้างแผนโพสต์ แคปชั่น ข้อความบนภาพ Image Prompt และ Reel Script"],
+      queue: ["คิวโพสต์ 7 วัน", "ตารางงานคอนเทนต์พร้อมคัดลอก Caption, Prompt และ Script"],
+      company: ["ข้อมูลบริษัท", "ข้อมูลบริษัท บริการ สาขา และหมวดคอนเทนต์หลัก"],
+      settings: ["ตั้งค่าระบบ", "ตั้งค่าเวลาเริ่มต้นและโน้ตทีมคอนเทนต์"]
+    };
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        if (saved && Array.isArray(saved.posts)) return saved;
+      } catch {}
+      return structuredClone(defaultState);
+    }
+
+    function normalizeState(input) {
+      const normalized = {
+        settings: { ...defaultState.settings, ...(input.settings || {}) },
+        posts: Array.isArray(input.posts) ? input.posts : []
+      };
+      normalized.posts = normalized.posts.map(post => ({
+        id: post.id || crypto.randomUUID(),
+        day: post.day || null,
+        dayLabel: post.dayLabel || "Manual",
+        date: post.date || toDateInput(new Date()),
+        time: post.time || normalized.settings.defaultPostTime || "09:00",
+        type: post.type || contentCategories[0],
+        format: post.format || post.postFormat || "ภาพนิ่ง",
+        title: post.title || "Untitled",
+        caption: post.caption || "",
+        imageText: post.imageText || "",
+        imageIdea: post.imageIdea || "",
+        imagePrompt: post.imagePrompt || "",
+        reelScript: post.reelScript || "",
+        status: post.status || "needs_image",
+        attachmentName: post.attachmentName || post.imageName || "",
+        createdAt: post.createdAt || new Date().toISOString(),
+        updatedAt: post.updatedAt || ""
+      }));
+      return normalized;
+    }
+
+    function saveState() {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+      render();
+    }
+
+    function setView(view) {
+      Object.keys(views).forEach(key => {
+        document.querySelector(`[data-screen="${key}"]`).classList.toggle("hidden", key !== view);
+      });
+      document.querySelectorAll("#nav button").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
+      els.viewTitle.textContent = views[view][0];
+      els.viewSub.textContent = views[view][1];
+      render();
+    }
+
+    function render() {
+      renderStats();
+      renderUpcoming();
+      renderPlanOutline();
+      renderQueue();
+      renderCompany();
+      renderSettings();
+      renderPreview();
+    }
+
+    function renderSelectOptions() {
+      els.postType.innerHTML = contentCategories.map(item => `<option>${escapeHtml(item)}</option>`).join("");
+      els.postFormat.innerHTML = postFormats.map(item => `<option>${escapeHtml(item)}</option>`).join("");
+    }
+
+    function renderStats() {
+      const today = toDateInput(new Date());
+      els.statQueued.textContent = state.posts.filter(post => post.status !== "published").length;
+      els.statToday.textContent = state.posts.filter(post => post.date === today).length;
+      els.statNeedsImage.textContent = state.posts.filter(post => post.status === "needs_image").length;
+      els.statNeedsVideo.textContent = state.posts.filter(post => post.status === "needs_video").length;
+      els.statReady.textContent = state.posts.filter(post => post.status === "ready").length;
+      els.statPublished.textContent = state.posts.filter(post => post.status === "published").length;
+    }
+
+    function renderUpcoming() {
+      const posts = sortedPosts().filter(post => post.status !== "published").slice(0, 5);
+      els.upcomingList.innerHTML = posts.length ? posts.map(postCard).join("") : emptyState("ยังไม่มีคิวโพสต์ กดสร้างแผนโพสต์ 7 วันแบบเพจคู่แข่งเพื่อเริ่มต้น");
+    }
+
+    function renderPlanOutline() {
+      els.planOutline.innerHTML = planOutline.map(item => `<div class="detailItem">${escapeHtml(item)}</div>`).join("");
+    }
+
+    function postCard(post) {
+      return `
+        <div class="postCard">
+          <h3>${escapeHtml(post.dayLabel)} · ${escapeHtml(post.title)}</h3>
+          <div class="infoRow">
+            <span class="chip">${formatDate(post.date)}</span>
+            <span class="chip">${escapeHtml(post.time)}</span>
+            <span class="chip violet">${escapeHtml(post.type)}</span>
+            <span class="chip">${escapeHtml(post.format)}</span>
+            ${statusChip(post.status)}
+          </div>
+          <p>${escapeHtml(post.caption)}</p>
+        </div>
+      `;
+    }
+
+    function renderQueue() {
+      const filter = els.queueFilter.value || "all";
+      const posts = sortedPosts().filter(post => filter === "all" || post.status === filter);
+      els.queueRows.innerHTML = posts.length ? posts.map(post => `
+        <tr>
+          <td>${formatDate(post.date)}</td>
+          <td>${escapeHtml(post.time)}</td>
+          <td>${escapeHtml(post.type)}</td>
+          <td>${escapeHtml(post.format)}</td>
+          <td>
+            <strong>${escapeHtml(post.title)}</strong><br>
+            <span class="chip">${escapeHtml(post.attachmentName || "ยังไม่ได้แนบไฟล์")}</span>
+          </td>
+          <td>${statusChip(post.status)}</td>
+          <td><button class="btn small" onclick="copyCaption('${post.id}')">Copy Caption</button></td>
+          <td><button class="btn small" onclick="copyPrompt('${post.id}')">Copy Prompt</button></td>
+          <td><button class="btn small" onclick="copyScript('${post.id}')">Copy Script</button></td>
+          <td>
+            <div class="actions">
+              <button class="btn small" onclick="editPost('${post.id}')">แก้ไข</button>
+              <button class="btn small green" onclick="markPublished('${post.id}')">ทำเครื่องหมายว่าลงแล้ว</button>
+              <button class="btn small danger" onclick="deletePost('${post.id}')">ลบ</button>
+            </div>
+          </td>
+        </tr>
+      `).join("") : `<tr><td colspan="10">${emptyText("ยังไม่มีโพสต์ในคิว")}</td></tr>`;
+    }
+
+    function renderCompany() {
+      els.companyFacts.innerHTML = [
+        `<div class="detailItem"><strong>${escapeHtml(company.name)}</strong>${escapeHtml(company.tagline)}</div>`,
+        ...company.facts.map(fact => `<div class="detailItem">${escapeHtml(fact)}</div>`)
+      ].join("");
+      els.categoryList.innerHTML = contentCategories.map(item => `<li>${escapeHtml(item)}</li>`).join("");
+      els.serviceList.innerHTML = company.services.map(item => `<li>${escapeHtml(item)}</li>`).join("");
+      els.branchList.innerHTML = company.branches.map(item => `<li>${escapeHtml(item)}</li>`).join("");
+    }
+
+    function renderSettings() {
+      els.defaultStartDate.value = state.settings.defaultStartDate || toDateInput(new Date());
+      els.defaultPostTime.value = state.settings.defaultPostTime || "09:00";
+      els.plannerNote.value = state.settings.plannerNote || "";
+    }
+
+    function renderPreview() {
+      els.captionPreview.textContent = els.caption.value.trim() || "ยังไม่มีข้อมูล";
+      els.imageTextPreview.textContent = els.imageText.value.trim() || "ยังไม่มีข้อมูล";
+      els.promptPreview.textContent = els.imagePrompt.value.trim() || "ยังไม่มีข้อมูล";
+      els.scriptPreview.textContent = els.reelScript.value.trim() || "ยังไม่มีข้อมูล";
+    }
+
+    function generateSevenDayPlan() {
+      if (!confirm("ต้องการล้างแผน 7 วันเดิมแล้วสร้างใหม่หรือไม่")) return;
+      const startDate = parseDateInput(state.settings.defaultStartDate || toDateInput(new Date()));
+      const time = state.settings.defaultPostTime || "09:00";
+      const templates = buildSevenDayTemplates();
+      const newPosts = templates.map((template, index) => {
+        const date = addDays(startDate, index);
+        return {
+          id: crypto.randomUUID(),
+          day: index + 1,
+          dayLabel: `Day ${index + 1}`,
+          date: toDateInput(date),
+          time,
+          type: template.type,
+          format: template.format,
+          title: template.title,
+          caption: template.caption,
+          imageText: template.imageText,
+          imageIdea: template.imageIdea,
+          imagePrompt: template.imagePrompt,
+          reelScript: template.reelScript,
+          status: template.status,
+          attachmentName: "",
+          createdAt: new Date().toISOString(),
+          updatedAt: ""
+        };
+      });
+      state.posts = newPosts;
+      saveState();
+      setView("queue");
+      toast("สร้างแผนโพสต์ 7 วันใหม่แล้ว มี 7 โพสต์ในคิว");
+    }
+
+    function clearQueue() {
+      if (!confirm("ต้องการล้างคิวโพสต์ 7 วันทั้งหมดหรือไม่")) return;
+      state.posts = [];
+      saveState();
+      setView("queue");
+      toast("ล้างคิวโพสต์ 7 วันแล้ว");
+    }
+
+    function buildSevenDayTemplates() {
+      return [
+        {
+          type: "ให้ความรู้เอกสารแรงงาน",
+          format: "Carousel",
+          title: "Passport / CI / PV / PJ / MOU ต่างกันอย่างไร",
+          caption: `${company.name}\n${company.tagline}\n\nนายจ้างหลายคนได้ยินคำว่า Passport, CI, PV, PJ และ MOU แต่ยังไม่แน่ใจว่าเอกสารแต่ละแบบเกี่ยวกับแรงงานต่างด้าวอย่างไร\n\nหลักคิดง่าย ๆ คือ เอกสารแต่ละชุดใช้ต่างวัตถุประสงค์และต่างขั้นตอน บางเคสต้องเริ่มจากการพิสูจน์ตัวตน บางเคสต้องต่อสถานะให้ถูกต้อง และบางเคสต้องเดินเรื่องนำเข้าแรงงานตามระบบ\n\nรุ่งฟ้าช่วยดูแลเอกสารแรงงานต่างด้าวครบทุกเรื่อง ด้วยประสบการณ์มากกว่า 10 ปี และดูแลมาแล้วกว่า 100,000 เคสทั่วประเทศ\n\nไม่แน่ใจว่าเคสของคุณต้องใช้อะไร ทักปรึกษาฟรี ไม่มีค่าใช้จ่าย`,
+          imageText: "Passport / CI / PV / PJ / MOU คืออะไร?",
+          imageIdea: "อินโฟกราฟิก 5 ช่อง อธิบายเอกสารแต่ละประเภทแบบสั้น อ่านง่าย มีไอคอนเอกสารและแรงงาน",
+          imagePrompt: "Thai migrant worker document infographic, five clean cards for Passport CI PV PJ MOU, official document icons, employer-friendly layout, blue white red corporate colors, clear Thai business service design, vertical carousel cover",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          type: "โพสต์ขายบริการ",
+          format: "ภาพนิ่ง",
+          title: "บริการแรงงานต่างด้าวครบวงจร จบที่รุ่งฟ้า",
+          caption: `${company.name} ดูแลเอกสารแรงงานต่างด้าวครบวงจร\n\nบริการหลักของเรา:\n- ทำ Passport\n- ต่อ Visa + Work Permit\n- MOU 3 สัญชาติ\n- เปลี่ยนนายจ้าง / แจ้งเข้า-ออก\n- ต่อใบอนุญาต\n- รายงานตัว 90 วัน\n- แจ้งที่พัก\n- เอกสารแรงงานทุกประเภท\n\nมีหลายสาขา ใกล้คุณแน่นอน พร้อมรถรับส่ง + ที่พักบริการ\n\nต้องการให้ช่วยดูเคสแรงงานในบริษัท ทักปรึกษาฟรี ไม่มีค่าใช้จ่าย`,
+          imageText: "ครบทุกบริการแรงงานต่างด้าว",
+          imageIdea: "ภาพบริการรวมแบบ checklist มีไอคอน Passport, Visa, Work Permit, MOU, 90 วัน และแจ้งที่พัก",
+          imagePrompt: "Professional Thai service poster for migrant worker document center, checklist of Passport Visa Work Permit MOU employer transfer 90-day report accommodation, friendly staff, clean office, blue red white corporate palette, vertical Facebook post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          type: "ปัญหานายจ้าง",
+          format: "ภาพนิ่ง",
+          title: "ลูกน้องเอกสารหมดอายุ ต่อไม่ทัน ต้องทำอย่างไร",
+          caption: `ลูกน้องเอกสารหมดอายุ ต่อไม่ทัน หรือไม่รู้ต้องใช้เอกสารอะไรบ้าง?\n\nปัญหานี้เกิดกับนายจ้างหลายราย โดยเฉพาะเมื่อ Passport, Visa, Work Permit หรือรายงานตัว 90 วันมีวันหมดอายุไม่ตรงกัน\n\nถ้าปล่อยไว้นาน อาจทำให้งานสะดุด ต้องแก้เอกสารหลายรอบ และเสียเวลามากกว่าที่ควร\n\nให้รุ่งฟ้าช่วยเช็กเคสและแนะนำขั้นตอนที่เหมาะกับแรงงานของคุณ\n\nทักปรึกษาฟรี ไม่มีค่าใช้จ่าย`,
+          imageText: "ลูกน้องเอกสารหมดอายุ? รีบเช็กก่อนงานสะดุด",
+          imageIdea: "ภาพนายจ้างกังวลหน้าโต๊ะเอกสาร มีปฏิทินแจ้งเตือนวันหมดอายุและเอกสารแรงงาน",
+          imagePrompt: "Realistic Thai employer worried at office desk with worker documents, expiry date calendar alerts, official papers, professional but urgent mood, clean corporate social post, vertical format",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          type: "คลิปคนจริง / หน้างานจริง",
+          format: "Reel คนจริง",
+          title: "พนักงานรุ่งฟ้าอธิบาย 3 เอกสารที่นายจ้างต้องเช็ก",
+          caption: `เอกสารแรงงานต่างด้าวไม่จำเป็นต้องยุ่งยาก ถ้ามีคนช่วยเช็กให้ถูกตั้งแต่แรก\n\nคลิปนี้สรุป 3 จุดที่นายจ้างควรเช็กก่อนเอกสารหมดอายุ: Passport, Visa + Work Permit และรายงานตัว 90 วัน\n\nอยากให้รุ่งฟ้าช่วยดูเคสแรงงานในบริษัทของคุณ ทักปรึกษาฟรี ไม่มีค่าใช้จ่าย`,
+          imageText: "3 จุดที่นายจ้างต้องเช็ก",
+          imageIdea: "คลิปพนักงานพูดหน้ากล้องในสำนักงานจริง ถือเอกสารและชี้ checklist บนจอ",
+          imagePrompt: "Real office video thumbnail concept, Thai staff member holding migrant worker documents, checklist overlay Passport Visa Work Permit 90-day report, friendly professional mood, vertical reel cover",
+          reelScript: `Hook เปิดคลิป:\nลูกน้องต่างด้าวเอกสารใกล้หมดอายุ นายจ้างต้องเช็ก 3 อย่างนี้ก่อน\n\nบทพูด 30-45 วินาที:\nสวัสดีค่ะ วันนี้รุ่งฟ้าขอสรุปให้ฟังสั้น ๆ ว่า ถ้าคุณเป็นนายจ้างที่มีแรงงานต่างด้าวในบริษัท สิ่งที่ควรเช็กก่อนเอกสารหมดอายุมี 3 เรื่องค่ะ\nหนึ่ง Passport ยังใช้งานได้ไหม\nสอง Visa และ Work Permit หมดอายุวันไหน\nสาม รายงานตัว 90 วัน หรือแจ้งที่พักมีอะไรที่ต้องอัปเดตหรือไม่\nถ้าไม่แน่ใจว่าเคสของคุณต้องเริ่มจากตรงไหน ส่งข้อมูลมาให้เราช่วยดูเบื้องต้นได้ค่ะ\n\nข้อความบนจอ:\nเช็ก Passport\nเช็ก Visa + Work Permit\nเช็กรายงานตัว 90 วัน\n\nCTA:\nทักปรึกษารุ่งฟ้าฟรี ไม่มีค่าใช้จ่าย`,
+          status: "needs_video"
+        },
+        {
+          type: "Visa + Work Permit",
+          format: "Carousel",
+          title: "ต่อ Visa + Work Permit ต้องเตรียมอะไรบ้าง",
+          caption: `Visa + Work Permit เป็นเอกสารสำคัญที่นายจ้างควรวางแผนล่วงหน้า\n\nสิ่งที่ควรเช็ก:\n1. วันหมดอายุของเอกสารเดิม\n2. ข้อมูลนายจ้างและแรงงานตรงกันหรือไม่\n3. เอกสารประกอบครบหรือยัง\n4. ต้องดำเนินการร่วมกับบริการอื่นหรือไม่\n\nรุ่งฟ้าช่วยดูแลการต่อ Visa + Work Permit พร้อมประสานงานเอกสารแรงงานทุกประเภท\n\nทักปรึกษาฟรี ไม่มีค่าใช้จ่าย`,
+          imageText: "ต่อ Visa + Work Permit เตรียมอะไรบ้าง?",
+          imageIdea: "Carousel 4 ขั้นตอน เตรียมเอกสาร เช็กวันหมดอายุ ตรวจข้อมูล และติดต่อรุ่งฟ้า",
+          imagePrompt: "Thai infographic carousel about Visa and Work Permit renewal checklist, four simple steps, work permit card and visa document visuals, clean official service style, blue red white, vertical carousel",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          type: "ความน่าเชื่อถือบริษัท",
+          format: "ภาพนิ่ง",
+          title: "รุ่งฟ้ามีสำนักงาน หลายสาขา และทีมดูแลครบวงจร",
+          caption: `${company.name}\n${company.tagline}\n\nเราเป็นศูนย์ประสานงานแรงงานต่างด้าวครบวงจร ดูแลเอกสารแรงงานต่างด้าวครบทุกเรื่อง\n\nจุดแข็งของรุ่งฟ้า:\n- ประสบการณ์มากกว่า 10 ปี\n- ดูแลมาแล้วกว่า 100,000 เคสทั่วประเทศ\n- มีหลายสาขา ใกล้คุณแน่นอน\n- มีรถรับส่ง + ที่พักบริการ\n\nสาขา: ปทุมธานี, คลอง 4 ลำลูกกา, คลอง 8 ลำลูกกา, อยุธยา 1 / 2 / 3, นครปฐม, สระบุรี, ระยอง\n\nทักปรึกษาฟรี ไม่มีค่าใช้จ่าย`,
+          imageText: "มากกว่า 10 ปี กว่า 100,000 เคสทั่วประเทศ",
+          imageIdea: "ภาพสำนักงาน ทีมงาน และแผนที่สาขาแบบเรียบง่าย พร้อมตัวเลขความน่าเชื่อถือ",
+          imagePrompt: "Trust-building corporate poster for Thai migrant worker document company, office building, professional staff, map pins for branches, large credibility numbers 10 years and 100000 cases, clean blue red white design, vertical post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          type: "โพสต์ขายบริการ",
+          format: "ภาพนิ่ง",
+          title: "เอกสารแรงงานต่างด้าวครบ จบในที่เดียว",
+          caption: `${company.name}\n${company.tagline}\n\nปิดสัปดาห์ด้วยการสรุปบริการครบของรุ่งฟ้า\n\nเราดูแลตั้งแต่ Passport, Visa + Work Permit, MOU 3 สัญชาติ, เปลี่ยนนายจ้าง / แจ้งเข้า-ออก, ต่อใบอนุญาต, รายงานตัว 90 วัน, แจ้งที่พัก และเอกสารแรงงานทุกประเภท\n\nมีหลายสาขา มีรถรับส่ง + ที่พักบริการ และทีมงานช่วยประสานงานให้เหมาะกับแต่ละเคส\n\nต้องการเริ่มเช็กเอกสารแรงงานในบริษัท ทักปรึกษาฟรี ไม่มีค่าใช้จ่าย`,
+          imageText: "ครบ จบ ในที่เดียว",
+          imageIdea: "ภาพรวมบริการทั้งหมดเป็นวงกลมรอบโลโก้/ชื่อบริษัท มี CTA ทักปรึกษาฟรี",
+          imagePrompt: "Complete migrant worker document service poster, circular service icons around company name, Passport Visa Work Permit MOU employer transfer 90-day report accommodation, trustworthy Thai corporate design, vertical Facebook post",
+          reelScript: "",
+          status: "needs_image"
+        }
+      ];
+    }
+
+    function savePostFromForm() {
+      const id = els.postId.value || crypto.randomUUID();
+      const existing = state.posts.find(post => post.id === id);
+      const post = {
+        id,
+        day: existing?.day || null,
+        dayLabel: existing?.dayLabel || "Manual",
+        date: els.postDate.value || toDateInput(new Date()),
+        time: els.postTime.value || state.settings.defaultPostTime || "09:00",
+        type: els.postType.value,
+        format: els.postFormat.value,
+        title: els.postTitle.value.trim() || "Untitled",
+        caption: els.caption.value.trim(),
+        imageText: els.imageText.value.trim(),
+        imageIdea: els.imageIdea.value.trim(),
+        imagePrompt: els.imagePrompt.value.trim(),
+        reelScript: els.reelScript.value.trim(),
+        status: els.postStatus.value,
+        attachmentName: els.attachmentLabel.dataset.attachmentName || existing?.attachmentName || "",
+        createdAt: existing?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      const index = state.posts.findIndex(item => item.id === id);
+      if (index >= 0) state.posts[index] = post;
+      else state.posts.push(post);
+      saveState();
+      setView("queue");
+      toast("บันทึกโพสต์เข้าคิวแล้ว");
+    }
+
+    function editPost(id) {
+      const post = state.posts.find(item => item.id === id);
+      if (!post) return;
+      els.postId.value = post.id;
+      els.postDate.value = post.date;
+      els.postTime.value = post.time;
+      els.postType.value = post.type;
+      els.postFormat.value = post.format;
+      els.postStatus.value = post.status;
+      els.postTitle.value = post.title;
+      els.caption.value = post.caption;
+      els.imageText.value = post.imageText;
+      els.imageIdea.value = post.imageIdea;
+      els.imagePrompt.value = post.imagePrompt;
+      els.reelScript.value = post.reelScript;
+      setAttachment(post.attachmentName || "");
+      setView("composer");
+      toast("โหลดโพสต์มาแก้ไขแล้ว");
+    }
+
+    function clearForm() {
+      els.postId.value = "";
+      els.postDate.value = toDateInput(new Date());
+      els.postTime.value = state.settings.defaultPostTime || "09:00";
+      els.postType.value = contentCategories[0];
+      els.postFormat.value = "ภาพนิ่ง";
+      els.postStatus.value = "needs_image";
+      els.postTitle.value = "";
+      els.caption.value = "";
+      els.imageText.value = "";
+      els.imageIdea.value = "";
+      els.imagePrompt.value = "";
+      els.reelScript.value = "";
+      els.attachmentFile.value = "";
+      setAttachment("");
+      renderPreview();
+      toast("ล้างฟอร์มแล้ว");
+    }
+
+    function copyCaption(id) {
+      const post = state.posts.find(item => item.id === id);
+      if (!post) return;
+      copyText(post.caption, "คัดลอก Caption แล้ว");
+    }
+
+    function copyPrompt(id) {
+      const post = state.posts.find(item => item.id === id);
+      if (!post) return;
+      copyText(post.imagePrompt, "คัดลอก Image Prompt แล้ว");
+    }
+
+    function copyScript(id) {
+      const post = state.posts.find(item => item.id === id);
+      if (!post) return;
+      copyText(post.reelScript || "โพสต์นี้ยังไม่มี Reel Script", "คัดลอก Reel Script แล้ว");
+    }
+
+    function markPublished(id) {
+      const post = state.posts.find(item => item.id === id);
+      if (!post) return;
+      post.status = "published";
+      post.updatedAt = new Date().toISOString();
+      saveState();
+      toast("ทำเครื่องหมายว่าลงแล้ว");
+    }
+
+    function deletePost(id) {
+      if (!confirm("ลบโพสต์นี้ออกจากคิว?")) return;
+      state.posts = state.posts.filter(post => post.id !== id);
+      saveState();
+      toast("ลบโพสต์แล้ว");
+    }
+
+    function exportJson() {
+      const payload = {
+        app: "Rungfa Content Planner",
+        company,
+        contentCategories,
+        exportedAt: new Date().toISOString(),
+        posts: sortedPosts()
+      };
+      downloadFile("rungfa-content-plan.json", JSON.stringify(payload, null, 2), "application/json");
+    }
+
+    function exportCsv() {
+      const header = ["date", "time", "type", "format", "title", "status", "caption", "image_text", "image_idea", "image_prompt", "reel_script", "attachment"];
+      const rows = sortedPosts().map(post => [
+        post.date,
+        post.time,
+        post.type,
+        post.format,
+        post.title,
+        statusText(post.status),
+        post.caption,
+        post.imageText,
+        post.imageIdea,
+        post.imagePrompt,
+        post.reelScript,
+        post.attachmentName || ""
+      ]);
+      const csv = [header, ...rows].map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
+      downloadFile("rungfa-content-plan.csv", "\ufeff" + csv, "text/csv;charset=utf-8");
+    }
+
+    function saveSettings() {
+      state.settings.defaultStartDate = els.defaultStartDate.value || toDateInput(new Date());
+      state.settings.defaultPostTime = els.defaultPostTime.value || "09:00";
+      state.settings.plannerNote = els.plannerNote.value.trim();
+      saveState();
+      toast("บันทึกตั้งค่าระบบแล้ว");
+    }
+
+    function copyText(text, message) {
+      navigator.clipboard.writeText(text || "").then(() => toast(message)).catch(() => toast("คัดลอกไม่สำเร็จ"));
+    }
+
+    function setAttachment(name) {
+      els.attachmentLabel.dataset.attachmentName = name || "";
+      els.attachmentLabel.textContent = name ? `แนบไฟล์แล้ว: ${name}` : "ยังไม่ได้แนบไฟล์";
+    }
+
+    function sortedPosts() {
+      return [...state.posts].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+    }
+
+    function statusChip(status) {
+      const cls = status === "published" ? "green" : status === "ready" ? "violet" : status === "needs_video" ? "red" : "orange";
+      return `<span class="chip ${cls}">${statusText(status)}</span>`;
+    }
+
+    function statusText(status) {
+      return {
+        needs_image: "รอทำรูป",
+        needs_video: "รอถ่ายคลิป",
+        ready: "พร้อมลง",
+        published: "ลงแล้ว"
+      }[status] || "รอทำรูป";
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(parseDateInput(value));
+    }
+
+    function toDateInput(date) {
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function parseDateInput(value) {
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function emptyState(text) {
+      return `<div class="postCard"><p>${escapeHtml(text)}</p></div>`;
+    }
+
+    function emptyText(text) {
+      return `<span style="color:var(--muted)">${escapeHtml(text)}</span>`;
+    }
+
+    function downloadFile(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function toast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2600);
+    }
+
+    document.querySelectorAll("#nav button").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
+    document.querySelectorAll("[data-jump]").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.jump)));
+    ["caption", "imageText", "imagePrompt", "reelScript"].forEach(id => els[id].addEventListener("input", renderPreview));
+
+    els.generatePlanBtn.addEventListener("click", generateSevenDayPlan);
+    els.clearQueueBtn.addEventListener("click", clearQueue);
+    els.exportJsonBtn.addEventListener("click", exportJson);
+    els.exportCsvBtn.addEventListener("click", exportCsv);
+    els.savePostBtn.addEventListener("click", savePostFromForm);
+    els.clearFormBtn.addEventListener("click", clearForm);
+    els.copyCaptionFromFormBtn.addEventListener("click", () => copyText(els.caption.value, "คัดลอก Caption แล้ว"));
+    els.copyPromptFromFormBtn.addEventListener("click", () => copyText(els.imagePrompt.value, "คัดลอก Image Prompt แล้ว"));
+    els.copyScriptFromFormBtn.addEventListener("click", () => copyText(els.reelScript.value, "คัดลอก Reel Script แล้ว"));
+    els.queueFilter.addEventListener("change", renderQueue);
+    els.saveSettingsBtn.addEventListener("click", saveSettings);
+    els.attachmentFile.addEventListener("change", event => {
+      const file = event.target.files[0];
+      setAttachment(file ? file.name : "");
+      if (file && (els.postStatus.value === "needs_image" || els.postStatus.value === "needs_video")) els.postStatus.value = "ready";
+    });
+
+    window.editPost = editPost;
+    window.deletePost = deletePost;
+    window.copyCaption = copyCaption;
+    window.copyPrompt = copyPrompt;
+    window.copyScript = copyScript;
+    window.markPublished = markPublished;
+
+    renderSelectOptions();
+    els.postDate.value = toDateInput(new Date());
+    els.postTime.value = state.settings.defaultPostTime || "09:00";
+    setAttachment("");
+    render();
+  </script>
+</body>
+</html>
