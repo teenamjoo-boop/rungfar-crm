@@ -533,8 +533,8 @@
           <p id="viewSub">ระบบช่วยวางแผนโพสต์ 7 วัน สำหรับเพจแรงงานต่างด้าว</p>
         </div>
         <div class="actions">
-          <button class="btn primary" id="generatePlanBtn">สร้างแผนโพสต์ 7 วันแบบเพจคู่แข่ง</button>
-          <button class="btn danger" id="clearQueueBtn">ล้างคิวโพสต์ 7 วัน</button>
+          <button class="btn primary" id="generatePlanBtn">สร้างแผนโพสต์ 7 วัน วันละ 3 โพสต์</button>
+          <button class="btn danger" id="clearQueueBtn">ล้างคิวโพสต์ทั้งหมด</button>
           <button class="btn" id="exportJsonBtn">Export JSON</button>
           <button class="btn" id="exportCsvBtn">Export CSV</button>
           <button class="btn" data-jump="composer">เพิ่มโพสต์เอง</button>
@@ -681,7 +681,7 @@
         <section id="queueView" data-screen="queue" class="hidden">
           <article class="panel">
             <div class="panelHead">
-              <div><h2>คิวโพสต์ 7 วัน</h2><span>คัดลอก Caption, Prompt และ Script เพื่อส่งต่อให้ทีมทำงาน</span></div>
+              <div><h2>คิวโพสต์ 7 วัน</h2><span>ตารางโพสต์ 7 วัน วันละ 3 โพสต์ พร้อม Caption, Prompt และ Script</span></div>
               <div class="actions">
                 <select id="queueFilter">
                   <option value="all">ทุกสถานะ</option>
@@ -835,13 +835,13 @@
     const postFormats = ["ภาพนิ่ง", "Carousel", "Reel คนจริง", "Reel AI"];
 
     const planOutline = [
-      "Day 1: อินโฟกราฟิกให้ความรู้",
-      "Day 2: โพสต์ขายบริการรวม",
-      "Day 3: โพสต์ปัญหานายจ้าง",
-      "Day 4: คลิปคนจริง / หน้างานจริง",
-      "Day 5: โพสต์บริการเฉพาะทาง",
-      "Day 6: โพสต์ความน่าเชื่อถือ / สาขา",
-      "Day 7: โพสต์สรุปบริการครบ จบในที่เดียว"
+      "Day 1: 10:15 ความรู้เอกสาร / 13:00 บริการรวม / 18:00 Reel คนจริง",
+      "Day 2: 10:15 Visa vs Work Permit / 13:00 ปัญหาเอกสารใกล้หมด / 18:00 ปรึกษาฟรี",
+      "Day 3: 10:15 รายงานตัว 90 วัน / 13:00 ต่อ Visa + Work Permit / 18:00 Reel เตือนอย่ารอวันสุดท้าย",
+      "Day 4: 10:15 แจ้งที่พัก / 13:00 เปลี่ยนนายจ้าง / 18:00 คลิปหน้างานจริง",
+      "Day 5: 10:15 MOU 3 สัญชาติ / 13:00 บริการ MOU / 18:00 ความน่าเชื่อถือ",
+      "Day 6: 10:15 เอกสารที่นายจ้างควรมี / 13:00 สาขาใกล้คุณ / 18:00 Reel แนะนำบริการ",
+      "Day 7: 10:15 Checklist เอกสาร / 13:00 บริการครบ / 18:00 ปิดสัปดาห์ให้รุ่งฟ้าดูแล"
     ];
 
     const defaultState = {
@@ -860,7 +860,7 @@
     const views = {
       dashboard: ["Rungfa Content Planner", "ระบบช่วยวางแผนโพสต์ 7 วัน สำหรับเพจแรงงานต่างด้าว"],
       composer: ["สร้าง/แก้ไขโพสต์", "สร้างแผนโพสต์ แคปชั่น ข้อความบนภาพ Image Prompt และ Reel Script"],
-      queue: ["คิวโพสต์ 7 วัน", "ตารางงานคอนเทนต์พร้อมคัดลอก Caption, Prompt และ Script"],
+      queue: ["คิวโพสต์ 7 วัน", "ตารางโพสต์ 7 วัน วันละ 3 โพสต์ พร้อม Caption, Prompt และ Script"],
       company: ["ข้อมูลบริษัท", "ข้อมูลบริษัท บริการ สาขา และหมวดคอนเทนต์หลัก"],
       settings: ["ตั้งค่าระบบ", "ตั้งค่าเวลาเริ่มต้นและโน้ตทีมคอนเทนต์"]
     };
@@ -942,7 +942,7 @@
 
     function renderUpcoming() {
       const posts = sortedPosts().filter(post => post.status !== "published").slice(0, 5);
-      els.upcomingList.innerHTML = posts.length ? posts.map(postCard).join("") : emptyState("ยังไม่มีคิวโพสต์ กดสร้างแผนโพสต์ 7 วันแบบเพจคู่แข่งเพื่อเริ่มต้น");
+      els.upcomingList.innerHTML = posts.length ? posts.map(postCard).join("") : emptyState("ยังไม่มีคิวโพสต์ กดสร้างแผนโพสต์ 7 วัน วันละ 3 โพสต์เพื่อเริ่มต้น");
     }
 
     function renderPlanOutline() {
@@ -1017,18 +1017,17 @@
     }
 
     function generateSevenDayPlan() {
-      if (!confirm("ต้องการล้างแผน 7 วันเดิมแล้วสร้างใหม่หรือไม่")) return;
+      if (!confirm("ต้องการล้างแผนเดิมแล้วสร้างแผนใหม่ 21 โพสต์หรือไม่")) return;
       const startDate = parseDateInput(state.settings.defaultStartDate || toDateInput(new Date()));
-      const time = state.settings.defaultPostTime || "09:00";
-      const templates = buildSevenDayTemplates();
+      const templates = buildTwentyOnePostTemplates();
       const newPosts = templates.map((template, index) => {
-        const date = addDays(startDate, index);
+        const date = addDays(startDate, template.day - 1);
         return {
           id: crypto.randomUUID(),
-          day: index + 1,
-          dayLabel: `Day ${index + 1}`,
+          day: template.day,
+          dayLabel: `Day ${template.day} - ${template.time}`,
           date: toDateInput(date),
-          time,
+          time: template.time,
           type: template.type,
           format: template.format,
           title: template.title,
@@ -1046,15 +1045,351 @@
       state.posts = newPosts;
       saveState();
       setView("queue");
-      toast("สร้างแผนโพสต์ 7 วันใหม่แล้ว มี 7 โพสต์ในคิว");
+      toast("สร้างแผนโพสต์ 21 รายการแล้ว");
     }
 
     function clearQueue() {
-      if (!confirm("ต้องการล้างคิวโพสต์ 7 วันทั้งหมดหรือไม่")) return;
+      if (!confirm("ต้องการล้างคิวโพสต์ทั้งหมดหรือไม่")) return;
       state.posts = [];
       saveState();
       setView("queue");
-      toast("ล้างคิวโพสต์ 7 วันแล้ว");
+      toast("ล้างคิวโพสต์ทั้งหมดแล้ว");
+    }
+
+    function buildTwentyOnePostTemplates() {
+      const brand = `${company.name}\n${company.tagline}`;
+      const freeConsult = "ทักปรึกษาฟรี ไม่มีค่าใช้จ่าย";
+      const signature = `\n\n${company.name}\nดูแลเอกสารแรงงานต่างด้าวครบทุกเรื่อง\nประสบการณ์มากกว่า 10 ปี ดูแลมาแล้วกว่า 100,000 เคสทั่วประเทศ\n\n${freeConsult}`;
+      const caption = (lead, bullets, close = freeConsult) => {
+        const body = bullets.map(item => `- ${item}`).join("\n");
+        return `${brand}\n\n${lead}\n\n${body}\n\n${close}`;
+      };
+      const reel = (hook, talk, screenText, cta = freeConsult) => `Hook เปิดคลิป:\n${hook}\n\nบทพูด 30-45 วินาที:\n${talk}\n\nข้อความบนจอ:\n${screenText}\n\nCTA:\n${cta}`;
+
+      return [
+        {
+          day: 1,
+          time: "10:15",
+          type: "ให้ความรู้เอกสารแรงงาน",
+          format: "Carousel",
+          title: "Passport / CI / PV / PJ / MOU ต่างกันอย่างไร",
+          caption: caption("เอกสารแรงงานต่างด้าวมีหลายชื่อ นายจ้างหลายคนจึงสับสนว่าแต่ละแบบใช้กับกรณีไหน", [
+            "Passport ใช้ยืนยันตัวตนและเดินเรื่องเอกสารหลัก",
+            "CI / PV / PJ เกี่ยวข้องกับการพิสูจน์ตัวตนและสถานะของแรงงาน",
+            "MOU คือระบบนำเข้าแรงงานตามข้อตกลงระหว่างประเทศ",
+            "แต่ละเคสควรตรวจเอกสารเดิมก่อนเริ่มดำเนินการ"
+          ]),
+          imageText: "Passport / CI / PV / PJ / MOU ต่างกันยังไง?",
+          imageIdea: "Carousel 5 ช่อง อธิบายเอกสารแต่ละประเภทด้วยไอคอนเอกสารและคำสรุปสั้น ๆ",
+          imagePrompt: "Thai migrant worker document infographic carousel, five clean cards explaining Passport CI PV PJ MOU, official document icons, employer-friendly layout, blue red white corporate colors, clear readable Thai business service style",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 1,
+          time: "13:00",
+          type: "โพสต์ขายบริการ",
+          format: "ภาพนิ่ง",
+          title: "เอกสารแรงงานต่างด้าวครบวงจร จบที่รุ่งฟ้า",
+          caption: caption("ถ้าบริษัทของคุณมีแรงงานต่างด้าว รุ่งฟ้าช่วยดูแลเอกสารให้ครบในที่เดียว", [
+            "ทำ Passport",
+            "ต่อ Visa + Work Permit",
+            "MOU 3 สัญชาติ",
+            "เปลี่ยนนายจ้าง / แจ้งเข้า-ออก",
+            "รายงานตัว 90 วัน และแจ้งที่พัก",
+            "มีรถรับส่ง + ที่พักบริการ"
+          ]),
+          imageText: "เอกสารแรงงานต่างด้าวครบวงจร",
+          imageIdea: "ภาพทีมงานมืออาชีพพร้อม checklist บริการหลักทั้งหมดของบริษัท",
+          imagePrompt: "Professional Thai corporate service poster for migrant worker documentation, staff team, checklist of Passport Visa Work Permit MOU employer transfer 90-day report accommodation, blue red white branding, vertical Facebook post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 1,
+          time: "18:00",
+          type: "คลิปคนจริง / หน้างานจริง",
+          format: "Reel คนจริง",
+          title: "พนักงานอธิบายเอกสารที่นายจ้างต้องเช็ก",
+          caption: `${brand}\n\nก่อนเอกสารแรงงานต่างด้าวหมดอายุ นายจ้างควรเช็กอย่างน้อย 3 เรื่อง: Passport, Visa + Work Permit และรายงานตัว 90 วัน\n\nถ้าไม่แน่ใจว่าเคสของคุณต้องเริ่มจากตรงไหน ให้รุ่งฟ้าช่วยดูเบื้องต้นได้${signature}`,
+          imageText: "3 เอกสารที่นายจ้างต้องเช็ก",
+          imageIdea: "คลิปพนักงานพูดหน้ากล้องในสำนักงานจริง ถือแฟ้มเอกสารและชี้ checklist บนจอ",
+          imagePrompt: "Vertical reel cover, Thai office staff holding migrant worker documents, checklist overlay Passport Visa Work Permit 90-day report, real office background, friendly professional mood",
+          reelScript: reel("ลูกน้องต่างด้าวเอกสารใกล้หมดอายุ นายจ้างต้องเช็ก 3 อย่างนี้ก่อน", "สวัสดีค่ะ วันนี้รุ่งฟ้าขอสรุปให้ฟังสั้น ๆ ว่า ถ้าบริษัทของคุณมีแรงงานต่างด้าว สิ่งที่ควรเช็กก่อนเอกสารหมดอายุมี 3 เรื่อง หนึ่ง Passport ยังใช้งานได้ไหม สอง Visa และ Work Permit หมดวันไหน สาม รายงานตัว 90 วันหรือแจ้งที่พักต้องอัปเดตหรือไม่ ถ้าไม่แน่ใจ ส่งข้อมูลมาให้เราช่วยดูเบื้องต้นได้ค่ะ", "เช็ก Passport\nเช็ก Visa + Work Permit\nเช็กรายงานตัว 90 วัน"),
+          status: "needs_video"
+        },
+        {
+          day: 2,
+          time: "10:15",
+          type: "Visa + Work Permit",
+          format: "Carousel",
+          title: "Visa กับ Work Permit ต่างกันอย่างไร",
+          caption: caption("Visa และ Work Permit เป็นเอกสารคนละส่วน แต่มักต้องวางแผนคู่กันสำหรับแรงงานต่างด้าว", [
+            "Visa เกี่ยวกับสถานะการอยู่ในประเทศไทย",
+            "Work Permit เกี่ยวกับสิทธิในการทำงาน",
+            "วันหมดอายุควรเช็กให้ตรงและต่อให้ทัน",
+            "ถ้าเอกสารไม่พร้อม อาจทำให้งานสะดุด"
+          ]),
+          imageText: "Visa ≠ Work Permit",
+          imageIdea: "อินโฟกราฟิกแบ่งซ้ายขวา เปรียบเทียบ Visa กับ Work Permit แบบอ่านง่าย",
+          imagePrompt: "Thai infographic comparing Visa and Work Permit for migrant workers, split layout, document icons, simple checklist, official but friendly design, blue red white corporate style",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 2,
+          time: "13:00",
+          type: "ปัญหานายจ้าง",
+          format: "ภาพนิ่ง",
+          title: "ลูกน้องเอกสารใกล้หมด ต้องทำอย่างไร",
+          caption: `${brand}\n\nลูกน้องเอกสารใกล้หมด แต่ไม่รู้ต้องต่ออะไรก่อน?\n\nปัญหานี้เกิดบ่อยกับนายจ้าง เพราะ Passport, Visa, Work Permit และรายงานตัว 90 วันอาจมีวันหมดอายุไม่ตรงกัน\n\nถ้ารอจนใกล้วันสุดท้าย อาจต้องรีบแก้หลายขั้นตอนและเสียเวลามากกว่าเดิม\n\nให้รุ่งฟ้าช่วยเช็กเคสและแนะนำลำดับการดำเนินการที่เหมาะกับแรงงานของคุณ\n\n${freeConsult}`,
+          imageText: "เอกสารใกล้หมด อย่ารอวันสุดท้าย",
+          imageIdea: "ภาพนายจ้างกังวลหน้าโต๊ะเอกสาร มีปฏิทินแจ้งเตือนวันหมดอายุ",
+          imagePrompt: "Realistic Thai employer worried at office desk with migrant worker documents and expiry calendar alerts, urgent but professional tone, vertical social media poster",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 2,
+          time: "18:00",
+          type: "โพสต์ขายบริการ",
+          format: "ภาพนิ่ง",
+          title: "ทักปรึกษาฟรี ไม่มีค่าใช้จ่าย",
+          caption: `${brand}\n\nไม่แน่ใจว่าแรงงานในบริษัทต้องต่อเอกสารอะไรบ้าง?\n\nส่งข้อมูลเบื้องต้นมาให้รุ่งฟ้าช่วยดูได้ เราช่วยประสานงานเอกสารแรงงานต่างด้าวครบทุกเรื่อง ทั้ง Passport, Visa + Work Permit, MOU, เปลี่ยนนายจ้าง, รายงานตัว 90 วัน และแจ้งที่พัก\n\nมีหลายสาขา ใกล้คุณแน่นอน\n\n${freeConsult}`,
+          imageText: "ไม่แน่ใจ เริ่มจากทักมาถามได้ฟรี",
+          imageIdea: "ภาพเจ้าหน้าที่ให้คำปรึกษาผ่านโทรศัพท์/แชท พร้อมข้อความปรึกษาฟรี",
+          imagePrompt: "Friendly Thai customer service officer consulting by phone and chat, migrant worker document service, free consultation message, clean office, warm professional vertical post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 3,
+          time: "10:15",
+          type: "รายงานตัว 90 วัน",
+          format: "Carousel",
+          title: "รายงานตัว 90 วันสำคัญยังไง",
+          caption: caption("รายงานตัว 90 วันเป็นเรื่องที่นายจ้างและแรงงานไม่ควรมองข้าม เพราะเกี่ยวข้องกับการอยู่ในประเทศไทยอย่างต่อเนื่อง", [
+            "ควรเช็กกำหนดรายงานตัวล่วงหน้า",
+            "ข้อมูลที่พักและข้อมูลแรงงานต้องถูกต้อง",
+            "ถ้าลืมหรือเลยกำหนด อาจต้องเสียเวลาแก้ไข",
+            "รุ่งฟ้าช่วยประสานงานและเตือนขั้นตอนที่ควรทำ"
+          ]),
+          imageText: "รายงานตัว 90 วัน อย่าลืมเช็ก",
+          imageIdea: "Carousel checklist ปฏิทิน 90 วัน เอกสารที่ต้องเตรียม และ CTA ให้ทักถาม",
+          imagePrompt: "Thai 90-day report infographic for migrant workers, calendar checklist, official document icons, clear steps, employer-friendly design, vertical carousel",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 3,
+          time: "13:00",
+          type: "Visa + Work Permit",
+          format: "ภาพนิ่ง",
+          title: "ต่อ Visa + Work Permit ให้ถูกขั้นตอน",
+          caption: caption("Visa + Work Permit ควรวางแผนก่อนหมดอายุ ไม่ควรรอให้ถึงวันสุดท้าย", [
+            "เช็กวันหมดอายุของเอกสารเดิม",
+            "ตรวจข้อมูลนายจ้างและแรงงานให้ตรงกัน",
+            "เตรียมเอกสารประกอบให้ครบ",
+            "ให้ทีมงานช่วยประสานงานเพื่อลดความยุ่งยาก"
+          ]),
+          imageText: "ต่อ Visa + Work Permit ให้ทันเวลา",
+          imageIdea: "ภาพเอกสาร Visa และ Work Permit พร้อม checklist 4 ขั้นตอน",
+          imagePrompt: "Professional flat lay of visa document and work permit card with renewal checklist, Thai migrant worker documentation service, clean corporate style, vertical post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 3,
+          time: "18:00",
+          type: "คลิป AI / Reel Script",
+          format: "Reel AI",
+          title: "อย่ารอวันสุดท้ายก่อนเอกสารหมด",
+          caption: `${brand}\n\nเอกสารแรงงานต่างด้าวไม่ควรรอวันสุดท้าย เพราะบางเคสต้องใช้เวลาเตรียมข้อมูลและตรวจเอกสารหลายส่วน\n\nถ้าเอกสารใกล้หมด ส่งข้อมูลมาให้รุ่งฟ้าช่วยเช็กก่อนได้${signature}`,
+          imageText: "อย่ารอวันสุดท้าย",
+          imageIdea: "Reel AI ภาพนาฬิกานับถอยหลัง ปฏิทินวันหมดอายุ และเอกสารแรงงาน",
+          imagePrompt: "AI reel storyboard cover, countdown clock, expiring document calendar, migrant worker paperwork, Thai corporate service style, urgent but trustworthy, vertical 9:16",
+          reelScript: reel("เอกสารแรงงานใกล้หมด อย่ารอวันสุดท้าย", "หลายบริษัทเจอปัญหาเพราะรอให้เอกสารใกล้หมดมาก ๆ แล้วค่อยเริ่มทำ แต่จริง ๆ บางเคสต้องเช็กหลายอย่าง ทั้ง Passport, Visa, Work Permit, รายงานตัว 90 วัน หรือแจ้งที่พัก ถ้าเริ่มช้าอาจทำให้งานสะดุดได้ แนะนำให้เช็กเอกสารล่วงหน้า และถ้าไม่แน่ใจให้รุ่งฟ้าช่วยดูเคสเบื้องต้นได้", "เอกสารใกล้หมด?\nเช็กล่วงหน้า\nลดความเสี่ยงงานสะดุด"),
+          status: "needs_video"
+        },
+        {
+          day: 4,
+          time: "10:15",
+          type: "แจ้งที่พัก",
+          format: "Carousel",
+          title: "แจ้งที่พักคืออะไร ใครบ้างต้องทำ",
+          caption: caption("การแจ้งที่พักเป็นอีกขั้นตอนที่หลายคนมองข้าม แต่เกี่ยวข้องกับข้อมูลที่อยู่ของแรงงานต่างด้าว", [
+            "ใช้เมื่อแรงงานเข้าพักหรือเปลี่ยนที่อยู่",
+            "ข้อมูลที่พักต้องตรงกับความเป็นจริง",
+            "นายจ้างควรเก็บหลักฐานและตรวจข้อมูลให้ครบ",
+            "รุ่งฟ้าช่วยแนะนำเอกสารและขั้นตอนที่เหมาะกับแต่ละเคส"
+          ]),
+          imageText: "แจ้งที่พัก ใครบ้างต้องทำ?",
+          imageIdea: "อินโฟกราฟิกบ้าน/ที่พัก + เอกสารแรงงาน + checklist ผู้ที่เกี่ยวข้อง",
+          imagePrompt: "Thai accommodation notification infographic for migrant workers, house icon, worker document checklist, simple official service layout, blue red white vertical carousel",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 4,
+          time: "13:00",
+          type: "เปลี่ยนนายจ้าง / แจ้งเข้า-ออก",
+          format: "ภาพนิ่ง",
+          title: "เปลี่ยนนายจ้าง / แจ้งเข้า-ออก ต้องระวังอะไร",
+          caption: `${brand}\n\nแรงงานเปลี่ยนนายจ้าง เข้าใหม่ หรือออกจากงาน ต้องจัดการเอกสารให้ถูกขั้นตอน\n\nสิ่งที่ควรระวัง:\n- ข้อมูลนายจ้างเดิมและนายจ้างใหม่ต้องชัดเจน\n- ระยะเวลาการแจ้งต้องไม่ล่าช้า\n- เอกสารแรงงานเดิมต้องตรวจให้ครบ\n- ควรมีคนช่วยประสานงานเพื่อลดการแก้ไขซ้ำ\n\nให้รุ่งฟ้าช่วยดูเคสก่อนเริ่มดำเนินการได้\n\n${freeConsult}`,
+          imageText: "เปลี่ยนนายจ้าง ต้องทำให้ถูกขั้นตอน",
+          imageIdea: "ภาพลูกศรเปลี่ยนนายจ้างจากบริษัทเก่าไปบริษัทใหม่ พร้อมเอกสารประกอบ",
+          imagePrompt: "Thai employer transfer infographic, worker moving from old company to new company, document checklist, clean professional style, vertical post for migrant worker service",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 4,
+          time: "18:00",
+          type: "คลิปคนจริง / หน้างานจริง",
+          format: "Reel คนจริง",
+          title: "บรรยากาศสำนักงาน ทีมงาน และลูกค้ามาใช้บริการ",
+          caption: `${brand}\n\nพาชมบรรยากาศการให้บริการของทีมรุ่งฟ้า ทั้งการประสานงานเอกสาร การให้คำปรึกษา และการดูแลลูกค้าที่เข้ามาใช้บริการ\n\nมีหลายสาขา มีรถรับส่ง + ที่พักบริการ${signature}`,
+          imageText: "ทีมงานจริง สำนักงานจริง ดูแลครบ",
+          imageIdea: "คลิปหน้างานจริงในสำนักงาน ลูกค้านั่งปรึกษา ทีมงานจัดเอกสาร บรรยากาศน่าเชื่อถือ",
+          imagePrompt: "Real office service reel thumbnail, Thai staff consulting clients about migrant worker documents, document folders, friendly office atmosphere, trustworthy corporate look, vertical 9:16",
+          reelScript: reel("วันนี้พามาดูบรรยากาศการให้บริการของรุ่งฟ้า", "ที่รุ่งฟ้า เราดูแลเอกสารแรงงานต่างด้าวครบวงจร ตั้งแต่การให้คำปรึกษา ตรวจเอกสาร ประสานงาน ไปจนถึงบริการรถรับส่งและที่พักในบางเคส จุดสำคัญคือเราต้องการให้นายจ้างเข้าใจขั้นตอนง่ายขึ้น และลดความยุ่งยากในการจัดการเอกสารแรงงาน ถ้าคุณมีแรงงานต่างด้าวในบริษัทและอยากให้ช่วยดูเคส ทักหาเราได้เลย", "สำนักงานจริง\nทีมงานจริง\nดูแลครบวงจร"),
+          status: "needs_video"
+        },
+        {
+          day: 5,
+          time: "10:15",
+          type: "MOU 3 สัญชาติ",
+          format: "Carousel",
+          title: "MOU 3 สัญชาติคืออะไร",
+          caption: caption("MOU 3 สัญชาติคือระบบที่เกี่ยวข้องกับการนำเข้าแรงงานตามข้อตกลงระหว่างประเทศ", [
+            "เหมาะกับนายจ้างที่ต้องการวางแผนแรงงานอย่างเป็นระบบ",
+            "ขั้นตอนและเอกสารควรตรวจให้ครบตั้งแต่ต้น",
+            "แต่ละสัญชาติอาจมีรายละเอียดแตกต่างกัน",
+            "รุ่งฟ้าช่วยประสานงานและแนะนำขั้นตอนให้เข้าใจง่าย"
+          ]),
+          imageText: "MOU 3 สัญชาติ เข้าใจง่ายในโพสต์เดียว",
+          imageIdea: "Carousel แผนภาพ 3 สัญชาติ + ขั้นตอนนำเข้าแรงงานแบบเป็นระบบ",
+          imagePrompt: "Thai MOU migrant worker infographic, three nationality concept, recruitment and document process flow, clean official business design, blue red white vertical carousel",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 5,
+          time: "13:00",
+          type: "MOU 3 สัญชาติ",
+          format: "ภาพนิ่ง",
+          title: "บริการ MOU / ต่ออายุ MOU / เปลี่ยนนายจ้าง",
+          caption: `${brand}\n\nสำหรับนายจ้างที่ต้องการดูแลแรงงานในระบบ MOU รุ่งฟ้าช่วยประสานงานได้หลายส่วน ทั้ง MOU 3 สัญชาติ ต่ออายุ MOU และเคสเปลี่ยนนายจ้าง\n\nเราช่วยตรวจเอกสาร แนะนำลำดับขั้นตอน และประสานงานให้เหมาะกับแต่ละเคส\n\nถ้าคุณไม่แน่ใจว่าแรงงานของคุณอยู่ในขั้นตอนไหน ทักให้เราช่วยดูเบื้องต้นได้\n\n${freeConsult}`,
+          imageText: "MOU / ต่ออายุ / เปลี่ยนนายจ้าง",
+          imageIdea: "ภาพบริการ MOU แบบ 3 กล่อง พร้อมไอคอนเอกสาร นายจ้าง และแรงงาน",
+          imagePrompt: "Thai MOU service poster, three service blocks for MOU renewal employer transfer, migrant worker and employer document icons, clean corporate vertical post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 5,
+          time: "18:00",
+          type: "ความน่าเชื่อถือบริษัท",
+          format: "ภาพนิ่ง",
+          title: "ประสบการณ์มากกว่า 10 ปี ดูแลกว่า 100,000 เคส",
+          caption: `${brand}\n\nความน่าเชื่อถือเป็นสิ่งสำคัญเมื่อต้องดูแลเอกสารแรงงานต่างด้าว\n\nรุ่งฟ้ามีประสบการณ์มากกว่า 10 ปี ดูแลมาแล้วกว่า 100,000 เคสทั่วประเทศ มีหลายสาขาใกล้คุณแน่นอน พร้อมทีมงานช่วยประสานงานเอกสารแรงงานต่างด้าวครบทุกเรื่อง\n\nมีรถรับส่ง + ที่พักบริการ\n\n${freeConsult}`,
+          imageText: "10+ ปี | 100,000+ เคสทั่วประเทศ",
+          imageIdea: "ภาพทีมงานและสำนักงาน พร้อมตัวเลขใหญ่ 10+ ปี และ 100,000+ เคส",
+          imagePrompt: "Trust-building Thai corporate poster, professional migrant worker document service team, office background, large credibility numbers 10+ years and 100000+ cases, blue red white vertical post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 6,
+          time: "10:15",
+          type: "ให้ความรู้เอกสารแรงงาน",
+          format: "Carousel",
+          title: "เอกสารแรงงานต่างด้าวที่นายจ้างควรมี",
+          caption: caption("นายจ้างควรจัดเก็บและตรวจเอกสารแรงงานต่างด้าวให้เป็นระบบ เพื่อลดปัญหาตอนต่ออายุหรือเปลี่ยนแปลงข้อมูล", [
+            "สำเนา Passport หรือเอกสารยืนยันตัวตน",
+            "Visa และ Work Permit",
+            "ข้อมูลรายงานตัว 90 วัน",
+            "เอกสารแจ้งที่พัก",
+            "ประวัติการเปลี่ยนนายจ้างหรือแจ้งเข้า-ออก"
+          ]),
+          imageText: "Checklist เอกสารที่นายจ้างควรมี",
+          imageIdea: "อินโฟกราฟิก checklist เอกสาร 5 รายการพร้อมแฟ้มเอกสาร",
+          imagePrompt: "Thai employer checklist infographic for migrant worker documents, folder and official papers, Passport Visa Work Permit 90-day report accommodation notification, clean vertical carousel",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 6,
+          time: "13:00",
+          type: "สาขา / สำนักงาน",
+          format: "ภาพนิ่ง",
+          title: "มีหลายสาขา ใกล้คุณแน่นอน",
+          caption: `${brand}\n\nรุ่งฟ้ามีหลายสาขาเพื่อให้ลูกค้าเข้าถึงบริการได้สะดวกขึ้น\n\nสาขาให้บริการ:\n- ปทุมธานี\n- คลอง 4 ลำลูกกา\n- คลอง 8 ลำลูกกา\n- อยุธยา 1 / 2 / 3\n- นครปฐม\n- สระบุรี\n- ระยอง\n\nมีรถรับส่ง + ที่พักบริการ\n\n${freeConsult}`,
+          imageText: "หลายสาขา ใกล้คุณแน่นอน",
+          imageIdea: "แผนที่สาขาแบบเรียบง่าย ปักหมุดพื้นที่ให้บริการ",
+          imagePrompt: "Clean map-style Thai corporate poster with branch pins for Pathum Thani Lam Luk Ka Ayutthaya Nakhon Pathom Saraburi Rayong, migrant worker document service, blue red white vertical post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 6,
+          time: "18:00",
+          type: "คลิปคนจริง / หน้างานจริง",
+          format: "Reel คนจริง",
+          title: "แนะนำบริการรุ่งฟ้าแบบสั้น ๆ 30-45 วินาที",
+          caption: `${brand}\n\nคลิปแนะนำบริการหลักของรุ่งฟ้าแบบสั้น ๆ สำหรับนายจ้างที่ต้องการคนช่วยดูแลเอกสารแรงงานต่างด้าวครบวงจร\n\nPassport, Visa + Work Permit, MOU, รายงานตัว 90 วัน, แจ้งที่พัก และเอกสารแรงงานทุกประเภท${signature}`,
+          imageText: "รุ่งฟ้าดูแลอะไรบ้าง?",
+          imageIdea: "พนักงานยืนพูดหน้ากล้อง พร้อมตัดภาพบริการหลักและสำนักงาน",
+          imagePrompt: "Vertical reel cover, Thai staff introducing migrant worker document services, office background, service icons Passport Visa Work Permit MOU 90-day report, friendly professional style",
+          reelScript: reel("รุ่งฟ้าดูแลเอกสารแรงงานต่างด้าวอะไรบ้าง", "ถ้าคุณเป็นนายจ้างที่มีแรงงานต่างด้าว รุ่งฟ้าช่วยดูแลได้ครบหลายเรื่องค่ะ ไม่ว่าจะเป็นทำ Passport ต่อ Visa และ Work Permit, MOU 3 สัญชาติ, เปลี่ยนนายจ้าง แจ้งเข้า-ออก รายงานตัว 90 วัน แจ้งที่พัก และเอกสารแรงงานทุกประเภท เรามีประสบการณ์มากกว่า 10 ปี ดูแลมาแล้วกว่า 100,000 เคสทั่วประเทศ ถ้าอยากให้ช่วยดูเคสของบริษัทคุณ ทักมาปรึกษาได้ฟรีค่ะ", "Passport\nVisa + Work Permit\nMOU\n90 วัน / แจ้งที่พัก"),
+          status: "needs_video"
+        },
+        {
+          day: 7,
+          time: "10:15",
+          type: "ให้ความรู้เอกสารแรงงาน",
+          format: "Carousel",
+          title: "เช็กลิสต์เอกสารแรงงานต่างด้าว",
+          caption: caption("ก่อนเริ่มต่อเอกสารหรือจัดการเคสแรงงาน ลองเช็กข้อมูลเหล่านี้ก่อน", [
+            "แรงงานถือเอกสารประเภทใดอยู่",
+            "Passport / Visa / Work Permit หมดอายุวันไหน",
+            "รายงานตัว 90 วันล่าสุดเมื่อไร",
+            "มีการเปลี่ยนนายจ้างหรือที่พักหรือไม่",
+            "ต้องใช้บริการ MOU หรือเอกสารเฉพาะทางหรือไม่"
+          ]),
+          imageText: "Checklist ก่อนเริ่มทำเอกสาร",
+          imageIdea: "Carousel checklist 5 ข้อสำหรับนายจ้าง ใช้ไอคอนปฏิทิน เอกสาร บ้าน และบริษัท",
+          imagePrompt: "Thai checklist carousel for migrant worker documents, five clear checklist items, official paper icons, calendar, house, company, clean readable design, vertical social media",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 7,
+          time: "13:00",
+          type: "โพสต์ขายบริการ",
+          format: "ภาพนิ่ง",
+          title: "Passport / Visa / Work Permit / MOU / 90 วัน / แจ้งที่พัก",
+          caption: `${brand}\n\nบริการเอกสารแรงงานต่างด้าวครบในที่เดียว\n\nรุ่งฟ้าช่วยดูแล:\n- Passport\n- Visa + Work Permit\n- MOU 3 สัญชาติ\n- เปลี่ยนนายจ้าง / แจ้งเข้า-ออก\n- ต่อใบอนุญาต\n- รายงานตัว 90 วัน\n- แจ้งที่พัก\n- เอกสารแรงงานทุกประเภท\n\nมีหลายสาขา มีรถรับส่ง + ที่พักบริการ\n\n${freeConsult}`,
+          imageText: "ครบทุกบริการแรงงานต่างด้าว",
+          imageIdea: "ภาพรวมบริการทั้งหมดเป็น grid icon อ่านง่าย พร้อม CTA ปรึกษาฟรี",
+          imagePrompt: "Complete Thai migrant worker document service poster, grid icons for Passport Visa Work Permit MOU 90-day report accommodation employer transfer, strong CTA free consultation, blue red white vertical post",
+          reelScript: "",
+          status: "needs_image"
+        },
+        {
+          day: 7,
+          time: "18:00",
+          type: "โพสต์ขายบริการ",
+          format: "ภาพนิ่ง",
+          title: "ทุกเรื่องแรงงานต่างด้าว ให้รุ่งฟ้าดูแล",
+          caption: `${brand}\n\nปิดสัปดาห์ด้วยโพสต์สรุปสำหรับนายจ้างที่อยากจัดการเอกสารแรงงานต่างด้าวให้เป็นระบบ\n\nไม่ว่าจะเป็น Passport, Visa + Work Permit, MOU, เปลี่ยนนายจ้าง, รายงานตัว 90 วัน, แจ้งที่พัก หรือเอกสารแรงงานทุกประเภท รุ่งฟ้าพร้อมช่วยประสานงานให้ครบวงจร\n\nประสบการณ์มากกว่า 10 ปี ดูแลกว่า 100,000 เคสทั่วประเทศ\n\n${freeConsult}`,
+          imageText: "ทุกเรื่องแรงงานต่างด้าว ให้รุ่งฟ้าดูแล",
+          imageIdea: "ภาพทีมงานยิ้มแย้มพร้อมแฟ้มเอกสารและข้อความปิดสัปดาห์",
+          imagePrompt: "Warm trustworthy Thai corporate closing-week poster, professional staff with document folders, migrant worker service center, headline about complete service, blue red white vertical Facebook post",
+          reelScript: "",
+          status: "needs_image"
+        }
+      ];
     }
 
     function buildSevenDayTemplates() {
