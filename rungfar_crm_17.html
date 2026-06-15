@@ -292,6 +292,8 @@ select.fi2{cursor:pointer}
 textarea.fi2{resize:vertical;min-height:65px}
 .fsec{margin-bottom:18px}
 .fst{font-size:11px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid var(--pp)}
+.fchk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--g7);font-weight:500;cursor:pointer}
+.fchk input{accent-color:var(--p);width:15px;height:15px;cursor:pointer}
 .tbar3{display:flex;gap:3px;margin-bottom:16px;background:var(--g1);padding:4px;border-radius:10px}
 .tbtn{flex:1;padding:7px;text-align:center;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--g5);transition:all .2s;border:none;background:transparent;font-family:var(--font)}
 .tbtn.on{background:#fff;color:var(--p);box-shadow:var(--s1);font-weight:700}
@@ -658,6 +660,8 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi"><label class="fl">วันเกิด</label><input class="fi2" type="date" id="f_dob"></div>
           <div class="fgi"><label class="fl">กลุ่ม</label><select class="fi2" id="f_grp"><option value="">-- ไม่ระบุ --</option></select></div>
           <div class="fgi"><label class="fl">สาขา</label><select class="fi2" id="f_branch"><option value="">-- ไม่ระบุ --</option></select></div>
+          <div class="fgi"><label class="fl">วันที่ยื่น</label><input class="fi2" type="date" id="f_submit"></div>
+          <div class="fgi"><label class="fl">ตัวแทน</label><input class="fi2" id="f_agent" placeholder="ชื่อตัวแทน"></div>
         </div>
       </div>
       <div class="fsec" id="staffSec"><div class="fst">เจ้าหน้าที่รับผิดชอบ</div>
@@ -679,6 +683,18 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi" id="fgi_ws"><label class="fl">สถานะงาน</label><select class="fi2" id="f_ws"></select></div>
         </div>
       </div>
+      <div class="fsec"><div class="fst">ข้อมูลตาม Excel</div>
+        <div style="display:flex;flex-wrap:wrap;gap:14px 22px;margin-bottom:12px">
+          <label class="fchk"><input type="checkbox" id="f_medical"> ใบแพทย์</label>
+          <label class="fchk"><input type="checkbox" id="f_insurance"> ประกัน</label>
+          <label class="fchk"><input type="checkbox" id="f_fee100"> 100</label>
+          <label class="fchk"><input type="checkbox" id="f_fee900"> 900</label>
+          <label class="fchk"><input type="checkbox" id="f_cardfee"> ค่าบัตร</label>
+        </div>
+        <div class="fg">
+          <div class="fgi"><label class="fl">สถานะเล่ม</label><select class="fi2" id="f_booklet"><option value="">-- ไม่ระบุ --</option><option value="has">มีเล่ม</option><option value="none">ไม่มีเล่ม</option></select></div>
+        </div>
+      </div>
     </div>
     <div id="ct2" style="display:none">
       <div class="fsec"><div class="fst">วันหมดอายุเอกสาร</div>
@@ -689,6 +705,15 @@ textarea.fi2{resize:vertical;min-height:65px}
           <div class="fgi"><label class="fl">MOU</label><input class="fi2" type="date" id="f_emou"></div>
           <div class="fgi"><label class="fl">รายงาน 90 วัน (ครั้งถัดไป)</label><input class="fi2" type="date" id="f_e90"></div>
           <div class="fgi"><label class="fl">ต่ออายุล่าสุด</label><input class="fi2" type="date" id="f_ren"></div>
+        </div>
+      </div>
+      <div class="fsec"><div class="fst">นัดหมาย / รับเล่ม</div>
+        <div class="fg">
+          <div class="fgi"><label class="fl">นัดหมาย</label><input class="fi2" type="date" id="f_apptdate"></div>
+          <div class="fgi"><label class="fl">เวลา</label><input class="fi2" id="f_appttime" placeholder="09:00 / เช้า / บ่าย"></div>
+          <div class="fgi"><label class="fl">สถานที่</label><input class="fi2" id="f_apptplace" placeholder="สถานที่นัด"></div>
+          <div class="fgi"><label class="fl">คิวว่าง</label><input class="fi2" type="date" id="f_queue"></div>
+          <div class="fgi"><label class="fl">วันรับเล่ม</label><input class="fi2" type="date" id="f_receive"></div>
         </div>
       </div>
     </div>
@@ -1165,6 +1190,7 @@ const LANG = {
     dashMustAct:'ต้องดำเนินการ', dashUrgentWarn:'มีรายการด่วน', dashOkAll:'ปกติดี',
     dashNoUrgent:'ไม่มีรายการด่วน',
     dashFAll:'ทั้งหมด', dashFRenew:'ต่ออายุ', dashFDocs:'เอกสารค้าง', dashFTodo:'งานที่ต้องทำ', dashFAbsent:'พนักงานขาดงาน', dashFEmpty:'ยังไม่มีรายการ',
+    xlSection:'ข้อมูลตาม Excel', xlSubmit:'วันที่ยื่น', xlAgent:'ตัวแทน', xlMedical:'ใบแพทย์', xlInsurance:'ประกัน', xlCardFee:'ค่าบัตร', xlBooklet:'สถานะเล่ม', xlBookletHas:'มีเล่ม', xlBookletNone:'ไม่มีเล่ม', xlAppt:'นัดหมาย', xlApptTime:'เวลา', xlApptPlace:'สถานที่', xlQueue:'คิวว่าง', xlReceive:'วันรับเล่ม', xlYes:'มี', xlPaid:'จ่ายแล้ว',
     dashD15:'≤15 วัน', dashD1630:'16-30 วัน',
     dashPP:'📘 พาสปอร์ต (30 วัน)', dashVWP:'🛂 VISA/WP (30 วัน)', dash90:'📅 รายงาน 90 วัน',
     dashVISA15:'VISA ≤15 วัน', dashWP15:'WP ≤15 วัน',
@@ -1333,6 +1359,7 @@ const LANG = {
     dashMustAct:'ဆောင်ရွက်ရမည်', dashUrgentWarn:'အရေးတကြီးရှိ', dashOkAll:'ပုံမှန်',
     dashNoUrgent:'အရေးပေါ်မရှိ',
     dashFAll:'အားလုံး', dashFRenew:'သက်တမ်းတိုး', dashFDocs:'စာရွက်ကျန်', dashFTodo:'လုပ်စရာ', dashFAbsent:'ပျက်ကွက်ဝန်ထမ်း', dashFEmpty:'ပစ္စည်းမရှိသေး',
+    xlSection:'Excel ဒေတာ', xlSubmit:'တင်သွင်းရက်', xlAgent:'ကိုယ်စားလှယ်', xlMedical:'ဆေးလက်မှတ်', xlInsurance:'အာမခံ', xlCardFee:'ကတ်ခ', xlBooklet:'စာအုပ်အခြေအနေ', xlBookletHas:'စာအုပ်ရှိ', xlBookletNone:'စာအုပ်မရှိ', xlAppt:'ချိန်းဆိုရက်', xlApptTime:'အချိန်', xlApptPlace:'နေရာ', xlQueue:'ကျူးလွတ်ရက်', xlReceive:'စာအုပ်ရရက်', xlYes:'ရှိ', xlPaid:'ပေးပြီး',
     dashD15:'≤15 ရက်', dashD1630:'16-30 ရက်',
     dashPP:'📘 နိုင်ငံကူး (30 ရက်)', dashVWP:'🛂 VISA/WP (30 ရက်)', dash90:'📅 90 ရက်အစီရင်ခံ',
     dashVISA15:'VISA ≤15 ရက်', dashWP15:'WP ≤15 ရက်',
@@ -2440,7 +2467,10 @@ function openAdd(){
   document.getElementById('cModalTitle').textContent=T('addNew');
   ['name','nameTh','pp','alien','phone','emp','biz','ephon','addr','wpn','visn','licn','note','sr','sd','sc','ftotal','fpaid','fdue'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   ['epp','evis','ewp','e90','emou','ren','dob','fpdate'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
-  document.getElementById('f_nat').value='เมียนมา';['f_src','f_grp','f_branch','f_empId','f_fpay','f_fst'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
+  // Round F1B-1: reset field ใหม่ตาม Excel
+  ['submit','agent','apptdate','appttime','apptplace','queue','receive'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
+  ['f_medical','f_insurance','f_fee100','f_fee900','f_cardfee'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  document.getElementById('f_nat').value='เมียนมา';['f_src','f_grp','f_branch','f_empId','f_fpay','f_fst','f_booklet'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
   document.getElementById('r_free').checked=true;ctChange();document.getElementById('pprev').style.display='none';document.getElementById('pphold').style.display='block';document.getElementById('dupWarn').style.display='none';
   fillSelects();document.getElementById('f_ws').value='รับเรื่อง';renderSvcT();renderMultiDocGrid();applyMvpModal();swTab(0);document.getElementById('cModal').style.display='flex';
 }
@@ -2454,6 +2484,11 @@ function openEdit(id){
   sv('sr',c.staff_receiver);sv('sd',c.staff_document);sv('sc',c.staff_closer);
   sv('epp',c.exp_passport);sv('evis',c.exp_visa);sv('ewp',c.exp_wp);sv('e90',c.next_90);sv('emou',c.exp_mou);sv('ren',c.last_renew);sv('dob',c.dob);
   sv('ftotal',c.fee_total);sv('fpaid',c.fee_paid);sv('fdue',c.fee_due);sv('fpdate',c.pay_date);
+  // Round F1B-1: populate field ใหม่ตาม Excel
+  sv('submit',c.submit_date);sv('agent',c.agent_name);sv('apptdate',c.appt_date);sv('appttime',c.appt_time);sv('apptplace',c.appt_place);sv('queue',c.queue_date);sv('receive',c.receive_date);
+  const _setChk=(id,val)=>{const el=document.getElementById(id);if(el)el.checked=!!val;};
+  _setChk('f_medical',c.medical_cert);_setChk('f_insurance',c.insurance);_setChk('f_fee100',c.fee_100_paid);_setChk('f_fee900',c.fee_900_paid);_setChk('f_cardfee',c.card_fee_paid);
+  document.getElementById('f_booklet').value=c.booklet_status||'';
   document.getElementById('f_nat').value=c.nationality||'เมียนมา';
   fillSelects();document.getElementById('f_ws').value=c.work_status||'รับเรื่อง';document.getElementById('f_src').value=c.source||'';document.getElementById('f_fpay').value=c.pay_channel||'';document.getElementById('f_fst').value=c.pay_status||'';document.getElementById('f_grp').value=c.group_id||'';document.getElementById('f_branch').value=c.branch_id||'';
   if(c.customer_type==='company'){document.getElementById('r_comp').checked=true;document.getElementById('f_empId').value=c.employer_id||'';}else document.getElementById('r_free').checked=true;
@@ -2519,7 +2554,9 @@ async function saveCustomer(){
       else{const en=VT('f_emp');if(en){try{const r=await dbPost('employers',{name:en,business_type:VT('f_biz'),phone:VT('f_ephon'),address:VT('f_addr')});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;fillSelects();}}catch(e){console.error('[customer save] employer create failed',e);}}}
     }
     const total=parseFloat(V('f_ftotal'))||0;const paid=parseFloat(V('f_fpaid'))||0;
-    const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),photo:photoB64,updated_at:new Date().toISOString()};
+    const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),photo:photoB64,
+      submit_date:V('f_submit')||null,agent_name:VT('f_agent')||null,medical_cert:VC('f_medical'),insurance:VC('f_insurance'),fee_100_paid:VC('f_fee100'),fee_900_paid:VC('f_fee900'),card_fee_paid:VC('f_cardfee'),booklet_status:V('f_booklet')||null,appt_date:V('f_apptdate')||null,appt_time:VT('f_appttime')||null,appt_place:VT('f_apptplace')||null,queue_date:V('f_queue')||null,receive_date:V('f_receive')||null,
+      updated_at:new Date().toISOString()};
     let savedId=editId;
     if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
     else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}toast('เพิ่มลูกค้าแล้ว');}
@@ -2576,6 +2613,23 @@ async function openDetail(id){
   const _staffGrid=SIMPLE_CUSTOMER_DETAIL?'':(`<div class="dg4" style="margin-bottom:14px"><div class="df"><div class="dfl">${T('detReceiver')}</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div><div class="df"><div class="dfl">${T('detDocStaff')}</div><div class="dfv">${esc(c.staff_document||'—')}</div></div><div class="df"><div class="dfl">${T('detCloser')}</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div></div>`);
   const _clogSec=(`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}</div>`);
   const _histSec=tl.length?(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`):(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div><div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div></div>`);
+  // Round F1B-1: section "ข้อมูลตาม Excel" (read-only, แสดงเฉพาะที่มีค่า)
+  const _xlRows=[];
+  const _xlAdd=(label,val)=>{if(val!==''&&val!=null)_xlRows.push(`<div class="df"><div class="dfl">${label}</div><div class="dfv">${val}</div></div>`);};
+  _xlAdd(T('xlSubmit'),c.submit_date?fd(c.submit_date):'');
+  _xlAdd(T('xlAgent'),c.agent_name?esc(c.agent_name):'');
+  _xlAdd(T('xlMedical'),c.medical_cert?T('xlYes'):'');
+  _xlAdd(T('xlInsurance'),c.insurance?T('xlYes'):'');
+  _xlAdd('100',c.fee_100_paid?T('xlPaid'):'');
+  _xlAdd('900',c.fee_900_paid?T('xlPaid'):'');
+  _xlAdd(T('xlCardFee'),c.card_fee_paid?T('xlPaid'):'');
+  _xlAdd(T('xlBooklet'),c.booklet_status==='has'?T('xlBookletHas'):(c.booklet_status==='none'?T('xlBookletNone'):''));
+  _xlAdd(T('xlAppt'),c.appt_date?fd(c.appt_date):'');
+  _xlAdd(T('xlApptTime'),c.appt_time?esc(c.appt_time):'');
+  _xlAdd(T('xlApptPlace'),c.appt_place?esc(c.appt_place):'');
+  _xlAdd(T('xlQueue'),c.queue_date?fd(c.queue_date):'');
+  _xlAdd(T('xlReceive'),c.receive_date?fd(c.receive_date):'');
+  const _xlSec=_xlRows.length?`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('xlSection')}</div><div class="dg4">${_xlRows.join('')}</div></div>`:'';
   document.getElementById('dBody').innerHTML=`
   <div class="dh">
     <div class="dav">${c.photo?`<img src="${esc(c.photo)}">`:(NF[c.nationality]||'👤')}</div>
@@ -2604,6 +2658,7 @@ async function openDetail(id){
   ${_staffGrid}
   ${exps.length?`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
   ${_finSec}
+  ${_xlSec}
   ${docs.length?`<div style="margin-bottom:16px">
     <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detDocs')} (${docs.length} ${T('detFiles')})</div>
     <div class="mdoc-grid">${docs.map(d=>{
