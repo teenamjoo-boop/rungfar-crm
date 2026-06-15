@@ -2060,7 +2060,7 @@ async function loadAll(silent=false){
   try{
     // RLS-HARDEN-2D: appUsers ไม่โหลดที่นี่แล้ว — admin โหลดผ่าน adminLoadUsers() เมื่อเปิดหน้าจัดการผู้ใช้
     [customers,groups,branches,employers]=await Promise.all([
-      dbGet('customers','?order=name.asc&limit=2000'),
+      dbGet('customers','?order=created_at.desc.nullslast,id.desc&limit=2000'),
       dbGet('groups','?order=name.asc'),
       dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required'),
       dbGet('employers','?order=name.asc'),
@@ -2392,8 +2392,12 @@ function doFilter(){
     const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
     return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br));
   });
-  // Sort A-Z by name
-  filtered.sort((a,b)=>a.name.localeCompare(b.name,'th'));
+  // Round F1B-2: เรียงใหม่สุดก่อนเสมอ — created_at DESC, fallback id DESC
+  filtered.sort((a,b)=>{
+    const ca=a.created_at,cb=b.created_at;
+    if(ca&&cb&&ca!==cb)return ca<cb?1:-1;
+    return (b.id||0)-(a.id||0);
+  });
   curPage=1;renderTable();
 }
 
