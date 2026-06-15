@@ -2734,8 +2734,34 @@ const IMP_FIELDS=[
   {key:'exp_visa',label:'วันหมด VISA',aliases:['วันหมด visa','exp_visa','visa']},
   {key:'exp_wp',label:'วันหมด WP',aliases:['วันหมด wp','exp_wp']},
   {key:'note',label:'หมายเหตุ',aliases:['หมายเหตุ','remark','note']},
+  // Round F1B-2: field ใหม่ตาม Excel
+  {key:'submit_date',label:'วันที่ยื่น',aliases:['วันที่ยื่น','submit_date']},
+  {key:'medical_cert',label:'ใบแพทย์',aliases:['ใบแพทย์','medical']},
+  {key:'insurance',label:'ประกัน',aliases:['ประกัน','insurance']},
+  {key:'fee_100_paid',label:'100',aliases:['100','fee_100']},
+  {key:'fee_900_paid',label:'900',aliases:['900','fee_900']},
+  {key:'agent_name',label:'ตัวแทน',aliases:['ตัวแทน','agent']},
+  {key:'appt_date',label:'นัดหมาย',aliases:['นัดหมาย','appt_date']},
+  {key:'appt_time',label:'เวลา',aliases:['เวลา','appt_time']},
+  {key:'appt_place',label:'สถานที่',aliases:['สถานที่','appt_place']},
+  {key:'booklet_none',label:'ไม่มีเล่ม',aliases:['ไม่มีเล่ม']},
+  {key:'booklet_has',label:'มีเล่ม',aliases:['มีเล่ม']},
+  {key:'card_fee_paid',label:'ค่าบัตร',aliases:['ค่าบัตร','card_fee']},
+  {key:'queue_date',label:'คิวว่าง',aliases:['คิวว่าง','queue_date']},
+  {key:'receive_date',label:'วันรับเล่ม',aliases:['วันรับเล่ม','receive_date']},
 ];
 function normImpStr(s){return String(s||'').trim().toUpperCase().replace(/\s+/g,'');}
+// Round F1B-2: parser สำหรับ import field ใหม่
+function impBool(v){return /^(✓|✔|\/|x|มี|ใช่|true|yes|y|1|จ่ายแล้ว|จ่าย)$/i.test(String(v==null?'':v).trim());}
+function impDate(v){
+  v=String(v==null?'':v).trim();if(!v)return null;
+  const n=Number(v);
+  if(Number.isFinite(n)&&n>=20000&&n<80000&&!v.includes('-')&&!v.includes('/')&&typeof XLSX!=='undefined'&&XLSX.SSF&&XLSX.SSF.parse_date_code){
+    const d=XLSX.SSF.parse_date_code(n); // Excel serial → date
+    if(d&&d.y)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  return v; // สมมติเป็น ISO/string อยู่แล้ว
+}
 function makeImpKey(pp,al,name,nat,empName){const p=normImpStr(pp);if(p)return 'PP:'+p;const a=normImpStr(al);if(a)return 'AL:'+a;const n=normImpStr(name);if(n)return 'NM:'+n+'|'+normImpStr(nat)+'|'+normImpStr(empName);return null;}
 function buildExistingKeys(){const s=new Set();customers.forEach(c=>{const pp=normImpStr(c.passport_no);if(pp)s.add('PP:'+pp);const al=normImpStr(c.alien_id);if(al)s.add('AL:'+al);const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);s.add('NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:''));}});return s;}
 
@@ -2796,6 +2822,22 @@ async function doImport(){
       if(empName){const ef=employers.find(x=>x.name===empName);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
       const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:get(row,'exp_visa')||null,exp_wp:get(row,'exp_wp')||null,next_90:get(row,'next_90')||null,work_status:get(row,'work_status')||'รับเรื่อง',note:get(row,'note')||null};
       const _svc=get(row,'services');if(_svc)data.services=_svc.split(/[;,]/).map(s=>s.trim()).filter(Boolean);
+      // Round F1B-2: field ใหม่ตาม Excel
+      data.submit_date=impDate(get(row,'submit_date'));
+      data.agent_name=get(row,'agent_name')||null;
+      data.medical_cert=impBool(get(row,'medical_cert'));
+      data.insurance=impBool(get(row,'insurance'));
+      data.fee_100_paid=impBool(get(row,'fee_100_paid'));
+      data.fee_900_paid=impBool(get(row,'fee_900_paid'));
+      data.card_fee_paid=impBool(get(row,'card_fee_paid'));
+      data.appt_date=impDate(get(row,'appt_date'));
+      data.appt_time=get(row,'appt_time')||null;
+      data.appt_place=get(row,'appt_place')||null;
+      data.queue_date=impDate(get(row,'queue_date'));
+      data.receive_date=impDate(get(row,'receive_date'));
+      const _bh=get(row,'booklet_has'),_bn=get(row,'booklet_none');
+      data.booklet_status=_bh?'has':(_bn?'none':null); // ทั้งคู่มีค่า → has
+
       const r=await dbPost('customers',data);
       if(r&&r[0]){customers.unshift(r[0]);if(key)seenInFile.add(key);countNew++;}
     }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'เกิดข้อผิดพลาด'});}
@@ -2804,7 +2846,7 @@ async function doImport(){
   // Round D: รายงานคอลัมน์ที่ยังไม่รองรับ (ไม่ได้ map เข้า field ที่มี DB) — ไม่ทำให้ import พัง
   const _mappedIdx=new Set(Object.values(impMap).filter(v=>v!==undefined&&v>=0));
   const _unsup=impCols.map((c,i)=>({c,i})).filter(x=>x.c&&String(x.c).trim()&&!_mappedIdx.has(x.i)).map(x=>x.c);
-  const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">ฟิลด์เหล่านี้ (เช่น วันที่ยื่น, ใบแพทย์, ประกัน, 100, 900, ตัวแทน, นัดหมาย, เวลา, สถานที่, มีเล่ม, ไม่มีเล่ม, ค่าบัตร, คิวว่าง, วันรับเล่ม) ต้องรอเพิ่มคอลัมน์ใน DB รอบถัดไป</div></div>`:'';
+  const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">คอลัมน์ที่ไม่ได้จับคู่กับฟิลด์ใดจะไม่ถูกนำเข้า (เช่น ลำดับ, รูปถ่าย) — หากต้องการนำเข้า ให้จับคู่คอลัมน์ในส่วน "จับคู่คอลัมน์" ด้านบน</div></div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
   document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">📊 สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${unsupHTML}${skipHTML}</div></div>`;
 }
@@ -3286,13 +3328,13 @@ async function doBulkDelete(){
   }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'err');}
   finally{hideLoading();}
 }
-// ── Round D: Export column order ตาม Excel template งานจริง (24 คอลัมน์) ──
-// คอลัมน์ที่ยังไม่มี DB (วันที่ยื่น, ใบแพทย์, ประกัน, 100, 900, ตัวแทน, นัดหมาย, เวลา, สถานที่, มีเล่ม, ไม่มีเล่ม, ค่าบัตร, คิวว่าง, วันรับเล่ม) = เว้นว่างไว้ก่อน (รอ Round F + migration)
+// ── Export column order ตาม Excel template งานจริง (24 คอลัมน์) — Round F1B-2: เติม field ใหม่ครบ ──
 const CUST_EXPORT_HEADERS=['ลำดับ','วันที่ยื่น','รูปถ่าย','นายจ้าง','รายชื่อ','เลขประจำตัวต่างด้าว','สัญชาติ','เลขคำขอ','รายการ','สถานะ','ใบแพทย์','ประกัน','100','900','ตัวแทน','นัดหมาย','เวลา','สถานที่','มีเล่ม','ไม่มีเล่ม','ค่าบัตร','คิวว่าง','วันรับเล่ม','หมายเหตุ'];
 function custExportRow(c,idx){
+  const chk=b=>b?'✓':'';
   return [
     idx+1,                                  // ลำดับ
-    '',                                     // วันที่ยื่น (ยังไม่มี DB)
+    c.submit_date||'',                      // วันที่ยื่น
     c.photo?'มีรูป':'',                      // รูปถ่าย (ฝังภาพในไฟล์ไม่ได้ — แสดงตัวบ่งชี้)
     c.employer_id?empN(c.employer_id):'',    // นายจ้าง
     c.name||'',                             // รายชื่อ
@@ -3301,7 +3343,19 @@ function custExportRow(c,idx){
     c.wp_no||c.visa_no||'',                 // เลขคำขอ
     (c.services||[]).join(';'),             // รายการ
     c.work_status||'',                      // สถานะ
-    '','','','','','','','','','','','','',  // ใบแพทย์,ประกัน,100,900,ตัวแทน,นัดหมาย,เวลา,สถานที่,มีเล่ม,ไม่มีเล่ม,ค่าบัตร,คิวว่าง,วันรับเล่ม (13 คอลัมน์ ยังไม่มี DB)
+    chk(c.medical_cert),                    // ใบแพทย์
+    chk(c.insurance),                       // ประกัน
+    chk(c.fee_100_paid),                    // 100
+    chk(c.fee_900_paid),                    // 900
+    c.agent_name||'',                       // ตัวแทน
+    c.appt_date||'',                        // นัดหมาย
+    c.appt_time||'',                        // เวลา
+    c.appt_place||'',                       // สถานที่
+    c.booklet_status==='has'?'✓':'',         // มีเล่ม
+    c.booklet_status==='none'?'✓':'',        // ไม่มีเล่ม
+    chk(c.card_fee_paid),                   // ค่าบัตร
+    c.queue_date||'',                       // คิวว่าง
+    c.receive_date||'',                     // วันรับเล่ม
     c.note||''                              // หมายเหตุ
   ];
 }
