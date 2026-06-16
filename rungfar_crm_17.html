@@ -456,9 +456,55 @@ textarea.fi2{resize:vertical;min-height:65px}
 #view-metaads .ma-ai li.good .ad{background:var(--ma-ok)}#view-metaads .ma-ai li.warn .ad{background:var(--ma-warn)}#view-metaads .ma-ai li.bad .ad{background:var(--ma-bad)}
 #view-metaads .ma-ai li b{font-weight:700}
 #view-metaads .ma-foot{font-size:11px;color:var(--ma-mut2);text-align:center;margin-top:6px}
+/* ---- Report Builder (scoped) ---- */
+#view-metaads .ma-screen button{font-size:12.5px}
+#view-metaads .ma-rep-sec{margin-bottom:18px}
+#view-metaads .ma-rep-h{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;margin:0 0 3px}
+#view-metaads .ma-rep-h .n{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--ma-org),var(--ma-blu));display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+#view-metaads .ma-rep-sub{font-size:11.5px;color:var(--ma-mut);margin:0 0 12px 33px}
+#view-metaads .ma-exec{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+#view-metaads .ma-ex{background:var(--ma-glass);border:1px solid var(--ma-line);border-radius:11px;padding:12px 13px}
+#view-metaads .ma-ex .l{font-size:11px;color:var(--ma-mut);font-weight:600}
+#view-metaads .ma-ex .v{font-size:18px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+#view-metaads .ma-bw{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+#view-metaads .ma-bwc{border-radius:11px;padding:13px 15px;border:1px solid var(--ma-line)}
+#view-metaads .ma-bwc.best{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.3)}
+#view-metaads .ma-bwc.worst{background:rgba(255,34,102,.10);border-color:rgba(255,34,102,.3)}
+#view-metaads .ma-bwc .t{font-size:11.5px;font-weight:700;color:var(--ma-mut);margin-bottom:5px}
+#view-metaads .ma-bwc .nm{font-size:14px;font-weight:800}
+#view-metaads .ma-bwc .d{font-size:11.5px;color:var(--ma-mut);margin-top:3px}
+#view-metaads .ma-keyins{display:flex;flex-direction:column;gap:8px}
+#view-metaads .ma-keyins li{list-style:none;display:flex;gap:9px;font-size:12.5px;line-height:1.5;background:rgba(255,255,255,.03);border:1px solid var(--ma-line);border-radius:9px;padding:9px 12px}
+#view-metaads .ma-keyins li::before{content:'▸';color:var(--ma-org)}
+#view-metaads .ma-dec{display:inline-block;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.3px;white-space:nowrap}
+#view-metaads .ma-dec.scale{background:rgba(34,197,94,.18);color:#4ADE80}
+#view-metaads .ma-dec.hold{background:rgba(59,130,246,.18);color:#7DB3FF}
+#view-metaads .ma-dec.test{background:rgba(255,122,26,.2);color:#FFB066}
+#view-metaads .ma-dec.stop{background:rgba(255,34,102,.18);color:#FF8AA6}
+#view-metaads .ma-dec.monitor{background:rgba(148,164,191,.18);color:#B6C2D6}
+#view-metaads .ma-tbl td .rs{font-size:11.5px;color:var(--ma-txt);white-space:normal;min-width:180px;display:block}
+#view-metaads .ma-tbl td .na{font-size:11.5px;color:var(--ma-mut);white-space:normal;min-width:170px;display:block}
+#view-metaads .ma-note{background:rgba(59,130,246,.08);border:1px dashed rgba(59,130,246,.4);border-radius:11px;padding:14px 16px;font-size:12.5px;color:var(--ma-mut);line-height:1.6}
+#view-metaads .ma-comp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#view-metaads .ma-comp .fld{margin-bottom:10px}
+#view-metaads .ma-comp label{display:block;font-size:11.5px;color:var(--ma-mut);font-weight:600;margin-bottom:5px}
+#view-metaads .ma-in{width:100%;background:var(--ma-glass);border:1px solid var(--ma-line);color:var(--ma-txt);font-family:var(--font);font-size:12.5px;padding:9px 11px;border-radius:9px;outline:none}
+#view-metaads textarea.ma-in{resize:vertical;min-height:84px;line-height:1.5}
+#view-metaads .ma-chips{display:flex;flex-wrap:wrap;gap:6px}
+#view-metaads .ma-chip{font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:999px;border:1px solid var(--ma-line);background:var(--ma-glass);color:var(--ma-mut);cursor:pointer;transition:.15s;user-select:none}
+#view-metaads .ma-chip.on{background:linear-gradient(135deg,var(--ma-org),#FF9A4D);color:#1a1207;border-color:transparent;font-weight:700}
+#view-metaads .ma-anl{display:flex;flex-direction:column;gap:11px}
+#view-metaads .ma-anl .blk{background:rgba(255,255,255,.03);border:1px solid var(--ma-line);border-radius:10px;padding:12px 14px}
+#view-metaads .ma-anl .blk h4{font-size:12.5px;font-weight:800;margin:0 0 7px;display:flex;align-items:center;gap:7px}
+#view-metaads .ma-anl .blk ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+#view-metaads .ma-anl .blk li{font-size:12.5px;line-height:1.5;color:var(--ma-txt);padding-left:15px;position:relative}
+#view-metaads .ma-anl .blk li::before{content:'•';position:absolute;left:2px;color:var(--ma-mut2)}
+#view-metaads .ma-warnbox{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:9px;padding:9px 12px;font-size:11px;color:#FCD34D;margin-top:10px}
 @media (max-width:880px){
   #view-metaads .ma-kpis{grid-template-columns:repeat(2,1fr)}
   #view-metaads .ma-grid2{grid-template-columns:1fr}
+  #view-metaads .ma-exec{grid-template-columns:repeat(2,1fr)}
+  #view-metaads .ma-bw,#view-metaads .ma-comp{grid-template-columns:1fr}
   #view-metaads .meta-root{padding:15px 13px;border-radius:14px}
   #view-metaads .ma-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
@@ -6024,7 +6070,8 @@ async function attNotifyLine(type,savedLog){
 /* - benchmark สำหรับ AND rule-based analysis (ปรับได้ภายหลัง)             */
 /* ===================================================================== */
 const META_BENCH={ctr:1.0,cpcHigh:15,freqHigh:3.0,convRate:0.07};
-let meta_state={range:'30d',campaign:'all',tab:'campaign',from:null,to:null};
+let meta_state={range:'30d',campaign:'all',tab:'campaign',from:null,to:null,screen:'dash'};
+let meta_competitor=null; // ข้อมูลคู่แข่งที่ผู้ใช้กรอกเอง (วิเคราะห์เชิงคุณภาพเท่านั้น)
 let meta_data=null; // {generatedAt, account, campaigns[], rows[]}  rows = ad-level daily insights
 
 // seeded RNG — refresh ได้ค่าใหม่แต่ดูสมจริง
@@ -6077,7 +6124,7 @@ function metaGenData(){
       }
     });
   });
-  meta_data={source:'mock',level:'ad',hasDays:true,generatedAt:new Date(),account:{id:'act_8890021',name:'Rungfar Labor CRM'},campaigns:camps,rows};
+  meta_data={source:'mock',level:'ad',hasDays:true,demo:{age:false,gender:false,region:false},generatedAt:new Date(),account:{id:'act_8890021',name:'Rungfar Labor CRM'},campaigns:camps,rows};
 }
 
 // ---- date range ----
@@ -6234,22 +6281,9 @@ function renderMetaAds(){
   const dateBar=showDateBar
     ?`<div class="ma-seg">${seg('today','วันนี้')}${seg('7d','7 วัน')}${seg('30d','30 วัน')}${seg('month','เดือนนี้')}${seg('custom','กำหนดเอง')}</div>${custom}`
     :`<span style="font-size:12px;color:var(--ma-mut)">📅 ช่วงข้อมูล: ${esc(meta_data.periodLabel||'ตามไฟล์นำเข้า')}</span>`;
-  el.innerHTML=`<div class="meta-root">
-    <input type="file" id="metaFile" accept=".csv,text/csv" style="display:none" onchange="metaImportFile(this)">
-    <div class="meta-hd">
-      <div><h2>📊 วิเคราะห์โฆษณา Meta Ads</h2><div class="ma-sub">${sub}</div></div>
-      ${badge}
-      <div class="ma-spacer"></div>
-      <button class="ma-btn pri" onclick="document.getElementById('metaFile').click()">📥 นำเข้าไฟล์ Meta Ads</button>
-      <button class="ma-btn" onclick="metaRefresh()">↻ รีเฟรช</button>
-      <button class="ma-btn" onclick="metaExportCSV()">⬇ Export CSV</button>
-      <button class="ma-btn" style="background:linear-gradient(135deg,var(--ma-org),#FF9A4D);border-color:transparent;color:#1a1207;font-weight:700" onclick="metaCopyForClaude()">🤖 คัดลอกสรุปสำหรับ Claude</button>
-      ${clearBtn}
-    </div>
-    <div class="ma-bar">
-      ${dateBar}
-      <select class="ma-sel" onchange="metaSetCampaign(this.value)">${campOpts}</select>
-    </div>
+  const isReport=meta_state.screen==='report';
+  const screenSeg=`<div class="ma-seg ma-screen"><button class="${!isReport?'on':''}" onclick="metaSetScreen('dash')">📊 แดชบอร์ด</button><button class="${isReport?'on':''}" onclick="metaSetScreen('report')">📑 รายงาน</button></div>`;
+  const dashBody=`
     <div class="ma-kpis">
       ${kpi('💸 Spend',mMoney(agg.spend),'ค่าโฆษณารวม','#FF7A1A','#FFB066')}
       ${kpi('👁 Impressions',mInt(agg.impressions),'จำนวนการแสดงผล','#3B82F6','#60A5FA')}
@@ -6284,7 +6318,27 @@ function renderMetaAds(){
       <div class="ma-tabs">${tabBtn('campaign','แคมเปญ')}${tabBtn('adset','ชุดโฆษณา')}${tabBtn('ad','โฆษณา')}</div>
       ${metaTable()}
     </div>
-    <div class="ma-foot">โหมดข้อมูลตัวอย่าง · ยังไม่เชื่อมต่อ Meta Marketing API · เป็นการแสดงผลแบบอ่านอย่างเดียว (ไม่แก้งบ/ไม่ปิดแคมเปญ)</div>
+    <div class="ma-foot">${isImp?'ข้อมูลจากไฟล์ที่นำเข้า':'โหมดข้อมูลตัวอย่าง'} · อ่านอย่างเดียว · ไม่เชื่อมต่อ Meta API (ไม่แก้งบ/ไม่ปิดแคมเปญ)</div>`;
+  const reportActions=isReport
+    ?`<button class="ma-btn" onclick="metaExportReportTxt()">⬇ .txt</button><button class="ma-btn" onclick="metaExportDecisionCSV()">⬇ ตาราง Decision (.csv)</button><button class="ma-btn" style="background:linear-gradient(135deg,var(--ma-org),#FF9A4D);border-color:transparent;color:#1a1207;font-weight:700" onclick="metaCopyReportForClaude()">🤖 คัดลอกรายงานฉบับเต็มสำหรับ Claude</button>`
+    :`<button class="ma-btn" onclick="metaExportCSV()">⬇ Export CSV</button><button class="ma-btn" style="background:linear-gradient(135deg,var(--ma-org),#FF9A4D);border-color:transparent;color:#1a1207;font-weight:700" onclick="metaCopyForClaude()">🤖 คัดลอกสรุปสำหรับ Claude</button>`;
+  el.innerHTML=`<div class="meta-root">
+    <input type="file" id="metaFile" accept=".csv,text/csv" style="display:none" onchange="metaImportFile(this)">
+    <div class="meta-hd">
+      <div><h2>📊 วิเคราะห์โฆษณา Meta Ads</h2><div class="ma-sub">${sub}</div></div>
+      ${badge}
+      <div class="ma-spacer"></div>
+      ${screenSeg}
+      <button class="ma-btn pri" onclick="document.getElementById('metaFile').click()">📥 นำเข้าไฟล์ Meta Ads</button>
+      <button class="ma-btn" onclick="metaRefresh()">↻ รีเฟรช</button>
+      ${reportActions}
+      ${clearBtn}
+    </div>
+    <div class="ma-bar">
+      ${dateBar}
+      <select class="ma-sel" onchange="metaSetCampaign(this.value)">${campOpts}</select>
+    </div>
+    ${isReport?metaReportHTML(rows,agg):dashBody}
   </div>`;
 }
 // ---- controls ----
@@ -6292,6 +6346,7 @@ function metaSetRange(v){meta_state.range=v;renderMetaAds();}
 function metaSetCustom(k,v){meta_state[k]=v;if(meta_state.range==='custom')renderMetaAds();}
 function metaSetCampaign(v){meta_state.campaign=v;renderMetaAds();}
 function metaSetTab(v){meta_state.tab=v;renderMetaAds();}
+function metaSetScreen(v){meta_state.screen=v;renderMetaAds();}
 function metaRefresh(){if(meta_data&&meta_data.source==='import'){renderMetaAds();return;}metaGenData();toast('รีเฟรชข้อมูลตัวอย่างแล้ว');renderMetaAds();}
 function metaExportCSV(){
   const rows=metaRows();const data=metaRollup(meta_state.tab,rows);
@@ -6424,6 +6479,9 @@ function metaClassifyHeader(raw){
   if(has('leads')||has('ลีด')||has('ลูกค้าเป้าหมาย'))return 'leads';
   if(has('results')||has('ผลลัพธ์'))return 'results';
   if(has('objective')||has('result type')||has('result indicator')||has('วัตถุประสงค์')||has('ประเภทผลลัพธ์'))return 'objective';
+  if(has('age')||has('ช่วงอายุ')||h==='อายุ')return 'age';
+  if(has('gender')||has('เพศ'))return 'gender';
+  if(has('region')||has('province')||has('location')||has('country')||has('ภูมิภาค')||has('จังหวัด')||has('พื้นที่')||has('ประเทศ'))return 'region';
   return null;
 }
 function metaMapHeaders(headers){const m={};headers.forEach((h,i)=>{const f=metaClassifyHeader(h);if(f&&!(f in m))m[f]=i;});return m;}
@@ -6461,9 +6519,10 @@ function metaBuildFromCSV(text,fileName){
     const asName=(level==='campaign')?'(ทั้งแคมเปญ)':(cell(rec,'adset_name')||'(ไม่ระบุชุด)');
     const adName=(level==='ad')?(cell(rec,'ad_name')||'(ไม่ระบุโฆษณา)'):(level==='adset'?'(โฆษณาในชุดนี้)':'(ทั้งแคมเปญ)');
     const cid='C|'+cname,sid=cid+'|'+asName,aid=sid+'|'+adName;
+    const age=cell(rec,'age')||null,gender=cell(rec,'gender')||null,region=cell(rec,'region')||null;
     rows.push({account_id:'imported',campaign_id:cid,campaign_name:cname,campaign_status:status,objective,
       adset_id:sid,adset_name:asName,adset_status:status,ad_id:aid,ad_name:adName,ad_status:status,
-      creative:(level==='ad')?{thumb:'📄',headline:adName,message:''}:null,
+      creative:(level==='ad')?{thumb:'📄',headline:adName,message:''}:null,age,gender,region,
       date:dt||null,spend:Math.round(spend),impressions:Math.round(impressions),reach:Math.round(reach),clicks:Math.round(clicks),leads:Math.round(leads)});
   }
   if(!rows.length)throw new Error('ไม่พบข้อมูลแถวที่ใช้ได้ในไฟล์');
@@ -6476,7 +6535,8 @@ function metaBuildFromCSV(text,fileName){
   else periodLabel=en||'ทั้งไฟล์';
   const cmap={};rows.forEach(r=>{if(!cmap[r.campaign_id])cmap[r.campaign_id]={id:r.campaign_id,name:r.campaign_name,status:r.campaign_status,objective:r.objective};});
   const lvlTh={campaign:'ระดับแคมเปญ',adset:'ระดับชุดโฆษณา',ad:'ระดับโฆษณา'};
-  meta_data={source:'import',level,hasDays,fileName:fileName||'',importedAt:new Date().toISOString(),periodLabel,
+  const demo={age:('age'in map),gender:('gender'in map),region:('region'in map)};
+  meta_data={source:'import',level,hasDays,demo,fileName:fileName||'',importedAt:new Date().toISOString(),periodLabel,
     account:{name:fileName||'ไฟล์นำเข้า',id:`${rows.length} แถว · ${lvlTh[level]}`},campaigns:Object.values(cmap),rows};
   meta_state.campaign='all';
   metaPersist();
@@ -6509,6 +6569,241 @@ function metaLoadPersisted(){
 function metaPeriodLabel(){
   if(meta_data.source==='import'&&!meta_data.hasDays)return meta_data.periodLabel||'imported';
   const {from,to}=metaRange();return from+'_'+to;
+}
+/* ===================================================================== */
+/* META ADS — Report Builder (Executive Report, LOCAL-ONLY)              */
+/* ใช้ข้อมูลจาก metaRows() เท่านั้น (mock/import) · ไม่เดาข้อมูลที่ไม่มี      */
+/* ===================================================================== */
+function metaReportCtx(agg){return {avgCtr:agg.ctr,avgCpc:agg.cpc,hasLeads:agg.leads>0,avgCpl:agg.leads>0?agg.spend/agg.leads:null};}
+// จัด Priority/Decision จากค่าเฉลี่ยบัญชี — ไม่มีการสุ่ม/เดา
+function metaDecision(r,ctx){
+  const cpl=r.leads>0?r.spend/r.leads:null;
+  const lowData=r.impressions<1000||r.clicks<20;
+  if(lowData){
+    if(r.ctr>=ctx.avgCtr)return{key:'test',label:'Test',reason:`ข้อมูลยังน้อย (Impr ${mInt(r.impressions)}, คลิก ${mInt(r.clicks)}) แต่ CTR ${mPct(r.ctr)} อยู่ระดับดี`,action:'เก็บข้อมูลเพิ่ม 3–5 วัน หรือเพิ่มงบทดสอบเล็กน้อยก่อนตัดสินใจ'};
+    return{key:'monitor',label:'Monitor',reason:`ข้อมูลยังน้อยและสัญญาณยังไม่ชัด (CTR ${mPct(r.ctr)})`,action:'เฝ้าดูต่อ ยังไม่ต้องเพิ่ม/ลดงบ รอข้อมูลให้มากพอ'};
+  }
+  const poorCtr=r.ctr<ctx.avgCtr*0.7;let stop=false;
+  if(ctx.hasLeads){const poorLeads=(r.leads===0)||(cpl!=null&&ctx.avgCpl&&cpl>ctx.avgCpl*1.8);stop=poorCtr&&poorLeads;}
+  else stop=poorCtr&&r.cpc>ctx.avgCpc*1.4;
+  if(stop)return{key:'stop',label:'Stop',reason:(ctx.hasLeads&&r.leads===0)?`ใช้งบ ${mMoney(r.spend)} แล้วยังไม่มี Lead และ CTR ต่ำ (${mPct(r.ctr)})`:`CTR ต่ำกว่าเฉลี่ยมาก (${mPct(r.ctr)}) และต้นทุนแพง — ใช้งบ ${mMoney(r.spend)} ไม่คุ้ม`,action:'หยุดพักโฆษณานี้ แล้วเปลี่ยนภาพ/ข้อความ/กลุ่มเป้าหมายก่อนเริ่มใหม่'};
+  if(r.frequency>3.2)return{key:'monitor',label:'Monitor',reason:`Frequency สูง (${mDec(r.frequency)}) คนกลุ่มเดิมเห็นซ้ำมาก เสี่ยงครีเอทีฟล้า`,action:'รีเฟรช/เปลี่ยนครีเอทีฟ หรือขยายกลุ่มเป้าหมายใหม่'};
+  const goodCtr=r.ctr>=ctx.avgCtr*1.2,goodCpc=r.cpc<=ctx.avgCpc;
+  const leadOk=ctx.hasLeads?(r.leads>0&&(cpl==null||!ctx.avgCpl||cpl<=ctx.avgCpl)):true;
+  if(goodCtr&&goodCpc&&leadOk)return{key:'scale',label:'Scale',reason:`CTR สูงกว่าเฉลี่ย (${mPct(r.ctr)}) และ CPC ต่ำ (${mMoney(r.cpc)})${ctx.hasLeads&&cpl!=null?` · ต้นทุนต่อ Lead ${mMoney(cpl)}`:''}`,action:'ค่อย ๆ เพิ่มงบทีละ 15–20% แล้วดูผล 2–3 วัน'};
+  return{key:'hold',label:'Hold',reason:`ผลปานกลาง (CTR ${mPct(r.ctr)}, CPC ${mMoney(r.cpc)}) ยังไม่ถึงเกณฑ์เพิ่มงบ แต่ยังไม่ควรปิด`,action:'คงงบเดิม ลองปรับข้อความ/ภาพเล็กน้อยเพื่อดันผลให้ดีขึ้น'};
+}
+function metaGroupBy(rows,field){
+  const map={};
+  rows.forEach(r=>{const k=r[field];if(!k)return;if(!map[k])map[k]={name:k,spend:0,impressions:0,reach:0,clicks:0,leads:0};const m=map[k];m.spend+=r.spend;m.impressions+=r.impressions;m.reach+=r.reach;m.clicks+=r.clicks;m.leads+=r.leads;});
+  return Object.values(map).map(m=>{m.ctr=m.impressions?m.clicks/m.impressions*100:0;m.cpc=m.clicks?m.spend/m.clicks:0;m.cpl=m.leads?m.spend/m.leads:null;return m;}).sort((a,b)=>b.spend-a.spend);
+}
+function metaBestWorst(camps,ctx){
+  if(!camps.length)return{best:null,worst:null};
+  let best,worst;
+  if(ctx.hasLeads){
+    const wl=camps.filter(c=>c.leads>0);
+    best=wl.length?wl.slice().sort((a,b)=>(a.spend/a.leads)-(b.spend/b.leads))[0]:camps.slice().sort((a,b)=>b.ctr-a.ctr)[0];
+    worst=camps.slice().sort((a,b)=>{const al=a.leads>0?a.spend/a.leads:1e12,bl=b.leads>0?b.spend/b.leads:1e12;return bl-al;})[0];
+  }else{
+    const bySpend=camps.filter(c=>c.spend>0);
+    best=camps.slice().sort((a,b)=>b.ctr-a.ctr)[0];
+    worst=bySpend.length?bySpend.slice().sort((a,b)=>a.ctr-b.ctr)[0]:camps[camps.length-1];
+  }
+  return{best,worst};
+}
+function metaKeyInsights(agg,camps,ctx){
+  const ins=[];
+  if(camps.length){const top=camps[0];const pct=agg.spend?top.spend/agg.spend*100:0;ins.push(`งบส่วนใหญ่ราว ${pct.toFixed(0)}% (${mMoney(top.spend)}) ไปที่แคมเปญ "${top.name}"`);}
+  const fat=camps.find(c=>c.frequency>3.2);
+  if(fat)ins.push(`แคมเปญ "${fat.name}" มี Frequency สูง (${mDec(fat.frequency)}) คนเห็นซ้ำมาก ควรรีเฟรชครีเอทีฟ`);
+  if(ctx.hasLeads){const wl=camps.filter(c=>c.leads>0).sort((a,b)=>(a.spend/a.leads)-(b.spend/b.leads))[0];ins.push(`ต้นทุนต่อ Lead เฉลี่ย ${mMoney(ctx.avgCpl)}${wl?` — "${wl.name}" คุ้มสุดที่ ${mMoney(wl.spend/wl.leads)}/Lead`:''}`);}
+  else ins.push('ข้อมูลนี้ไม่มีคอลัมน์ Leads/Results — การจัดลำดับใช้ CTR และ CPC เป็นหลัก');
+  ins.push(`CTR เฉลี่ยรวม ${mPct(agg.ctr)} (เกณฑ์อ้างอิง ${mPct(META_BENCH.ctr)}) · CPC เฉลี่ย ${mMoney(agg.cpc)}`);
+  return ins.slice(0,3);
+}
+function metaDemoBlock(rows,field,label,ctx){
+  const g=metaGroupBy(rows,field);if(!g.length)return '';
+  const body=g.map(m=>`<tr><td>${esc(m.name)}</td><td>${mMoney(m.spend)}</td><td>${mInt(m.clicks)}</td><td>${mInt(m.leads)}</td><td>${mPct(m.ctr)}</td><td>${mMoney(m.cpc)}</td><td>${m.cpl!=null?mMoney(m.cpl):'—'}</td></tr>`).join('');
+  const byResult=g.slice().sort((a,b)=>(b.leads-a.leads)||(b.clicks-a.clicks))[0];
+  const byCtr=g.slice().sort((a,b)=>b.ctr-a.ctr)[0];
+  const valArr=ctx.hasLeads?g.filter(x=>x.leads>0).sort((a,b)=>a.cpl-b.cpl):g.slice().sort((a,b)=>a.cpc-b.cpc);
+  const valBest=valArr[0];
+  const cut=g.slice().sort((a,b)=>{const aB=(a.leads===0?1:0)+(a.ctr<ctx.avgCtr?1:0),bB=(b.leads===0?1:0)+(b.ctr<ctx.avgCtr?1:0);return (bB-aB)||(b.spend-a.spend);})[0];
+  const hi=`<ul class="ma-keyins" style="margin-top:10px">
+    <li>กลุ่มที่ ${ctx.hasLeads?'ได้ Lead':'มีคลิก'} เยอะสุด: <b>${esc(byResult.name)}</b> (${ctx.hasLeads?mInt(byResult.leads)+' leads':mInt(byResult.clicks)+' clicks'})</li>
+    <li>กลุ่มที่ใช้เงินคุ้มสุด: <b>${valBest?esc(valBest.name):'—'}</b>${valBest?(ctx.hasLeads?` (${mMoney(valBest.cpl)}/lead)`:` (CPC ${mMoney(valBest.cpc)})`):''}</li>
+    <li>กลุ่มที่ CTR สูงสุด: <b>${esc(byCtr.name)}</b> (${mPct(byCtr.ctr)})</li>
+    <li>กลุ่มที่ควรพิจารณาลดงบ: <b>${esc(cut.name)}</b> (${ctx.hasLeads&&cut.leads===0?'ยังไม่มี lead':'CTR '+mPct(cut.ctr)})</li>
+  </ul>`;
+  return `<div style="margin-bottom:14px"><div class="pt" style="margin-bottom:8px">แยกตาม${label}</div><div class="ma-tblwrap"><table class="ma-tbl"><thead><tr><th>${label}</th><th>Spend</th><th>Clicks</th><th>Leads</th><th>CTR</th><th>CPC</th><th>Cost/Lead</th></tr></thead><tbody>${body}</tbody></table></div>${hi}</div>`;
+}
+// ---- Competitor (วิเคราะห์เชิงคุณภาพจาก input ผู้ใช้เท่านั้น — ไม่เดาตัวเลขคู่แข่ง) ----
+const META_COMP_CHIPS=['เร็ว/ด่วน','ราคาถูก','มีหลายสาขา','มีรถรับส่ง','รับประกันงาน','ไม่ผ่านคืนเงิน','ผ่อนได้','รีวิว/น่าเชื่อถือ'];
+const META_COMP_MAP={
+ 'เร็ว/ด่วน':{s:'ชูความเร็ว/ความด่วนในการทำเอกสาร',o:'รุ่งฟ้าชูความเร็ว + ความถูกต้องและการการันตีว่าผ่าน',c:'คลิปไทม์ไลน์ "ยื่นวันนี้ รู้ผลกี่วัน" พร้อมเคสจริง',h:'จบไวไม่ต้องหยุดงานนาน',a:'ความเร็ว vs ความผิดพลาดของที่อื่น'},
+ 'ราคาถูก':{s:'ชูราคาถูก/โปรโมชัน',o:'เลี่ยงสงครามราคา หันไปชู "คุ้มค่า–ครบจบที่เดียว–ไม่บวกเพิ่มทีหลัง"',c:'ตารางเทียบ "ถูกแต่แอบบวก vs รุ่งฟ้าแจ้งครบจบ"',h:'แจ้งราคาครบจบ ไม่บวกเพิ่มทีหลัง',a:'ความโปร่งใสเรื่องราคา'},
+ 'มีหลายสาขา':{s:'มีหลายสาขา/ครอบคลุมพื้นที่',o:'ชูบริการออนไลน์/ส่งถึงที่ ไม่ต้องเดินทาง',c:'โพสต์ "ไม่ต้องมาถึงสาขา เราดูแลออนไลน์ + ส่งถึงที่"',h:'อยู่ที่ไหนก็ทำได้',a:'ความสะดวกแบบไม่ต้องเข้าสาขา'},
+ 'มีรถรับส่ง':{s:'มีบริการรถรับส่ง',o:'ชูบริการครบ–ดูแลถึงที่ หรือจุดแข็งอื่นที่คู่แข่งไม่มี',c:'คลิปเล่าบริการดูแลตั้งแต่ต้นจนจบ',h:'ดูแลคุณทุกขั้นตอน ไม่ปล่อยให้งง',a:'บริการครบวงจร'},
+ 'รับประกันงาน':{s:'ชูการรับประกันงาน',o:'ชูประสบการณ์/จำนวนเคสสำเร็จ/รีวิวจริงให้เหนือกว่า',c:'รวมรีวิว/เคสสำเร็จจริงเป็นอัลบั้ม',h:'เคสผ่านจริง การันตีด้วยรีวิว',a:'ความน่าเชื่อถือจากผลงานจริง'},
+ 'ไม่ผ่านคืนเงิน':{s:'การันตีไม่ผ่านคืนเงิน',o:'ชูเงื่อนไขชัดเจน/ความโปร่งใส และการตรวจก่อนยื่น',c:'อธิบายขั้นตอนตรวจเอกสารก่อนยื่น ลดโอกาสไม่ผ่าน',h:'ตรวจละเอียดก่อนยื่น ลดเสี่ยงไม่ผ่าน',a:'ลดความเสี่ยง/สร้างความมั่นใจ'},
+ 'ผ่อนได้':{s:'มีผ่อนชำระ',o:'ชูผ่อนได้เช่นกัน หรือชูความคุ้ม/บริการครบแทน',c:'โพสต์ "แบ่งจ่ายสบาย เริ่มงานได้เลย"',h:'เริ่มงานก่อน ผ่อนสบาย',a:'ลดภาระค่าใช้จ่ายก้อนเดียว'},
+ 'รีวิว/น่าเชื่อถือ':{s:'มีรีวิว/ฐานลูกค้าน่าเชื่อถือ',o:'เร่งสะสมรีวิว/คลิปลูกค้าจริงของรุ่งฟ้าให้เห็นชัดในโฆษณา',c:'นำรีวิวลูกค้าจริงมาทำคอนเทนต์ต่อเนื่อง',h:'ลูกค้าจริงรีวิวจริง อุ่นใจกว่า',a:'social proof'}
+};
+function metaCompAnalysis(comp){
+  const pts=[...(comp.points||[])];
+  const tx=(comp.adText||'').toLowerCase();
+  [['เร็ว/ด่วน',['เร็ว','ด่วน','ไว','รวดเร็ว']],['ราคาถูก',['ถูก','ราคา','โปร','ลดราคา','พิเศษ']],['มีหลายสาขา',['สาขา']],['มีรถรับส่ง',['รับส่ง','รถรับ']],['รับประกันงาน',['รับประกัน','การันตี','ประกัน']],['ไม่ผ่านคืนเงิน',['คืนเงิน','ไม่ผ่าน']],['ผ่อนได้',['ผ่อน','แบ่งจ่าย']],['รีวิว/น่าเชื่อถือ',['รีวิว','น่าเชื่อ','ลูกค้าจริง']]].forEach(([p,arr])=>{if(arr.some(k=>tx.includes(k))&&!pts.includes(p))pts.push(p);});
+  const S=[],O=[],C=[],H=[],A=[];
+  pts.forEach(p=>{const m=META_COMP_MAP[p];if(m){S.push(m.s);O.push(m.o);C.push(m.c);H.push(m.h);A.push(m.a);}});
+  const W=['ตรวจสอบว่าคู่แข่งมีรีวิว/เคสจริงให้เห็นหรือไม่ — ถ้าไม่มีคือช่องว่างของเรา','ดูว่าคู่แข่งตอบแชทเร็ว/บริการหลังการขายดีแค่ไหน','เช็กว่าราคาที่โฆษณามีเงื่อนไขซ่อนหรือบวกเพิ่มทีหลังหรือไม่'];
+  return {points:pts,strengths:S.length?S:['(ยังไม่ได้ระบุจุดเน้นของคู่แข่ง)'],weaknesses:W,opps:O.length?O:['ชูจุดแข็งเฉพาะของรุ่งฟ้าที่คู่แข่งไม่ได้พูดถึง'],content:C,hooks:H,angles:A};
+}
+function metaLoadComp(){try{const r=localStorage.getItem('meta_competitor_v1');meta_competitor=r?JSON.parse(r):{name:'',price:'',adText:'',points:[],analyzed:false};}catch(e){meta_competitor={name:'',price:'',adText:'',points:[],analyzed:false};}if(!Array.isArray(meta_competitor.points))meta_competitor.points=[];}
+function metaSaveComp(){try{localStorage.setItem('meta_competitor_v1',JSON.stringify(meta_competitor));}catch(e){}}
+function metaCompSet(f,v){if(!meta_competitor)metaLoadComp();meta_competitor[f]=v;metaSaveComp();}
+function metaCompToggle(p){if(!meta_competitor)metaLoadComp();const i=meta_competitor.points.indexOf(p);if(i>=0)meta_competitor.points.splice(i,1);else meta_competitor.points.push(p);metaSaveComp();renderMetaAds();}
+function metaCompAnalyze(){if(!meta_competitor)metaLoadComp();meta_competitor.analyzed=true;metaSaveComp();renderMetaAds();}
+function metaCompClear(){meta_competitor={name:'',price:'',adText:'',points:[],analyzed:false};metaSaveComp();renderMetaAds();}
+function metaCompHTML(){
+  const c=meta_competitor||{};const pts=c.points||[];
+  const chipList=META_COMP_CHIPS.map(p=>`<span class="ma-chip ${pts.includes(p)?'on':''}" onclick="metaCompToggle('${p}')">${p}</span>`).join('');
+  let analysisHTML='';
+  if(c.analyzed){
+    const a=metaCompAnalysis(c);
+    const blk=(ic,title,arr)=>`<div class="blk"><h4>${ic} ${title}</h4><ul>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+    analysisHTML=`<div class="ma-anl" style="margin-top:12px">
+      ${blk('💪','จุดแข็งคู่แข่ง',a.strengths)}
+      ${blk('🔍','จุดที่ควรตรวจสอบ / มักเป็นช่องโหว่',a.weaknesses)}
+      ${blk('🚀','โอกาสของรุ่งฟ้า',a.opps)}
+      ${blk('🎬','คอนเทนต์ที่ควรทำสู้',a.content.length?a.content:['เลือกจุดเน้นของคู่แข่งเพื่อให้ระบบแนะนำคอนเทนต์'])}
+      ${blk('🎯','Hook / CTA ที่ควรใช้',a.hooks.length?a.hooks:['เลือกจุดเน้นของคู่แข่งเพื่อให้ระบบแนะนำ Hook'])}
+      ${blk('🧪','มุมโฆษณาที่ควรทดสอบ',a.angles.length?a.angles:['ทดสอบมุมความน่าเชื่อถือ vs มุมราคา'])}
+      <div class="ma-warnbox">⚠️ วิเคราะห์จาก "ข้อความ/จุดเน้นที่คุณกรอก" เท่านั้น — ไม่ได้ดึงงบ/CTR/CPC/Leads ของคู่แข่ง (เราไม่มีข้อมูลหลังบ้านของเขา)</div>
+    </div>`;
+  }
+  return `<div class="ma-comp">
+    <div>
+      <div class="fld"><label>ชื่อคู่แข่ง</label><input class="ma-in" value="${esc(c.name||'')}" oninput="metaCompSet('name',this.value)" placeholder="เช่น ABC บริการแรงงาน"></div>
+      <div class="fld"><label>ราคา / โปรโมชัน ที่เห็น (ถ้ามี)</label><input class="ma-in" value="${esc(c.price||'')}" oninput="metaCompSet('price',this.value)" placeholder="เช่น MOU 6,900 / ผ่อน 0%"></div>
+      <div class="fld"><label>จุดที่คู่แข่งเน้น (กดเลือกได้หลายอัน)</label><div class="ma-chips">${chipList}</div></div>
+    </div>
+    <div>
+      <div class="fld"><label>ข้อความโฆษณา / วางข้อความจากโพสต์คู่แข่ง</label><textarea class="ma-in" oninput="metaCompSet('adText',this.value)" placeholder="วางแคปชั่น/ข้อความโฆษณาที่เห็นจากโพสต์คู่แข่ง...">${esc(c.adText||'')}</textarea></div>
+      <div style="display:flex;gap:8px"><button class="ma-btn pri" onclick="metaCompAnalyze()">🔎 วิเคราะห์คู่แข่ง</button><button class="ma-btn" onclick="metaCompClear()">ล้าง</button></div>
+    </div>
+  </div>${analysisHTML}`;
+}
+// ---- main report HTML ----
+function metaReportHTML(rows,agg){
+  if(!meta_competitor)metaLoadComp();
+  if(!rows.length)return `<div class="ma-note">ไม่มีข้อมูลในช่วงที่เลือก — ลองเปลี่ยนช่วงวันที่/แคมเปญ หรือนำเข้าไฟล์ Meta Ads</div>`;
+  const ctx=metaReportCtx(agg);
+  const camps=metaRollup('campaign',rows);
+  const nativeLevel=meta_data.level||'campaign';const adRows=metaRollup(nativeLevel,rows);
+  const {best,worst}=metaBestWorst(camps,ctx);const ins=metaKeyInsights(agg,camps,ctx);
+  const lvlTh={campaign:'แคมเปญ',adset:'ชุดโฆษณา',ad:'โฆษณา'};
+  const srcNote=meta_data.source==='import'?`อ้างอิงจากไฟล์นำเข้า "${esc(meta_data.fileName||'')}" · ${esc(meta_data.periodLabel||'')}`:'อ้างอิงจากข้อมูลตัวอย่าง (Mock) — ตัวเลขสมมุติเพื่อสาธิต ไม่ใช่ข้อมูลจริง';
+  const exc=(l,v)=>`<div class="ma-ex"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  const execCards=`<div class="ma-exec">
+    ${exc('งบโฆษณารวม',mMoney(agg.spend))}${exc('Impressions',mInt(agg.impressions))}${exc('Reach',mInt(agg.reach))}${exc('Clicks',mInt(agg.clicks))}
+    ${exc('CTR',mPct(agg.ctr))}${exc('CPC',mMoney(agg.cpc))}${exc('CPM',mMoney(agg.cpm))}${exc('Frequency',mDec(agg.frequency))}
+    ${exc('Leads / Results',ctx.hasLeads?mInt(agg.leads):'— ไม่มีข้อมูล')}${exc('ต้นทุนต่อ Lead',ctx.hasLeads&&agg.leads?mMoney(agg.spend/agg.leads):'—')}
+  </div>`;
+  const bw=`<div class="ma-bw">
+    <div class="ma-bwc best"><div class="t">🏆 แคมเปญที่ดีที่สุด</div><div class="nm">${best?esc(best.name):'—'}</div><div class="d">${best?`CTR ${mPct(best.ctr)} · CPC ${mMoney(best.cpc)}${ctx.hasLeads&&best.leads>0?` · ${mMoney(best.spend/best.leads)}/Lead`:''}`:''}</div></div>
+    <div class="ma-bwc worst"><div class="t">⚠️ แคมเปญที่อ่อนสุด</div><div class="nm">${worst?esc(worst.name):'—'}</div><div class="d">${worst?`CTR ${mPct(worst.ctr)} · CPC ${mMoney(worst.cpc)}${ctx.hasLeads?` · Leads ${mInt(worst.leads)}`:''}`:''}</div></div>
+  </div>`;
+  const keyins=`<ul class="ma-keyins">${ins.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`;
+  const segRows=camps.map(c=>{const d=metaDecision(c,ctx);const cpl=c.leads>0?mMoney(c.spend/c.leads):'—';return `<tr><td>${esc(c.name)}</td><td>${mMoney(c.spend)}</td><td>${mInt(c.leads)}</td><td>${mPct(c.ctr)}</td><td>${mMoney(c.cpc)}</td><td>${cpl}</td><td><span class="ma-dec ${d.key}">${d.label}</span></td></tr>`;}).join('');
+  const segTbl=`<div class="ma-tblwrap"><table class="ma-tbl"><thead><tr><th>แคมเปญ</th><th>Spend</th><th>Leads</th><th>CTR</th><th>CPC</th><th>Cost/Lead</th><th>Priority</th></tr></thead><tbody>${segRows}</tbody></table></div>`;
+  const adBody=adRows.map(r=>{const d=metaDecision(r,ctx);return `<tr><td>${esc(r.name)}</td><td>${mMoney(r.spend)}</td><td>${mInt(r.clicks)}</td><td>${mInt(r.leads)}</td><td>${mPct(r.ctr)}</td><td>${mMoney(r.cpc)}</td><td>${mDec(r.frequency)}</td><td><span class="ma-dec ${d.key}">${d.label}</span></td><td><span class="rs">${esc(d.reason)}</span></td><td><span class="na">${esc(d.action)}</span></td></tr>`;}).join('');
+  const adTbl=`<div class="ma-tblwrap"><table class="ma-tbl"><thead><tr><th>${lvlTh[nativeLevel]}</th><th>Spend</th><th>Clicks</th><th>Leads</th><th>CTR</th><th>CPC</th><th>Freq.</th><th>Decision</th><th>เหตุผล</th><th>สิ่งที่ควรทำต่อ</th></tr></thead><tbody>${adBody}</tbody></table></div>`;
+  const demo=meta_data.demo||{};const demoHas=demo.age||demo.gender||demo.region;
+  const demoHTML=!demoHas
+    ?`<div class="ma-note">ยังไม่มีข้อมูลอายุ/เพศ/พื้นที่ กรุณา Export Meta Ads แบบ Breakdown: Age, Gender, Region แล้วนำเข้าเพิ่ม</div>`
+    :[['age','อายุ',demo.age],['gender','เพศ',demo.gender],['region','พื้นที่/จังหวัด',demo.region]].filter(d=>d[2]).map(d=>metaDemoBlock(rows,d[0],d[1],ctx)).join('');
+  return `
+    <div class="ma-rep-sec"><div class="ma-rep-h"><span class="n">1</span>Executive Overview</div><div class="ma-rep-sub">${srcNote}</div>${execCards}${bw}${keyins}</div>
+    <div class="ma-rep-sec"><div class="ma-rep-h"><span class="n">2</span>Segment Performance Summary</div><div class="ma-rep-sub">จัดลำดับรายแคมเปญ: Scale / Hold / Test / Stop / Monitor</div>${segTbl}</div>
+    <div class="ma-rep-sec"><div class="ma-rep-h"><span class="n">3</span>Ad Recommendation — แอดไหนควรทำอะไร</div><div class="ma-rep-sub">ระดับ${lvlTh[nativeLevel]} · ตัดสินจากค่าเฉลี่ยบัญชี (CTR ${mPct(agg.ctr)}, CPC ${mMoney(agg.cpc)})</div>${adTbl}</div>
+    <div class="ma-rep-sec"><div class="ma-rep-h"><span class="n">4</span>Demographic Report</div><div class="ma-rep-sub">อายุ / เพศ / พื้นที่ (แสดงเมื่อไฟล์มี breakdown)</div>${demoHTML}</div>
+    <div class="ma-rep-sec"><div class="ma-rep-h"><span class="n">5</span>Competitor Analysis</div><div class="ma-rep-sub">กรอกข้อมูลคู่แข่งที่เห็นจากโพสต์/โฆษณา — วิเคราะห์เชิงคุณภาพ ไม่เดาตัวเลขหลังบ้านคู่แข่ง</div>${metaCompHTML()}</div>
+    <div class="ma-foot">รายงานสร้างจากข้อมูล${meta_data.source==='import'?'ที่นำเข้า':'ตัวอย่าง (Mock)'} · ใช้ประกอบการตัดสินใจ ไม่ใช่คำสั่งอัตโนมัติ · อ่านอย่างเดียว ไม่เชื่อม Meta API</div>`;
+}
+// ---- report text / export ----
+function metaBuildReportText(){
+  const rows=metaRows();const agg=metaAgg(rows);
+  if(!rows.length)return 'ไม่มีข้อมูลในช่วงที่เลือก';
+  const ctx=metaReportCtx(agg);const camps=metaRollup('campaign',rows);
+  const nativeLevel=meta_data.level||'campaign';const adRows=metaRollup(nativeLevel,rows);
+  const {best,worst}=metaBestWorst(camps,ctx);const ins=metaKeyInsights(agg,camps,ctx);
+  if(!meta_competitor)metaLoadComp();
+  const lvlTh={campaign:'แคมเปญ',adset:'ชุดโฆษณา',ad:'โฆษณา'};
+  const L=[];
+  L.push('===== รายงานวิเคราะห์โฆษณา Meta Ads (Executive Report) — รุ่งฟ้า CRM =====');
+  L.push(meta_data.source==='import'?`แหล่งข้อมูล: ไฟล์นำเข้า "${meta_data.fileName||''}" · ${meta_data.periodLabel||''}`:'แหล่งข้อมูล: ข้อมูลตัวอย่าง (Mock) — ตัวเลขสมมุติเพื่อสาธิต ไม่ใช่ข้อมูลจริง');
+  L.push('');L.push('## 1) Executive Overview');
+  L.push(`- งบโฆษณารวม: ${mMoney(agg.spend)}`);
+  L.push(`- Impressions: ${mInt(agg.impressions)} · Reach: ${mInt(agg.reach)} · Clicks: ${mInt(agg.clicks)}`);
+  L.push(`- CTR: ${mPct(agg.ctr)} · CPC: ${mMoney(agg.cpc)} · CPM: ${mMoney(agg.cpm)} · Frequency: ${mDec(agg.frequency)}`);
+  L.push(`- Leads/Results: ${ctx.hasLeads?mInt(agg.leads):'ไม่มีข้อมูลในไฟล์นี้'}${ctx.hasLeads?` · ต้นทุนต่อ Lead: ${mMoney(agg.spend/agg.leads)}`:''}`);
+  L.push(`- แคมเปญดีที่สุด: ${best?best.name:'—'}${best?` (CTR ${mPct(best.ctr)}, CPC ${mMoney(best.cpc)})`:''}`);
+  L.push(`- แคมเปญอ่อนสุด: ${worst?worst.name:'—'}${worst?` (CTR ${mPct(worst.ctr)}, CPC ${mMoney(worst.cpc)})`:''}`);
+  L.push('- Key insights:');ins.forEach(i=>L.push('  • '+i));
+  L.push('');L.push('## 2) Segment Performance (รายแคมเปญ + Priority)');
+  camps.forEach(c=>{const d=metaDecision(c,ctx);L.push(`- ${c.name} | Spend ${mMoney(c.spend)} | Leads ${mInt(c.leads)} | CTR ${mPct(c.ctr)} | CPC ${mMoney(c.cpc)} | Cost/Lead ${c.leads>0?mMoney(c.spend/c.leads):'—'} | Priority: ${d.label}`);});
+  L.push('');L.push(`## 3) Ad Recommendation (ระดับ${lvlTh[nativeLevel]})`);
+  adRows.forEach(r=>{const d=metaDecision(r,ctx);L.push(`- ${r.name} → ${d.label} | ${d.reason} | ทำต่อ: ${d.action}`);});
+  L.push('');L.push('## 4) Demographic Report');
+  const demo=meta_data.demo||{};
+  if(!(demo.age||demo.gender||demo.region))L.push('ยังไม่มีข้อมูลอายุ/เพศ/พื้นที่ — กรุณา Export Meta Ads แบบ Breakdown: Age, Gender, Region แล้วนำเข้าเพิ่ม');
+  else [['age','อายุ',demo.age],['gender','เพศ',demo.gender],['region','พื้นที่',demo.region]].filter(d=>d[2]).forEach(d=>{L.push(`- แยกตาม${d[1]}:`);metaGroupBy(rows,d[0]).forEach(m=>L.push(`  • ${m.name}: Spend ${mMoney(m.spend)}, Leads ${mInt(m.leads)}, CTR ${mPct(m.ctr)}, CPC ${mMoney(m.cpc)}${m.cpl!=null?', Cost/Lead '+mMoney(m.cpl):''}`));});
+  L.push('');L.push('## 5) Competitor Analysis (วิเคราะห์จากข้อมูลที่ผู้ใช้กรอกเท่านั้น)');
+  const c=meta_competitor;
+  if(c&&(c.name||c.adText||(c.points&&c.points.length))){
+    L.push(`- คู่แข่ง: ${c.name||'(ไม่ระบุชื่อ)'}${c.price?` | ราคา/โปร: ${c.price}`:''}`);
+    if(c.points&&c.points.length)L.push(`- จุดที่คู่แข่งเน้น: ${c.points.join(', ')}`);
+    if(c.adText)L.push(`- ข้อความโฆษณา: ${c.adText}`);
+    const a=metaCompAnalysis(c);
+    L.push('- จุดแข็งคู่แข่ง: '+a.strengths.join('; '));
+    L.push('- จุดที่ควรตรวจสอบ/ช่องโหว่: '+a.weaknesses.join('; '));
+    L.push('- โอกาสของรุ่งฟ้า: '+a.opps.join('; '));
+    if(a.content.length)L.push('- คอนเทนต์ที่ควรทำสู้: '+a.content.join('; '));
+    if(a.hooks.length)L.push('- Hook/CTA: '+a.hooks.join('; '));
+    if(a.angles.length)L.push('- มุมโฆษณาที่ควรทดสอบ: '+a.angles.join('; '));
+    L.push('  (หมายเหตุ: ไม่ได้เดางบ/CTR/CPC/Leads ของคู่แข่ง วิเคราะห์จากข้อความ/โพสต์ที่ให้เท่านั้น)');
+  }else L.push('ยังไม่ได้กรอกข้อมูลคู่แข่ง');
+  L.push('');L.push('===== คำถามถึง Claude =====');
+  L.push('ช่วยวิเคราะห์รายงาน Meta Ads นี้ให้หน่อย:');
+  L.push('1. กลุ่มลูกค้าไหนน่าลงงบเพิ่ม');
+  L.push('2. แอดไหนควร Scale / Hold / Stop');
+  L.push('3. จุดแข็ง-จุดอ่อนของแคมเปญ');
+  L.push('4. วิเคราะห์คู่แข่งจากข้อมูลที่ให้');
+  L.push('5. แนะนำแผนยิงแอด 7 วันถัดไป');
+  return L.join('\n');
+}
+async function metaCopyReportForClaude(){
+  const txt=metaBuildReportText();
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(txt);}else throw new Error('x');toast('คัดลอกรายงานฉบับเต็มแล้ว — วางในแชทได้เลย');}
+  catch(e){try{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');document.body.removeChild(ta);toast(ok?'คัดลอกรายงานฉบับเต็มแล้ว':'คัดลอกไม่สำเร็จ',ok?'':'err');}catch(e2){toast('คัดลอกไม่สำเร็จ','err');}}
+}
+function metaExportReportTxt(){
+  const txt=metaBuildReportText();
+  const blob=new Blob(['﻿'+txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`meta_ads_report_${metaPeriodLabel().replace(/[^0-9A-Za-z_\-]/g,'-')}.txt`;a.click();URL.revokeObjectURL(a.href);
+  toast('ดาวน์โหลดรายงาน .txt แล้ว');
+}
+function metaExportDecisionCSV(){
+  const rows=metaRows();if(!rows.length){toast('ไม่มีข้อมูล','err');return;}
+  const agg=metaAgg(rows);const ctx=metaReportCtx(agg);
+  const nativeLevel=meta_data.level||'campaign';const data=metaRollup(nativeLevel,rows);
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const lines=[['level','name','spend','clicks','leads','ctr','cpc','frequency','decision','reason','next_action'].join(',')];
+  data.forEach(r=>{const d=metaDecision(r,ctx);lines.push([nativeLevel,q(r.name),Math.round(r.spend),r.clicks,r.leads,r.ctr.toFixed(2),r.cpc.toFixed(2),r.frequency.toFixed(2),d.label,q(d.reason),q(d.action)].join(','));});
+  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`meta_ads_decision_${metaPeriodLabel().replace(/[^0-9A-Za-z_\-]/g,'-')}.csv`;a.click();URL.revokeObjectURL(a.href);
+  toast('ดาวน์โหลดตาราง Decision แล้ว');
 }
 </script>
 </body>
