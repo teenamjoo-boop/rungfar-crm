@@ -379,6 +379,88 @@ textarea.fi2{resize:vertical;min-height:65px}
 .c-avatar{width:48px;height:48px;border-radius:8px;object-fit:cover;border:1.5px solid var(--g2);flex-shrink:0;cursor:pointer}
 .c-avatar-placeholder{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,var(--p),var(--pd));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
 
+/* ===================================================================== */
+/* META ADS ANALYTICS — dark corporate (SCOPED ทั้งหมดใต้ #view-metaads)  */
+/* ห้ามมี selector ใดหลุดออกนอก #view-metaads — กันกระทบหน้าอื่น           */
+/* ===================================================================== */
+#view-metaads{--ma-navy:#0B1424;--ma-navy2:#0F1B30;--ma-line:rgba(255,255,255,.08);--ma-glass:rgba(255,255,255,.045);--ma-glass2:rgba(255,255,255,.07);--ma-txt:#E7EEF9;--ma-mut:#93A4BF;--ma-mut2:#6B7C97;--ma-org:#FF7A1A;--ma-org2:#FFB066;--ma-blu:#3B82F6;--ma-blu2:#60A5FA;--ma-ok:#22C55E;--ma-warn:#F59E0B;--ma-bad:#F26;--ma-rr:14px}
+#view-metaads .meta-root{background:radial-gradient(120% 80% at 100% 0%,rgba(255,122,26,.10),transparent 55%),radial-gradient(110% 80% at 0% 100%,rgba(59,130,246,.12),transparent 55%),linear-gradient(160deg,#0B1424 0%,#0F1B30 60%,#0C1730 100%);color:var(--ma-txt);border:1px solid var(--ma-line);border-radius:18px;padding:20px 22px;box-shadow:0 18px 44px rgba(5,12,28,.45);font-family:var(--font)}
+#view-metaads .meta-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+#view-metaads .meta-hd h2{font-size:19px;font-weight:800;letter-spacing:-.3px;margin:0}
+#view-metaads .meta-hd .ma-sub{font-size:12px;color:var(--ma-mut);font-weight:500}
+#view-metaads .ma-mock{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.4);padding:5px 11px;border-radius:999px;font-size:11.5px;font-weight:700;letter-spacing:.3px}
+#view-metaads .ma-mock::before{content:'';width:7px;height:7px;border-radius:50%;background:#FCD34D;box-shadow:0 0 0 3px rgba(252,211,77,.25)}
+#view-metaads .ma-spacer{flex:1}
+/* filter / toolbar */
+#view-metaads .ma-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:18px}
+#view-metaads .ma-seg{display:inline-flex;background:var(--ma-glass);border:1px solid var(--ma-line);border-radius:10px;padding:3px;gap:2px}
+#view-metaads .ma-seg button{background:transparent;border:none;color:var(--ma-mut);font-family:var(--font);font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;cursor:pointer;transition:.15s;white-space:nowrap}
+#view-metaads .ma-seg button:hover{color:var(--ma-txt)}
+#view-metaads .ma-seg button.on{background:linear-gradient(135deg,var(--ma-org),#FF9A4D);color:#1a1207;box-shadow:0 4px 12px rgba(255,122,26,.35)}
+#view-metaads select.ma-sel,#view-metaads input.ma-date{background:var(--ma-glass);border:1px solid var(--ma-line);color:var(--ma-txt);font-family:var(--font);font-size:12.5px;font-weight:500;padding:8px 11px;border-radius:9px;cursor:pointer;outline:none}
+#view-metaads select.ma-sel option{background:#10203a;color:#fff}
+#view-metaads input.ma-date{color-scheme:dark}
+#view-metaads .ma-btn{display:inline-flex;align-items:center;gap:6px;background:var(--ma-glass2);border:1px solid var(--ma-line);color:var(--ma-txt);font-family:var(--font);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;transition:.15s}
+#view-metaads .ma-btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}
+#view-metaads .ma-btn.pri{background:linear-gradient(135deg,var(--ma-blu),#2563EB);border-color:transparent;color:#fff}
+#view-metaads .ma-btn.pri:hover{filter:brightness(1.08)}
+/* KPI cards */
+#view-metaads .ma-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+#view-metaads .ma-kpi{background:var(--ma-glass);border:1px solid var(--ma-line);border-radius:var(--ma-rr);padding:15px 16px;position:relative;overflow:hidden;transition:.18s}
+#view-metaads .ma-kpi:hover{border-color:rgba(255,255,255,.18);transform:translateY(-2px)}
+#view-metaads .ma-kpi::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(var(--kc1,var(--ma-org)),var(--kc2,var(--ma-org2)))}
+#view-metaads .ma-kpi .kl{font-size:11.5px;color:var(--ma-mut);font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:6px}
+#view-metaads .ma-kpi .kv{font-size:23px;font-weight:800;margin-top:6px;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+#view-metaads .ma-kpi .ks{font-size:11px;color:var(--ma-mut2);margin-top:3px}
+/* panels / charts */
+#view-metaads .ma-grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:18px}
+#view-metaads .ma-panel{background:var(--ma-glass);border:1px solid var(--ma-line);border-radius:var(--ma-rr);padding:16px 18px}
+#view-metaads .ma-panel .pt{font-size:13.5px;font-weight:700;margin-bottom:2px}
+#view-metaads .ma-panel .pst{font-size:11.5px;color:var(--ma-mut);margin-bottom:12px}
+#view-metaads .ma-chart{width:100%;height:auto;overflow:visible}
+#view-metaads .ma-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--ma-mut)}
+#view-metaads .ma-legend span{display:inline-flex;align-items:center;gap:6px}
+#view-metaads .ma-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+/* funnel */
+#view-metaads .ma-funnel{display:flex;flex-direction:column;gap:9px}
+#view-metaads .ma-frow{display:flex;align-items:center;gap:10px}
+#view-metaads .ma-fbar{height:34px;border-radius:8px;display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:700;color:#fff;min-width:60px;white-space:nowrap;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+#view-metaads .ma-fmeta{font-size:11.5px;color:var(--ma-mut);white-space:nowrap}
+/* table */
+#view-metaads .ma-tabs{display:flex;gap:4px;margin-bottom:12px}
+#view-metaads .ma-tabs button{background:transparent;border:1px solid var(--ma-line);color:var(--ma-mut);font-family:var(--font);font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:9px;cursor:pointer;transition:.15s}
+#view-metaads .ma-tabs button.on{background:var(--ma-glass2);color:var(--ma-txt);border-color:rgba(255,255,255,.22)}
+#view-metaads .ma-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+#view-metaads .ma-tbl th{text-align:right;font-weight:600;color:var(--ma-mut);padding:9px 10px;border-bottom:1px solid var(--ma-line);white-space:nowrap;font-size:11.5px}
+#view-metaads .ma-tbl th:first-child,#view-metaads .ma-tbl td:first-child{text-align:left}
+#view-metaads .ma-tbl td{padding:10px;border-bottom:1px solid rgba(255,255,255,.05);font-variant-numeric:tabular-nums;white-space:nowrap}
+#view-metaads .ma-tbl tbody tr:hover{background:rgba(255,255,255,.03)}
+#view-metaads .ma-cre{display:flex;align-items:center;gap:9px}
+#view-metaads .ma-thumb{width:34px;height:34px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;background:linear-gradient(135deg,rgba(255,122,26,.25),rgba(59,130,246,.25));border:1px solid var(--ma-line)}
+#view-metaads .ma-cn{display:flex;flex-direction:column}
+#view-metaads .ma-cn b{font-weight:600;font-size:12.5px}
+#view-metaads .ma-cn small{color:var(--ma-mut2);font-size:10.5px}
+#view-metaads .ma-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700}
+#view-metaads .ma-pill.on{background:rgba(34,197,94,.16);color:#4ADE80}
+#view-metaads .ma-pill.off{background:rgba(148,164,191,.16);color:var(--ma-mut)}
+/* AI box */
+#view-metaads .ma-ai{background:linear-gradient(135deg,rgba(255,122,26,.10),rgba(59,130,246,.10));border:1px solid rgba(255,122,26,.25);border-radius:var(--ma-rr);padding:18px 20px;margin-bottom:18px}
+#view-metaads .ma-ai .at{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;margin-bottom:4px}
+#view-metaads .ma-ai .at .aico{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--ma-org),var(--ma-blu));display:flex;align-items:center;justify-content:center;font-size:15px}
+#view-metaads .ma-ai .ahint{font-size:11.5px;color:var(--ma-mut);margin-bottom:13px}
+#view-metaads .ma-ai ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+#view-metaads .ma-ai li{display:flex;gap:11px;align-items:flex-start;font-size:13px;line-height:1.55;background:rgba(0,0,0,.18);border:1px solid var(--ma-line);border-radius:10px;padding:11px 13px}
+#view-metaads .ma-ai li .ad{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0}
+#view-metaads .ma-ai li.good .ad{background:var(--ma-ok)}#view-metaads .ma-ai li.warn .ad{background:var(--ma-warn)}#view-metaads .ma-ai li.bad .ad{background:var(--ma-bad)}
+#view-metaads .ma-ai li b{font-weight:700}
+#view-metaads .ma-foot{font-size:11px;color:var(--ma-mut2);text-align:center;margin-top:6px}
+@media (max-width:880px){
+  #view-metaads .ma-kpis{grid-template-columns:repeat(2,1fr)}
+  #view-metaads .ma-grid2{grid-template-columns:1fr}
+  #view-metaads .meta-root{padding:15px 13px;border-radius:14px}
+  #view-metaads .ma-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+
 /* MOBILE RESPONSIVE */
 @media (max-width:768px){
   .app{flex-direction:column}
@@ -532,6 +614,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="ni" id="niCustomers" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span></div>
     <div class="ni" id="niEmployers" onclick="gv('employers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg></span>นายจ้าง / บริษัท</div>
     <div class="ni" id="niImport" onclick="gv('import')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></span>เอกสาร</div>
+    <div class="ni" id="niMetaAds" onclick="gv('metaads')" style="display:none"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
   </div>
   <div class="nsec" id="sideGroups"></div>
   <div class="nsec" id="sideSys">
@@ -597,6 +680,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="view" id="view-settings"><div style="max-width:560px"><div id="settingsTitleDiv" style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
     <div class="view" id="view-attendance"><div style="max-width:960px" id="att_content"></div></div>
+    <div class="view" id="view-metaads"><div id="metaContent"></div></div>
     <div class="view" id="view-seclog"><div id="seclogContent"></div></div>
   </div>
 </div>
@@ -2021,13 +2105,13 @@ async function showApp(){
   document.getElementById('sfrole').textContent=isAdmin?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
   document.getElementById('sfav').textContent=curUser.full_name.charAt(0).toUpperCase();
   // 1) Reset ทุก element ก่อนเสมอ — ป้องกัน state ค้างจาก session ก่อน
-  ['sideMain','sideGroups','sideSysLbl','niGroups','niImport','niSettings','niUsers','niSecLog','niAttendance','niLogout'].forEach(id=>{
+  ['sideMain','sideGroups','sideSysLbl','niGroups','niImport','niSettings','niUsers','niSecLog','niAttendance','niMetaAds','niLogout'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='';
   });
   // 2) ซ่อน admin-only items ถ้าเป็น staff (หรือ legacy employee)
   // niImport = นำเข้าข้อมูล → staff เห็นได้ (พนักงานออฟฟิศใช้ CRM จริง)
   if(!isAdmin){
-    ['niSettings','niUsers','niSecLog'].forEach(id=>{
+    ['niSettings','niUsers','niSecLog','niMetaAds'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
     });
   }
@@ -2139,7 +2223,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
   if(niActive)niActive.classList.add('on');
-  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),seclog:T('seclog')};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog')};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -2207,6 +2291,8 @@ function gv(v,opts={}){
     if(appUsers.length===0){adminLoadUsers();}else{renderUsers();}
   }
   if(v==='attendance')renderAttendance();
+  // META-ADS: route guard — เฉพาะ admin (read-only mock dashboard)
+  if(v==='metaads'){if(curUser?.role!=='admin'){gv('dash');return;}renderMetaAds();}
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
 }
 
@@ -5929,6 +6015,330 @@ async function attNotifyLine(type,savedLog){
   })(d);}
   render(0);start();
 })();
+/* ===================================================================== */
+/* META ADS ANALYTICS — Phase 1 (READ-ONLY MOCK)                          */
+/* - ไม่เชื่อม Meta จริง / ไม่มี token / ไม่มี write / ไม่ commit            */
+/* - ข้อมูลทั้งหมดเป็นตัวอย่างที่ generate ฝั่ง client                       */
+/* - benchmark สำหรับ AND rule-based analysis (ปรับได้ภายหลัง)             */
+/* ===================================================================== */
+const META_BENCH={ctr:1.0,cpcHigh:15,freqHigh:3.0,convRate:0.07};
+let meta_state={range:'30d',campaign:'all',tab:'campaign',from:null,to:null};
+let meta_data=null; // {generatedAt, account, campaigns[], rows[]}  rows = ad-level daily insights
+
+// seeded RNG — refresh ได้ค่าใหม่แต่ดูสมจริง
+function metaRng(seed){let s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function metaYMD(d){return d.toISOString().slice(0,10);}
+function metaToday(){return new Date('2026-06-16T00:00:00');}
+
+// ---- mock dataset (ad-level daily) ----
+function metaGenData(){
+  const rnd=metaRng(Date.now()%2147483647||7);
+  const jit=(b,p)=>b*(1+(rnd()*2-1)*p);
+  // profile: คุมพฤติกรรมแต่ละแคมเปญให้ rule-based มีอะไรให้วิเคราะห์
+  const camps=[
+    {id:'23851001',name:'โปรเปลี่ยนนายจ้าง มิ.ย.',objective:'OUTCOME_LEADS',buying_type:'AUCTION',status:'ACTIVE',
+      ctr:1.9,cpc:8,freq:1.8,impr:5200,conv:0.11,
+      ads:[{n:'วิดีโอรีวิวลูกค้า',t:'🎬',h:'เปลี่ยนนายจ้างจบใน 7 วัน',m:'ทีมรุ่งฟ้าดูแลครบ จบไว ไม่ต้องหยุดงานนาน'},
+           {n:'ภาพก่อน-หลัง',t:'🖼️',h:'เอกสารครบ มั่นใจ ถูกกฎหมาย',m:'ปรึกษาฟรี ประเมินเคสให้ทันที'}]},
+    {id:'23851002',name:'รับทำ Work Permit / MOU',objective:'OUTCOME_LEADS',buying_type:'AUCTION',status:'ACTIVE',
+      ctr:1.15,cpc:12,freq:2.2,impr:4300,conv:0.07,
+      ads:[{n:'คำถามที่พบบ่อย',t:'❓',h:'ต่อ Work Permit ใช้เอกสารอะไรบ้าง',m:'สรุปครบจบในโพสต์เดียว ทักแชทรับเช็กลิสต์'},
+           {n:'ราคาโปรโมชั่น',t:'🏷️',h:'แพ็กเกจ MOU เริ่มต้นคุ้มค่า',m:'ผ่อนได้ มีใบเสร็จ บริการถึงที่'}]},
+    {id:'23851003',name:'ต่อวีซ่า + รายงาน 90 วัน',objective:'OUTCOME_TRAFFIC',buying_type:'AUCTION',status:'ACTIVE',
+      ctr:0.95,cpc:13,freq:4.4,impr:6100,conv:0.04,
+      ads:[{n:'แบนเนอร์เตือนหมดอายุ',t:'⏰',h:'วีซ่าใกล้หมด อย่าลืมต่อ',m:'แจ้งเตือนล่วงหน้า ยื่นทันเวลา ไม่โดนปรับ'},
+           {n:'อินโฟกราฟิก 90 วัน',t:'📅',h:'รายงานตัว 90 วันออนไลน์ได้',m:'รุ่งฟ้าช่วยจัดการให้ ไม่ต้องเดินทาง'}]},
+    {id:'23851004',name:'แบรนด์รุ่งฟ้า – รู้จักเรา',objective:'OUTCOME_AWARENESS',buying_type:'AUCTION',status:'PAUSED',
+      ctr:0.55,cpc:19,freq:2.6,impr:7400,conv:0.02,
+      ads:[{n:'สปอตแนะนำบริษัท',t:'📣',h:'รุ่งฟ้า ศูนย์บริการแรงงานครบวงจร',m:'ดูแลแรงงานต่างด้าวครบทุกขั้นตอน'}]}
+  ];
+  const today=metaToday();const rows=[];
+  camps.forEach(c=>{
+    c.ads.forEach((a,ai)=>{
+      const adId=c.id+'-'+(ai+1);
+      for(let k=29;k>=0;k--){
+        const d=new Date(today);d.setDate(d.getDate()-k);
+        const dow=d.getDay();const wkBoost=(dow===0||dow===6)?0.82:1.06; // เสาร์อาทิตย์ตกเล็กน้อย
+        const share=1/c.ads.length;
+        const impr=Math.max(120,Math.round(jit(c.impr*share,0.28)*wkBoost));
+        const ctr=Math.max(0.15,jit(c.ctr,0.22));
+        const clicks=Math.max(1,Math.round(impr*ctr/100));
+        const cpc=Math.max(2,jit(c.cpc,0.18));
+        const spend=Math.round(clicks*cpc);
+        const reach=Math.max(clicks,Math.round(impr/Math.max(1.05,jit(c.freq,0.12))));
+        const leads=(c.objective==='OUTCOME_LEADS')?Math.round(clicks*jit(c.conv,0.3)):0;
+        rows.push({date:metaYMD(d),account_id:'act_8890021',
+          campaign_id:c.id,campaign_name:c.name,campaign_status:c.status,objective:c.objective,buying_type:c.buying_type,
+          adset_id:c.id+'-set'+(ai+1),adset_name:c.name+' / กลุ่ม '+(ai+1),adset_status:c.status,
+          ad_id:adId,ad_name:a.n,ad_status:c.status,creative:{thumb:a.t,headline:a.h,message:a.m},
+          spend,impressions:impr,reach,clicks,leads});
+      }
+    });
+  });
+  meta_data={generatedAt:new Date(),account:{id:'act_8890021',name:'Rungfar Labor CRM'},campaigns:camps,rows};
+}
+
+// ---- date range ----
+function metaRange(){
+  const today=metaToday();const to=new Date(today);let from=new Date(today);
+  if(meta_state.range==='today'){from=new Date(today);}
+  else if(meta_state.range==='7d'){from.setDate(from.getDate()-6);}
+  else if(meta_state.range==='30d'){from.setDate(from.getDate()-29);}
+  else if(meta_state.range==='month'){from=new Date(today.getFullYear(),today.getMonth(),1);}
+  else if(meta_state.range==='custom'){
+    from=meta_state.from?new Date(meta_state.from):new Date(today.setDate(today.getDate()-6));
+    return{from:metaYMD(from),to:meta_state.to||metaYMD(to)};
+  }
+  return{from:metaYMD(from),to:metaYMD(to)};
+}
+function metaRows(){
+  const {from,to}=metaRange();
+  return meta_data.rows.filter(r=>r.date>=from&&r.date<=to&&(meta_state.campaign==='all'||r.campaign_id===meta_state.campaign));
+}
+
+// ---- aggregation / metrics ----
+function metaAgg(rows){
+  const a={spend:0,impressions:0,reach:0,clicks:0,leads:0};
+  rows.forEach(r=>{a.spend+=r.spend;a.impressions+=r.impressions;a.reach+=r.reach;a.clicks+=r.clicks;a.leads+=r.leads;});
+  a.ctr=a.impressions?a.clicks/a.impressions*100:0;
+  a.cpc=a.clicks?a.spend/a.clicks:0;
+  a.cpm=a.impressions?a.spend/a.impressions*1000:0;
+  a.frequency=a.reach?a.impressions/a.reach:0;
+  return a;
+}
+function metaRollup(level,rows){ // level: campaign|adset|ad
+  const idK=level+'_id',nmK=level+'_name',stK=level+'_status';
+  const map={};
+  rows.forEach(r=>{
+    const id=r[idK];
+    if(!map[id])map[id]={id,name:r[nmK],status:r[stK],objective:r.objective,creative:r.creative,spend:0,impressions:0,reach:0,clicks:0,leads:0};
+    const m=map[id];m.spend+=r.spend;m.impressions+=r.impressions;m.reach+=r.reach;m.clicks+=r.clicks;m.leads+=r.leads;
+  });
+  return Object.values(map).map(m=>{m.ctr=m.impressions?m.clicks/m.impressions*100:0;m.cpc=m.clicks?m.spend/m.clicks:0;m.cpm=m.impressions?m.spend/m.impressions*1000:0;m.frequency=m.reach?m.impressions/m.reach:0;return m;}).sort((x,y)=>y.spend-x.spend);
+}
+// formatters
+const mMoney=n=>'฿'+Math.round(n).toLocaleString('en-US');
+const mInt=n=>Math.round(n).toLocaleString('en-US');
+const mPct=n=>n.toFixed(2)+'%';
+const mDec=(n,d=2)=>Number(n).toFixed(d);
+
+// ---- SVG: trend (spend area + clicks line, dual scale) ----
+function metaTrendSVG(rows){
+  const byDay={};rows.forEach(r=>{const d=byDay[r.date]||(byDay[r.date]={spend:0,clicks:0});d.spend+=r.spend;d.clicks+=r.clicks;});
+  const days=Object.keys(byDay).sort();
+  if(days.length<2)return '<div style="color:var(--ma-mut);font-size:12px;padding:24px;text-align:center">ช่วงวันที่สั้นเกินไปสำหรับกราฟแนวโน้ม</div>';
+  const W=720,H=230,pl=8,pr=8,pt=14,pb=22,iw=W-pl-pr,ih=H-pt-pb;
+  const sp=days.map(d=>byDay[d].spend),cl=days.map(d=>byDay[d].clicks);
+  const maxS=Math.max(...sp)*1.1||1,maxC=Math.max(...cl)*1.15||1;
+  const x=i=>pl+(days.length<2?0:i/(days.length-1)*iw);
+  const yS=v=>pt+ih-v/maxS*ih, yC=v=>pt+ih-v/maxC*ih;
+  let area='M'+x(0)+' '+(pt+ih);days.forEach((d,i)=>area+=' L'+x(i).toFixed(1)+' '+yS(sp[i]).toFixed(1));area+=' L'+x(days.length-1)+' '+(pt+ih)+' Z';
+  let sLine='';days.forEach((d,i)=>sLine+=(i?' L':'M')+x(i).toFixed(1)+' '+yS(sp[i]).toFixed(1));
+  let cLine='';days.forEach((d,i)=>cLine+=(i?' L':'M')+x(i).toFixed(1)+' '+yC(cl[i]).toFixed(1));
+  let grid='';for(let g=0;g<=3;g++){const gy=pt+ih*g/3;grid+=`<line x1="${pl}" y1="${gy}" x2="${W-pr}" y2="${gy}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;}
+  const fl=days[0].slice(5),ll=days[days.length-1].slice(5);
+  return `<svg class="ma-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+    <defs><linearGradient id="maSpendG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF7A1A" stop-opacity=".45"/><stop offset="1" stop-color="#FF7A1A" stop-opacity="0"/></linearGradient></defs>
+    ${grid}<path d="${area}" fill="url(#maSpendG)"/><path d="${sLine}" fill="none" stroke="#FF7A1A" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="${cLine}" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linejoin="round" stroke-dasharray="0"/>
+    <text x="${pl}" y="${H-6}" fill="var(--ma-mut2)" font-size="10">${fl}</text>
+    <text x="${W-pr}" y="${H-6}" fill="var(--ma-mut2)" font-size="10" text-anchor="end">${ll}</text>
+  </svg>
+  <div class="ma-legend"><span><i style="background:#FF7A1A"></i>ค่าโฆษณา (สูงสุด ${mMoney(Math.max(...sp))}/วัน)</span><span><i style="background:#60A5FA"></i>คลิก (สูงสุด ${mInt(Math.max(...cl))}/วัน)</span></div>`;
+}
+
+// ---- SVG-ish: campaign comparison (horizontal bars) ----
+function metaCampBars(rows){
+  const rs=metaRollup('campaign',rows);if(!rs.length)return '<div style="color:var(--ma-mut);font-size:12px;padding:16px">ไม่มีข้อมูล</div>';
+  const max=Math.max(...rs.map(r=>r.spend))||1;
+  return '<div style="display:flex;flex-direction:column;gap:11px">'+rs.map((r,i)=>{
+    const w=Math.max(4,r.spend/max*100);const col=['#FF7A1A','#3B82F6','#FF5F6D','#22C55E','#A78BFA'][i%5];
+    return `<div><div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px"><span style="color:var(--ma-txt);font-weight:600;max-width:64%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</span><span style="color:var(--ma-mut);font-variant-numeric:tabular-nums">${mMoney(r.spend)} · CTR ${mPct(r.ctr)}</span></div>
+    <div style="height:10px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden"><div style="height:100%;width:${w}%;background:linear-gradient(90deg,${col},${col}aa);border-radius:6px"></div></div></div>`;
+  }).join('')+'</div>';
+}
+
+// ---- funnel ----
+function metaFunnel(agg){
+  const steps=[{l:'Impressions',v:agg.impressions,c:'#FF7A1A'},{l:'Reach',v:agg.reach,c:'#FB923C'},{l:'Clicks',v:agg.clicks,c:'#3B82F6'}];
+  if(agg.leads>0)steps.push({l:'Leads',v:agg.leads,c:'#22C55E'});
+  const max=steps[0].v||1;
+  return '<div class="ma-funnel">'+steps.map((s,i)=>{
+    const w=Math.max(8,s.v/max*100);const prev=i?steps[i-1].v:0;const conv=i&&prev?(s.v/prev*100):null;
+    return `<div class="ma-frow"><div class="ma-fbar" style="width:${w}%;background:linear-gradient(90deg,${s.c},${s.c}bb)">${s.l}: ${mInt(s.v)}</div>${conv!=null?`<span class="ma-fmeta">▸ ${conv.toFixed(1)}%</span>`:''}</div>`;
+  }).join('')+'</div>'+(agg.leads<=0?'<div style="font-size:11px;color:var(--ma-mut2);margin-top:9px">* แคมเปญที่เลือกยังไม่มีข้อมูล Leads (objective ไม่ใช่ Lead) — Funnel แสดงถึงระดับ Clicks</div>':'');
+}
+
+// ---- table ----
+function metaTable(){
+  const rows=metaRows();const data=metaRollup(meta_state.tab,rows);
+  const isAd=meta_state.tab==='ad';
+  const head=`<tr><th>${isAd?'โฆษณา / Creative':meta_state.tab==='adset'?'ชุดโฆษณา':'แคมเปญ'}</th><th>สถานะ</th><th>ค่าโฆษณา</th><th>Impr.</th><th>Reach</th><th>คลิก</th><th>CTR</th><th>CPC</th><th>CPM</th><th>Freq.</th>${meta_state.tab==='campaign'?'<th>Leads</th>':''}</tr>`;
+  const body=data.map(r=>{
+    const nameCell=isAd
+      ? `<div class="ma-cre"><div class="ma-thumb">${r.creative?r.creative.thumb:'📊'}</div><div class="ma-cn"><b>${esc(r.name)}</b><small>${esc(r.creative?r.creative.headline:'')}</small></div></div>`
+      : esc(r.name);
+    const pill=r.status==='ACTIVE'?'<span class="ma-pill on">ทำงาน</span>':'<span class="ma-pill off">หยุด</span>';
+    return `<tr><td>${nameCell}</td><td>${pill}</td><td>${mMoney(r.spend)}</td><td>${mInt(r.impressions)}</td><td>${mInt(r.reach)}</td><td>${mInt(r.clicks)}</td><td>${mPct(r.ctr)}</td><td>${mMoney(r.cpc)}</td><td>${mMoney(r.cpm)}</td><td>${mDec(r.frequency)}</td>${meta_state.tab==='campaign'?`<td>${mInt(r.leads)}</td>`:''}</tr>`;
+  }).join('');
+  return `<div class="ma-tblwrap"><table class="ma-tbl"><thead>${head}</thead><tbody>${body||`<tr><td colspan="11" style="text-align:center;color:var(--ma-mut);padding:24px">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>`}</tbody></table></div>`;
+}
+
+// ---- rule-based AI analysis (ภาษาไทย, อ่านง่าย) ----
+function metaAI(rows){
+  const agg=metaAgg(rows);const camps=metaRollup('campaign',rows);
+  const out=[];
+  out.push({lv:'good',t:`<b>ภาพรวมช่วงนี้:</b> ใช้งบไป ${mMoney(agg.spend)} ได้คลิก ${mInt(agg.clicks)} ครั้ง${agg.leads>0?` และ ${mInt(agg.leads)} ลูกค้าที่สนใจ (Leads)`:''} · CTR เฉลี่ย ${mPct(agg.ctr)} · CPC เฉลี่ย ${mMoney(agg.cpc)}`});
+  const topSpend=camps.length?camps[0]:null;
+  camps.forEach(c=>{
+    const high=c.ctr>=1.5&&c.cpc<=10;
+    if(high){out.push({lv:'good',t:`<b>${esc(c.name)}</b> ทำได้ดี — คนสนใจสูง (CTR ${mPct(c.ctr)}) และจ่ายต่อคลิกถูก (${mMoney(c.cpc)}) แนะนำ <b>ค่อย ๆ เพิ่มงบ</b> เช่นเพิ่มทีละ 15–20% แล้วดูผล 2–3 วัน ไม่ต้องเพิ่มทีเดียวเยอะ`});}
+    if(c.frequency>META_BENCH.freqHigh){out.push({lv:'warn',t:`<b>${esc(c.name)}</b> คนกลุ่มเดิมเห็นโฆษณาบ่อยเกินไป (เฉลี่ย ${mDec(c.frequency)} ครั้ง/คน) อาจเริ่มเบื่อ แนะนำ <b>เปลี่ยน/ขยายกลุ่มเป้าหมาย</b> หรือ <b>เปลี่ยนภาพ-คลิปใหม่</b> เพื่อให้สดอยู่เสมอ`});}
+    if(c.ctr<META_BENCH.ctr&&c.status==='ACTIVE'){out.push({lv:'warn',t:`<b>${esc(c.name)}</b> คนคลิกน้อย (CTR ${mPct(c.ctr)} ต่ำกว่าเกณฑ์ ${mPct(META_BENCH.ctr)}) มักแปลว่าภาพหรือข้อความยังไม่ดึงดูด แนะนำ <b>ลองเปลี่ยนรูป/คลิป เปลี่ยนพาดหัว และปุ่มชวนทัก (CTA)</b>`});}
+    if(c.cpc>META_BENCH.cpcHigh){out.push({lv:'warn',t:`<b>${esc(c.name)}</b> ค่าต่อคลิกแพง (${mMoney(c.cpc)}/คลิก) แนะนำ <b>แยกทดสอบกลุ่มเป้าหมายย่อย</b> และ <b>เปลี่ยนครีเอทีฟ</b> เพื่อหาตัวที่ถูกกว่า`});}
+    if(topSpend&&c.id===topSpend.id&&c.ctr<0.8){out.push({lv:'bad',t:`<b>${esc(c.name)}</b> ใช้งบมากที่สุด (${mMoney(c.spend)}) แต่คนคลิกน้อยมาก (CTR ${mPct(c.ctr)}) ถือว่าได้ผลไม่คุ้ม แนะนำ <b>หยุดพักโฆษณานี้เพื่อทดสอบใหม่</b> หรือปรับภาพ/ข้อความก่อนเดินงบต่อ`});}
+  });
+  const order={bad:0,warn:1,good:2};
+  const ranked=out.slice(1).sort((a,b)=>order[a.lv]-order[b.lv]).slice(0,6);
+  return [out[0],...ranked];
+}
+
+// ---- main render ----
+function renderMetaAds(){
+  if(!meta_data)metaGenData();
+  const el=document.getElementById('metaContent');if(!el)return;
+  const rows=metaRows();const agg=metaAgg(rows);const {from,to}=metaRange();
+  const seg=(v,l)=>`<button class="${meta_state.range===v?'on':''}" onclick="metaSetRange('${v}')">${l}</button>`;
+  const campOpts=['<option value="all">ทุกแคมเปญ</option>'].concat(meta_data.campaigns.map(c=>`<option value="${c.id}"${meta_state.campaign===c.id?' selected':''}>${esc(c.name)}</option>`)).join('');
+  const kpi=(kl,kv,ks,c1,c2)=>`<div class="ma-kpi" style="--kc1:${c1};--kc2:${c2}"><div class="kl">${kl}</div><div class="kv">${kv}</div><div class="ks">${ks}</div></div>`;
+  const tabBtn=(v,l)=>`<button class="${meta_state.tab===v?'on':''}" onclick="metaSetTab('${v}')">${l}</button>`;
+  const aiItems=metaAI(rows).map(i=>`<li class="${i.lv}"><span class="ad"></span><span>${i.t}</span></li>`).join('');
+  const custom=meta_state.range==='custom'?`<input type="date" class="ma-date" value="${meta_state.from||from}" onchange="metaSetCustom('from',this.value)"><span style="color:var(--ma-mut);font-size:12px">ถึง</span><input type="date" class="ma-date" value="${meta_state.to||to}" onchange="metaSetCustom('to',this.value)">`:'';
+  el.innerHTML=`<div class="meta-root">
+    <div class="meta-hd">
+      <div><h2>📊 วิเคราะห์โฆษณา Meta Ads</h2><div class="ma-sub">บัญชี ${esc(meta_data.account.name)} · ${esc(meta_data.account.id)} · ${from} → ${to}</div></div>
+      <span class="ma-mock">ข้อมูลตัวอย่าง (Mock)</span>
+      <div class="ma-spacer"></div>
+      <button class="ma-btn" onclick="metaRefresh()">↻ รีเฟรช</button>
+      <button class="ma-btn" onclick="metaExportCSV()">⬇ Export CSV</button>
+      <button class="ma-btn" style="background:linear-gradient(135deg,var(--ma-org),#FF9A4D);border-color:transparent;color:#1a1207;font-weight:700" onclick="metaCopyForClaude()">🤖 คัดลอกสรุปสำหรับ Claude</button>
+    </div>
+    <div class="ma-bar">
+      <div class="ma-seg">${seg('today','วันนี้')}${seg('7d','7 วัน')}${seg('30d','30 วัน')}${seg('month','เดือนนี้')}${seg('custom','กำหนดเอง')}</div>
+      ${custom}
+      <select class="ma-sel" onchange="metaSetCampaign(this.value)">${campOpts}</select>
+    </div>
+    <div class="ma-kpis">
+      ${kpi('💸 Spend',mMoney(agg.spend),'ค่าโฆษณารวม','#FF7A1A','#FFB066')}
+      ${kpi('👁 Impressions',mInt(agg.impressions),'จำนวนการแสดงผล','#3B82F6','#60A5FA')}
+      ${kpi('🌐 Reach',mInt(agg.reach),'คนที่เข้าถึง','#22C55E','#4ADE80')}
+      ${kpi('🖱 Clicks',mInt(agg.clicks),'จำนวนคลิก','#A78BFA','#C4B5FD')}
+      ${kpi('🎯 CTR',mPct(agg.ctr),'อัตราคลิก/แสดงผล','#FF5F6D','#FF8A94')}
+      ${kpi('💵 CPC',mMoney(agg.cpc),'ค่าเฉลี่ยต่อคลิก','#F59E0B','#FBBF24')}
+      ${kpi('📈 CPM',mMoney(agg.cpm),'ต้นทุนต่อ 1,000 แสดงผล','#38BDF8','#7DD3FC')}
+      ${kpi('🔁 Frequency',mDec(agg.frequency),'จำนวนครั้งที่คนเห็นเฉลี่ย','#FB923C','#FDBA74')}
+    </div>
+    <div class="ma-ai">
+      <div class="at"><span class="aico">🤖</span>AI วิเคราะห์โฆษณา</div>
+      <div class="ahint">สรุปแบบเข้าใจง่ายจากกฎเบื้องต้น (rule-based) — ยังไม่ใช่ AI เชื่อมต่อจริง ใช้ประกอบการตัดสินใจ ไม่ใช่คำสั่งอัตโนมัติ</div>
+      <ul>${aiItems}</ul>
+    </div>
+    <div class="ma-grid2">
+      <div class="ma-panel"><div class="pt">แนวโน้มรายวัน</div><div class="pst">ค่าโฆษณา &amp; คลิก ตามช่วงวันที่ที่เลือก</div>${metaTrendSVG(rows)}</div>
+      <div class="ma-panel"><div class="pt">เปรียบเทียบแคมเปญ</div><div class="pst">เรียงตามค่าโฆษณา (มาก→น้อย)</div>${metaCampBars(rows)}</div>
+    </div>
+    <div class="ma-grid2">
+      <div class="ma-panel"><div class="pt">Funnel การเดินทางของลูกค้า</div><div class="pst">Impressions → Reach → Clicks${agg.leads>0?' → Leads':''}</div>${metaFunnel(agg)}</div>
+      <div class="ma-panel"><div class="pt">สรุปบัญชี</div><div class="pst">ตัวเลขสำคัญในช่วงที่เลือก</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;margin-top:4px">
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--ma-mut)">แคมเปญที่กำลังทำงาน</span><b>${meta_data.campaigns.filter(c=>c.status==='ACTIVE').length}/${meta_data.campaigns.length}</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--ma-mut)">ลูกค้าที่สนใจ (Leads)</span><b>${mInt(agg.leads)}</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--ma-mut)">ต้นทุนต่อ Lead โดยเฉลี่ย</span><b>${agg.leads>0?mMoney(agg.spend/agg.leads):'—'}</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--ma-mut)">อัตราคลิก→Lead</span><b>${agg.clicks&&agg.leads?mPct(agg.leads/agg.clicks*100):'—'}</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="ma-panel">
+      <div class="ma-tabs">${tabBtn('campaign','แคมเปญ')}${tabBtn('adset','ชุดโฆษณา')}${tabBtn('ad','โฆษณา')}</div>
+      ${metaTable()}
+    </div>
+    <div class="ma-foot">โหมดข้อมูลตัวอย่าง · ยังไม่เชื่อมต่อ Meta Marketing API · เป็นการแสดงผลแบบอ่านอย่างเดียว (ไม่แก้งบ/ไม่ปิดแคมเปญ)</div>
+  </div>`;
+}
+// ---- controls ----
+function metaSetRange(v){meta_state.range=v;renderMetaAds();}
+function metaSetCustom(k,v){meta_state[k]=v;if(meta_state.range==='custom')renderMetaAds();}
+function metaSetCampaign(v){meta_state.campaign=v;renderMetaAds();}
+function metaSetTab(v){meta_state.tab=v;renderMetaAds();}
+function metaRefresh(){metaGenData();toast('รีเฟรชข้อมูลตัวอย่างแล้ว');renderMetaAds();}
+function metaExportCSV(){
+  const rows=metaRows();const data=metaRollup(meta_state.tab,rows);
+  const cols=['level','id','name','status','objective','spend','impressions','reach','clicks','ctr','cpc','cpm','frequency','leads'];
+  const lines=[cols.join(',')];
+  data.forEach(r=>{lines.push([meta_state.tab,r.id,'"'+String(r.name).replace(/"/g,'""')+'"',r.status,r.objective||'',Math.round(r.spend),r.impressions,r.reach,r.clicks,r.ctr.toFixed(2),r.cpc.toFixed(2),r.cpm.toFixed(2),r.frequency.toFixed(2),r.leads].join(','));});
+  const {from,to}=metaRange();
+  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`meta_ads_${meta_state.tab}_${from}_${to}.csv`;a.click();URL.revokeObjectURL(a.href);
+  toast('ดาวน์โหลด CSV แล้ว');
+}
+// ---- รายงานข้อความภาษาไทย สำหรับวางถาม Claude ต่อ ----
+function metaBuildClaudeReport(){
+  const rows=metaRows();const agg=metaAgg(rows);const camps=metaRollup('campaign',rows);const {from,to}=metaRange();
+  const campLabel=meta_state.campaign==='all'?'ทุกแคมเปญ':(meta_data.campaigns.find(c=>c.id===meta_state.campaign)||{}).name||meta_state.campaign;
+  const L=[];
+  L.push('📊 สรุปผลโฆษณา Meta Ads — รุ่งฟ้า CRM');
+  L.push(`บัญชี: ${meta_data.account.name} (${meta_data.account.id})`);
+  L.push(`ช่วงวันที่: ${from} ถึง ${to}`);
+  L.push(`ขอบเขต: ${campLabel}`);
+  L.push('หมายเหตุ: ข้อมูลตัวอย่าง (Mock) ยังไม่เชื่อมต่อ Meta จริง');
+  L.push('');
+  L.push('== ภาพรวม (KPI) ==');
+  L.push(`- ค่าโฆษณา (Spend): ${mMoney(agg.spend)}`);
+  L.push(`- การแสดงผล (Impressions): ${mInt(agg.impressions)}`);
+  L.push(`- การเข้าถึง (Reach): ${mInt(agg.reach)}`);
+  L.push(`- คลิก (Clicks): ${mInt(agg.clicks)}`);
+  L.push(`- CTR (อัตราคลิก): ${mPct(agg.ctr)}`);
+  L.push(`- CPC (ต้นทุนต่อคลิก): ${mMoney(agg.cpc)}`);
+  L.push(`- CPM (ต้นทุนต่อ 1,000 การแสดงผล): ${mMoney(agg.cpm)}`);
+  L.push(`- Frequency (ความถี่ที่คนเห็นเฉลี่ย): ${mDec(agg.frequency)}`);
+  L.push(`- Leads (ลูกค้าที่สนใจ): ${mInt(agg.leads)}`);
+  L.push(`- ต้นทุนต่อ Lead: ${agg.leads>0?mMoney(agg.spend/agg.leads):'—'}`);
+  L.push(`- อัตราคลิก→Lead: ${agg.clicks&&agg.leads?mPct(agg.leads/agg.clicks*100):'—'}`);
+  L.push('');
+  L.push('== รายแคมเปญ ==');
+  camps.forEach((c,i)=>{
+    L.push(`${i+1}) ${c.name} [${c.status==='ACTIVE'?'ทำงาน':'หยุด'}${c.objective?' · '+c.objective:''}]`);
+    L.push(`   Spend ${mMoney(c.spend)} | Impr ${mInt(c.impressions)} | Reach ${mInt(c.reach)} | Clicks ${mInt(c.clicks)} | CTR ${mPct(c.ctr)} | CPC ${mMoney(c.cpc)} | CPM ${mMoney(c.cpm)} | Freq ${mDec(c.frequency)} | Leads ${mInt(c.leads)}`);
+  });
+  L.push('');
+  L.push('== Funnel ==');
+  L.push(`Impressions ${mInt(agg.impressions)} → Reach ${mInt(agg.reach)} → Clicks ${mInt(agg.clicks)}${agg.leads>0?` → Leads ${mInt(agg.leads)}`:''}`);
+  L.push('');
+  L.push('== คำแนะนำเบื้องต้น (rule-based จากระบบ) ==');
+  metaAI(rows).slice(1).forEach(it=>L.push('- '+it.t.replace(/<[^>]+>/g,'')));
+  L.push('');
+  L.push('== คำถามถึง Claude ==');
+  L.push('ช่วยวิเคราะห์เชิงลึกจากข้อมูลด้านบนเป็นภาษาไทยให้หน่อย:');
+  L.push('1) แคมเปญไหนควรเพิ่มงบ / ลดงบ / หยุด เพราะอะไร');
+  L.push('2) ครีเอทีฟ (ภาพ/ข้อความ/CTA) และกลุ่มเป้าหมาย ควรปรับอย่างไร');
+  L.push('3) จัดลำดับ 3 สิ่งที่ควรทำก่อน พร้อมเหตุผลสั้น ๆ แบบเจ้าของธุรกิจเข้าใจง่าย');
+  return L.join('\n');
+}
+async function metaCopyForClaude(){
+  const txt=metaBuildClaudeReport();
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(txt);}
+    else throw new Error('no-clipboard-api');
+    toast('คัดลอกสรุปสำหรับ Claude แล้ว — วางในแชทได้เลย');
+  }catch(e){
+    // fallback: textarea + execCommand (รองรับ http/บราวเซอร์เก่า)
+    try{
+      const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();
+      const ok=document.execCommand('copy');document.body.removeChild(ta);
+      toast(ok?'คัดลอกสรุปสำหรับ Claude แล้ว':'คัดลอกไม่สำเร็จ ลองใหม่อีกครั้ง',ok?'':'err');
+    }catch(e2){toast('คัดลอกไม่สำเร็จ — เบราว์เซอร์ไม่อนุญาต','err');}
+  }
+}
 </script>
 </body>
 </html>
