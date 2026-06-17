@@ -5927,9 +5927,9 @@ async function attInitCheckinView(){
   }
 }
 
-// Toggle disabled state ปุ่มเข้า/ออก ระหว่างประมวลผล
+// Toggle disabled state ปุ่มเข้า/ออก/ยืนยันบันทึก ระหว่างประมวลผล (att_btn_confirm มีเฉพาะตอน preview — getElementById guard null-safe)
 function attSetBtnState(loading){
-  ['att_btn_in','att_btn_out'].forEach(id=>{
+  ['att_btn_in','att_btn_out','att_btn_confirm'].forEach(id=>{
     const b=document.getElementById(id); if(!b)return;
     b.disabled=loading; b.style.opacity=loading?'.45':''; b.style.cursor=loading?'not-allowed':'';
   });
@@ -5998,7 +5998,7 @@ function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
       <div style="margin-bottom:6px"><div style="font-size:12px;font-weight:700;color:var(--g6);margin-bottom:3px">อื่นๆ</div><input id="att_ws_5" type="text" class="fi2" style="width:100%;box-sizing:border-box" placeholder="รายละเอียด..."></div>
       <div id="att_ws_err" style="display:none;font-size:12px;color:#dc2626;margin-top:6px"></div>
     </div>`}
-    <button onclick="attConfirmSave('${type}')" style="margin-top:14px;width:100%;padding:13px;background:${color};color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:.3px">✅ ยืนยันบันทึก${isIn?'เข้างาน':'ออกงาน'}</button>
+    <button id="att_btn_confirm" onclick="attConfirmSave('${type}')" style="margin-top:14px;width:100%;padding:13px;background:${color};color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:.3px">✅ ยืนยันบันทึก${isIn?'เข้างาน':'ออกงาน'}</button>
   </div>`;
 }
 
