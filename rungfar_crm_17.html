@@ -2,7 +2,12 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FF7A1A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rungfar CRM">
 <title>Rungfar CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -713,6 +718,50 @@ textarea.fi2{resize:vertical;min-height:65px}
   .att-clock{font-size:28px;letter-spacing:1px}
   .att-tab{padding:6px 11px}
 }
+/* ===== MOBILE APP SHELL (foundation) — desktop ไม่กระทบ (ของใหม่ซ่อนไว้) ===== */
+.mob-only{display:none}
+#mobNav{display:none}
+#mobMore{display:none}
+.mob-iconbtn{background:var(--g1);border:1.5px solid var(--g2);color:var(--g6);width:34px;height:34px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
+.mob-iconbtn svg{width:18px;height:18px}
+@media (max-width:768px){
+  .sidebar{display:none!important}
+  .mob-only{display:flex}
+  .topbar{position:sticky;top:0;z-index:60;padding:0 12px;height:52px;gap:8px}
+  .topbar>.btn{display:none!important}
+  .ttitle{font-size:15px}
+  #appScreen .lang-btn{padding:4px 8px;font-size:11px}
+  .content{padding:12px 12px calc(76px + env(safe-area-inset-bottom,0px))}
+  .abanner{padding:8px 12px;font-size:12px}
+  #mobNav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;border-top:1px solid var(--g2);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -2px 14px rgba(120,70,30,.10)}
+  #mobNav .nav-admin,#mobNav .nav-staff{flex:1;width:100%}
+  #mobNav .nav-admin{display:flex}#mobNav .nav-staff{display:none}
+  #mobNav.staff .nav-admin{display:none}#mobNav.staff .nav-staff{display:flex}
+  .mn-item{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 2px;min-height:50px;cursor:pointer;color:var(--g5);font-family:var(--font);font-size:10px;font-weight:600;position:relative;-webkit-tap-highlight-color:transparent}
+  .mn-item svg{width:22px;height:22px;stroke-width:1.7}
+  .mn-item.on{color:var(--p)}
+  .mn-badge{position:absolute;top:1px;left:50%;margin-left:6px;background:var(--ac);color:#fff;font-size:9px;font-weight:700;min-width:15px;height:15px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-family:var(--mono)}
+  #mobMore{display:block;position:fixed;inset:0;z-index:80;background:rgba(30,18,10,.42);opacity:0;pointer-events:none;transition:opacity .25s}
+  #mobMore.on{opacity:1;pointer-events:auto}
+  #mobMore .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;padding:10px 14px calc(16px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);max-height:80vh;overflow-y:auto}
+  #mobMore.on .sheet{transform:none}
+  #mobMore .grab{width:40px;height:4px;border-radius:3px;background:var(--g3);margin:4px auto 12px}
+  #mobMore .ms-item{display:flex;align-items:center;gap:13px;padding:13px 8px;border-radius:10px;font-size:14px;font-weight:600;color:var(--g8);cursor:pointer;border-bottom:1px solid var(--g1)}
+  #mobMore .ms-item svg{width:20px;height:20px;color:var(--p);flex-shrink:0}
+  #mobMore .ms-item.danger{color:var(--red)}#mobMore .ms-item.danger svg{color:var(--red)}
+  #mobMore .staff-only{display:none}
+  #mobMore.staff .admin-only{display:none}
+  #mobMore.staff .staff-only{display:flex}
+  .att-subnav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .att-subnav::-webkit-scrollbar{display:none}
+  .att-tab{flex-shrink:0}
+  .doc-hint{background:var(--pp);border:1px solid var(--pp2);color:var(--pd);font-size:12.5px;line-height:1.5;padding:11px 13px;border-radius:10px;margin-bottom:12px;align-items:center;gap:10px}
+  .doc-hint svg{color:var(--pd)}
+}
+@media (max-width:600px){
+  .lgs-feats{display:none}
+  .lgs-stage{margin-bottom:6px}
+}
 </style>
 </head>
 <body>
@@ -977,6 +1026,7 @@ textarea.fi2{resize:vertical;min-height:65px}
       <button class="lang-btn active" id="langTH" onclick="setLang('th')">🇹🇭 ไทย</button>
       <button class="lang-btn" id="langMY" onclick="setLang('my')">🇲🇲 မြန်မာ</button>
     </div>
+    <button class="mob-only mob-iconbtn" id="mobLogout" onclick="doLogout()" aria-label="ออกจากระบบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></button>
     <button class="btn btn-g btn-sm" onclick="gv('import')">📥 นำเข้า Excel</button>
     <button class="btn btn-p" onclick="openAdd()">+ เพิ่มลูกค้า</button>
   </div>
@@ -1014,7 +1064,7 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="view" id="view-alerts"><div id="alertContent"></div></div>
     <div class="view" id="view-employers"><div id="empContent"></div></div>
     <div class="view" id="view-groups"><div id="grpContent"></div></div>
-    <div class="view" id="view-import"><div id="importContent"></div></div>
+    <div class="view" id="view-import"><div class="mob-only doc-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 20h20"/></svg><span>แนะนำให้นำเข้าไฟล์ Excel ผ่านคอมพิวเตอร์เพื่อความสะดวกในการจัดการข้อมูล</span></div><div id="importContent"></div></div>
     <div class="view" id="view-settings"><div style="max-width:560px"><div id="settingsTitleDiv" style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
     <div class="view" id="view-attendance"><div style="max-width:960px" id="att_content"></div></div>
@@ -1022,6 +1072,35 @@ textarea.fi2{resize:vertical;min-height:65px}
     <div class="view" id="view-seclog"><div id="seclogContent"></div></div>
   </div>
 </div>
+</div>
+<!-- ===== MOBILE BOTTOM NAV + MORE SHEET (foundation — แสดงเฉพาะ <=768px, UI only) ===== -->
+<nav id="mobNav" aria-label="เมนูมือถือ">
+  <div class="nav-admin">
+    <button class="mn-item" data-view="dash" onclick="mobNav('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>แจ้งเตือน<span class="mn-badge" id="mobAlertBadge" style="display:none">0</span></button>
+    <button class="mn-item" data-view="attendance" onclick="mobNav('attendance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>ตอกบัตร</button>
+    <button class="mn-item" data-view="customers" onclick="mobNav('customers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg>ลูกค้า</button>
+    <button class="mn-item" data-view="import" onclick="mobNav('import')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg>เอกสาร</button>
+    <button class="mn-item" onclick="mobMoreOpen()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>เพิ่มเติม</button>
+  </div>
+  <div class="nav-staff">
+    <button class="mn-item" data-view="attendance" data-sub="checkin" onclick="mobNav('attendance','checkin')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>ตอกบัตร</button>
+    <button class="mn-item" data-view="attendance" data-sub="history" onclick="mobNav('attendance','history')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>ประวัติ</button>
+    <button class="mn-item" data-view="attendance" data-sub="report" onclick="mobNav('attendance','report')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16"/><path d="M8 16v-3M12 16v-6M16 16v-4"/></svg>รายงาน</button>
+    <button class="mn-item" onclick="mobMoreOpen()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>เพิ่มเติม</button>
+  </div>
+</nav>
+<div id="mobMore" onclick="if(event.target===this)mobMoreClose()">
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="ms-item staff-only" onclick="mobNav('dash');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span>แจ้งเตือน</span></div>
+    <div class="ms-item staff-only" onclick="mobNav('customers');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span></div>
+    <div class="ms-item staff-only" onclick="mobNav('import');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span>เอกสาร</span></div>
+    <div class="ms-item admin-only" onclick="mobNav('employers');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg><span>นายจ้าง / บริษัท</span></div>
+    <div class="ms-item admin-only" onclick="mobNav('groups');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>จัดการกลุ่ม</span></div>
+    <div class="ms-item admin-only" onclick="mobNav('settings');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span>ตั้งค่าแจ้งเตือน</span></div>
+    <div class="ms-item admin-only" onclick="mobNav('users');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg><span>จัดการผู้ใช้</span></div>
+    <div class="ms-item danger" onclick="mobMoreClose();doLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg><span>ออกจากระบบ</span></div>
+  </div>
 </div>
 </div>
 
@@ -2444,6 +2523,7 @@ async function showApp(){
   const isAdmin=curUser.role==='admin';
   document.getElementById('sfrole').textContent=isAdmin?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
   document.getElementById('sfav').textContent=curUser.full_name.charAt(0).toUpperCase();
+  if(typeof mobNavSync==='function')mobNavSync();
   // 1) Reset ทุก element ก่อนเสมอ — ป้องกัน state ค้างจาก session ก่อน
   ['sideMain','sideGroups','sideSysLbl','niGroups','niImport','niSettings','niUsers','niSecLog','niAttendance','niMetaAds','niLogout'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='';
@@ -2555,10 +2635,35 @@ function getExps(c){
 function isAlert(c){return getExps(c).some(x=>{const d=du(x.d);return d!==null&&d<=x.w;});}
 function toast(msg,t='ok'){const el=document.getElementById('toast');el.innerHTML=(t==='ok'?'<span style="color:#4ade80">✓</span> ':'<span style="color:#f87171">✕</span> ')+msg;el.style.display='flex';setTimeout(()=>el.style.display='none',2800);}
 
+// ===== MOBILE NAV (foundation — UI only, ไม่แตะ logic/save/LINE) =====
+function mobNav(view,sub){
+  if(typeof gv==='function')gv(view);
+  if(sub&&typeof attGo==='function')attGo(sub);
+  mobNavSync();
+}
+function mobNavSync(){
+  const nav=document.getElementById('mobNav'); if(!nav)return;
+  const isAdmin=!!(typeof curUser!=='undefined'&&curUser&&curUser.role==='admin');
+  nav.classList.toggle('staff',!isAdmin);
+  const more=document.getElementById('mobMore'); if(more)more.classList.toggle('staff',!isAdmin);
+  const curSub=(typeof att_curTab!=='undefined')?att_curTab:null;
+  nav.querySelectorAll('.mn-item').forEach(b=>{
+    const v=b.getAttribute('data-view'), sb=b.getAttribute('data-sub');
+    let act=(v&&v===curView);
+    if(act&&sb)act=(curSub===sb);
+    b.classList.toggle('on',!!act);
+  });
+  const src=document.getElementById('nbAlert'), bd=document.getElementById('mobAlertBadge');
+  if(src&&bd){const n=parseInt(src.textContent)||0;bd.textContent=n;bd.style.display=n>0?'flex':'none';}
+}
+function mobMoreOpen(){const s=document.getElementById('mobMore');if(s)s.classList.add('on');}
+function mobMoreClose(){const s=document.getElementById('mobMore');if(s)s.classList.remove('on');}
+
 function gv(v,opts={}){
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
   const el=document.getElementById('view-'+v);if(el)el.classList.add('on');
   curView=v;
+  if(typeof mobNavSync==='function')mobNavSync();
   // อัปเดต sidebar nav active state
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
@@ -4113,6 +4218,7 @@ function attGo(tab){
   const btn=document.querySelector(`.att-tab[onclick="attGo('${tab}')"]`);
   if(btn)btn.classList.add('att-on');
   attRender(tab);
+  if(typeof mobNavSync==='function')mobNavSync();
 }
 
 function attRender(tab){
