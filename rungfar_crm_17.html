@@ -5833,6 +5833,16 @@ function attFindMyEmployee(employees){
   return employees.find(e=>e.employee_code===curUser.username)||null;
 }
 
+// C2 (read-only): badge เตือนเมื่อพนักงานมี check-in วันนี้แล้วแต่ยังไม่ได้ออกงาน
+// อ่านจาก att_todayLogs ที่โหลดไว้แล้ว — ไม่ query ใหม่ ไม่บันทึก ไม่แตะ flow save/notify
+function attTodayOpenCheckinBadge(emp){
+  if(!emp||!Array.isArray(att_todayLogs))return'';
+  const log=att_todayLogs.find(l=>l.employee_id===emp.id);
+  if(!log||!log.checkin_time||log.checkout_time)return'';
+  const t=attFormatThaiTime(new Date(log.checkin_time)).replace(' น.','');
+  return`<div style="margin-top:8px;background:#fff3e0;color:#d97706;border:1px solid #fde0b8;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;line-height:1.5;display:flex;align-items:center;gap:5px;flex-wrap:wrap">⏰ เข้างานแล้ว <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${t}</span> ยังไม่ออก</div>`;
+}
+
 // ATT-EMP-a: admin เปลี่ยนพนักงาน → clear state ทุกอย่าง
 function attOnEmpChange(val){
   att_curEmployee=att_employees.find(e=>e.id==val)||null;
@@ -5857,6 +5867,7 @@ function attOnEmpChange(val){
       pv.innerHTML=`<div style="background:var(--bg);border:1px solid var(--g2);border-radius:var(--r);padding:10px 14px;font-size:12px">`
         +`<div style="font-weight:600;font-size:13px;margin-bottom:4px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5)">(${esc(emp.employee_code||'')})</span>&nbsp;${_brn}</div>`
         +`<div style="color:var(--g5)">⏰ เวลางาน ${_cin} – ${_cout}${emp.position?` &nbsp;·&nbsp; ${esc(emp.position)}`:''}</div>`
+        +attTodayOpenCheckinBadge(emp)
         +`</div>`;
     }else{
       pv.innerHTML='';
@@ -5895,7 +5906,8 @@ async function attInitCheckinView(){
         const _cout=_coutRaw.slice(0,5)||'—';
         const _brn=emp.branch_name?`<span style="background:var(--pp);color:var(--pd);border-radius:4px;padding:1px 6px;font-size:10px;margin-left:6px;white-space:nowrap">${esc(emp.branch_name)}</span>`:'';
         disp.innerHTML=`<div style="font-weight:600;font-size:14px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>${_brn}</div>`
-          +`<div style="font-size:11px;color:var(--g5);margin-top:3px">⏰ เวลางาน ${_cin} – ${_cout}</div>`;
+          +`<div style="font-size:11px;color:var(--g5);margin-top:3px">⏰ เวลางาน ${_cin} – ${_cout}</div>`
+          +attTodayOpenCheckinBadge(emp);
       }
     }else{
       // ─── Admin mode: dropdown เลือกพนักงาน ───
