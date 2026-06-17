@@ -249,6 +249,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
   .lg-right{flex:none;width:100%;max-width:100%}
   .lg-form{max-width:440px;margin:0 auto}
 }
+@media (max-width:768px){
+  #loginScreen{width:100vw;min-height:100svh;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;overflow-x:hidden}
+  #loginScreen::after{display:none}
+  .lg-shell{width:100%;max-width:none;min-height:0;align-items:center;justify-content:center;gap:0;padding:0;margin:0;box-sizing:border-box}
+  .lg-left{display:none}
+  .lg-right{width:100%;max-width:none;flex:none;align-items:center;justify-content:center;padding:0;margin:0;box-sizing:border-box}
+  .lg-form{width:min(340px,calc(100vw - 32px));max-width:340px;margin:0 auto;position:relative;left:auto;right:auto;top:auto;transform:none;box-sizing:border-box;padding:18px 18px 20px;border-radius:15px;box-shadow:0 12px 28px rgba(150,80,30,.13)}
+  .lg-langrow{margin-bottom:8px}
+  .l-logo-wrap{width:52px;height:52px;margin:0 0 8px}
+  .l-company{font-size:17px;line-height:1.24;margin-bottom:2px}
+  .l-system{font-size:11px;padding-bottom:8px;margin-bottom:0}
+  .lfl{font-size:10.5px;margin-top:8px;margin-bottom:4px}
+  .linput{height:46px;padding:10px 12px;font-size:14px;border-radius:9px}
+  .lbtn{height:50px;margin-top:13px;padding:0 12px;border-radius:9px}
+  .lerr{margin-top:6px;min-height:13px}
+}
 @media (max-width:600px){
   .lg-show,.lg-dots{display:none}
   .lg-desc{margin-bottom:2px}
@@ -379,6 +395,8 @@ select.fi:focus{border-color:var(--p)}
 .dr{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--red);white-space:nowrap}
 .do_{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--p);white-space:nowrap}
 .dg_{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amb);white-space:nowrap}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.dash-tab-count{font-family:var(--mono);font-size:11px;font-feature-settings:"zero" 0;font-variant-numeric:normal}
 .mo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
 .mb{background:#fff;border-radius:20px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:var(--s4);animation:popIn .2s ease;border:1px solid var(--g2)}
 .mb-sm{max-width:480px}.mb-lg{max-width:860px}
@@ -757,6 +775,32 @@ textarea.fi2{resize:vertical;min-height:65px}
   .att-tab{flex-shrink:0}
   .doc-hint{background:var(--pp);border:1px solid var(--pp2);color:var(--pd);font-size:12.5px;line-height:1.5;padding:11px 13px;border-radius:10px;margin-bottom:12px;align-items:center;gap:10px}
   .doc-hint svg{color:var(--pd)}
+  #view-dash{overflow-x:hidden;padding-bottom:8px}
+  #view-dash *{box-sizing:border-box}
+  #view-dash .sg{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  #view-dash .sc{min-width:0;padding:13px 12px;border-radius:14px}
+  #view-dash .sc-num{font-size:24px;line-height:1.05}
+  #view-dash .sc-lbl{font-size:10px;line-height:1.25;letter-spacing:.2px;white-space:normal}
+  #view-dash .sc-sub{font-size:10.5px;line-height:1.35;white-space:normal;overflow:hidden;text-overflow:ellipsis}
+  #view-dash .dash-tabs{max-width:100%;margin:0 -2px 12px;padding:0 2px 10px;border-bottom:none;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  #view-dash .dash-tabs::-webkit-scrollbar{display:none}
+  #view-dash .dash-tabs .att-tab{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:8px 12px;border-radius:999px;font-size:12px;box-shadow:var(--s1);white-space:nowrap}
+  #view-dash .dash-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:18px;margin-left:2px;padding:0 6px;border-radius:999px;background:var(--g1);color:var(--g7);font-family:Arial,Helvetica,Tahoma,sans-serif;font-size:10.5px;font-weight:800;font-feature-settings:"zero" 0;font-variant-numeric:normal}
+  #view-dash .att-tab.att-on .dash-tab-count{background:rgba(255,255,255,.24);color:#fff}
+  #view-dash .dash-grid{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+  #view-dash .dg2,#view-dash .dg3{grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:12px}
+  #view-dash .dc{min-width:0;padding:13px 12px;border-radius:14px;overflow:hidden}
+  #view-dash .dct{align-items:flex-start;gap:8px;font-size:12px;line-height:1.35;flex-wrap:wrap}
+  #view-dash .er{gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.35}
+  #view-dash .er span:first-child{min-width:0}
+  #view-dash .eb{flex-shrink:0}
+  #view-dash .ac{align-items:flex-start;gap:10px;padding:12px;border-radius:14px;margin-bottom:0;min-width:0;box-shadow:var(--s1)}
+  #view-dash .adot{width:38px;height:38px;border-radius:12px}
+  #view-dash .an{font-size:13.5px;line-height:1.35;white-space:normal;overflow:visible;text-overflow:clip}
+  #view-dash .ad{font-size:11.5px;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+  #view-dash .dr,#view-dash .do_,#view-dash .dg_{margin-left:auto;padding:3px 8px;border-radius:999px;font-size:11px;background:var(--g0)}
+  #view-dash .dash-att-card{display:grid;grid-template-columns:auto minmax(0,1fr)}
+  #view-dash .dash-att-status{grid-column:2;justify-self:flex-start;align-self:flex-start;margin-top:4px;white-space:normal;line-height:1.25}
 }
 @media (max-width:600px){
   .lgs-feats{display:none}
@@ -2785,7 +2829,7 @@ function renderSidebar(){
 // ===== ALERT DASHBOARD (Round E) — หน้า "แจ้งเตือน" พร้อม sub-filter =====
 let dashFilter='all'; // all | renew | 90 | docs | todo | absent
 function dashGo(f){dashFilter=f;renderDash();}
-function dashGrid(html){return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">${html}</div>`;}
+function dashGrid(html){return `<div class="dash-grid">${html}</div>`;}
 function dashAlertCardHTML(c,x,d){
   return `<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot ${d<=7?'adot-r':d<=14?'adot-o':'adot-g'}">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`;
 }
@@ -2817,7 +2861,7 @@ function dashTodoCardHTML(e){
 let dash_absentReqId=0, dash_absentCount=0, dash_absentCountReqId=0;
 let dash_nooutReqId=0, dash_nooutCount=0, dash_nooutCountReqId=0;
 function dashCountBadge(n){
-  return ` <span style="font-family:var(--mono);font-size:11px">(${Number(n)||0})</span>`;
+  return ` <span class="dash-tab-count">(${Number(n)||0})</span>`;
 }
 function dashUpdateAbsentTabCount(){
   const btn=document.querySelector(`.att-tab[onclick="dashGo('absent')"]`);
@@ -2842,14 +2886,14 @@ function dashAbsentCardHTML(row,mode){
   const statusColor=isAbsent?'#dc2626':'#d97706';
   const normalTime=dashAbsentTimeLabel(row.normal_checkin_time);
   const branch=row.branch_name||'ไม่ระบุสาขา';
-  return `<div class="ac ${cls}" style="background:#fff;cursor:default">
+  return `<div class="ac ${cls} dash-att-card" style="background:#fff;cursor:default">
     <div class="adot ${dotCls}">!</div>
     <div class="ai">
       <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
       <div class="ad">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · ${esc(branch)}</div>
       <div class="ad">เวลาเข้างานปกติ: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(normalTime)}</span></div>
     </div>
-    <span style="align-self:center;background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">${status}</span>
+    <span class="dash-att-status" style="align-self:center;background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">${status}</span>
   </div>`;
 }
 function dashAbsentLoadingHTML(){
@@ -2863,14 +2907,14 @@ function dashNooutCardHTML(row){
   const ci=row.checkin_time?attFormatThaiTime(new Date(row.checkin_time)):'—';
   const tOut=dashAbsentTimeLabel(row.normal_checkout_time);
   const branch=row.branch_name||'ไม่ระบุสาขา';
-  return `<div class="ac wrn" style="background:#fff;cursor:default">
+  return `<div class="ac wrn dash-att-card" style="background:#fff;cursor:default">
     <div class="adot adot-o">!</div>
     <div class="ai">
       <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
       <div class="ad">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · ${esc(branch)}</div>
       <div class="ad">เข้างาน: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(ci)}</span> · ออกงานปกติ: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(tOut)}</span></div>
     </div>
-    <span style="align-self:center;background:#fff3e0;color:#d97706;font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">ยังไม่เช็คเอาท์</span>
+    <span class="dash-att-status" style="align-self:center;background:#fff3e0;color:#d97706;font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">ยังไม่เช็คเอาท์</span>
   </div>`;
 }
 function dashAbsentContentHTML(data){
@@ -3087,9 +3131,9 @@ function renderDash(){
   if(al.length>0){ab.style.display='flex';ab.innerHTML=`⚠️ ${T('bannerFmt').replace('{n}',`<strong>${al.length}</strong>`)} — <span style="cursor:pointer;text-decoration:underline" onclick="dashGo('renew')">${T('bannerSeeAll')}</span>`;}
   else ab.style.display='none';
   // ── sub-filter tab bar ──
-  const cntB=n=>n>0?` <span style="font-family:var(--mono);font-size:11px">(${n})</span>`:'';
+  const cntB=n=>n>0?` <span class="dash-tab-count">(${n})</span>`:'';
   const TABS=[['all',T('dashFAll'),''],['renew',T('dashFRenew'),cntB(renewEntries.length)],['90',T('exp90'),cntB(d90Entries.length)],['docs',T('dashFDocs'),cntB(docPending.length)],['todo',T('dashFTodo'),cntB(todoEntries.length)],['absent',T('dashFAbsent'),dashCountBadge(dash_absentCount)],['noout',T('dashFNoOut'),dashCountBadge(dash_nooutCount)]];
-  const tabBar=`<div class="att-subnav">${TABS.map(([k,l,b])=>`<button class="att-tab${dashFilter===k?' att-on':''}" onclick="dashGo('${k}')">${l}${b}</button>`).join('')}</div>`;
+  const tabBar=`<div class="att-subnav dash-tabs">${TABS.map(([k,l,b])=>`<button class="att-tab${dashFilter===k?' att-on':''}" onclick="dashGo('${k}')">${l}${b}</button>`).join('')}</div>`;
   const summaryHTML=`
   <div class="sg">
     <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">${T('dashAllWorkers')}</div><div class="sc-sub">🧑 ${customers.filter(c=>c.customer_type==='freelance').length} &nbsp; 🏢 ${customers.filter(c=>c.customer_type==='company').length}</div></div>
