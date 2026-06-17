@@ -132,7 +132,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 @keyframes lspin{to{transform:rotate(360deg)}}
 /* ── Responsive: tablet/mobile จัดแนวตั้ง, preview ย่อ, login เต็มกว้าง ── */
 @media (max-width:980px){
-  #loginScreen{align-items:flex-start}
+  #loginScreen{align-items:flex-start;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
   .lg-shell{flex-direction:column;align-items:stretch;gap:26px;padding:34px 26px 44px;max-width:620px}
   .lg-left{flex:none;width:100%}
   .lg-brandname{font-size:28px}
@@ -596,6 +596,18 @@ textarea.fi2{resize:vertical;min-height:65px}
 .att-badge-late{background:#fff3e0;color:#d97706;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
 .att-badge-out{background:#dbeafe;color:#1d4ed8;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
 .att-badge-err{background:#fee2e2;color:#dc2626;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
+/* ATTENDANCE — responsive/mobile (UX only: ไม่แตะ logic/save/check-in/check-out) */
+@media (max-width:600px){
+  .att-checkin-card{padding:20px 16px;max-width:100%}
+  .att-clock{font-size:34px;letter-spacing:2px;margin:8px 0}
+  .att-btn-in,.att-btn-out{padding:15px;font-size:16px;border-radius:14px}
+  .att-subnav{gap:6px;margin-bottom:14px;padding-bottom:10px}
+  .att-tab{padding:6px 13px;font-size:12px}
+}
+@media (max-width:380px){
+  .att-clock{font-size:28px;letter-spacing:1px}
+  .att-tab{padding:6px 11px}
+}
 </style>
 </head>
 <body>
