@@ -1321,7 +1321,7 @@ const LANG = {
     dashNoData:'ยังไม่มีข้อมูล', dashAllInSys:'ทั้งหมดในระบบ', dashNoGroup:'ยังไม่มีกลุ่ม',
     dashMustAct:'ต้องดำเนินการ', dashUrgentWarn:'มีรายการด่วน', dashOkAll:'ปกติดี',
     dashNoUrgent:'ไม่มีรายการด่วน',
-    dashFAll:'ทั้งหมด', dashFRenew:'ต่ออายุ', dashFDocs:'เอกสารค้าง', dashFTodo:'งานที่ต้องทำ', dashFAbsent:'พนักงานขาดงาน', dashFEmpty:'ยังไม่มีรายการ',
+    dashFAll:'ทั้งหมด', dashFRenew:'ต่ออายุ', dashFDocs:'เอกสารค้าง', dashFTodo:'งานที่ต้องทำ', dashFAbsent:'พนักงานขาดงาน', dashFNoOut:'ยังไม่เช็คเอาท์', dashFEmpty:'ยังไม่มีรายการ',
     dashMissBooklet:'ยังไม่มีเล่ม', dashTodoNone:'ยังไม่มีงานที่ต้องทำ', dashAbsentNone:'ยังไม่มีข้อมูลพนักงานขาดงาน',
     xlSection:'ข้อมูลตาม Excel', xlSubmit:'วันที่ยื่น', xlAgent:'ตัวแทน', xlMedical:'ใบแพทย์', xlInsurance:'ประกัน', xlCardFee:'ค่าบัตร', xlBooklet:'สถานะเล่ม', xlBookletHas:'มีเล่ม', xlBookletNone:'ไม่มีเล่ม', xlAppt:'นัดหมาย', xlApptTime:'เวลา', xlApptPlace:'สถานที่', xlQueue:'คิวว่าง', xlReceive:'วันรับเล่ม', xlYes:'มี', xlPaid:'จ่ายแล้ว',
     dashD15:'≤15 วัน', dashD1630:'16-30 วัน',
@@ -1491,7 +1491,7 @@ const LANG = {
     dashNoData:'ဒေတာမရှိသေး', dashAllInSys:'စနစ်အတွင်းအားလုံး', dashNoGroup:'အုပ်စုမရှိသေး',
     dashMustAct:'ဆောင်ရွက်ရမည်', dashUrgentWarn:'အရေးတကြီးရှိ', dashOkAll:'ပုံမှန်',
     dashNoUrgent:'အရေးပေါ်မရှိ',
-    dashFAll:'အားလုံး', dashFRenew:'သက်တမ်းတိုး', dashFDocs:'စာရွက်ကျန်', dashFTodo:'လုပ်စရာ', dashFAbsent:'ပျက်ကွက်ဝန်ထမ်း', dashFEmpty:'ပစ္စည်းမရှိသေး',
+    dashFAll:'အားလုံး', dashFRenew:'သက်တမ်းတိုး', dashFDocs:'စာရွက်ကျန်', dashFTodo:'လုပ်စရာ', dashFAbsent:'ပျက်ကွက်ဝန်ထမ်း', dashFNoOut:'ထွက်မရိုက်ရသေး', dashFEmpty:'ပစ္စည်းမရှိသေး',
     dashMissBooklet:'စာအုပ်မရှိသေး', dashTodoNone:'လုပ်စရာမရှိသေး', dashAbsentNone:'ပျက်ကွက်ဝန်ထမ်းဒေတာမရှိသေး',
     xlSection:'Excel ဒေတာ', xlSubmit:'တင်သွင်းရက်', xlAgent:'ကိုယ်စားလှယ်', xlMedical:'ဆေးလက်မှတ်', xlInsurance:'အာမခံ', xlCardFee:'ကတ်ခ', xlBooklet:'စာအုပ်အခြေအနေ', xlBookletHas:'စာအုပ်ရှိ', xlBookletNone:'စာအုပ်မရှိ', xlAppt:'ချိန်းဆိုရက်', xlApptTime:'အချိန်', xlApptPlace:'နေရာ', xlQueue:'ကျူးလွတ်ရက်', xlReceive:'စာအုပ်ရရက်', xlYes:'ရှိ', xlPaid:'ပေးပြီး',
     dashD15:'≤15 ရက်', dashD1630:'16-30 ရက်',
@@ -2391,12 +2391,17 @@ function dashTodoCardHTML(e){
   return `<div class="ac ${cls}" onclick="openDetail(${e.c.id})" style="background:#fff"><div class="adot ${dotCls}">${NF[e.c.nationality]||''}</div><div class="ai"><div class="an">${esc(e.c.name)}</div><div class="ad">${e.type} ${fd(e.date)}${e.c.employer_id?' · '+esc(empN(e.c.employer_id)):''}</div>${sub?`<div class="ad">${sub}</div>`:''}</div><div class="${valCls}">${d!=null?el(d):'—'}</div></div>`;
 }
 let dash_absentReqId=0, dash_absentCount=0, dash_absentCountReqId=0;
+let dash_nooutReqId=0, dash_nooutCount=0, dash_nooutCountReqId=0;
 function dashCountBadge(n){
   return ` <span style="font-family:var(--mono);font-size:11px">(${Number(n)||0})</span>`;
 }
 function dashUpdateAbsentTabCount(){
   const btn=document.querySelector(`.att-tab[onclick="dashGo('absent')"]`);
   if(btn)btn.innerHTML=T('dashFAbsent')+dashCountBadge(dash_absentCount);
+}
+function dashUpdateNooutTabCount(){
+  const btn=document.querySelector(`.att-tab[onclick="dashGo('noout')"]`);
+  if(btn)btn.innerHTML=T('dashFNoOut')+dashCountBadge(dash_nooutCount);
 }
 function dashTodayLogDate(date){
   return new Date(date||Date.now()).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
@@ -2428,6 +2433,21 @@ function dashAbsentLoadingHTML(){
 }
 function dashAbsentErrorHTML(msg){
   return `<div style="text-align:center;padding:42px 20px;color:#dc2626;font-size:13px">โหลดข้อมูลพนักงานขาดงานวันนี้ไม่สำเร็จ${msg?': '+esc(msg):''}</div>`;
+}
+// Read-only card: พนักงานที่เช็คอินวันนี้แล้วแต่ยังไม่เช็คเอาท์
+function dashNooutCardHTML(row){
+  const ci=row.checkin_time?attFormatThaiTime(new Date(row.checkin_time)):'—';
+  const tOut=dashAbsentTimeLabel(row.normal_checkout_time);
+  const branch=row.branch_name||'ไม่ระบุสาขา';
+  return `<div class="ac wrn" style="background:#fff;cursor:default">
+    <div class="adot adot-o">!</div>
+    <div class="ai">
+      <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
+      <div class="ad">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · ${esc(branch)}</div>
+      <div class="ad">เข้างาน: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(ci)}</span> · ออกงานปกติ: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(tOut)}</span></div>
+    </div>
+    <span style="align-self:center;background:#fff3e0;color:#d97706;font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">ยังไม่เช็คเอาท์</span>
+  </div>`;
 }
 function dashAbsentContentHTML(data){
   if(!data.rows.length)return dashEmptyHTML('ยังไม่มีข้อมูลพนักงานขาดงานวันนี้');
@@ -2519,6 +2539,93 @@ async function dashRenderAbsentToday(){
     el.innerHTML=dashAbsentErrorHTML(e&&e.message?e.message:'');
   }
 }
+// ── Read-only: พนักงานลืมออกงาน (เช็คอินแล้วแต่ยังไม่เช็คเอาท์) ──
+function dashNooutContentHTML(data){
+  if(!data.rows.length)return dashEmptyHTML('ยังไม่มีพนักงานที่ลืมเช็คเอาท์วันนี้');
+  return `<div>
+    <div class="dc" style="margin-bottom:12px">
+      <div class="dct" style="justify-content:space-between">
+        <span>พนักงานยังไม่เช็คเอาท์วันนี้</span>
+        <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal;font-size:12px;color:#d97706">${data.rows.length} คน</span>
+      </div>
+      <div style="font-size:12px;color:var(--g5);line-height:1.7">
+        วันที่ <span style="font-family:Tahoma,Arial,Helvetica,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(data.dateLabel)}</span> · log วันนี้ <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${data.logCount}</span> รายการ<br>
+        แสดงแบบอ่านอย่างเดียวจาก attendance_logs วันนี้ที่มี check-in แต่ยังไม่มี checkout_time
+      </div>
+    </div>
+    ${dashGrid(data.rows.map(r=>dashNooutCardHTML(r)).join(''))}
+  </div>`;
+}
+async function dashLoadTodayNoCheckout(){
+  const today=dashTodayLogDate();
+  const [empRes,logRes]=await Promise.all([
+    dbGet('attendance_employees','?status=eq.active&order=employee_code.asc&select=id,employee_code,full_name,branch_id,branch_name,normal_checkout_time,status'),
+    dbGet('attendance_logs',`?log_date=eq.${today}&order=employee_id.asc&select=id,employee_id,employee_code,employee_name,branch_id,branch_name,log_date,checkin_time,checkout_time,day_status`)
+  ]);
+  const employees=Array.isArray(empRes)?empRes:[];
+  const logs=Array.isArray(logRes)?logRes:[];
+  const activeById=new Map();
+  const activeByCode=new Map();
+  employees.forEach(e=>{
+    if(e.id!=null)activeById.set(String(e.id),e);
+    if(e.employee_code)activeByCode.set(String(e.employee_code),e);
+  });
+  const seen=new Set();
+  const rows=[];
+  logs.forEach(l=>{
+    if(!(l.checkin_time&&!l.checkout_time&&l.day_status!=='absent'))return;
+    const emp=(l.employee_id!=null?activeById.get(String(l.employee_id)):null)||activeByCode.get(String(l.employee_code||''))||null;
+    const key=emp&&emp.id!=null?'id:'+emp.id:'code:'+((emp&&emp.employee_code)||l.employee_code||l.employee_id||'');
+    if(seen.has(key))return;
+    seen.add(key);
+    rows.push({
+      employee_code:(emp&&emp.employee_code)||l.employee_code||'',
+      full_name:(emp&&emp.full_name)||l.employee_name||'',
+      employee_name:l.employee_name||(emp&&emp.full_name)||'',
+      branch_name:l.branch_name||(emp&&emp.branch_name)||'',
+      checkin_time:l.checkin_time,
+      normal_checkout_time:(emp&&emp.normal_checkout_time)||null
+    });
+  });
+  return{
+    today,
+    dateLabel:new Date(today+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'}),
+    rows,
+    activeCount:employees.length,
+    logCount:logs.length
+  };
+}
+async function dashRefreshNooutCount(){
+  const reqId=++dash_nooutCountReqId;
+  try{
+    const data=await dashLoadTodayNoCheckout();
+    if(reqId!==dash_nooutCountReqId)return;
+    dash_nooutCount=data.rows.length;
+    dashUpdateNooutTabCount();
+  }catch(_){
+    if(reqId!==dash_nooutCountReqId)return;
+    dash_nooutCount=0;
+    dashUpdateNooutTabCount();
+  }
+}
+async function dashRenderNooutToday(){
+  const el=document.getElementById('dash_noout_content');
+  if(!el)return;
+  const reqId=++dash_nooutReqId;
+  el.innerHTML=dashAbsentLoadingHTML();
+  try{
+    const data=await dashLoadTodayNoCheckout();
+    if(reqId!==dash_nooutReqId||dashFilter!=='noout')return;
+    dash_nooutCount=data.rows.length;
+    dashUpdateNooutTabCount();
+    el.innerHTML=dashNooutContentHTML(data);
+  }catch(e){
+    if(reqId!==dash_nooutReqId||dashFilter!=='noout')return;
+    dash_nooutCount=0;
+    dashUpdateNooutTabCount();
+    el.innerHTML=dashAbsentErrorHTML(e&&e.message?e.message:'');
+  }
+}
 function renderDash(){
   const total=customers.length;const al=customers.filter(isAlert);
   const mm=customers.filter(c=>c.nationality==='เมียนมา').length;const kh=customers.filter(c=>c.nationality==='กัมพูชา').length;
@@ -2557,7 +2664,7 @@ function renderDash(){
   else ab.style.display='none';
   // ── sub-filter tab bar ──
   const cntB=n=>n>0?` <span style="font-family:var(--mono);font-size:11px">(${n})</span>`:'';
-  const TABS=[['all',T('dashFAll'),''],['renew',T('dashFRenew'),cntB(renewEntries.length)],['90',T('exp90'),cntB(d90Entries.length)],['docs',T('dashFDocs'),cntB(docPending.length)],['todo',T('dashFTodo'),cntB(todoEntries.length)],['absent',T('dashFAbsent'),dashCountBadge(dash_absentCount)]];
+  const TABS=[['all',T('dashFAll'),''],['renew',T('dashFRenew'),cntB(renewEntries.length)],['90',T('exp90'),cntB(d90Entries.length)],['docs',T('dashFDocs'),cntB(docPending.length)],['todo',T('dashFTodo'),cntB(todoEntries.length)],['absent',T('dashFAbsent'),dashCountBadge(dash_absentCount)],['noout',T('dashFNoOut'),dashCountBadge(dash_nooutCount)]];
   const tabBar=`<div class="att-subnav">${TABS.map(([k,l,b])=>`<button class="att-tab${dashFilter===k?' att-on':''}" onclick="dashGo('${k}')">${l}${b}</button>`).join('')}</div>`;
   const summaryHTML=`
   <div class="sg">
@@ -2586,10 +2693,13 @@ function renderDash(){
   else if(dashFilter==='docs')content=docPending.length?dashGrid(docPending.map(c=>dashDocCardHTML(c)).join('')):dashEmptyHTML(T('dashFEmpty'));
   else if(dashFilter==='todo')content=todoEntries.length?dashGrid(todoEntries.map(e=>dashTodoCardHTML(e)).join('')):dashEmptyHTML(T('dashTodoNone'));
   else if(dashFilter==='absent')content=`<div id="dash_absent_content">${dashAbsentLoadingHTML()}</div>`;
+  else if(dashFilter==='noout')content=`<div id="dash_noout_content">${dashAbsentLoadingHTML()}</div>`;
   else content=summaryHTML;
   document.getElementById('dbContent').innerHTML=tabBar+content;
   if(dashFilter==='absent')dashRenderAbsentToday();
   else dashRefreshAbsentCount();
+  if(dashFilter==='noout')dashRenderNooutToday();
+  else dashRefreshNooutCount();
 }
 
 function renderAlerts(){
