@@ -603,6 +603,8 @@ textarea.fi2{resize:vertical;min-height:65px}
   .att-btn-in,.att-btn-out{padding:15px;font-size:16px;border-radius:14px}
   .att-subnav{gap:6px;margin-bottom:14px;padding-bottom:10px}
   .att-tab{padding:6px 13px;font-size:12px}
+  /* History filter: ให้ input/select ยืดเต็มแถว + wrap ไม่ล้นขอบบนจอแคบ (ไม่แตะ field/query) */
+  #att_hist_search,#att_hist_from,#att_hist_to,#att_hist_status{width:auto!important;flex:1 1 140px;min-width:0}
 }
 @media (max-width:380px){
   .att-clock{font-size:28px;letter-spacing:1px}
@@ -4034,7 +4036,7 @@ async function attApplyHistoryFilter(){
   const status=document.getElementById('att_hist_status')?.value||'all';
   const body=document.getElementById('att_hist_body');
   if(!body)return;
-  body.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--g5)">${T('attLoading')}</td></tr>`;
+  body.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--g5)">${T('attLoading')}</td></tr>`;
   // staff (และ legacy employee) lock query ดูเฉพาะของตัวเอง — admin ดูทุกคน
   const isEmp=curUser?.role!=='admin';
   try{
@@ -4053,7 +4055,7 @@ async function attApplyHistoryFilter(){
     att_historyLogs=logs;
     body.innerHTML=attRenderHistoryRows(logs);
   }catch(e){
-    body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#dc2626">โหลดข้อมูลไม่สำเร็จ</td></tr>';
+    body.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#dc2626">โหลดข้อมูลไม่สำเร็จ</td></tr>';
   }
 }
 
