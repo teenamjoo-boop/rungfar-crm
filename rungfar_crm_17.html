@@ -63,6 +63,109 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .lg-fcard:nth-child(3) .lg-fic{background:#FFEAD9;color:#DD7A22}
 .lg-ftit{font-size:14px;font-weight:800;color:var(--ltext);margin-bottom:2px}
 .lg-fsub{font-size:12px;color:var(--lmut);line-height:1.5}
+/* ── LEFT LOGIN SLIDER — product showcase (warm/cream/orange + accent ต่อสไลด์) UI only ── */
+.lgs{position:relative;width:100%;max-width:520px;margin-top:2px}
+.lgs-track{position:relative;display:grid}
+.lgs-slide{grid-area:1 / 1;opacity:0;transform:translateY(16px) scale(.985);transition:opacity .55s cubic-bezier(.4,0,.2,1),transform .55s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.lgs-slide.on{opacity:1;transform:none;pointer-events:auto}
+.lgs-slide{--ac:#FF7A1A;--ac-d:#E85F00;--ac-s:#FFE9D6;--ac2:#FF5F6D}
+.lgs-slide.ac-teal{--ac:#2F9E8F;--ac-d:#177F73;--ac-s:#DCF1ED;--ac2:#2563EB}
+.lgs-slide.ac-violet{--ac:#7C5CD6;--ac-d:#6638C9;--ac-s:#ECE6FB;--ac2:#FF6B6B}
+.lgs-slide.ac-gold{--ac:#C9871F;--ac-d:#A86B0E;--ac-s:#FBEFD3;--ac2:#7C5CD6}
+.lgs-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.lgs-eye{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--ac-d)}
+.lgs-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--ac-s);color:var(--ac-d);border:1px solid #fff}
+.lgs-badge svg{width:12px;height:12px}
+.lgs-h{font-size:20px;font-weight:800;line-height:1.28;letter-spacing:-.2px;color:var(--ltext);margin-bottom:7px}
+.lgs-sub{font-size:12.5px;line-height:1.6;color:var(--lmut);margin-bottom:15px;max-width:485px}
+.lgs-stage{position:relative;margin-bottom:15px}
+.lgs-stage::before{content:'';position:absolute;right:-12px;top:-14px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,var(--ac-s),transparent 70%);opacity:.9;z-index:0}
+.lgs-stage::after{content:'';position:absolute;left:16px;right:-8px;top:13px;bottom:-11px;border-radius:18px;background:var(--ac-s);opacity:.5;z-index:0}
+.mk{position:relative;z-index:1;background:#fff;border:1px solid #F1E4D7;border-radius:16px;box-shadow:0 18px 40px rgba(120,70,30,.15);padding:14px 15px 15px;overflow:hidden}
+.mk::before{content:'';position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.mk-head{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.mk-ic{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--ac-s);color:var(--ac-d)}
+.mk-ic svg{width:18px;height:18px}
+.mk-ttl{font-size:12.5px;font-weight:800;color:var(--ltext);line-height:1.2}
+.mk-ttl span{display:block;font-size:9.5px;font-weight:600;color:var(--lmut);margin-top:2px}
+.mk-float{position:absolute;right:11px;top:11px;z-index:2;display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;color:var(--ac-d);background:#fff;border:1px solid var(--ac-s);border-radius:20px;padding:3px 9px;box-shadow:0 4px 12px rgba(120,70,30,.12)}
+.mk-float .dotlive{width:6px;height:6px;border-radius:50%;background:#16A34A;box-shadow:0 0 0 3px rgba(22,163,74,.16)}
+.mk-search{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--lmut);background:#FBF4EC;border:1px solid #F1E4D6;border-radius:9px;padding:7px 10px;margin-bottom:11px}
+.mk-search svg{width:13px;height:13px;color:var(--ac-d);flex-shrink:0}
+.mk-search .cur{margin-left:auto;width:1.5px;height:12px;border-radius:2px;background:var(--ac);opacity:.75}
+.mk-chips{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:11px}
+.mk-av.mono{font-family:var(--mono);font-size:11px;font-weight:800}
+.mk-remind{display:flex;align-items:center;gap:9px;margin-top:11px;padding:8px 11px;border-radius:10px;background:linear-gradient(90deg,var(--ac-s),#FFF7EE);border:1px solid #F2E2D2}
+.mk-remind svg{width:15px;height:15px;color:var(--ac-d);flex-shrink:0}
+.mk-remind b{font-size:10.5px;font-weight:800;color:var(--ltext)}
+.mk-remind .rt span{font-size:9px;color:var(--lmut)}
+.mk-remind .go{margin-left:auto;font-size:9.5px;font-weight:800;color:var(--ac-d);white-space:nowrap}
+.mk-chip{background:#FFF8F1;border:1px solid #F2E5D8;border-radius:10px;padding:7px 8px}
+.mk-chip .n{font-size:15px;font-weight:800;color:var(--ltext);font-family:var(--mono)}
+.mk-chip .l{font-size:9px;color:var(--lmut);margin-top:1px;line-height:1.2}
+.mk-rows{display:flex;flex-direction:column;gap:7px}
+.mk-row{display:flex;align-items:center;gap:9px}
+.mk-av{width:24px;height:24px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--ac-s);color:var(--ac-d)}
+.mk-av svg{width:13px;height:13px}
+.mk-meta{flex:1;min-width:0}
+.mk-meta b{display:block;font-size:11px;font-weight:700;color:var(--ltext);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-meta span{font-size:9.5px;color:var(--lmut)}
+.mk-pill{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.pill-g{background:#E7F6EC;color:#15803D}.pill-a{background:#FFF1DD;color:#B26B07}.pill-r{background:#FDE7E7;color:#C8341F}.pill-b{background:#E6EEFE;color:#2456C9}
+.mk-foot{display:flex;align-items:center;gap:8px;margin-top:11px;padding-top:11px;border-top:1px solid #F2E8DE}
+.mk-foot .ff{flex:1;display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--lmut);background:#FBF4EC;border:1px solid #F1E4D6;border-radius:8px;padding:6px 9px}
+.mk-foot .ff svg{width:13px;height:13px;color:var(--ac-d);flex-shrink:0}
+.mk-clock{text-align:center;padding:3px 0 9px}
+.mk-clock .t{font-size:29px;font-weight:800;letter-spacing:1px;color:var(--ltext);font-family:Arial,Helvetica,sans-serif}
+.mk-clock .d{font-size:9.5px;color:var(--lmut);margin-top:1px}
+.mk-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+.mk-btn{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;font-weight:700;padding:9px;border-radius:9px;color:#fff}
+.mk-btn svg{width:14px;height:14px}
+.mk-btn.in{background:linear-gradient(135deg,#16A34A,#22C55E)}
+.mk-btn.out{background:linear-gradient(135deg,#2563EB,#60A5FA)}
+.mk-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.mk-tag{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;padding:4px 9px;border-radius:20px;background:#F4FBF6;color:#15803D;border:1px solid #CDEBD6}
+.mk-tag svg{width:11px;height:11px}
+.mk-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+.mk-metric{background:#FFF8F1;border:1px solid #F2E5D8;border-radius:11px;padding:8px 10px}
+.mk-metric .mh{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--lmut);font-weight:600}
+.mk-metric .mh svg{width:12px;height:12px;color:var(--ac-d)}
+.mk-metric .mv{font-size:16px;font-weight:800;color:var(--ltext);margin-top:3px;font-family:var(--mono)}
+.mk-metric .mt{font-size:9px;font-weight:700;margin-top:1px}
+.up{color:#15803D}.dn{color:#C8341F}
+.mk-bars{display:flex;align-items:flex-end;gap:6px;height:42px;margin-bottom:11px}
+.mk-bars i{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--ac),var(--ac-s))}
+.mk-areas{display:flex;flex-direction:column;gap:6px}
+.mk-area{display:flex;align-items:center;gap:8px;font-size:10.5px}
+.mk-area svg{width:13px;height:13px;color:var(--ac-d);flex-shrink:0}
+.mk-area b{flex:1;font-weight:700;color:var(--ltext)}
+.mk-prog{margin-bottom:12px}
+.mk-prog .pl{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;font-weight:700;color:var(--lmut);margin-bottom:5px}
+.mk-prog .pl b{color:var(--ac-d);font-family:var(--mono);font-size:10.5px}
+.mk-progbar{height:7px;border-radius:20px;background:#F1E7DC;overflow:hidden}
+.mk-progfill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.mk-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rmc{border-radius:12px;padding:11px 11px 12px}
+.rmc.now{background:#F3FAF5;border:1px solid #D7EEDE}
+.rmc.next{background:#FBF4E2;border:1px solid #F1E3BE}
+.rmc h5{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;margin-bottom:10px}
+.rmc h5 svg{width:14px;height:14px}
+.rmc.now h5{color:#15803D}.rmc.next h5{color:var(--ac-d)}
+.rmc-n{margin-left:auto;font-size:9px;font-weight:800;font-family:var(--mono);padding:1px 7px;border-radius:20px}
+.rmc.now .rmc-n{background:#E0F2E6;color:#15803D}.rmc.next .rmc-n{background:#F6E7C4;color:var(--ac-d)}
+.rmc ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.rmc li{display:flex;align-items:flex-start;gap:7px;font-size:10px;line-height:1.4;color:#3A2E25}
+.rmc li svg{width:13px;height:13px;flex-shrink:0;margin-top:1px}
+.rmc.now li svg{color:#16A34A}.rmc.next li svg{color:var(--ac-d)}
+.lgs-feats{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.lgs-feat{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;line-height:1.38;color:#42352B}
+.lgs-feat svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;color:var(--ac-d)}
+.lgs-dots{display:flex;align-items:center;gap:9px;margin-top:20px}
+.lgs-dot{height:8px;width:8px;border-radius:20px;background:rgba(120,70,30,.22);border:none;padding:0;cursor:pointer;transition:width .35s,background .35s}
+.lgs-dot:hover{background:rgba(232,95,0,.55)}
+.lgs-dot.on{width:30px;background:linear-gradient(90deg,var(--lo),var(--lc))}
+@media (max-width:980px){.lgs{max-width:100%}}
+@media (max-width:560px){.lgs-h{font-size:17px}.lgs-sub{font-size:12px;margin-bottom:13px}.lgs-feats{grid-template-columns:1fr}.mk-2col{grid-template-columns:1fr;gap:13px}}
 /* slideshow — ใหญ่ขึ้น + ghost card ด้านหลัง + floating chip ให้มีมิติ */
 .lg-show{position:relative;width:100%;max-width:540px;min-height:322px;margin-top:2px}
 .lg-show::after{content:'';position:absolute;left:30px;right:-16px;top:22px;bottom:-16px;border-radius:18px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.20);z-index:0}
@@ -622,19 +725,173 @@ textarea.fi2{resize:vertical;min-height:65px}
       <span class="lg-eyebrow">RUNGFAR Labor CRM</span>
       <div class="lg-brandname">ระบบจัดการ<br><span>แรงงานต่างด้าว</span></div>
       <div class="lg-acc"></div>
-      <div class="lg-desc">บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ</div>
-      <div class="lg-feats">
-        <div class="lg-fcard">
-          <div class="lg-fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></div>
-          <div><div class="lg-ftit">CRM &amp; Documents</div><div class="lg-fsub">จัดการลูกค้า เอกสารแรงงาน และสถานะดำเนินงานในที่เดียว</div></div>
+      <!-- LEFT SLIDER (4 slides, auto + dots) — UI/UX เท่านั้น ไม่ผูก data จริง ไม่แตะ logic login -->
+      <div class="lgs">
+        <div class="lgs-track" id="lgsTrack">
+          <!-- SLIDE 1 — CRM / Documents (accent: ส้ม/พีช/ครีม) -->
+          <article class="lgs-slide on">
+            <div class="lgs-top">
+              <span class="lgs-eye">RUNGFAR LABOR CRM</span>
+              <span class="lgs-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>พร้อมใช้งานแล้ว</span>
+            </div>
+            <h3 class="lgs-h">บริหารข้อมูลลูกค้าและเอกสารอย่างเป็นระบบ</h3>
+            <p class="lgs-sub">รวมข้อมูลลูกค้า นายจ้าง เอกสารแรงงาน และสถานะงานไว้ในที่เดียว ช่วยให้ติดตามงานง่าย ค้นหาข้อมูลเร็ว และลดงานซ้ำซ้อน</p>
+            <div class="lgs-stage">
+              <div class="mk">
+                <div class="mk-head">
+                  <div class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+                  <div class="mk-ttl">ภาพรวมข้อมูลลูกค้า<span>ตัวอย่างหน้าระบบ (ข้อมูลจำลอง)</span></div>
+                </div>
+                <div class="mk-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.6-3.6"/></svg>ค้นหาลูกค้า เอกสาร หรือสาขา<span class="cur"></span></div>
+                <div class="mk-chips">
+                  <div class="mk-chip"><div class="n">1,248</div><div class="l">ลูกค้าทั้งหมด</div></div>
+                  <div class="mk-chip"><div class="n">86</div><div class="l">งานเปิดอยู่</div></div>
+                  <div class="mk-chip"><div class="n">12</div><div class="l">เอกสารใกล้หมดอายุ</div></div>
+                  <div class="mk-chip"><div class="n">5</div><div class="l">นัดหมายวันนี้</div></div>
+                </div>
+                <div class="mk-rows">
+                  <div class="mk-row"><div class="mk-av mono">A</div><div class="mk-meta"><b>ลูกค้า A</b><span>สาขาระยอง</span></div><span class="mk-pill pill-g">เอกสารครบ</span></div>
+                  <div class="mk-row"><div class="mk-av mono">B</div><div class="mk-meta"><b>ลูกค้า B</b><span>สาขาปทุมธานี</span></div><span class="mk-pill pill-a">รอต่ออายุ</span></div>
+                  <div class="mk-row"><div class="mk-av mono">C</div><div class="mk-meta"><b>ลูกค้า C</b><span>สาขาอยุธยา</span></div><span class="mk-pill pill-b">นัดหมายวันนี้</span></div>
+                </div>
+                <div class="mk-remind">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+                  <div class="rt"><b>เอกสารใกล้หมดอายุ 12 รายการ</b><span> · ภายใน 30 วันข้างหน้า</span></div>
+                  <span class="go">ดูทั้งหมด</span>
+                </div>
+              </div>
+            </div>
+            <div class="lgs-feats">
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>จัดเก็บข้อมูลลูกค้า / นายจ้าง / พนักงาน</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ติดตามสถานะเอกสารและงานได้ง่าย</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>แจ้งเตือนเอกสารใกล้หมดอายุ</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ค้นหาข้อมูลย้อนหลังในระบบเดียว</div>
+            </div>
+          </article>
+
+          <!-- SLIDE 2 — Attendance / LINE (accent: เขียว/น้ำเงิน/ขาว) -->
+          <article class="lgs-slide ac-teal">
+            <div class="lgs-top">
+              <span class="lgs-eye">ATTENDANCE MANAGEMENT</span>
+              <span class="lgs-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>ใช้งานประจำทุกวัน</span>
+            </div>
+            <h3 class="lgs-h">ตอกบัตรเข้างาน–ออกงาน พร้อมแจ้งเตือนผ่าน LINE</h3>
+            <p class="lgs-sub">บันทึกเวลาเข้างานออกงาน ตรวจสอบ GPS และติดตามประวัติย้อนหลังได้สะดวก ช่วยให้ควบคุมการทำงานของทีมได้ชัดเจนมากขึ้น</p>
+            <div class="lgs-stage">
+              <div class="mk">
+                <div class="mk-float"><span class="dotlive"></span>ระบบพร้อมใช้งาน</div>
+                <div class="mk-head">
+                  <div class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
+                  <div class="mk-ttl">ตอกบัตรวันนี้<span>เขตเวลา GMT+7</span></div>
+                </div>
+                <div class="mk-clock"><div class="t">08:32</div><div class="d">วันจันทร์ · บันทึกเวลาเข้างาน</div></div>
+                <div class="mk-btns">
+                  <div class="mk-btn in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>เข้างาน</div>
+                  <div class="mk-btn out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>ออกงาน</div>
+                </div>
+                <div class="mk-tags">
+                  <span class="mk-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>GPS ปกติ</span>
+                  <span class="mk-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>อยู่ในพื้นที่</span>
+                  <span class="mk-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>บันทึกสำเร็จ</span>
+                </div>
+                <div class="mk-rows">
+                  <div class="mk-row"><div class="mk-av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.1-5.4A8.5 8.5 0 1 1 21 11.5z"/></svg></div><div class="mk-meta"><b>แจ้งเข้างาน–ออกงาน</b><span>ส่งเข้ากลุ่ม LINE อัตโนมัติ</span></div><span class="mk-pill pill-b">LINE</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="lgs-feats">
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>บันทึกเวลาเข้างาน–ออกงานในระบบ</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ตรวจสอบ GPS และพื้นที่ทำงานได้</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ดูประวัติ ปฏิทิน และรายงานย้อนหลัง</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>แจ้งเตือนสำคัญผ่าน LINE</div>
+            </div>
+          </article>
+
+          <!-- SLIDE 3 — Meta Ads / Marketing (accent: ม่วง/คอรัล/ส้ม) -->
+          <article class="lgs-slide ac-violet">
+            <div class="lgs-top">
+              <span class="lgs-eye">MARKETING INSIGHTS</span>
+              <span class="lgs-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3 8-8"/><path d="M21 7v5h-5"/></svg>สำหรับผู้บริหารและทีมการตลาด</span>
+            </div>
+            <h3 class="lgs-h">ติดตามการตลาดและวิเคราะห์โฆษณาได้ในระบบเดียว</h3>
+            <p class="lgs-sub">ดูภาพรวมแคมเปญและสรุปผลโฆษณา Meta / Facebook แบบเข้าใจง่าย ช่วยตัดสินใจได้เร็วขึ้นว่าพื้นที่ไหนควรไปต่อ ปรับ หรือหยุด</p>
+            <div class="lgs-stage">
+              <div class="mk">
+                <div class="mk-head">
+                  <div class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16"/><path d="M7 14l3-3 3 2 5-6"/></svg></div>
+                  <div class="mk-ttl">ภาพรวมโฆษณา Meta<span>7 วันล่าสุด</span></div>
+                </div>
+                <div class="mk-metrics">
+                  <div class="mk-metric"><div class="mh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 19a6 6 0 0 1 12 0"/><path d="M16 6.2a3 3 0 0 1 0 5.6"/></svg>Leads</div><div class="mv">326</div><div class="mt up">+18% สัปดาห์นี้</div></div>
+                  <div class="mk-metric"><div class="mh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4l6 16 2.4-6.6L20 11z"/></svg>CTR</div><div class="mv">2.8%</div><div class="mt up">+0.4%</div></div>
+                  <div class="mk-metric"><div class="mh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.3"/></svg>CPL</div><div class="mv">฿84</div><div class="mt up">ดีขึ้น 9%</div></div>
+                  <div class="mk-metric"><div class="mh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Reach</div><div class="mv">48.2K</div><div class="mt up">+12%</div></div>
+                </div>
+                <div class="mk-bars"><i style="height:42%"></i><i style="height:58%"></i><i style="height:48%"></i><i style="height:72%"></i><i style="height:63%"></i><i style="height:88%"></i><i style="height:76%"></i></div>
+                <div class="mk-areas">
+                  <div class="mk-area"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><b>ระยอง</b><span class="mk-pill pill-g">ดี</span></div>
+                  <div class="mk-area"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><b>ปทุมธานี</b><span class="mk-pill pill-a">ควรปรับ</span></div>
+                  <div class="mk-area"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><b>อยุธยา</b><span class="mk-pill pill-b">เฝ้าดู</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="lgs-feats">
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>สรุปผลโฆษณา Meta / Facebook เข้าใจง่าย</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>เปรียบเทียบผลลัพธ์ตามพื้นที่/แคมเปญ</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>เห็นตัวเลขสำคัญ Leads, CTR, CPL</div>
+              <div class="lgs-feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ช่วยวางแผนการตลาดได้แม่นยำขึ้น</div>
+            </div>
+          </article>
+
+          <!-- SLIDE 4 — Roadmap (accent: ทอง/ม่วง/ส้มอ่อน) -->
+          <article class="lgs-slide ac-gold">
+            <div class="lgs-top">
+              <span class="lgs-eye">SYSTEM ROADMAP</span>
+              <span class="lgs-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>กำลังพัฒนาอย่างต่อเนื่อง</span>
+            </div>
+            <h3 class="lgs-h">ระบบบริหารงานครบวงจร พร้อมพัฒนาต่อเนื่อง</h3>
+            <p class="lgs-sub">ออกแบบให้รองรับการทำงานของบริษัทอย่างเป็นระบบ และมีแผนต่อยอดฟีเจอร์เพิ่มเติม เพื่อเชื่อมข้อมูล เอกสาร และการติดตามงานให้ครบมากยิ่งขึ้น</p>
+            <div class="lgs-stage">
+              <div class="mk">
+                <div class="mk-head">
+                  <div class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><path d="M9 12h6M9 16h4"/></svg></div>
+                  <div class="mk-ttl">แผนพัฒนาระบบ<span>อัปเดตเป็นรอบ ๆ</span></div>
+                </div>
+                <div class="mk-prog">
+                  <div class="pl"><span>ความคืบหน้าระบบโดยรวม</span><b>60%</b></div>
+                  <div class="mk-progbar"><div class="mk-progfill" style="width:60%"></div></div>
+                </div>
+                <div class="mk-2col">
+                  <div class="rmc now">
+                    <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 5-5"/></svg>ใช้งานได้แล้ว<span class="rmc-n">5</span></h5>
+                    <ul>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>จัดการข้อมูลลูกค้าและเอกสาร</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>ระบบตอกบัตรเข้า–ออกงาน</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>แจ้งเตือนวันหมดอายุเอกสาร</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>วิเคราะห์โฆษณา Meta / Facebook เบื้องต้น</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>แจ้งเตือนผ่าน LINE</li>
+                    </ul>
+                  </div>
+                  <div class="rmc next">
+                    <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/></svg>กำลังพัฒนา<span class="rmc-n">5</span></h5>
+                    <ul>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/></svg>นำเข้าเอกสาร PDF เข้า–ออกงาน</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/></svg>รับรูปภาพ / PDF จาก LINE กลุ่มเข้า CRM</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/></svg>ระบบบัญชีเบื้องต้น / เก็บสลิป</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/></svg>ปุ่มยืนยันข้อมูลเข้า</li>
+                      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/></svg>ติดตามสถานะงาน / ใบงาน / workflow เพิ่มเติม</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
         </div>
-        <div class="lg-fcard">
-          <div class="lg-fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
-          <div><div class="lg-ftit">Attendance Tracking</div><div class="lg-fsub">ตอกบัตรเข้า-ออก พร้อมประวัติและรายงานรายวัน</div></div>
-        </div>
-        <div class="lg-fcard">
-          <div class="lg-fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
-          <div><div class="lg-ftit">LINE Notification</div><div class="lg-fsub">แจ้งเตือนงานและการตอกบัตรผ่าน LINE อัตโนมัติ</div></div>
+        <div class="lgs-dots" id="lgsDots">
+          <button class="lgs-dot on" type="button" aria-label="สไลด์ 1" onclick="lgsGo(0)"></button>
+          <button class="lgs-dot" type="button" aria-label="สไลด์ 2" onclick="lgsGo(1)"></button>
+          <button class="lgs-dot" type="button" aria-label="สไลด์ 3" onclick="lgsGo(2)"></button>
+          <button class="lgs-dot" type="button" aria-label="สไลด์ 4" onclick="lgsGo(3)"></button>
         </div>
       </div>
     </div>
@@ -659,6 +916,25 @@ textarea.fi2{resize:vertical;min-height:65px}
   </div>
   </div>
 </div>
+
+<!-- LEFT LOGIN SLIDER — auto-rotate + dot nav (UI only, ไม่แตะ logic login) -->
+<script>
+(function(){
+  var idx=0, N=4, timer=null, DELAY=5500;
+  function slides(){return document.querySelectorAll('#lgsTrack .lgs-slide');}
+  function dots(){return document.querySelectorAll('#lgsDots .lgs-dot');}
+  function show(i){
+    idx=(i%N+N)%N;
+    slides().forEach(function(s,k){s.classList.toggle('on',k===idx);});
+    dots().forEach(function(d,k){d.classList.toggle('on',k===idx);});
+  }
+  function start(){stop();timer=setInterval(function(){show(idx+1);},DELAY);}
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  window.lgsGo=function(i){show(i);start();}; // กดเปลี่ยนเองแล้วรีเซ็ตเวลานับใหม่
+  function init(){if(!document.getElementById('lgsTrack'))return;show(0);start();}
+  if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
 
 <!-- APP -->
 <div id="appScreen">
