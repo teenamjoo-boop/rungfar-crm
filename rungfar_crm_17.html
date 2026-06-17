@@ -1322,6 +1322,7 @@ const LANG = {
     dashMustAct:'ต้องดำเนินการ', dashUrgentWarn:'มีรายการด่วน', dashOkAll:'ปกติดี',
     dashNoUrgent:'ไม่มีรายการด่วน',
     dashFAll:'ทั้งหมด', dashFRenew:'ต่ออายุ', dashFDocs:'เอกสารค้าง', dashFTodo:'งานที่ต้องทำ', dashFAbsent:'พนักงานขาดงาน', dashFEmpty:'ยังไม่มีรายการ',
+    dashMissBooklet:'ยังไม่มีเล่ม', dashTodoNone:'ยังไม่มีงานที่ต้องทำ', dashAbsentNone:'ยังไม่มีข้อมูลพนักงานขาดงาน',
     xlSection:'ข้อมูลตาม Excel', xlSubmit:'วันที่ยื่น', xlAgent:'ตัวแทน', xlMedical:'ใบแพทย์', xlInsurance:'ประกัน', xlCardFee:'ค่าบัตร', xlBooklet:'สถานะเล่ม', xlBookletHas:'มีเล่ม', xlBookletNone:'ไม่มีเล่ม', xlAppt:'นัดหมาย', xlApptTime:'เวลา', xlApptPlace:'สถานที่', xlQueue:'คิวว่าง', xlReceive:'วันรับเล่ม', xlYes:'มี', xlPaid:'จ่ายแล้ว',
     dashD15:'≤15 วัน', dashD1630:'16-30 วัน',
     dashPP:'📘 พาสปอร์ต (30 วัน)', dashVWP:'🛂 VISA/WP (30 วัน)', dash90:'📅 รายงาน 90 วัน',
@@ -1491,6 +1492,7 @@ const LANG = {
     dashMustAct:'ဆောင်ရွက်ရမည်', dashUrgentWarn:'အရေးတကြီးရှိ', dashOkAll:'ပုံမှန်',
     dashNoUrgent:'အရေးပေါ်မရှိ',
     dashFAll:'အားလုံး', dashFRenew:'သက်တမ်းတိုး', dashFDocs:'စာရွက်ကျန်', dashFTodo:'လုပ်စရာ', dashFAbsent:'ပျက်ကွက်ဝန်ထမ်း', dashFEmpty:'ပစ္စည်းမရှိသေး',
+    dashMissBooklet:'စာအုပ်မရှိသေး', dashTodoNone:'လုပ်စရာမရှိသေး', dashAbsentNone:'ပျက်ကွက်ဝန်ထမ်းဒေတာမရှိသေး',
     xlSection:'Excel ဒေတာ', xlSubmit:'တင်သွင်းရက်', xlAgent:'ကိုယ်စားလှယ်', xlMedical:'ဆေးလက်မှတ်', xlInsurance:'အာမခံ', xlCardFee:'ကတ်ခ', xlBooklet:'စာအုပ်အခြေအနေ', xlBookletHas:'စာအုပ်ရှိ', xlBookletNone:'စာအုပ်မရှိ', xlAppt:'ချိန်းဆိုရက်', xlApptTime:'အချိန်', xlApptPlace:'နေရာ', xlQueue:'ကျူးလွတ်ရက်', xlReceive:'စာအုပ်ရရက်', xlYes:'ရှိ', xlPaid:'ပေးပြီး',
     dashD15:'≤15 ရက်', dashD1630:'16-30 ရက်',
     dashPP:'📘 နိုင်ငံကူး (30 ရက်)', dashVWP:'🛂 VISA/WP (30 ရက်)', dash90:'📅 90 ရက်အစီရင်ခံ',
@@ -2369,6 +2371,25 @@ function dashCustCardHTML(c){
 function dashEmptyHTML(msg){
   return `<div style="text-align:center;padding:60px 20px;color:var(--g5)"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;margin-bottom:10px"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><div style="font-size:13px">${msg}</div></div>`;
 }
+// Round F1C: card "เอกสารค้าง" — แสดง chip ของที่ยังขาด
+function dashDocCardHTML(c){
+  const miss=[];
+  if(!c.medical_cert)miss.push(T('xlMedical'));
+  if(!c.insurance)miss.push(T('xlInsurance'));
+  if(c.booklet_status!=='has')miss.push(T('dashMissBooklet'));
+  if(!c.card_fee_paid)miss.push(T('xlCardFee'));
+  const chips=miss.map(m=>`<span style="font-size:10px;background:var(--redb);color:#dc2626;padding:1px 7px;border-radius:10px;font-weight:600">${m}</span>`).join(' ');
+  return `<div class="ac son" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot adot-o">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')} · ${esc(c.nationality||'—')}</div><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">${chips}</div></div></div>`;
+}
+// Round F1C: card "งานที่ต้องทำ" — นัดหมาย/คิว/รับเล่ม
+function dashTodoCardHTML(e){
+  const d=e.d;
+  const cls=(d!=null&&d<=0)?'urg':(d!=null&&d<=2)?'wrn':'son';
+  const dotCls=(d!=null&&d<=0)?'adot-r':(d!=null&&d<=2)?'adot-o':'adot-g';
+  const valCls=(d!=null&&d<=0)?'dr':(d!=null&&d<=2)?'do_':'dg_';
+  const sub=[e.extra,e.c.agent_name?T('xlAgent')+': '+esc(e.c.agent_name):''].filter(Boolean).join(' · ');
+  return `<div class="ac ${cls}" onclick="openDetail(${e.c.id})" style="background:#fff"><div class="adot ${dotCls}">${NF[e.c.nationality]||''}</div><div class="ai"><div class="an">${esc(e.c.name)}</div><div class="ad">${e.type} ${fd(e.date)}${e.c.employer_id?' · '+esc(empN(e.c.employer_id)):''}</div>${sub?`<div class="ad">${sub}</div>`:''}</div><div class="${valCls}">${d!=null?el(d):'—'}</div></div>`;
+}
 function renderDash(){
   const total=customers.length;const al=customers.filter(isAlert);
   const mm=customers.filter(c=>c.nationality==='เมียนมา').length;const kh=customers.filter(c=>c.nationality==='กัมพูชา').length;
@@ -2392,13 +2413,22 @@ function renderDash(){
   // ── filter datasets (ใช้ field/logic เดิม) ──
   const renewEntries=[];customers.forEach(c=>{[['expPassport',c.exp_passport,settings.passport],['expVisa',c.exp_visa,settings.visa],['expWP',c.exp_wp,settings.wp],['expMOU',c.exp_mou,settings.mou]].forEach(([lk,dt,w])=>{if(!dt)return;const d=du(dt);if(d!==null&&d<=w)renewEntries.push({c,x:{l:T(lk),d:dt,w},d});});});renewEntries.sort((a,b)=>a.d-b.d);
   const d90Entries=[];customers.forEach(c=>{if(!c.next_90)return;const d=du(c.next_90);if(d!==null&&d<=settings.next90)d90Entries.push({c,x:{l:T('exp90'),d:c.next_90,w:settings.next90},d});});d90Entries.sort((a,b)=>a.d-b.d);
-  const docPending=customers.filter(c=>c.work_status==='รอเอกสาร');
+  // เอกสารค้าง: ลูกค้าที่ยัง active (ไม่ปิดงาน) และยังขาดอย่างใดอย่างหนึ่ง (ใบแพทย์/ประกัน/เล่ม/ค่าบัตร)
+  const docPending=customers.filter(c=>c.work_status!=='ปิดงาน'&&(!c.medical_cert||!c.insurance||c.booklet_status!=='has'||!c.card_fee_paid));
+  // งานที่ต้องทำ: นัดหมาย/คิวว่าง/รับเล่ม (เรียงวันใกล้สุด/เกินกำหนดก่อน)
+  const todoEntries=[];
+  customers.forEach(c=>{
+    if(c.appt_date)todoEntries.push({c,type:T('xlAppt'),date:c.appt_date,d:du(c.appt_date),extra:[c.appt_time,c.appt_place].filter(Boolean).map(esc).join(' · ')});
+    if(c.queue_date)todoEntries.push({c,type:T('xlQueue'),date:c.queue_date,d:du(c.queue_date),extra:''});
+    if(c.receive_date)todoEntries.push({c,type:T('xlReceive'),date:c.receive_date,d:du(c.receive_date),extra:''});
+  });
+  todoEntries.sort((a,b)=>(a.d==null?1e9:a.d)-(b.d==null?1e9:b.d));
   const ab=document.getElementById('abanner');
   if(al.length>0){ab.style.display='flex';ab.innerHTML=`⚠️ ${T('bannerFmt').replace('{n}',`<strong>${al.length}</strong>`)} — <span style="cursor:pointer;text-decoration:underline" onclick="dashGo('renew')">${T('bannerSeeAll')}</span>`;}
   else ab.style.display='none';
   // ── sub-filter tab bar ──
   const cntB=n=>n>0?` <span style="font-family:var(--mono);font-size:11px">(${n})</span>`:'';
-  const TABS=[['all',T('dashFAll'),''],['renew',T('dashFRenew'),cntB(renewEntries.length)],['90',T('exp90'),cntB(d90Entries.length)],['docs',T('dashFDocs'),cntB(docPending.length)],['todo',T('dashFTodo'),''],['absent',T('dashFAbsent'),'']];
+  const TABS=[['all',T('dashFAll'),''],['renew',T('dashFRenew'),cntB(renewEntries.length)],['90',T('exp90'),cntB(d90Entries.length)],['docs',T('dashFDocs'),cntB(docPending.length)],['todo',T('dashFTodo'),cntB(todoEntries.length)],['absent',T('dashFAbsent'),'']];
   const tabBar=`<div class="att-subnav">${TABS.map(([k,l,b])=>`<button class="att-tab${dashFilter===k?' att-on':''}" onclick="dashGo('${k}')">${l}${b}</button>`).join('')}</div>`;
   const summaryHTML=`
   <div class="sg">
@@ -2424,9 +2454,9 @@ function renderDash(){
   let content;
   if(dashFilter==='renew')content=renewEntries.length?dashGrid(renewEntries.map(e=>dashAlertCardHTML(e.c,e.x,e.d)).join('')):dashEmptyHTML(T('dashFEmpty'));
   else if(dashFilter==='90')content=d90Entries.length?dashGrid(d90Entries.map(e=>dashAlertCardHTML(e.c,e.x,e.d)).join('')):dashEmptyHTML(T('dashFEmpty'));
-  else if(dashFilter==='docs')content=docPending.length?dashGrid(docPending.map(c=>dashCustCardHTML(c)).join('')):dashEmptyHTML(T('dashFEmpty'));
-  else if(dashFilter==='todo')content=dashEmptyHTML(T('dashFEmpty'));
-  else if(dashFilter==='absent')content=dashEmptyHTML(T('dashFEmpty'));
+  else if(dashFilter==='docs')content=docPending.length?dashGrid(docPending.map(c=>dashDocCardHTML(c)).join('')):dashEmptyHTML(T('dashFEmpty'));
+  else if(dashFilter==='todo')content=todoEntries.length?dashGrid(todoEntries.map(e=>dashTodoCardHTML(e)).join('')):dashEmptyHTML(T('dashTodoNone'));
+  else if(dashFilter==='absent')content=dashEmptyHTML(T('dashAbsentNone'));
   else content=summaryHTML;
   document.getElementById('dbContent').innerHTML=tabBar+content;
 }
