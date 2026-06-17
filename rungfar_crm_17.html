@@ -2553,7 +2553,7 @@ function doFilter(){
   const ws=document.getElementById('qws')?.value||'';const grp=document.getElementById('qgrp')?.value||'';const br=document.getElementById('qbr')?.value||'';
   filtered=customers.filter(c=>{
     const emp2=c.employer_id?employers.find(e=>e.id===c.employer_id):null;
-    const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
+    const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,c.agent_name,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
     return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br));
   });
   // Round F1B-2: เรียงใหม่สุดก่อนเสมอ — created_at DESC, fallback id DESC
