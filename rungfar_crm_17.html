@@ -2390,6 +2390,135 @@ function dashTodoCardHTML(e){
   const sub=[e.extra,e.c.agent_name?T('xlAgent')+': '+esc(e.c.agent_name):''].filter(Boolean).join(' · ');
   return `<div class="ac ${cls}" onclick="openDetail(${e.c.id})" style="background:#fff"><div class="adot ${dotCls}">${NF[e.c.nationality]||''}</div><div class="ai"><div class="an">${esc(e.c.name)}</div><div class="ad">${e.type} ${fd(e.date)}${e.c.employer_id?' · '+esc(empN(e.c.employer_id)):''}</div>${sub?`<div class="ad">${sub}</div>`:''}</div><div class="${valCls}">${d!=null?el(d):'—'}</div></div>`;
 }
+let dash_absentReqId=0, dash_absentCount=0, dash_absentCountReqId=0;
+function dashCountBadge(n){
+  return ` <span style="font-family:var(--mono);font-size:11px">(${Number(n)||0})</span>`;
+}
+function dashUpdateAbsentTabCount(){
+  const btn=document.querySelector(`.att-tab[onclick="dashGo('absent')"]`);
+  if(btn)btn.innerHTML=T('dashFAbsent')+dashCountBadge(dash_absentCount);
+}
+function dashTodayLogDate(date){
+  return new Date(date||Date.now()).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+}
+function dashAbsentTimeLabel(time){
+  return time?String(time).slice(0,5):'—';
+}
+function dashAbsentCardHTML(row,mode){
+  const isAbsent=mode==='absent';
+  const cls=isAbsent?'urg':'wrn';
+  const dotCls=isAbsent?'adot-r':'adot-o';
+  const status=isAbsent?'ขาดงาน':'ยังไม่เช็คอิน';
+  const statusBg=isAbsent?'var(--redb)':'#fff3e0';
+  const statusColor=isAbsent?'#dc2626':'#d97706';
+  const normalTime=dashAbsentTimeLabel(row.normal_checkin_time);
+  const branch=row.branch_name||'ไม่ระบุสาขา';
+  return `<div class="ac ${cls}" style="background:#fff;cursor:default">
+    <div class="adot ${dotCls}">!</div>
+    <div class="ai">
+      <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
+      <div class="ad">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · ${esc(branch)}</div>
+      <div class="ad">เวลาเข้างานปกติ: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(normalTime)}</span></div>
+    </div>
+    <span style="align-self:center;background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">${status}</span>
+  </div>`;
+}
+function dashAbsentLoadingHTML(){
+  return `<div style="text-align:center;padding:42px 20px;color:var(--g5);font-size:13px">กำลังโหลดข้อมูลพนักงานวันนี้...</div>`;
+}
+function dashAbsentErrorHTML(msg){
+  return `<div style="text-align:center;padding:42px 20px;color:#dc2626;font-size:13px">โหลดข้อมูลพนักงานขาดงานวันนี้ไม่สำเร็จ${msg?': '+esc(msg):''}</div>`;
+}
+function dashAbsentContentHTML(data){
+  if(!data.rows.length)return dashEmptyHTML('ยังไม่มีข้อมูลพนักงานขาดงานวันนี้');
+  const title=data.mode==='absent'?'พนักงานขาดงานวันนี้':'พนักงานยังไม่เช็คอินวันนี้';
+  const sub=data.mode==='absent'
+    ?'แสดงจาก attendance_logs วันนี้ที่มีสถานะ absent'
+    :'คำนวณแบบอ่านอย่างเดียวจากพนักงาน active ที่ยังไม่มี log วันนี้หรือยังไม่มี check-in';
+  return `<div>
+    <div class="dc" style="margin-bottom:12px">
+      <div class="dct" style="justify-content:space-between">
+        <span>${title}</span>
+        <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal;font-size:12px;color:#dc2626">${data.rows.length} คน</span>
+      </div>
+      <div style="font-size:12px;color:var(--g5);line-height:1.7">
+        วันที่ <span style="font-family:Tahoma,Arial,Helvetica,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(data.dateLabel)}</span> · พนักงาน active <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${data.activeCount}</span> คน · log วันนี้ <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${data.logCount}</span> รายการ<br>
+        ${sub}
+      </div>
+    </div>
+    ${dashGrid(data.rows.map(r=>dashAbsentCardHTML(r,data.mode)).join(''))}
+  </div>`;
+}
+async function dashLoadTodayAbsent(){
+  const today=dashTodayLogDate();
+  const [empRes,logRes]=await Promise.all([
+    dbGet('attendance_employees','?status=eq.active&order=employee_code.asc&select=id,employee_code,full_name,branch_id,branch_name,normal_checkin_time,status'),
+    dbGet('attendance_logs',`?log_date=eq.${today}&order=employee_id.asc&select=id,employee_id,employee_code,employee_name,branch_id,branch_name,log_date,checkin_time,checkout_time,day_status`)
+  ]);
+  const employees=Array.isArray(empRes)?empRes:[];
+  const logs=Array.isArray(logRes)?logRes:[];
+  const activeById=new Map();
+  const activeByCode=new Map();
+  employees.forEach(e=>{
+    if(e.id!=null)activeById.set(String(e.id),e);
+    if(e.employee_code)activeByCode.set(String(e.employee_code),e);
+  });
+  const seenAbsent=new Set();
+  const absentRows=[];
+  logs.forEach(l=>{
+    if(l.day_status!=='absent')return;
+    const emp=(l.employee_id!=null?activeById.get(String(l.employee_id)):null)||activeByCode.get(String(l.employee_code||''))||null;
+    if(!emp)return;
+    const key=emp.id!=null?'id:'+emp.id:'code:'+(emp.employee_code||l.employee_code||'');
+    if(seenAbsent.has(key))return;
+    seenAbsent.add(key);
+    absentRows.push({...emp,employee_name:l.employee_name||emp.full_name,branch_name:l.branch_name||emp.branch_name,normal_checkin_time:emp.normal_checkin_time});
+  });
+  const mode=absentRows.length?'absent':'not_checked_in';
+  const rows=absentRows.length?absentRows:employees.filter(e=>{
+    const log=logs.find(l=>(l.employee_id!=null&&e.id!=null&&String(l.employee_id)===String(e.id))||(l.employee_code&&e.employee_code&&String(l.employee_code)===String(e.employee_code)));
+    return !log||!log.checkin_time;
+  });
+  return{
+    today,
+    dateLabel:new Date(today+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'}),
+    mode,
+    rows,
+    activeCount:employees.length,
+    logCount:logs.length
+  };
+}
+async function dashRefreshAbsentCount(){
+  const reqId=++dash_absentCountReqId;
+  try{
+    const data=await dashLoadTodayAbsent();
+    if(reqId!==dash_absentCountReqId)return;
+    dash_absentCount=data.rows.length;
+    dashUpdateAbsentTabCount();
+  }catch(_){
+    if(reqId!==dash_absentCountReqId)return;
+    dash_absentCount=0;
+    dashUpdateAbsentTabCount();
+  }
+}
+async function dashRenderAbsentToday(){
+  const el=document.getElementById('dash_absent_content');
+  if(!el)return;
+  const reqId=++dash_absentReqId;
+  el.innerHTML=dashAbsentLoadingHTML();
+  try{
+    const data=await dashLoadTodayAbsent();
+    if(reqId!==dash_absentReqId||dashFilter!=='absent')return;
+    dash_absentCount=data.rows.length;
+    dashUpdateAbsentTabCount();
+    el.innerHTML=dashAbsentContentHTML(data);
+  }catch(e){
+    if(reqId!==dash_absentReqId||dashFilter!=='absent')return;
+    dash_absentCount=0;
+    dashUpdateAbsentTabCount();
+    el.innerHTML=dashAbsentErrorHTML(e&&e.message?e.message:'');
+  }
+}
 function renderDash(){
   const total=customers.length;const al=customers.filter(isAlert);
   const mm=customers.filter(c=>c.nationality==='เมียนมา').length;const kh=customers.filter(c=>c.nationality==='กัมพูชา').length;
@@ -2428,7 +2557,7 @@ function renderDash(){
   else ab.style.display='none';
   // ── sub-filter tab bar ──
   const cntB=n=>n>0?` <span style="font-family:var(--mono);font-size:11px">(${n})</span>`:'';
-  const TABS=[['all',T('dashFAll'),''],['renew',T('dashFRenew'),cntB(renewEntries.length)],['90',T('exp90'),cntB(d90Entries.length)],['docs',T('dashFDocs'),cntB(docPending.length)],['todo',T('dashFTodo'),cntB(todoEntries.length)],['absent',T('dashFAbsent'),'']];
+  const TABS=[['all',T('dashFAll'),''],['renew',T('dashFRenew'),cntB(renewEntries.length)],['90',T('exp90'),cntB(d90Entries.length)],['docs',T('dashFDocs'),cntB(docPending.length)],['todo',T('dashFTodo'),cntB(todoEntries.length)],['absent',T('dashFAbsent'),dashCountBadge(dash_absentCount)]];
   const tabBar=`<div class="att-subnav">${TABS.map(([k,l,b])=>`<button class="att-tab${dashFilter===k?' att-on':''}" onclick="dashGo('${k}')">${l}${b}</button>`).join('')}</div>`;
   const summaryHTML=`
   <div class="sg">
@@ -2456,9 +2585,11 @@ function renderDash(){
   else if(dashFilter==='90')content=d90Entries.length?dashGrid(d90Entries.map(e=>dashAlertCardHTML(e.c,e.x,e.d)).join('')):dashEmptyHTML(T('dashFEmpty'));
   else if(dashFilter==='docs')content=docPending.length?dashGrid(docPending.map(c=>dashDocCardHTML(c)).join('')):dashEmptyHTML(T('dashFEmpty'));
   else if(dashFilter==='todo')content=todoEntries.length?dashGrid(todoEntries.map(e=>dashTodoCardHTML(e)).join('')):dashEmptyHTML(T('dashTodoNone'));
-  else if(dashFilter==='absent')content=dashEmptyHTML(T('dashAbsentNone'));
+  else if(dashFilter==='absent')content=`<div id="dash_absent_content">${dashAbsentLoadingHTML()}</div>`;
   else content=summaryHTML;
   document.getElementById('dbContent').innerHTML=tabBar+content;
+  if(dashFilter==='absent')dashRenderAbsentToday();
+  else dashRefreshAbsentCount();
 }
 
 function renderAlerts(){
