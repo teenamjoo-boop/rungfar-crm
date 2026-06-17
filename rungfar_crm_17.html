@@ -762,6 +762,33 @@ textarea.fi2{resize:vertical;min-height:65px}
   .lgs-feats{display:none}
   .lgs-stage{margin-bottom:6px}
 }
+/* ===== MOBILE CUSTOMER CARD LIST (Stage 2) — desktop ใช้ table เดิม ===== */
+.cust-cards{display:none}
+.cust-card{background:#fff;border:1px solid var(--g2);border-radius:14px;padding:12px 13px;box-shadow:var(--s1);cursor:pointer;transition:box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.cust-card:active{box-shadow:var(--s3)}
+.cc-row1{display:flex;align-items:center;gap:11px}
+.cc-av{width:42px;height:42px;border-radius:11px;object-fit:cover;flex-shrink:0}
+.cc-av.ph{display:flex;align-items:center;justify-content:center;background:var(--pp);color:var(--pd);font-weight:800;font-size:15px;font-family:var(--mono)}
+.cc-id{flex:1;min-width:0}
+.cc-name{font-size:14.5px;font-weight:700;color:var(--g9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-sub{font-size:11.5px;color:var(--g5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.cc-pay{flex-shrink:0}
+.cc-row2{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:9px}
+.cc-st{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700}
+.cc-exps{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.cc-acts{display:flex;gap:8px;margin-top:11px}
+.cc-btn{flex:1;padding:9px;border-radius:9px;font-size:12.5px;font-weight:700;font-family:var(--font);cursor:pointer;border:none;background:var(--p);color:#fff}
+.cc-btn.ghost{background:var(--g1);color:var(--g7);border:1px solid var(--g2)}
+@media (max-width:768px){
+  #view-customers .ctbl-scroll{display:none}
+  #view-customers .cust-cards{display:flex;flex-direction:column;gap:10px;padding:10px 2px 4px}
+  #view-customers .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch;margin-bottom:10px}
+  #view-customers .toolbar .srch{grid-column:1 / -1;min-width:0}
+  #view-customers .toolbar .fi{width:100%}
+  #view-customers .tbar2{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  #view-customers #selAllBtn{display:none}
+  #view-customers .pag{flex-wrap:wrap;gap:8px;padding:10px 12px}
+}
 </style>
 </head>
 <body>
@@ -1057,6 +1084,8 @@ textarea.fi2{resize:vertical;min-height:65px}
         <table><thead><tr><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th style="width:44px">#</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th>จัดการ</th></tr></thead>
         <tbody id="tbody"></tbody></table>
         </div>
+        <!-- Stage 2: mobile customer card list (แสดงเฉพาะ <=768px, ใช้ข้อมูล filtered เดิม) -->
+        <div id="custCards" class="cust-cards"></div>
         <div id="emptyRow" style="display:none;text-align:center;padding:50px 20px;color:var(--g5)"><div style="font-size:40px;opacity:.3;margin-bottom:10px">🔍</div>ไม่พบข้อมูล</div>
         <div class="pag" id="pag"></div>
       </div>
@@ -3201,11 +3230,53 @@ function doFilter(){
   curPage=1;renderTable();
 }
 
+// Stage 2: render card list สำหรับมือถือ — อ่านจาก customers/filtered เดิม ไม่แตะ logic/save/filter
+function renderCustomerCards(list){
+  const wrap=document.getElementById('custCards'); if(!wrap)return;
+  const mDash='<span style="color:var(--g4)">—</span>';
+  const payMap={paid:`<span class="eb eb-ok">${T('payFull')}</span>`,partial:`<span class="eb eb-s">${T('payPart')}</span>`,unpaid:`<span class="eb eb-u">${T('payNo')}</span>`};
+  wrap.innerHTML=(list||[]).map(c=>{
+    const d90=du(c.next_90);
+    const dvw=Math.min(...[c.exp_visa,c.exp_wp].filter(Boolean).map(du).filter(d=>d!==null),Infinity);
+    const dpp=du(c.exp_passport);
+    const initials=c.name?c.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'?';
+    const avatar=c.photo?`<img src="${esc(c.photo)}" class="cc-av" onclick="openPhotoModal(this.src);event.stopPropagation()">`:`<div class="cc-av ph">${esc(initials)}</div>`;
+    const svcs=(c.services||[]).slice(0,3).map(x=>`<span class="xb ${SC[x]||'xb-ot'}">${x}</span>`).join('');
+    const ex=(c.services||[]).length>3?`<span class="xb xb-ot">+${(c.services||[]).length-3}</span>`:'';
+    const payBadge=payMap[c.pay_status]||'';
+    const expChips=[
+      dpp!==null?`<span class="eb ${ec(dpp)}" style="font-size:10px">Passport ${el(dpp)}</span>`:'',
+      dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">Visa/WP ${el(dvw)}</span>`:'',
+      d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">90 วัน ${el(d90)}</span>`:''
+    ].filter(Boolean).join('');
+    return`<div class="cust-card" onclick="openDetail(${c.id})">
+      <div class="cc-row1">
+        ${avatar}
+        <div class="cc-id">
+          <div class="cc-name">${esc(c.name||'—')}</div>
+          <div class="cc-sub">${c.employer_id?esc(empN(c.employer_id)):(c.name_th?esc(c.name_th):mDash)}</div>
+        </div>
+        ${payBadge?`<div class="cc-pay">${payBadge}</div>`:''}
+      </div>
+      <div class="cc-row2">
+        <span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span>
+        <span class="${wsC(c.work_status)} cc-st">${wsT(c.work_status||'รับเรื่อง')}</span>
+        ${svcs}${ex}
+      </div>
+      ${expChips?`<div class="cc-exps">${expChips}</div>`:''}
+      <div class="cc-acts" onclick="event.stopPropagation()">
+        <button class="cc-btn" onclick="openDetail(${c.id})">ดูรายละเอียด</button>
+        <button class="cc-btn ghost" onclick="openEdit(${c.id})">แก้ไข</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderTable(){
   const total=filtered.length;
   const rcnt=document.getElementById('rcnt');
   if(rcnt)rcnt.textContent=total;
-  if(!total){document.getElementById('tbody').innerHTML='';document.getElementById('emptyRow').style.display='block';document.getElementById('pag').innerHTML='';updateBulkBar();return;}
+  if(!total){document.getElementById('tbody').innerHTML='';renderCustomerCards([]);document.getElementById('emptyRow').style.display='block';document.getElementById('pag').innerHTML='';updateBulkBar();return;}
   document.getElementById('emptyRow').style.display='none';
   const s=(curPage-1)*PG,e=Math.min(s+PG,total);
   document.getElementById('tbody').innerHTML=filtered.slice(s,e).map(c=>{
@@ -3238,6 +3309,7 @@ function renderTable(){
       <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})" style="font-size:11px">✏️</button><button class="bic" onclick="delCust(${c.id})" style="font-size:11px;color:var(--red)">🗑️</button></div></td>
     </tr>`;
   }).join('');
+  renderCustomerCards(filtered.slice(s,e));
   const pages=Math.ceil(total/PG);const ss=(curPage-1)*PG+1,ee=Math.min(curPage*PG,total);
   document.getElementById('pag').innerHTML=`<span>${T('pagShow')} ${total?ss:0}–${ee} ${T('pagFrom')} ${total}</span><div class="pbtns"><button class="pb" onclick="goPage(${curPage-1})" ${curPage<=1?'disabled':''}>‹</button>${Array.from({length:Math.min(pages,5)},(_,i)=>{const p=Math.max(1,Math.min(curPage-2,pages-4))+i;return`<button class="pb ${p===curPage?'on':''}" onclick="goPage(${p})">${p}</button>`;}).join('')}<button class="pb" onclick="goPage(${curPage+1})" ${curPage>=pages?'disabled':''}>›</button></div>`;
   updateBulkBar();
