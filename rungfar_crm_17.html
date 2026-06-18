@@ -11,6 +11,7 @@
 <title>Rungfar CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   /* WARM CORPORATE THEME (MeetFlow mood) — orange/coral บนพื้นครีม | light เท่านั้น (dark mode ทำรอบหน้า) */
@@ -869,6 +870,18 @@ textarea.fi2{resize:vertical;min-height:65px}
   /* E) ซ่อนรหัสพนักงานบนมือถือ (display only — หลังบ้านยังเก็บเหมือนเดิม) */
   .emp-code{display:none!important}
 }
+/* ===== Excel photo import preview (Phase A/B) ===== */
+.imp-ph-list{max-height:360px;overflow-y:auto;padding:4px}
+.imp-ph-row{display:flex;align-items:center;gap:10px;padding:7px 6px;border-bottom:1px solid var(--g1)}
+.imp-ph-row:last-child{border-bottom:none}
+.imp-ph-rn{font-family:var(--mono);font-size:11px;color:var(--g5);width:36px;flex-shrink:0;text-align:center}
+.imp-ph-thumb{width:42px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--g2);flex-shrink:0;background:var(--g1);cursor:zoom-in}
+.imp-ph-none{width:42px;height:54px;border-radius:6px;border:1px dashed var(--g3);display:flex;align-items:center;justify-content:center;font-size:8.5px;color:var(--g4);text-align:center;flex-shrink:0;line-height:1.2;padding:2px}
+.imp-ph-meta{flex:1;min-width:0}
+.imp-ph-nm{font-size:13px;font-weight:600;color:var(--g9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imp-ph-sub{font-size:11px;color:var(--g5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imp-ph-b{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.imp-ph-b.ok{background:#dcfce7;color:#15803d}.imp-ph-b.warn{background:#fff3e0;color:#b45309}.imp-ph-b.no{background:#f3f4f6;color:#9ca3af}
 </style>
 </head>
 <body>
@@ -1674,6 +1687,7 @@ function openPhotoModal(src){document.getElementById('photoModalImg').src=src;do
 function closePhotoModal(){document.getElementById('photoModal').style.display='none';document.getElementById('photoModalImg').src='';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePhotoModal();});
 let impData=[],impCols=[],impMap={};
+let impPhotos={},impPhotoScan=false; // Phase A/B: รูปจาก Excel (preview only — ไม่บันทึก DB รอบนี้)
 let curView='dash';
 let settings={passport:90,visa:30,wp:30,next90:14,mou:60};
 let selectedIds=new Set();
@@ -3675,7 +3689,7 @@ function renderImport(){
 const IMP_FIELDS=[
   {key:'name',label:'รายชื่อ',aliases:['รายชื่อ','ชื่อ','ชื่อลูกค้า','ชื่อ-นามสกุล','name']},
   {key:'employer_name',label:'นายจ้าง',aliases:['นายจ้าง','นายจ้าง/บริษัท','employer']},
-  {key:'alien_id',label:'เลขประจำตัวต่างด้าว',aliases:['เลขประจำตัวต่างด้าว','เลขต่างด้าว','เลขประจำตัว','alien_id','alien']},
+  {key:'alien_id',label:'เลขประจำตัวต่างด้าว',aliases:['เลขประจำตัวต่างด้าว','เลขประจำตัวคนต่างด้าว','เลขบัตรประจำตัวคนต่างด้าว','บัตรประจำตัวคนต่างด้าว','เลขบัตรต่างด้าว','บัตรต่างด้าว','เลขต่างด้าว','รหัสต่างด้าว','เลขประจำตัว','ต่างด้าว','alien_id','alien']},
   {key:'nationality',label:'สัญชาติ',aliases:['สัญชาติ','nationality']},
   {key:'passport_no',label:'เลขพาสปอร์ต',aliases:['เลขพาสปอร์ต','พาสปอร์ต','passport_no','passport']},
   {key:'wp_no',label:'เลขคำขอ',aliases:['เลขคำขอ','เลขคำขอ wp','wp_no','work permit']},
@@ -3717,13 +3731,87 @@ function impDate(v){
 function makeImpKey(pp,al,name,nat,empName){const p=normImpStr(pp);if(p)return 'PP:'+p;const a=normImpStr(al);if(a)return 'AL:'+a;const n=normImpStr(name);if(n)return 'NM:'+n+'|'+normImpStr(nat)+'|'+normImpStr(empName);return null;}
 function buildExistingKeys(){const s=new Set();customers.forEach(c=>{const pp=normImpStr(c.passport_no);if(pp)s.add('PP:'+pp);const al=normImpStr(c.alien_id);if(al)s.add('AL:'+al);const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);s.add('NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:''));}});return s;}
 
+// Phase A/B: ดึงรูปฝังจาก .xlsx (zip) แล้ว map กับแถวข้อมูลด้วย drawing anchor (from-row)
+// read-only ทั้งหมด — ถ้าพังให้คืน {} เงียบ ๆ (import ปกติต้องไม่เสีย)
+async function impExtractXlsxPhotos(buf){
+  const out={photos:{},imgCount:0,rowCount:0,multi:false};
+  if(typeof JSZip==='undefined')return out;
+  let zip; try{zip=await JSZip.loadAsync(buf);}catch(e){return out;}
+  const names=Object.keys(zip.files);
+  const drawFiles=names.filter(n=>/^xl\/drawings\/drawing\d+\.xml$/i.test(n));
+  if(!drawFiles.length)return out;
+  const mimeOf=p=>{const e=(p.split('.').pop()||'').toLowerCase();return e==='png'?'image/png':(e==='jpg'||e==='jpeg')?'image/jpeg':e==='gif'?'image/gif':e==='bmp'?'image/bmp':(e==='emf'||e==='wmf')?'image/'+e:'application/octet-stream';};
+  const rowMap={}; // dataRowIdx → [mediaPath,...]
+  for(const drawPath of drawFiles){
+    let drawXml=''; try{drawXml=await zip.file(drawPath).async('string');}catch(_){continue;}
+    const relPath='xl/drawings/_rels/'+drawPath.split('/').pop()+'.rels';
+    const rid2media={};
+    if(zip.file(relPath)){
+      try{
+        const relXml=await zip.file(relPath).async('string');
+        const rdoc=new DOMParser().parseFromString(relXml,'application/xml');
+        Array.from(rdoc.getElementsByTagName('Relationship')).forEach(r=>{
+          const id=r.getAttribute('Id'); let t=r.getAttribute('Target')||''; if(!id||!t)return;
+          t=t.replace(/^\.\.\//,'xl/').replace(/^\//,''); if(!/^xl\//.test(t))t='xl/'+t;
+          rid2media[id]=t;
+        });
+      }catch(_){}
+    }
+    let ddoc; try{ddoc=new DOMParser().parseFromString(drawXml,'application/xml');}catch(_){continue;}
+    const anchors=[].concat(
+      Array.from(ddoc.getElementsByTagName('xdr:twoCellAnchor')),
+      Array.from(ddoc.getElementsByTagName('xdr:oneCellAnchor')),
+      Array.from(ddoc.getElementsByTagName('twoCellAnchor')),
+      Array.from(ddoc.getElementsByTagName('oneCellAnchor'))
+    );
+    for(const a of anchors){
+      const fromEl=a.getElementsByTagName('xdr:from')[0]||a.getElementsByTagName('from')[0]; if(!fromEl)continue;
+      const rowEl=fromEl.getElementsByTagName('xdr:row')[0]||fromEl.getElementsByTagName('row')[0]; if(!rowEl)continue;
+      const sheetRow=parseInt(rowEl.textContent,10); if(isNaN(sheetRow))continue;
+      const blip=a.getElementsByTagName('a:blip')[0]||a.getElementsByTagName('blip')[0]; if(!blip)continue;
+      const rid=blip.getAttribute('r:embed')||blip.getAttribute('embed'); if(!rid||!rid2media[rid])continue;
+      const idx=sheetRow-1; if(idx<0)continue; // header = sheet row 0 → impData[idx]
+      (rowMap[idx]=rowMap[idx]||[]).push(rid2media[rid]);
+    }
+  }
+  for(const idx in rowMap){
+    const arr=rowMap[idx]; out.imgCount+=arr.length;
+    const media=arr[0]; const f=zip.file(media); if(!f)continue;
+    let b64=''; try{b64=await f.async('base64');}catch(_){continue;}
+    const mime=mimeOf(media);
+    const cantShow=(mime==='image/emf'||mime==='image/wmf'||mime==='application/octet-stream');
+    out.photos[idx]={url:'data:'+mime+';base64,'+b64,count:arr.length,unsure:(arr.length>1||cantShow)};
+    if(arr.length>1)out.multi=true;
+  }
+  out.rowCount=Object.keys(rowMap).length;
+  return out;
+}
+
+// หา "แถว header จริง" ของชีต — กันเคสมีแถวหัวเรื่อง/ชื่อตารางอยู่เหนือ header
+// ให้คะแนนแต่ละแถวจากจำนวนคอลัมน์ที่ตรง alias ของ IMP_FIELDS แล้วเลือกแถวที่ตรงมากสุด (ต้อง ≥2 ถึงเชื่อ)
+function impDetectHeaderRow(arr){
+  if(!Array.isArray(arr)||!arr.length)return 0;
+  const _nz=s=>String(s||'').trim().toLowerCase();
+  const aliasAll=[];IMP_FIELDS.forEach(f=>(f.aliases||[f.label]).forEach(a=>{const v=_nz(a);if(v)aliasAll.push(v);}));
+  let best=0,bestScore=-1;const lim=Math.min(arr.length,6);
+  for(let r=0;r<lim;r++){
+    const cells=(arr[r]||[]).map(_nz).filter(Boolean);if(!cells.length)continue;
+    let score=0;cells.forEach(c=>{if(aliasAll.some(a=>a===c||(a.length>=3&&c.includes(a))))score++;});
+    if(score>bestScore){bestScore=score;best=r;}
+  }
+  return bestScore>=2?best:0; // ต้องแมตช์ ≥2 คอลัมน์ ถึงถือว่าเป็นแถว header
+}
+
 function handleImpFile(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>{
+  reader.onload=async ev=>{
     try{
+      impPhotos={};impPhotoScan=false;
       if(file.name.endsWith('.csv')){const text=new TextDecoder('utf-8').decode(ev.target.result);const lines=text.split('\n').filter(l=>l.trim());impCols=lines[0].split(',').map(c=>c.replace(/^"|"$/g,'').trim());impData=lines.slice(1).map(l=>l.split(',').map(c=>c.replace(/^"|"$/g,'').trim()));}
-      else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});impCols=(arr[0]||[]).map(String);impData=arr.slice(1).filter(r=>r.some(c=>c));}
+      else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});const _hdr=impDetectHeaderRow(arr);impCols=(arr[_hdr]||[]).map(String);const _raw=arr.slice(_hdr+1);impData=_raw.filter(r=>r.some(c=>c));
+        try{const _ph=await impExtractXlsxPhotos(ev.target.result);impPhotoScan=true;const _rm={};let _fi=0;_raw.forEach((r,_j)=>{if(r.some(c=>c)){const _pk=_hdr+_j;if(_ph.photos[_pk])_rm[_fi]=_ph.photos[_pk];_fi++;}});impPhotos=_rm;}catch(_){impPhotos={};impPhotoScan=true;}
+      }
       impMap={};const _nz=s=>String(s||'').trim().toLowerCase();const _used=new Set();
       IMP_FIELDS.forEach(f=>{const al=(f.aliases||[f.label]).map(_nz);
         let found=impCols.findIndex((c,i)=>!_used.has(i)&&al.includes(_nz(c)));               // exact ก่อน
@@ -3737,6 +3825,9 @@ function handleImpFile(e){
 function renderImpPreview(){
   if(!impData.length){document.getElementById('impPreview').innerHTML='<div style="color:var(--g5);padding:16px;text-align:center">ไม่พบข้อมูลในไฟล์</div>';return;}
   const get=(row,key)=>impMap[key]!==undefined&&impMap[key]>=0?String(row[impMap[key]]||'').trim():'';
+  // คอลัมน์ที่เป็น "วันที่" → ใช้แปลง Excel serial date ในตารางพรีวิว (ไม่แตะค่า save จริง)
+  const _dateKeys=['submit_date','appt_date','queue_date','receive_date','exp_visa','exp_wp','next_90','exp_passport','last_renew','exp_mou','pay_date','dob'];
+  const dateColIdx=new Set();_dateKeys.forEach(k=>{if(impMap[k]!==undefined&&impMap[k]>=0)dateColIdx.add(impMap[k]);});
   const existingKeys=buildExistingKeys();const seenInFile=new Set();
   let cntDupEx=0,cntDupFile=0,cntMissing=0;
   const rowStatus=impData.map(r=>{
@@ -3747,9 +3838,24 @@ function renderImpPreview(){
     if(key)seenInFile.add(key);return 'new';
   });
   const cntNew=rowStatus.filter(s=>s==='new').length;
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ</button></div>
-  <div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value)"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
-  <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map((r,i)=>{const st=rowStatus[i];return`<tr ${st==='dup-existing'||st==='dup-file'?'class="imp-dup"':st==='missing'?'style="background:#fff0f0"':''}>${r.map(v=>`<td>${v||''}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
+  let photoPanel='';
+  if(impPhotoScan){
+    const _keys=Object.keys(impPhotos);let _nF=0,_nU=0;_keys.forEach(k=>{impPhotos[k].unsure?_nU++:_nF++;});
+    const _nNo=impData.length-_keys.length;const _cap=300;
+    const _rows=impData.slice(0,_cap).map((r,i)=>{
+      const p=impPhotos[i];
+      const nm=get(r,'name')||'—',emp=get(r,'employer_name')||'—',al=get(r,'alien_id')||'—',sd=impDate(get(r,'submit_date'))||'—';
+      let thumb,badge;
+      if(p&&!p.unsure){thumb=`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`;badge='<span class="imp-ph-b ok">พบรูป</span>';}
+      else if(p&&p.unsure){thumb=p.url?`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`:'<div class="imp-ph-none">โชว์ไม่ได้</div>';badge='<span class="imp-ph-b warn">ไม่มั่นใจ</span>';}
+      else{thumb='<div class="imp-ph-none">ไม่พบรูป</div>';badge='<span class="imp-ph-b no">ไม่พบรูป</span>';}
+      return`<div class="imp-ph-row"><div class="imp-ph-rn">#${i+2}</div>${thumb}<div class="imp-ph-meta"><div class="imp-ph-nm">${esc(nm)}</div><div class="imp-ph-sub">${esc(emp)} · ${esc(al)}</div><div class="imp-ph-sub">วันที่ยื่น: ${esc(sd)}</div></div>${badge}</div>`;
+    }).join('');
+    photoPanel=`<div class="twrap" style="margin-bottom:14px"><div class="tbar2" style="flex-wrap:wrap;gap:8px"><div style="font-size:13px;font-weight:700">🖼️ จับคู่รูปถ่ายจาก Excel</div><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="eb eb-ok">พบ ${_nF}</span>${_nU?`<span class="eb eb-w">ไม่มั่นใจ ${_nU}</span>`:''}${_nNo>0?`<span class="eb eb-u">ไม่พบ ${_nNo}</span>`:''}</div></div><div style="padding:9px 12px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⚠️ <b>พรีวิวเท่านั้น</b> — รอบนี้ยังไม่บันทึกรูปลงระบบ · แตะรูปเพื่อดูใหญ่และตรวจให้ตรงคนก่อน (รูปอิงตำแหน่งในชีต อาจคลาดเคลื่อนถ้ามีแถวว่าง/merge cell)</div><div class="imp-ph-list">${_rows}${impData.length>_cap?`<div style="text-align:center;padding:10px;font-size:11px;color:var(--g5)">แสดง ${_cap} แถวแรก จาก ${impData.length}</div>`:''}</div></div>`;
+  }
+  document.getElementById('impPreview').innerHTML=`${photoPanel}<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ</button></div>
+  <div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value);renderImpPreview()"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
+  <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map((r,i)=>{const st=rowStatus[i];return`<tr ${st==='dup-existing'||st==='dup-file'?'class="imp-dup"':st==='missing'?'style="background:#fff0f0"':''}>${r.map((v,ci)=>`<td>${dateColIdx.has(ci)?(impDate(v)||''):(v||'')}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
   ${impData.length>5?`<div style="padding:8px 15px;font-size:11px;color:var(--g5);border-top:1px solid var(--g1)">แสดง 5 แถวแรก จาก ${impData.length} แถวทั้งหมด</div>`:``}</div>`;
 }
 
