@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#FF7A1A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -882,6 +882,12 @@ textarea.fi2{resize:vertical;min-height:65px}
 .imp-ph-sub{font-size:11px;color:var(--g5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .imp-ph-b{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0}
 .imp-ph-b.ok{background:#dcfce7;color:#15803d}.imp-ph-b.warn{background:#fff3e0;color:#b45309}.imp-ph-b.no{background:#f3f4f6;color:#9ca3af}
+/* zoom lock มือถือ (desktop ไม่กระทบ — pointer mouse ไม่ trigger touch/gesture) */
+html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+/* iOS: กัน auto-zoom ตอน focus input — บังคับ font ≥16px เฉพาะมือถือ */
+@media (max-width:768px){
+  input,select,textarea,button,.linput,.fi,.fi2,.si{font-size:16px!important}
+}
 </style>
 </head>
 <body>
@@ -2402,6 +2408,23 @@ function compressImage(file,maxPx,quality){
 }
 function approxBytesFromDataURL(u){const i=u.indexOf(',');return i<0?u.length:Math.round((u.length-i-1)*0.75);}
 const DOC_MAX_BYTES=1.5*1024*1024; // จำกัดต่อไฟล์หลังย่อ
+// ย่อรูปจาก data URL (รูปฝัง Excel) → JPEG ขนาดเล็ก เหมือน pipeline manual upload (900px, q0.76); คืน null ถ้าแปลง/แสดงไม่ได้
+function impCompressDataURL(dataUrl,maxPx,quality){
+  return new Promise(resolve=>{
+    if(!dataUrl||typeof dataUrl!=='string'||!/^data:image\//i.test(dataUrl))return resolve(null);
+    if(/^data:image\/(x-)?(emf|wmf)/i.test(dataUrl))return resolve(null); // metafile แปลง/แสดงไม่ได้
+    const img=new Image();
+    img.onerror=()=>resolve(null);
+    img.onload=()=>{
+      let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+      if(!w||!h)return resolve(null);
+      if(Math.max(w,h)>maxPx){const s=maxPx/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+      try{const cv=document.createElement('canvas');cv.width=w;cv.height=h;const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);resolve(cv.toDataURL('image/jpeg',quality));}
+      catch(_){resolve(null);}
+    };
+    img.src=dataUrl;
+  });
+}
 
 async function handleMultiDoc(e){
   const files=Array.from(e.target.files);
@@ -2647,6 +2670,7 @@ async function showApp(){
   document.getElementById('sfrole').textContent=isAdmin?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
   document.getElementById('sfav').textContent=curUser.full_name.charAt(0).toUpperCase();
   if(typeof mobNavSync==='function')mobNavSync();
+  if(typeof mobZoomReset==='function')setTimeout(mobZoomReset,60);
   // 1) Reset ทุก element ก่อนเสมอ — ป้องกัน state ค้างจาก session ก่อน
   ['sideMain','sideGroups','sideSysLbl','niGroups','niImport','niSettings','niUsers','niSecLog','niAttendance','niMetaAds','niLogout'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='';
@@ -2783,12 +2807,23 @@ function mobNavSync(){
 }
 function mobMoreOpen(){const s=document.getElementById('mobMore');if(s)s.classList.add('on');}
 function mobMoreClose(){const s=document.getElementById('mobMore');if(s)s.classList.remove('on');}
+// มือถือ: เคลียร์ focus ค้าง + เลื่อนขึ้นบน กัน zoom/scroll ค้างหลังเปลี่ยนหน้า/หลัง login (desktop ไม่ทำ)
+function mobZoomReset(){if(window.innerWidth>768)return;try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(_){}try{window.scrollTo(0,0);}catch(_){}}
+// zoom-lock guards: กัน pinch + iOS gesture* + double-tap zoom (touch-action:manipulation คุม double-tap; ตัวนี้เสริมเบราว์เซอร์ที่ไม่เคารพ meta) — desktop ไม่ทำงาน (ไม่มี touch/gesture)
+(function(){
+  var stop=function(e){if(e.cancelable)e.preventDefault();};
+  document.addEventListener('gesturestart',stop,{passive:false});
+  document.addEventListener('gesturechange',stop,{passive:false});
+  document.addEventListener('gestureend',stop,{passive:false});
+  document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1&&e.cancelable)e.preventDefault();},{passive:false}); // กัน pinch แต่ปล่อย scroll นิ้วเดียว
+})();
 
 function gv(v,opts={}){
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
   const el=document.getElementById('view-'+v);if(el)el.classList.add('on');
   curView=v;
   if(typeof mobNavSync==='function')mobNavSync();
+  if(typeof mobZoomReset==='function')mobZoomReset();
   // อัปเดต sidebar nav active state
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
@@ -3678,13 +3713,24 @@ function renderImport(){
   document.getElementById('importContent').innerHTML=`<div style="max-width:800px">
     <div style="font-size:16px;font-weight:700;margin-bottom:6px">📥 นำเข้าข้อมูล Excel / CSV</div>
     <div style="font-size:13px;color:var(--g5);margin-bottom:16px">รองรับ .xlsx, .xls, .csv — ตรวจสอบข้อมูลซ้ำอัตโนมัติ</div>
-    <div style="border:2px dashed var(--g3);border-radius:var(--rx);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g3)'" onclick="document.getElementById('impFile').click()">
+    <div id="impDrop" style="border:2px dashed var(--g3);border-radius:var(--rx);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g3)'" onclick="document.getElementById('impFile').click()" ondragenter="impDragOver(event)" ondragover="impDragOver(event)" ondragleave="impDragLeave(event)" ondrop="impDrop(event)">
       <div style="font-size:40px;margin-bottom:10px">📂</div>
       <div style="font-weight:700;color:var(--g7)">คลิกหรือลากไฟล์มาวางที่นี่</div>
       <div style="font-size:12px;color:var(--g5);margin-top:4px">.xlsx, .xls, .csv</div>
       <input type="file" id="impFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImpFile(event)">
     </div>
     <div id="impPreview" style="margin-top:16px"></div></div>`;
+}
+// drag & drop ไฟล์ Excel/CSV → ใช้ path เดิม handleImpFile (รับ event แบบเดียวกับกดเลือกไฟล์)
+function impDragOver(e){e.preventDefault();e.stopPropagation();const d=document.getElementById('impDrop');if(d){d.style.borderColor='var(--p)';d.style.background='#FFF7EF';}}
+function impDragLeave(e){e.preventDefault();e.stopPropagation();const d=document.getElementById('impDrop');if(d){d.style.borderColor='var(--g3)';d.style.background='#fff';}}
+function impDrop(e){
+  e.preventDefault();e.stopPropagation();
+  const d=document.getElementById('impDrop');if(d){d.style.borderColor='var(--g3)';d.style.background='#fff';}
+  const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+  if(!f)return;
+  if(!/\.(xlsx|xls|csv)$/i.test(f.name)){toast('รองรับเฉพาะไฟล์ .xlsx .xls .csv','err');return;}
+  handleImpFile({target:{files:[f]}});
 }
 
 // Round D: เพิ่ม aliases รองรับหัวคอลัมน์ไทยตาม Excel template (จับคู่กับ field ที่มี DB เท่านั้น)
@@ -3865,9 +3911,19 @@ async function doImport(){
   if(!impData.length){toast('ไม่มีข้อมูล','err');return;}
   const get=(row,key)=>impMap[key]!==undefined&&impMap[key]>=0?String(row[impMap[key]]||'').trim():'';
   const existingKeys=buildExistingKeys();
+  // map key→ลูกค้าเดิม (key เดียวกับ buildExistingKeys) — ใช้หาเพื่ออัปเดตรูปให้คนเดิมที่ยังไม่มีรูป
+  const existingByKey=new Map();
+  customers.forEach(c=>{
+    const pp=normImpStr(c.passport_no);if(pp&&!existingByKey.has('PP:'+pp))existingByKey.set('PP:'+pp,c);
+    const al=normImpStr(c.alien_id);if(al&&!existingByKey.has('AL:'+al))existingByKey.set('AL:'+al,c);
+    const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);const k='NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:'');if(!existingByKey.has(k))existingByKey.set(k,c);}
+  });
   const seenInFile=new Set();
   let countNew=0,countDupEx=0,countDupFile=0,countMissing=0,countError=0;
+  let countPhotoNew=0,countPhotoUpd=0,countPhotoSkip=0; // Excel embedded photo → customers.photo
   const skippedRows=[];
+  // เก็บลำดับไฟล์ Excel: แถวบนสุด (ri=0) ได้ created_at ใหม่สุด → ขึ้นบนตาม sort created_at DESC เดิม
+  const _impBase=Date.now();
   for(let ri=0;ri<impData.length;ri++){
     const row=impData[ri];
     const name=get(row,'name');
@@ -3875,7 +3931,19 @@ async function doImport(){
     const pp=get(row,'passport_no');const al=get(row,'alien_id');
     const nat=get(row,'nationality');const empName=get(row,'employer_name');
     const key=makeImpKey(pp,al,name,nat,empName);
-    if(key&&existingKeys.has(key)){countDupEx++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำกับข้อมูลเดิม'});continue;}
+    if(key&&existingKeys.has(key)){
+      countDupEx++;
+      // ลูกค้าเดิม + ยังไม่มีรูป + row import มีรูป → อัปเดตรูปให้ (ไม่สร้างลูกค้าซ้ำ)
+      let _upd=false;
+      const _exC=existingByKey.get(key);const _exPh=impPhotos[ri];
+      if(_exC&&!_exC.photo&&_exPh&&!_exPh.unsure){
+        try{const _img=await impCompressDataURL(_exPh.url,900,0.76);
+          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){await dbPatch('customers',_exC.id,{photo:_img});_exC.photo=_img;countPhotoUpd++;_upd=true;}
+          else if(_img)countPhotoSkip++;
+        }catch(_){countPhotoSkip++;}
+      }
+      skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำกับข้อมูลเดิม'+(_upd?' (อัปเดตรูป)':'')});continue;
+    }
     if(key&&seenInFile.has(key)){countDupFile++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำในไฟล์นำเข้า'});continue;}
     try{
       let empId=null;
@@ -3897,6 +3965,16 @@ async function doImport(){
       data.receive_date=impDate(get(row,'receive_date'));
       const _bh=get(row,'booklet_has'),_bn=get(row,'booklet_none');
       data.booklet_status=_bh?'has':(_bn?'none':null); // ทั้งคู่มีค่า → has
+      data.created_at=new Date(_impBase-ri*1000).toISOString(); // คงลำดับ Excel (บน→ล่าง)
+
+      // Excel embedded photo → ย่อ + บันทึกลง field photo เดิม (เหมือน manual upload)
+      const _newPh=impPhotos[ri];
+      if(_newPh&&!_newPh.unsure){
+        try{const _img=await impCompressDataURL(_newPh.url,900,0.76);
+          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){data.photo=_img;countPhotoNew++;}
+          else if(_img)countPhotoSkip++;
+        }catch(_){countPhotoSkip++;}
+      }
 
       const r=await dbPost('customers',data);
       if(r&&r[0]){customers.unshift(r[0]);if(key)seenInFile.add(key);countNew++;}
@@ -3908,7 +3986,7 @@ async function doImport(){
   const _unsup=impCols.map((c,i)=>({c,i})).filter(x=>x.c&&String(x.c).trim()&&!_mappedIdx.has(x.i)).map(x=>x.c);
   const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">คอลัมน์ที่ไม่ได้จับคู่กับฟิลด์ใดจะไม่ถูกนำเข้า (เช่น ลำดับ, รูปถ่าย) — หากต้องการนำเข้า ให้จับคู่คอลัมน์ในส่วน "จับคู่คอลัมน์" ด้านบน</div></div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">📊 สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${unsupHTML}${skipHTML}</div></div>`;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">📊 สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">🖼️ รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
