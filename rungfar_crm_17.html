@@ -2705,11 +2705,13 @@ async function loadAll(silent=false){
   }finally{_loadAllInProgress=false;if(!silent)hideLoading();}
 }
 
+// คีย์เทียบชื่อนายจ้าง — trim + ยุบช่องว่างกลางให้เหลือช่องเดียว + lowercase (ใช้เทียบเท่านั้น ไม่เปลี่ยนชื่อแสดงผล)
+function normalizeEmployerName(name){return String(name||'').replace(/\s+/g,' ').trim().toLowerCase();}
 function mergeDuplicateEmployers(){
-  // Group employers by lowercase name
+  // Group employers by normalized name (case + ช่องว่างกลาง)
   const nameMap={};
   employers.forEach(e=>{
-    const key=e.name.toLowerCase().trim();
+    const key=normalizeEmployerName(e.name);
     if(!nameMap[key])nameMap[key]=[];
     nameMap[key].push(e);
   });
@@ -3877,7 +3879,7 @@ async function doImport(){
     if(key&&seenInFile.has(key)){countDupFile++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำในไฟล์นำเข้า'});continue;}
     try{
       let empId=null;
-      if(empName){const ef=employers.find(x=>x.name===empName);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
+      if(empName){const _en=normalizeEmployerName(empName);const ef=employers.find(x=>normalizeEmployerName(x.name)===_en);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
       const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:get(row,'exp_visa')||null,exp_wp:get(row,'exp_wp')||null,next_90:get(row,'next_90')||null,work_status:get(row,'work_status')||'รับเรื่อง',note:get(row,'note')||null};
       const _svc=get(row,'services');if(_svc)data.services=_svc.split(/[;,]/).map(s=>s.trim()).filter(Boolean);
       // Round F1B-2: field ใหม่ตาม Excel
