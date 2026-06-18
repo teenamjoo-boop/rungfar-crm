@@ -833,6 +833,42 @@ textarea.fi2{resize:vertical;min-height:65px}
   #view-customers #selAllBtn{display:none}
   #view-customers .pag{flex-wrap:wrap;gap:8px;padding:10px 12px}
 }
+/* ===== STAGE 4: Mobile real-app polish (A overflow / B alert / C history cards / D seclog / E hide code) — desktop ไม่กระทบ ===== */
+.att-cards{display:none}
+.att-card{background:#fff;border:1px solid var(--g2);border-radius:12px;padding:11px 12px;box-shadow:var(--s1)}
+.att-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.att-card-name{font-size:14px;font-weight:700;color:var(--g9);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att-card-st{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.att-card-sub{font-size:11.5px;color:var(--g5);margin-top:3px}
+.att-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:9px}
+.att-card-grid>div{display:flex;flex-direction:column;min-width:0}
+.att-card-grid span{font-size:10px;color:var(--g5)}
+.att-card-grid b{font-size:12px;font-weight:600;color:var(--g8);word-break:break-word}
+.att-cards-msg{text-align:center;padding:30px;color:var(--g5);font-size:13px}
+@media (max-width:768px){
+  /* A) กัน horizontal overflow ทุกหน้า */
+  html,body{max-width:100%;overflow-x:hidden}
+  #appScreen,.app,.main,.content,.view{max-width:100%;min-width:0}
+  #dbContent,#att_content,#alertContent,#seclogContent,#empContent,#grpContent,#importContent,#usersContent{max-width:100%;overflow-x:hidden}
+  .topbar{max-width:100vw}
+  /* B) แจ้งเตือน summary cards + tab chips */
+  #view-dash .sg{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+  #view-dash .sc{padding:13px 14px;min-width:0}
+  #view-dash .sc-num{font-size:22px}
+  #view-dash .dg2,#view-dash .dg3{grid-template-columns:1fr;gap:10px}
+  #dbContent .att-subnav{gap:7px;padding-bottom:11px}
+  #dbContent .att-tab{padding:8px 15px;font-size:12.5px}
+  #dbContent .att-tab.att-on{box-shadow:0 3px 10px rgba(255,122,26,.28)}
+  /* C) attendance history → card list */
+  .att-hist-table{display:none}
+  .att-cards{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+  #att_rpt_table,#att_cal_wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* D) seclog filter responsive */
+  #seclogContent #sl_cards{grid-template-columns:1fr 1fr!important}
+  #seclogContent input[type=text],#seclogContent input[type=date],#seclogContent select{width:100%!important;box-sizing:border-box}
+  /* E) ซ่อนรหัสพนักงานบนมือถือ (display only — หลังบ้านยังเก็บเหมือนเดิม) */
+  .emp-code{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -2890,7 +2926,7 @@ function dashAbsentCardHTML(row,mode){
     <div class="adot ${dotCls}">!</div>
     <div class="ai">
       <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
-      <div class="ad">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · ${esc(branch)}</div>
+      <div class="ad"><span class="emp-code">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · </span>${esc(branch)}</div>
       <div class="ad">เวลาเข้างานปกติ: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(normalTime)}</span></div>
     </div>
     <span class="dash-att-status" style="align-self:center;background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">${status}</span>
@@ -2911,7 +2947,7 @@ function dashNooutCardHTML(row){
     <div class="adot adot-o">!</div>
     <div class="ai">
       <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
-      <div class="ad">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · ${esc(branch)}</div>
+      <div class="ad"><span class="emp-code">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · </span>${esc(branch)}</div>
       <div class="ad">เข้างาน: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(ci)}</span> · ออกงานปกติ: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(tOut)}</span></div>
     </div>
     <span class="dash-att-status" style="align-self:center;background:#fff3e0;color:#d97706;font-size:11px;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap">ยังไม่เช็คเอาท์</span>
@@ -4445,7 +4481,7 @@ function attUIHistTableContent(){
         <option value="outside">${T('attStatOut')}</option>
       </select>
     </div>
-    <div style="overflow-x:auto">
+    <div class="att-hist-table" style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
           <th style="padding:8px 6px;text-align:left;white-space:nowrap">${T('attHdrDate')}</th>
@@ -4461,6 +4497,7 @@ function attUIHistTableContent(){
         <tbody id="att_hist_body"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--g5)">${T('attLoading')}</td></tr></tbody>
       </table>
     </div>
+    <div id="att_hist_cards" class="att-cards"></div>
   </div>`;
 }
 
@@ -4535,6 +4572,7 @@ async function attApplyHistoryFilter(){
   const body=document.getElementById('att_hist_body');
   if(!body)return;
   body.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--g5)">${T('attLoading')}</td></tr>`;
+  {const _cw=document.getElementById('att_hist_cards');if(_cw)_cw.innerHTML=`<div class="att-cards-msg">${T('attLoading')}</div>`;}
   // staff (และ legacy employee) lock query ดูเฉพาะของตัวเอง — admin ดูทุกคน
   const isEmp=curUser?.role!=='admin';
   try{
@@ -4552,8 +4590,10 @@ async function attApplyHistoryFilter(){
     if(status==='missing_checkout')logs=logs.filter(l=>l.checkin_time&&!l.checkout_time);
     att_historyLogs=logs;
     body.innerHTML=attRenderHistoryRows(logs);
+    attRenderHistoryCards(logs);
   }catch(e){
     body.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#dc2626">โหลดข้อมูลไม่สำเร็จ</td></tr>';
+    const _cw=document.getElementById('att_hist_cards');if(_cw)_cw.innerHTML='<div class="att-cards-msg" style="color:#dc2626">โหลดข้อมูลไม่สำเร็จ</div>';
   }
 }
 
@@ -4588,6 +4628,44 @@ function attRenderHistoryRows(logs){
       <td style="padding:7px 6px;text-align:center"><span style="background:${stBg[l.day_status]||'#f3f4f6'};padding:2px 7px;border-radius:99px;font-size:11px">${stMap()[l.day_status]||l.day_status||'—'}</span></td>
       <td style="padding:7px 6px;text-align:center;font-size:12px">${gps}</td>
     </tr>`;
+  }).join('');
+}
+
+// Stage 4: history card list สำหรับมือถือ — อ่านจาก logs เดิม ไม่โชว์ employee_code, ไม่แตะ query/logic
+function attRenderHistoryCards(logs){
+  const wrap=document.getElementById('att_hist_cards'); if(!wrap)return;
+  if(!logs||!logs.length){wrap.innerHTML=`<div class="att-cards-msg">${T('attNoRecord')}</div>`;return;}
+  const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
+  const stMap={present:T('attStPresent'),late:T('attStLate'),absent:T('attStAbsent'),half_day:T('attStHalfDay'),holiday:T('attStHoliday'),leave:T('attStLeave'),outside:T('attStOutside')};
+  const stBg={present:'#dcfce7',late:'#fff3e0',absent:'#fee2e2',half_day:'#e0f2fe',outside:'#fef9c3'};
+  const stTx={present:'#15803d',late:'#b45309',absent:'#dc2626',half_day:'#0369a1',outside:'#a16207'};
+  wrap.innerHTML=logs.map(l=>{
+    const dateStr=new Date(l.log_date+'T00:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',weekday:'short',day:'numeric',month:'short'});
+    const ci=l.checkin_time?attFormatThaiTime(new Date(l.checkin_time)):'—';
+    const co=l.checkout_time?attFormatThaiTime(new Date(l.checkout_time)):`<span style="color:#dc2626">${T('attNoOut')}</span>`;
+    const work=fmtMin(l.total_work_minutes||0);
+    const ot=l.ot_minutes>0?fmtMin(l.ot_minutes):null;
+    const late=l.late_minutes>0?`สาย ${l.late_minutes} น.`:'';
+    const _logBr=branches.find(b=>b.id===l.branch_id)||null;
+    const _logR=_logBr&&_logBr.allowed_radius_meters!=null?_logBr.allowed_radius_meters:(att_branchSettings&&att_branchSettings.allowed_radius_meter!=null?att_branchSettings.allowed_radius_meter:200);
+    const gpsOk=l.checkin_distance_m==null||l.checkin_distance_m<=_logR;
+    const gpsMap={in_area:'✅ ในพื้นที่',out_of_area:'🚫 นอกพื้นที่',no_gps:'📡 ไม่มี GPS',no_coords:'❓',no_radius:'⚙️'};
+    const gpsLbl=l.gps_status?(gpsMap[l.gps_status]||l.gps_status):'';
+    const gps=l.checkin_distance_m!=null?`<span style="color:${gpsOk?'#15803d':'#dc2626'}">${l.checkin_distance_m} ม.</span> ${gpsLbl}`:(gpsLbl||'—');
+    const st=l.day_status||'';
+    return`<div class="att-card">
+      <div class="att-card-top">
+        <div class="att-card-name">${esc(l.employee_name||'—')}</div>
+        <span class="att-card-st" style="background:${stBg[st]||'#f3f4f6'};color:${stTx[st]||'var(--g7)'}">${stMap[st]||st||'—'}</span>
+      </div>
+      <div class="att-card-sub">${esc(l.branch_name||'—')} · ${dateStr}</div>
+      <div class="att-card-grid">
+        <div><span>เข้างาน</span><b>${ci}${late?` · ${late}`:''}</b></div>
+        <div><span>ออกงาน</span><b>${co}</b></div>
+        <div><span>รวมงาน</span><b>${work}${ot?` · OT ${ot}`:''}</b></div>
+        <div><span>GPS</span><b>${gps}</b></div>
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -6363,7 +6441,7 @@ function attOnEmpChange(val){
       const _cout=_coutRaw.slice(0,5)||'—';
       const _brn=emp.branch_name?`<span style="background:var(--pp);color:var(--pd);border-radius:4px;padding:2px 7px;font-size:10px">${esc(emp.branch_name)}</span>`:'';
       pv.innerHTML=`<div style="background:var(--bg);border:1px solid var(--g2);border-radius:var(--r);padding:10px 14px;font-size:12px">`
-        +`<div style="font-weight:600;font-size:13px;margin-bottom:4px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5)">(${esc(emp.employee_code||'')})</span>&nbsp;${_brn}</div>`
+        +`<div style="font-weight:600;font-size:13px;margin-bottom:4px">${esc(emp.full_name)}&nbsp;<span class="emp-code" style="font-weight:400;color:var(--g5)">(${esc(emp.employee_code||'')})</span>&nbsp;${_brn}</div>`
         +`<div style="color:var(--g5)">⏰ เวลางาน ${_cin} – ${_cout}${emp.position?` &nbsp;·&nbsp; ${esc(emp.position)}`:''}</div>`
         +attTodayOpenCheckinBadge(emp)
         +`</div>`;
@@ -6403,7 +6481,7 @@ async function attInitCheckinView(){
         const _cin=_cinRaw.slice(0,5)||'—';
         const _cout=_coutRaw.slice(0,5)||'—';
         const _brn=emp.branch_name?`<span style="background:var(--pp);color:var(--pd);border-radius:4px;padding:1px 6px;font-size:10px;margin-left:6px;white-space:nowrap">${esc(emp.branch_name)}</span>`:'';
-        disp.innerHTML=`<div style="font-weight:600;font-size:14px">${esc(emp.full_name)}&nbsp;<span style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>${_brn}</div>`
+        disp.innerHTML=`<div style="font-weight:600;font-size:14px">${esc(emp.full_name)}&nbsp;<span class="emp-code" style="font-weight:400;color:var(--g5);font-size:12px">(${esc(emp.employee_code||'')})</span>${_brn}</div>`
           +`<div style="font-size:11px;color:var(--g5);margin-top:3px">⏰ เวลางาน ${_cin} – ${_cout}</div>`
           +attTodayOpenCheckinBadge(emp);
       }
@@ -6479,7 +6557,7 @@ function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
   el.innerHTML=`<div style="background:${bg};border-radius:var(--rx);border:2px solid ${color}33;padding:18px">
     <div style="font-size:14px;font-weight:800;color:${color};margin-bottom:14px">${icon} พร้อมบันทึก${isIn?'เข้างาน':'ออกงาน'}</div>
     <div style="display:grid;gap:10px;font-size:13px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span class="emp-code" style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">🕐 เวลา</span><span><strong>${timeLabel}</strong>&nbsp;&nbsp;${stBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
@@ -6647,7 +6725,7 @@ function attShowSavedSuccess(type,payload,gps,selfieB64,emp,settings){
   el.innerHTML=`<div style="background:${bg};border-radius:var(--rx);border:2px solid ${color}33;padding:18px">
     <div style="font-size:14px;font-weight:800;color:${color};margin-bottom:14px">✅ บันทึก${isIn?'เข้างาน':'ออกงาน'}สำเร็จ</div>
     <div style="display:grid;gap:10px;font-size:13px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span class="emp-code" style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">🕐 เวลา</span><span><strong>${timeLabel}</strong>&nbsp;&nbsp;${stBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
