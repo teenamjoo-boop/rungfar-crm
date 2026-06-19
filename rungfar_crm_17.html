@@ -870,6 +870,51 @@ textarea.fi2{resize:vertical;min-height:65px}
   /* E) ซ่อนรหัสพนักงานบนมือถือ (display only — หลังบ้านยังเก็บเหมือนเดิม) */
   .emp-code{display:none!important}
 }
+/* ===== STAGE 5: Mobile hamburger drawer + หน้าข้อมูลพนักงาน (desktop ใช้ sidebar เดิม) ===== */
+#mobDrawer{display:none}
+.staff-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.staff-card{background:#fff;border:1px solid var(--g2);border-radius:14px;padding:14px;box-shadow:var(--s1);cursor:pointer;transition:box-shadow .15s;display:flex;flex-direction:column;gap:11px;-webkit-tap-highlight-color:transparent;min-width:0}
+.staff-card:active{box-shadow:var(--s3)}
+.sc-top{display:flex;align-items:center;gap:12px;min-width:0}
+.sc-av{width:52px;height:52px;border-radius:14px;object-fit:cover;flex-shrink:0;background:var(--pp)}
+.sc-av.ph{display:flex;align-items:center;justify-content:center;color:var(--pd);font-weight:800;font-size:19px}
+.sc-id{min-width:0;flex:1}
+.sc-name{font-size:15px;font-weight:700;color:var(--g9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-nick{font-size:12px;color:var(--g5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.sc-meta{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--g6)}
+.sc-meta .r{display:flex;align-items:center;gap:8px;min-width:0}
+.sc-meta .r svg{width:14px;height:14px;color:var(--g4);flex-shrink:0}
+.sc-meta .r span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sc-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sc-st{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.sc-st.act{background:#dcfce7;color:#15803d}.sc-st.inact{background:#f3f4f6;color:#6b7280}
+.sc-edit{background:var(--g1);border:1px solid var(--g2);color:var(--g7);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);flex-shrink:0}
+.staff-detail-av{width:84px;height:84px;border-radius:20px;object-fit:cover;background:var(--pp);display:flex;align-items:center;justify-content:center;color:var(--pd);font-weight:800;font-size:30px}
+@media (max-width:768px){
+  #mobNav{display:none!important}
+  #mobMore{display:none!important}
+  .content{padding-bottom:calc(26px + env(safe-area-inset-bottom,0px))!important}
+  .staff-cards{grid-template-columns:1fr;gap:10px}
+  #mobDrawer{display:block;position:fixed;inset:0;z-index:90;background:rgba(30,18,10,.45);opacity:0;pointer-events:none;transition:opacity .25s}
+  #mobDrawer.on{opacity:1;pointer-events:auto}
+  #mobDrawer .dpanel{position:absolute;left:0;top:0;bottom:0;width:84%;max-width:312px;background:#fff;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:2px 0 26px rgba(0,0,0,.2)}
+  #mobDrawer.on .dpanel{transform:none}
+  .dpanel-head{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) 15px 16px;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;flex-shrink:0}
+  .dpanel-av{width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;flex-shrink:0}
+  .dpanel-uinfo{min-width:0;flex:1}
+  .dpanel-uname{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dpanel-urole{font-size:11.5px;opacity:.9;margin-top:1px}
+  .dpanel-x{background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:19px;cursor:pointer;flex-shrink:0;line-height:1}
+  .dpanel-menu{flex:1;overflow-y:auto;padding:8px 8px 4px}
+  .dpanel .di{display:flex;align-items:center;gap:13px;padding:13px 12px;border-radius:10px;font-size:14.5px;font-weight:600;color:var(--g8);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .dpanel .di svg{width:21px;height:21px;color:var(--p);flex-shrink:0}
+  .dpanel .di.on{background:var(--pp);color:var(--pd)}
+  .dpanel .di.on svg{color:var(--pd)}
+  .dpanel .di .dbadge{margin-left:auto;background:var(--ac);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-family:var(--mono)}
+  #mobDrawer.staff .admin-only{display:none}
+  .dpanel-foot{border-top:1px solid var(--g2);padding:8px;flex-shrink:0}
+  .dpanel .di.danger{color:var(--red)}.dpanel .di.danger svg{color:var(--red)}
+}
 /* ===== Excel photo import preview (Phase A/B) ===== */
 .imp-ph-list{max-height:360px;overflow-y:auto;padding:4px}
 .imp-ph-row{display:flex;align-items:center;gap:10px;padding:7px 6px;border-bottom:1px solid var(--g1)}
@@ -1125,6 +1170,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <div class="ni" id="niDash" onclick="gv('dash')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>แจ้งเตือน <span class="nbadge" id="nbAlert">0</span></div>
     <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg></span>ตอกบัตร</div>
     <div class="ni" id="niCustomers" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span></div>
+    <div class="ni" id="niStaffInfo" onclick="gv('staffinfo')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M16 14.4c2.6.2 4.5 2 4.5 4.6"/></svg></span>ข้อมูลพนักงาน</div>
     <div class="ni" id="niEmployers" onclick="gv('employers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg></span>นายจ้าง / บริษัท</div>
     <div class="ni" id="niImport" onclick="gv('import')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></span>เอกสาร</div>
     <div class="ni" id="niMetaAds" onclick="gv('metaads')" style="display:none"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
@@ -1147,6 +1193,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 </div>
 <div class="main">
   <div class="topbar">
+    <button class="mob-only mob-iconbtn" id="mobHamb" onclick="mobDrawerOpen()" aria-label="เมนู"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
     <div class="ttitle" id="ttitle">แดชบอร์ด</div>
     <div style="display:flex;gap:4px;margin-right:4px">
       <button class="lang-btn active" id="langTH" onclick="setLang('th')">🇹🇭 ไทย</button>
@@ -1195,6 +1242,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <div class="view" id="view-import"><div class="mob-only doc-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 20h20"/></svg><span>แนะนำให้นำเข้าไฟล์ Excel ผ่านคอมพิวเตอร์เพื่อความสะดวกในการจัดการข้อมูล</span></div><div id="importContent"></div></div>
     <div class="view" id="view-settings"><div style="max-width:560px"><div id="settingsTitleDiv" style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
+    <div class="view" id="view-staffinfo"><div id="staffinfoContent"></div></div>
     <div class="view" id="view-attendance"><div style="max-width:960px" id="att_content"></div></div>
     <div class="view" id="view-metaads"><div id="metaContent"></div></div>
     <div class="view" id="view-seclog"><div id="seclogContent"></div></div>
@@ -1230,7 +1278,63 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <div class="ms-item danger" onclick="mobMoreClose();doLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg><span>ออกจากระบบ</span></div>
   </div>
 </div>
+<!-- ===== MOBILE LEFT DRAWER (Stage 5 — hamburger menu, แสดงเฉพาะ <=768px) ===== -->
+<div id="mobDrawer" onclick="if(event.target===this)mobDrawerClose()">
+  <div class="dpanel">
+    <div class="dpanel-head">
+      <div class="dpanel-av" id="drawerAv">A</div>
+      <div class="dpanel-uinfo">
+        <div class="dpanel-uname" id="drawerName"></div>
+        <div class="dpanel-urole" id="drawerRole"></div>
+      </div>
+      <button class="dpanel-x" onclick="mobDrawerClose()" aria-label="ปิด">×</button>
+    </div>
+    <div class="dpanel-menu">
+      <div class="di" data-view="dash" onclick="mobNav('dash');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span>แจ้งเตือน</span><span class="dbadge" id="drawerAlertBadge" style="display:none">0</span></div>
+      <div class="di" data-view="staffinfo" onclick="mobNav('staffinfo');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M16 14.4c2.6.2 4.5 2 4.5 4.6"/></svg><span>ข้อมูลพนักงาน</span></div>
+      <div class="di" data-view="attendance" onclick="mobNav('attendance');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>ตอกบัตร</span></div>
+      <div class="di" data-view="customers" onclick="mobNav('customers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span></div>
+      <div class="di" data-view="employers" onclick="mobNav('employers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg><span>นายจ้าง / บริษัท</span></div>
+      <div class="di" data-view="import" onclick="mobNav('import');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span>เอกสาร</span></div>
+      <div class="di" data-view="groups" onclick="mobNav('groups');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>จัดการกลุ่ม</span></div>
+      <div class="di admin-only" data-view="settings" onclick="mobNav('settings');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span>ตั้งค่าแจ้งเตือน</span></div>
+      <div class="di admin-only" data-view="users" onclick="mobNav('users');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg><span>จัดการผู้ใช้</span></div>
+      <div class="di admin-only" data-view="seclog" onclick="mobNav('seclog');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>ประวัติการใช้งาน</span></div>
+      <div class="di admin-only" data-view="metaads" onclick="mobNav('metaads');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg><span>วิเคราะห์โฆษณา Meta</span></div>
+    </div>
+    <div class="dpanel-foot">
+      <div class="di danger" onclick="mobDrawerClose();doLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg><span>ออกจากระบบ</span></div>
+    </div>
+  </div>
 </div>
+</div>
+
+<!-- MODAL: STAFF INFO DETAIL (Stage 5) -->
+<div class="mo" id="staffDetailModal" style="display:none" onclick="if(event.target===this)closeStaffDetail()">
+<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:440px">
+  <div class="mh"><div class="mt">ข้อมูลพนักงาน</div><button class="xbtn" onclick="closeStaffDetail()">×</button></div>
+  <div class="mbody" id="staffDetailBody"></div>
+</div></div>
+
+<!-- MODAL: STAFF INFO EDIT (Stage 5) -->
+<div class="mo" id="staffEditModal" style="display:none" onclick="if(event.target===this)closeStaffEdit()">
+<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:460px">
+  <div class="mh"><div class="mt" id="staffEditTitle">แก้ไขข้อมูล</div><button class="xbtn" onclick="closeStaffEdit()">×</button></div>
+  <div class="mbody">
+    <input type="hidden" id="sef_id">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:18px">
+      <div id="sef_photo_prev" class="staff-detail-av">A</div>
+      <label style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--p);background:var(--pp);padding:7px 14px;border-radius:9px">📷 เปลี่ยนรูปโปรไฟล์<input type="file" id="sef_photo" accept="image/*" capture="user" style="display:none" onchange="staffHandlePhoto(event)"></label>
+    </div>
+    <div class="fgi" id="sef_row_fullname" style="margin-bottom:12px"><label class="fl">ชื่อ-นามสกุล</label><input class="fi2" id="sef_full_name"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเล่น</label><input class="fi2" id="sef_nickname"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">เบอร์ติดต่อ</label><input class="fi2" id="sef_phone" inputmode="tel"></div>
+    <div class="fgi" id="sef_row_branch" style="margin-bottom:12px"><label class="fl">สาขา</label><select class="fi2" id="sef_branch"></select></div>
+    <div class="fgi" id="sef_row_position" style="margin-bottom:12px"><label class="fl">ตำแหน่ง</label><input class="fi2" id="sef_position"></div>
+    <div class="fgi" id="sef_row_status"><label class="fl">สถานะ</label><select class="fi2" id="sef_status"><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option><option value="resigned">ลาออก</option></select></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="closeStaffEdit()">ยกเลิก</button><button class="btn btn-p" id="sefSaveBtn" onclick="staffSaveEdit()">💾 บันทึก</button></div>
+</div></div>
 
 <!-- MODAL: ADD/EDIT CUSTOMER -->
 <div class="mo" id="cModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
@@ -2807,6 +2911,22 @@ function mobNavSync(){
 }
 function mobMoreOpen(){const s=document.getElementById('mobMore');if(s)s.classList.add('on');}
 function mobMoreClose(){const s=document.getElementById('mobMore');if(s)s.classList.remove('on');}
+// ===== STAGE 5: Mobile left drawer (hamburger) — UI only, ไม่แตะ auth/role logic =====
+function mobDrawerOpen(){mobDrawerSync();const d=document.getElementById('mobDrawer');if(d)d.classList.add('on');}
+function mobDrawerClose(){const d=document.getElementById('mobDrawer');if(d)d.classList.remove('on');}
+function mobDrawerSync(){
+  const d=document.getElementById('mobDrawer');if(!d)return;
+  const isAdmin=!!(typeof curUser!=='undefined'&&curUser&&curUser.role==='admin');
+  d.classList.toggle('staff',!isAdmin); // CSS ซ่อน .admin-only ตาม role (เหมือน sidebar PC)
+  const nm=(typeof curUser!=='undefined'&&curUser)?(curUser.full_name||curUser.username||''):'';
+  const setT=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  setT('drawerName',nm);
+  setT('drawerRole',isAdmin?'ผู้ดูแลระบบ':'พนักงาน');
+  setT('drawerAv',(nm.charAt(0)||'?').toUpperCase());
+  d.querySelectorAll('.di[data-view]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-view')===curView));
+  const src=document.getElementById('nbAlert'),bd=document.getElementById('drawerAlertBadge');
+  if(src&&bd){const n=parseInt(src.textContent)||0;bd.textContent=n;bd.style.display=n>0?'flex':'none';}
+}
 // มือถือ: เคลียร์ focus ค้าง + เลื่อนขึ้นบน กัน zoom/scroll ค้างหลังเปลี่ยนหน้า/หลัง login (desktop ไม่ทำ)
 function mobZoomReset(){if(window.innerWidth>768)return;try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(_){}try{window.scrollTo(0,0);}catch(_){}}
 // zoom-lock guards: กัน pinch + iOS gesture* + double-tap zoom (touch-action:manipulation คุม double-tap; ตัวนี้เสริมเบราว์เซอร์ที่ไม่เคารพ meta) — desktop ไม่ทำงาน (ไม่มี touch/gesture)
@@ -2828,7 +2948,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
   if(niActive)niActive.classList.add('on');
-  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog')};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog')};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -2896,6 +3016,7 @@ function gv(v,opts={}){
     if(appUsers.length===0){adminLoadUsers();}else{renderUsers();}
   }
   if(v==='attendance')renderAttendance();
+  if(v==='staffinfo')renderStaffInfo();
   // META-ADS: route guard — เฉพาะ admin (read-only mock dashboard)
   if(v==='metaads'){if(curUser?.role!=='admin'){gv('dash');return;}renderMetaAds();}
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
@@ -5608,6 +5729,158 @@ async function attEmpToggleStatus(id,currentStatus){
   }catch(e){
     toast('เกิดข้อผิดพลาด','err');
     console.error('[attEmpToggleStatus]',e);
+  }
+}
+
+// ===== STAGE 5: หน้าข้อมูลพนักงาน (read สำหรับทุก role / แก้โปรไฟล์ตาม role) =====
+// ใช้ตาราง attendance_employees ที่มีอยู่แล้ว — ไม่แตะ schema, ไม่ select pin_code/username/password
+// profile_image = รูปโปรไฟล์ (คนละ field กับ checkin_selfie ที่อยู่ใน attendance_logs)
+let staff_list=[], staff_editPhotoB64=null, staff_search='';
+// สิทธิ์แก้ข้อมูลพนักงาน — admin แก้ได้ทุกคน / staff แก้ได้เฉพาะการ์ดของตัวเอง
+// ตัดสินด้วย employee_code === curUser.username เท่านั้น (normalize trim+lowercase)
+// ห้ามใช้ index/ลำดับการ์ด/รูป/ชื่อ/ชื่อเล่นเป็นตัวตัดสิน — employee_code ว่าง = staff แก้ไม่ได้
+function _normCode(s){return String(s==null?'':s).trim().toLowerCase();}
+function canEditStaff(emp){
+  if(!curUser||!emp)return false;
+  if(curUser.role==='admin')return true;
+  if(curUser.role!=='staff')return false;
+  const code=_normCode(emp.employee_code);
+  const uname=_normCode(curUser.username);
+  return code!==''&&code===uname;
+}
+async function renderStaffInfo(){
+  const c=document.getElementById('staffinfoContent');if(!c)return;
+  c.innerHTML='<div style="text-align:center;padding:50px;color:var(--g5)">⏳ กำลังโหลด...</div>';
+  try{
+    const data=await dbGet('attendance_employees','?order=employee_code.asc&select=id,employee_code,full_name,nickname,phone,position,branch_id,branch_name,profile_image,status');
+    staff_list=Array.isArray(data)?data:[];
+  }catch(e){
+    c.innerHTML=`<div style="color:#dc2626;padding:20px;text-align:center">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message||'')}</div>`;return;
+  }
+  staffInfoPaint();
+}
+function staffInfoPaint(){
+  const c=document.getElementById('staffinfoContent');if(!c)return;
+  c.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
+    <div class="srch" style="flex:1;min-width:200px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="si" id="staffSearchInput" placeholder="ค้นหา ชื่อ / ชื่อเล่น / สาขา" oninput="staffInfoSearch(this.value)"></div>
+    <div style="font-size:12px;color:var(--g5)" id="staffCount"></div>
+  </div><div id="staffCards"></div>`;
+  const si=document.getElementById('staffSearchInput');if(si)si.value=staff_search;
+  staffRenderCards();
+}
+function staffInfoSearch(v){staff_search=v;staffRenderCards();}
+function staffRenderCards(){
+  const wrap=document.getElementById('staffCards');if(!wrap)return;
+  const q=staff_search.trim().toLowerCase();
+  let list=staff_list.slice();
+  if(q)list=list.filter(e=>[e.full_name,e.nickname,e.branch_name,e.position].some(v=>String(v||'').toLowerCase().includes(q)));
+  const cnt=document.getElementById('staffCount');if(cnt)cnt.textContent='ทั้งหมด '+list.length+' คน';
+  if(!list.length){wrap.innerHTML='<div style="text-align:center;padding:50px;color:var(--g5)"><div style="font-size:40px;opacity:.3;margin-bottom:10px">👥</div>ไม่พบข้อมูลพนักงาน</div>';return;}
+  const icoPhone='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 5v0a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 1-1"/></svg>';
+  const icoPin='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  const icoTag='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V7a2 2 0 0 1 2-2h5l9 9-7 7z"/><circle cx="7.5" cy="9.5" r="1.3"/></svg>';
+  wrap.innerHTML='<div class="staff-cards">'+list.map(e=>{
+    const canEdit=canEditStaff(e);
+    const av=e.profile_image?`<img class="sc-av" src="${esc(e.profile_image)}" alt="">`:`<div class="sc-av ph">${esc((e.full_name||'?').charAt(0).toUpperCase())}</div>`;
+    const isAct=e.status==='active';
+    const stLabel=isAct?'ใช้งาน':(e.status==='resigned'?'ลาออก':'ปิดใช้งาน');
+    return `<div class="staff-card" onclick="staffOpenDetail(${e.id})">
+      <div class="sc-top">${av}<div class="sc-id"><div class="sc-name">${esc(e.full_name||'')}</div><div class="sc-nick">${e.nickname?esc(e.nickname):'—'}</div></div></div>
+      <div class="sc-meta">
+        <div class="r">${icoPhone}<span>${e.phone?esc(e.phone):'—'}</span></div>
+        <div class="r">${icoPin}<span>${e.branch_name?esc(e.branch_name):'—'}</span></div>
+        <div class="r">${icoTag}<span>${e.position?esc(e.position):'—'}</span></div>
+      </div>
+      <div class="sc-foot"><span class="sc-st ${isAct?'act':'inact'}">${stLabel}</span>${canEdit?`<button class="sc-edit" onclick="event.stopPropagation();staffOpenEdit(${e.id})">✏️ แก้ไข</button>`:''}</div>
+    </div>`;
+  }).join('')+'</div>';
+}
+function staffOpenDetail(id){
+  const e=staff_list.find(x=>x.id===id);if(!e)return;
+  const canEdit=canEditStaff(e);
+  const av=e.profile_image?`<img src="${esc(e.profile_image)}" style="width:84px;height:84px;border-radius:20px;object-fit:cover">`:`<div class="staff-detail-av">${esc((e.full_name||'?').charAt(0).toUpperCase())}</div>`;
+  const isAct=e.status==='active';const stLabel=isAct?'ใช้งาน':(e.status==='resigned'?'ลาออก':'ปิดใช้งาน');
+  const row=(l,v)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--g1)"><span style="color:var(--g5);font-size:13px;flex-shrink:0">${l}</span><span style="font-weight:600;font-size:13px;text-align:right;word-break:break-word">${v}</span></div>`;
+  document.getElementById('staffDetailBody').innerHTML=
+    `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:16px">${av}<div style="font-size:17px;font-weight:700;text-align:center">${esc(e.full_name||'')}</div>${e.nickname?`<div style="color:var(--g5);font-size:13px">(${esc(e.nickname)})</div>`:''}</div>`
+    +row('เบอร์ติดต่อ',e.phone?esc(e.phone):'—')
+    +row('สาขา',e.branch_name?esc(e.branch_name):'—')
+    +row('ตำแหน่ง',e.position?esc(e.position):'—')
+    +row('สถานะ',`<span class="sc-st ${isAct?'act':'inact'}">${stLabel}</span>`)
+    +(canEdit?`<button class="btn btn-p" style="width:100%;margin-top:16px" onclick="closeStaffDetail();staffOpenEdit(${e.id})">✏️ แก้ไขข้อมูล</button>`:'');
+  document.getElementById('staffDetailModal').style.display='flex';
+}
+function closeStaffDetail(){document.getElementById('staffDetailModal').style.display='none';}
+function staffOpenEdit(id){
+  const e=staff_list.find(x=>x.id===id);if(!e)return;
+  if(!canEditStaff(e)){toast('แก้ไขได้เฉพาะข้อมูลของตัวเอง','err');return;} // guard ฝั่ง client
+  const isAdmin=curUser?.role==='admin';
+  staff_editPhotoB64=null;
+  document.getElementById('sef_id').value=e.id;
+  document.getElementById('sef_full_name').value=e.full_name||'';
+  document.getElementById('sef_nickname').value=e.nickname||'';
+  document.getElementById('sef_phone').value=e.phone||'';
+  document.getElementById('sef_position').value=e.position||'';
+  document.getElementById('sef_status').value=e.status||'active';
+  const pv=document.getElementById('sef_photo_prev');
+  if(e.profile_image){pv.innerHTML=`<img src="${esc(e.profile_image)}" style="width:84px;height:84px;border-radius:20px;object-fit:cover">`;}
+  else{pv.innerHTML='';pv.textContent=(e.full_name||'?').charAt(0).toUpperCase();}
+  const bsel=document.getElementById('sef_branch');
+  if(bsel){bsel.innerHTML='<option value="">— ไม่ระบุ —</option>'+(Array.isArray(branches)?branches:[]).map(b=>`<option value="${b.id}" ${b.id===e.branch_id?'selected':''}>${esc(b.name)}</option>`).join('');}
+  // admin แก้ได้ทุก field / staff แก้ได้เฉพาะ รูป + ชื่อเล่น + เบอร์
+  ['sef_row_fullname','sef_row_branch','sef_row_position','sef_row_status'].forEach(rid=>{
+    const el=document.getElementById(rid);if(el)el.style.display=isAdmin?'':'none';
+  });
+  document.getElementById('staffEditTitle').textContent=isAdmin?'แก้ไขข้อมูลพนักงาน':'แก้ไขโปรไฟล์ของฉัน';
+  document.getElementById('staffEditModal').style.display='flex';
+}
+function closeStaffEdit(){document.getElementById('staffEditModal').style.display='none';staff_editPhotoB64=null;}
+async function staffHandlePhoto(ev){
+  const f=ev.target.files[0];if(!f)return;
+  try{
+    if(!(f.type&&f.type.startsWith('image/'))){toast('กรุณาเลือกไฟล์รูปภาพ','err');return;}
+    const dataUrl=await compressImage(f,400,0.8); // รูปโปรไฟล์: ย่อ 400px
+    if(!dataUrl){toast('อ่านรูปไม่ได้','err');return;}
+    if(approxBytesFromDataURL(dataUrl)>DOC_MAX_BYTES){toast('รูปใหญ่เกินไป ลองถ่ายใหม่','err');return;}
+    staff_editPhotoB64=dataUrl;
+    const pv=document.getElementById('sef_photo_prev');if(pv)pv.innerHTML=`<img src="${dataUrl}" style="width:84px;height:84px;border-radius:20px;object-fit:cover">`;
+  }catch(err){console.error('[staffHandlePhoto]',err);toast('อ่านรูปไม่ได้','err');}
+  finally{ev.target.value='';}
+}
+async function staffSaveEdit(){
+  const id=parseInt(document.getElementById('sef_id').value);
+  const e=staff_list.find(x=>x.id===id);if(!e){toast('ไม่พบข้อมูล','err');return;}
+  if(!canEditStaff(e)){toast('แก้ไขได้เฉพาะข้อมูลของตัวเอง','err');return;} // guard ฝั่ง client
+  const isAdmin=curUser?.role==='admin';
+  const data={
+    nickname:document.getElementById('sef_nickname').value.trim()||null,
+    phone:document.getElementById('sef_phone').value.trim()||null
+  };
+  if(staff_editPhotoB64)data.profile_image=staff_editPhotoB64;
+  if(isAdmin){
+    const fn=document.getElementById('sef_full_name').value.trim();
+    if(!fn){toast('กรุณากรอกชื่อ-นามสกุล','err');return;}
+    data.full_name=fn;
+    const bsel=document.getElementById('sef_branch');
+    const bid=bsel.value;
+    data.branch_id=bid?parseInt(bid):null;
+    const bopt=bsel.selectedOptions[0];
+    data.branch_name=(bid&&bopt)?bopt.textContent:null;
+    data.position=document.getElementById('sef_position').value.trim()||null;
+    data.status=document.getElementById('sef_status').value;
+  }
+  const btn=document.getElementById('sefSaveBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';}
+  try{
+    await dbPatch('attendance_employees',id,data); // PATCH เฉพาะ field ที่อนุญาต — ไม่แตะ employee_code
+    staff_list=staff_list.map(x=>x.id===id?{...x,...data}:x);
+    toast('บันทึกข้อมูลแล้ว');
+    closeStaffEdit();
+    staffRenderCards();
+  }catch(err){
+    toast('บันทึกไม่สำเร็จ กรุณาลองใหม่','err');console.error('[staffSaveEdit]',err);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='💾 บันทึก';}
   }
 }
 
