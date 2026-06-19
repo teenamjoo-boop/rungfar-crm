@@ -1563,12 +1563,19 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
   <div class="mbody">
     <input type="hidden" id="uf_id">
     <div class="fg" style="gap:11px">
+      <div class="fgi full" id="uf_emp_row" style="display:none">
+        <label class="fl">เลือกพนักงาน (สำหรับ Staff) *</label>
+        <select class="fi2" id="uf_emp_pick" onchange="ufEmpPick(this.value)">
+          <option value="">— เลือกพนักงาน —</option>
+        </select>
+        <div id="uf_emp_loadmsg" style="font-size:11px;color:var(--g5);margin-top:4px"></div>
+      </div>
       <div class="fgi full">
         <label class="fl">ชื่อผู้ใช้ *</label>
         <input class="fi2" id="uf_user" placeholder="username" autocomplete="off">
         <div id="uf_user_hint" style="display:none;font-size:11px;color:#7c3aed;margin-top:5px;padding:7px 10px;background:#f5f3ff;border-radius:6px;border-left:3px solid #7c3aed;line-height:1.6">
-          💡 Username ต้องตรงกับ <strong>รหัสพนักงาน (employee_code)</strong> ในระบบตอกบัตร<br>
-          <span style="color:var(--g5)">เช่น EMP001 — ใช้จับคู่กับ attendance_employees.employee_code</span>
+          💡 Username ของ Staff ต้องตรงกับ <strong>รหัสพนักงาน (employee_code)</strong> ในเมนูจัดการพนักงาน<br>
+          <span style="color:var(--g5)">มิฉะนั้นจะ login ได้แต่ตอกบัตรไม่ได้ (ขึ้น "ไม่พบพนักงาน")</span>
         </div>
       </div>
       <div class="fgi full"><label class="fl">ชื่อ-นามสกุล *</label><input class="fi2" id="uf_name" placeholder="ชื่อที่แสดง" autocomplete="off"></div>
@@ -1633,8 +1640,10 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <input type="hidden" id="aef_id">
     <div class="fg" style="gap:11px">
       <div class="fgi full">
-        <label class="fl">รหัสพนักงาน * <span style="font-size:10px;font-weight:400;color:var(--g5)">— ต้องตรงกับ Username ของ role Employee</span></label>
-        <input class="fi2" id="aef_code" placeholder="เช่น EMP004" autocomplete="off" style="font-family:var(--mono);font-weight:700;letter-spacing:.5px">
+        <label class="fl">รหัสพนักงาน *</label>
+        <input class="fi2" id="aef_code" placeholder="เช่น EMP004 หรือ leejunki" autocomplete="off" style="font-family:var(--mono);font-weight:700;letter-spacing:.5px" oninput="attEmpCodeCheck()">
+        <div id="aef_code_help" style="font-size:11px;color:#7c3aed;margin-top:4px;padding:6px 9px;background:#f5f3ff;border-radius:6px;border-left:3px solid #7c3aed">🔑 รหัสนี้ต้องใช้เป็น <strong>Username สำหรับ Staff Login</strong></div>
+        <div id="aef_code_warn" style="display:none;font-size:11px;color:#b45309;margin-top:4px;padding:5px 8px;background:#fffbeb;border-radius:6px;border-left:3px solid #f59e0b">⚠️ ยังไม่ได้ตั้งรหัส Login</div>
         <div id="aef_code_hint" style="display:none;font-size:11px;color:var(--g5);margin-top:4px;padding:5px 8px;background:#f3f4f6;border-radius:6px">🔒 รหัสพนักงานไม่สามารถเปลี่ยนได้หลังจากสร้างแล้ว เพราะใช้จับคู่กับ Username ในระบบ Login</div>
       </div>
       <div class="fgi full"><label class="fl">ชื่อ-นามสกุล *</label><input class="fi2" id="aef_full_name" placeholder="ชื่อ-นามสกุล" autocomplete="off"></div>
@@ -4173,6 +4182,7 @@ function openAddUser(){
   document.getElementById('uf_role').value='staff';
   document.getElementById('uf_plbl').textContent='รหัสผ่าน *';
   document.getElementById('uMT').textContent='เพิ่มผู้ใช้';
+  const ep=document.getElementById('uf_emp_pick'); if(ep)ep.value='';
   ufRoleChange();
   document.getElementById('uModal').style.display='flex';
 }
@@ -4188,14 +4198,49 @@ function openEditUser(id){
   document.getElementById('uf_role').value=(u.role==='employee')?'staff':u.role;
   document.getElementById('uf_plbl').textContent='รหัสผ่านใหม่ (ว่างถ้าไม่เปลี่ยน)';
   document.getElementById('uMT').textContent='แก้ไขผู้ใช้';
+  const ep=document.getElementById('uf_emp_pick'); if(ep)ep.value='';
   ufRoleChange();
   document.getElementById('uModal').style.display='flex';
 }
+// STAGE 1A: cache รายชื่อพนักงานสำหรับ dropdown + validate staff username (null = ยังไม่โหลด)
+let uf_empCache=null;
 function ufRoleChange(){
   const role=document.getElementById('uf_role')?.value;
   const hint=document.getElementById('uf_user_hint');
+  const empRow=document.getElementById('uf_emp_row');
+  const isStaff=(role==='staff');
   // staff ต้องใช้ username ตรงกับ employee_code เพื่อตอกบัตร
-  if(hint)hint.style.display=(role==='staff')?'block':'none';
+  if(hint)hint.style.display=isStaff?'block':'none';
+  if(empRow)empRow.style.display=isStaff?'':'none';
+  if(isStaff)ufLoadEmpOptions(); // โหลด dropdown พนักงาน (ครั้งแรกเท่านั้น)
+}
+// STAGE 1A: โหลดพนักงานมาเป็นตัวเลือก dropdown (ไม่ select pin_code/password)
+async function ufLoadEmpOptions(){
+  const sel=document.getElementById('uf_emp_pick');
+  const msg=document.getElementById('uf_emp_loadmsg');
+  if(Array.isArray(uf_empCache)){return;} // โหลดแล้ว — ไม่โหลดซ้ำ
+  if(msg)msg.textContent='กำลังโหลดรายชื่อพนักงาน...';
+  try{
+    const data=await dbGet('attendance_employees','?order=employee_code.asc&select=id,employee_code,full_name,status');
+    uf_empCache=Array.isArray(data)?data:[];
+    if(sel){
+      const active=uf_empCache.filter(e=>e.status==='active'&&_normCode(e.employee_code)!=='');
+      sel.innerHTML='<option value="">— เลือกพนักงาน —</option>'+active.map(e=>`<option value="${e.id}">${esc(e.full_name||'')} (${esc(e.employee_code||'')})</option>`).join('');
+    }
+    if(msg)msg.textContent=uf_empCache.length?'เลือกพนักงานเพื่อเติม Username + ชื่อ-นามสกุลอัตโนมัติ':'ยังไม่มีพนักงานในระบบ — สร้างในเมนูจัดการพนักงานก่อน';
+  }catch(e){
+    uf_empCache=null; // ให้ลองใหม่ได้
+    if(msg)msg.textContent='โหลดรายชื่อพนักงานไม่สำเร็จ — กรอก Username = รหัสพนักงานเอง';
+    console.warn('[ufLoadEmpOptions]',e);
+  }
+}
+// STAGE 1A: เลือกพนักงานจาก dropdown → เติม username = employee_code + full_name อัตโนมัติ
+function ufEmpPick(empId){
+  if(!empId||!Array.isArray(uf_empCache))return;
+  const e=uf_empCache.find(x=>String(x.id)===String(empId));
+  if(!e)return;
+  const u=document.getElementById('uf_user');if(u)u.value=e.employee_code||'';
+  const n=document.getElementById('uf_name');if(n&&!n.value.trim())n.value=e.full_name||'';
 }
 async function saveUser(){
   const id=document.getElementById('uf_id').value;
@@ -4209,6 +4254,16 @@ async function saveUser(){
   if(!adminPass){toast('กรุณากรอกรหัสผ่าน Admin เพื่อยืนยัน','err');document.getElementById('uf_admin_pass').focus();return;}
   if(!id&&!pass){toast('กรุณากรอกรหัสผ่านสำหรับผู้ใช้ใหม่','err');document.getElementById('uf_pass').focus();return;}
   if(pass&&pass.length<6){toast('รหัสผ่านต้องมีอย่างน้อย 6 ตัว','err');return;}
+  // --- STAGE 1A: staff ต้องมี username = employee_code ที่มีอยู่จริง ก่อนจึงตอกบัตรได้ ---
+  // admin ไม่ต้องผูก employee_code (ดูแลระบบอย่างเดียว)
+  if(role==='staff'){
+    if(!username){toast('Staff ต้องใช้ username ตรงกับรหัสพนักงานก่อน จึงจะตอกบัตรได้','err');document.getElementById('uf_user').focus();return;}
+    if(!Array.isArray(uf_empCache)){await ufLoadEmpOptions();} // โหลดรายชื่อถ้ายังไม่มี
+    if(!Array.isArray(uf_empCache)){toast('ตรวจสอบรายชื่อพนักงานไม่ได้ กรุณาลองใหม่','err');return;} // โหลดล้มเหลว → ไม่เสี่ยงสร้างผิด
+    const codes=uf_empCache.map(e=>_normCode(e.employee_code)).filter(Boolean);
+    if(!codes.length){toast('ยังไม่มีพนักงานในระบบ — สร้างพนักงานในเมนูจัดการพนักงานก่อน','err');return;}
+    if(!codes.includes(_normCode(username))){toast('Staff ต้องใช้ username ตรงกับรหัสพนักงานก่อน จึงจะตอกบัตรได้','err');document.getElementById('uf_user').focus();return;}
+  }
   // --- helper: map RPC error message → Thai ---
   function mapRpcErr(msg){
     if(msg==='unauthorized')return'รหัสผ่าน Admin ไม่ถูกต้อง';
@@ -5617,6 +5672,13 @@ function attRenderEmployeesList(emps,wrap){
     </table></div>`;
 }
 
+// STAGE 1A: เตือนเมื่อ employee_code ว่าง (ยังตั้ง Username สำหรับ login ไม่ได้)
+function attEmpCodeCheck(){
+  const codeEl=document.getElementById('aef_code');
+  const warn=document.getElementById('aef_code_warn');
+  if(!codeEl||!warn)return;
+  warn.style.display=(String(codeEl.value||'').trim()==='')?'block':'none';
+}
 // รอบ G: เปิด modal เพิ่มพนักงานใหม่
 function attEmpOpenAdd(){
   ['aef_code','aef_full_name','aef_nickname','aef_phone','aef_position','aef_checkin_time','aef_checkout_time'].forEach(id=>{
@@ -5632,6 +5694,7 @@ function attEmpOpenAdd(){
   if(codeEl){codeEl.removeAttribute('readonly');codeEl.style.background='';codeEl.style.color='';}
   const hint=document.getElementById('aef_code_hint'); if(hint)hint.style.display='none';
   document.getElementById('attEmpMT').textContent='เพิ่มพนักงาน';
+  attEmpCodeCheck(); // add: code ว่าง → โชว์เตือน
   document.getElementById('attEmpModal').style.display='flex';
 }
 
@@ -5658,6 +5721,7 @@ function attEmpOpenEdit(id){
   if(codeEl){codeEl.setAttribute('readonly','readonly');codeEl.style.background='#f3f4f6';codeEl.style.color='var(--g5)';}
   const hint=document.getElementById('aef_code_hint'); if(hint)hint.style.display='block';
   document.getElementById('attEmpMT').textContent='แก้ไขพนักงาน';
+  attEmpCodeCheck(); // edit: ปกติ code ไม่ว่าง → เตือนซ่อน
   document.getElementById('attEmpModal').style.display='flex';
 }
 
