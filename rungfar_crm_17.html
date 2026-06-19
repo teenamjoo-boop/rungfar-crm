@@ -408,6 +408,11 @@ select.fi:focus{border-color:var(--p)}
 .mfoo{padding:13px 20px;border-top:1px solid var(--g2);display:flex;gap:8px;justify-content:flex-end}
 .xbtn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--g4);line-height:1;padding:3px 5px;border-radius:6px}
 .xbtn:hover{color:var(--g7);background:var(--g1)}
+/* STAGE 7: modal นิ่ง — กัน background scroll/ขยับตอนเปิด popup + ล็อก horizontal ใน sheet */
+.mb{overflow-x:hidden;overscroll-behavior:contain}
+.mbody{overflow-x:hidden}
+body.modal-open{overflow:hidden}
+body.modal-open .main,body.modal-open .content{overflow:hidden!important}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .fgi{display:flex;flex-direction:column;gap:5px}
@@ -2965,6 +2970,14 @@ function mobZoomReset(){if(window.innerWidth>768)return;try{if(document.activeEl
   document.addEventListener('gestureend',stop,{passive:false});
   document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1&&e.cancelable)e.preventDefault();},{passive:false}); // กัน pinch แต่ปล่อย scroll นิ้วเดียว
 })();
+// STAGE 7: เปิด modal (.mo แสดง) → ล็อก body scroll กัน background ขยับ; ปิดแล้วคืนปกติ (สังเกต style ของ .mo ทุกตัว)
+(function(){
+  function anyOpen(){return Array.prototype.some.call(document.querySelectorAll('.mo'),function(m){return m.style.display&&m.style.display!=='none';});}
+  function sync(){document.body.classList.toggle('modal-open',anyOpen());}
+  var obs=new MutationObserver(sync);
+  function attach(){document.querySelectorAll('.mo').forEach(function(m){obs.observe(m,{attributes:true,attributeFilter:['style']});});sync();}
+  if(document.readyState!=='loading')attach();else document.addEventListener('DOMContentLoaded',attach);
+})();
 
 function gv(v,opts={}){
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
@@ -3075,6 +3088,12 @@ function dashCustCardHTML(c){
 function dashEmptyHTML(msg){
   return `<div style="text-align:center;padding:60px 20px;color:var(--g5)"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;margin-bottom:10px"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><div style="font-size:13px">${msg}</div></div>`;
 }
+// STAGE 7: avatar ลูกค้าบน card — ใช้รูปจริงถ้ามี (customer.photo) / fallback เป็นอักษรย่อ ไม่ใช้ emoji เป็น avatar หลัก
+function dashCustAvatar(c,dotCls){
+  if(c&&c.photo)return `<div class="adot ${dotCls}" style="overflow:hidden;padding:0"><img src="${esc(c.photo)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`;
+  const ini=esc((((c&&c.name)?String(c.name).trim().charAt(0):'')||'?').toUpperCase());
+  return `<div class="adot ${dotCls}" style="font-weight:700;color:var(--p)">${ini}</div>`;
+}
 // Round F1C: card "เอกสารค้าง" — แสดง chip ของที่ยังขาด
 function dashDocCardHTML(c){
   const miss=[];
@@ -3083,7 +3102,7 @@ function dashDocCardHTML(c){
   if(c.booklet_status!=='has')miss.push(T('dashMissBooklet'));
   if(!c.card_fee_paid)miss.push(T('xlCardFee'));
   const chips=miss.map(m=>`<span style="font-size:10px;background:var(--redb);color:#dc2626;padding:1px 7px;border-radius:10px;font-weight:600">${m}</span>`).join(' ');
-  return `<div class="ac son" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot adot-o">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')} · ${esc(c.nationality||'—')}</div><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">${chips}</div></div></div>`;
+  return `<div class="ac son" onclick="openDetail(${c.id})" style="background:#fff">${dashCustAvatar(c,'adot-o')}<div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')} · ${esc(c.nationality||'—')}</div><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">${chips}</div></div></div>`;
 }
 // Round F1C: card "งานที่ต้องทำ" — นัดหมาย/คิว/รับเล่ม
 function dashTodoCardHTML(e){
@@ -3092,7 +3111,7 @@ function dashTodoCardHTML(e){
   const dotCls=(d!=null&&d<=0)?'adot-r':(d!=null&&d<=2)?'adot-o':'adot-g';
   const valCls=(d!=null&&d<=0)?'dr':(d!=null&&d<=2)?'do_':'dg_';
   const sub=[e.extra,e.c.agent_name?T('xlAgent')+': '+esc(e.c.agent_name):''].filter(Boolean).join(' · ');
-  return `<div class="ac ${cls}" onclick="openDetail(${e.c.id})" style="background:#fff"><div class="adot ${dotCls}">${NF[e.c.nationality]||''}</div><div class="ai"><div class="an">${esc(e.c.name)}</div><div class="ad">${e.type} ${fd(e.date)}${e.c.employer_id?' · '+esc(empN(e.c.employer_id)):''}</div>${sub?`<div class="ad">${sub}</div>`:''}</div><div class="${valCls}">${d!=null?el(d):'—'}</div></div>`;
+  return `<div class="ac ${cls}" onclick="openDetail(${e.c.id})" style="background:#fff">${dashCustAvatar(e.c,dotCls)}<div class="ai"><div class="an">${esc(e.c.name)}</div><div class="ad">${e.type} ${fd(e.date)}${e.c.employer_id?' · '+esc(empN(e.c.employer_id)):''}</div>${sub?`<div class="ad">${sub}</div>`:''}</div><div class="${valCls}">${d!=null?el(d):'—'}</div></div>`;
 }
 let dash_absentReqId=0, dash_absentCount=0, dash_absentCountReqId=0;
 let dash_nooutReqId=0, dash_nooutCount=0, dash_nooutCountReqId=0;
