@@ -828,7 +828,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 }
 /* ===== MOBILE CUSTOMER CARD LIST (Stage 2) — desktop ใช้ table เดิม ===== */
 .cust-cards{display:none}
-.cust-card{background:#fff;border:1px solid var(--g2);border-radius:14px;padding:12px 13px;box-shadow:var(--s1);cursor:pointer;transition:box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.cust-card{background:#fff;border:1px solid var(--g2);border-radius:14px;padding:10px 12px;box-shadow:var(--s1);cursor:pointer;transition:box-shadow .15s;-webkit-tap-highlight-color:transparent}
 .cust-card:active{box-shadow:var(--s3)}
 .cc-row1{display:flex;align-items:center;gap:11px}
 .cc-av{width:42px;height:42px;border-radius:11px;object-fit:cover;flex-shrink:0}
@@ -837,7 +837,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 .cc-name{font-size:14.5px;font-weight:700;color:var(--g9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cc-sub{font-size:11.5px;color:var(--g5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .cc-pay{flex-shrink:0}
-.cc-row2{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:9px}
+.cc-row2{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:5px}
 .cc-st{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700}
 .cc-exps{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
 .cc-acts{display:flex;gap:8px;margin-top:11px}
@@ -3582,21 +3582,16 @@ function renderCustomerCards(list){
     return`<div class="cust-card" onclick="openDetail(${c.id})">
       <div class="cc-row1">
         ${avatar}
-        <div class="cc-id">
+        <div class="cc-id" style="flex:1;min-width:0">
           <div class="cc-name">${esc(c.name||'—')}</div>
           <div class="cc-sub">${c.employer_id?esc(empN(c.employer_id)):(c.name_th?esc(c.name_th):mDash)}</div>
+          <div class="cc-row2">
+            <span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span>
+            <span class="${wsC(c.work_status)} cc-st">${wsT(c.work_status||'รับเรื่อง')}</span>
+            ${payBadge}${svcs}${ex}${expChips}
+          </div>
         </div>
-        ${payBadge?`<div class="cc-pay">${payBadge}</div>`:''}
-      </div>
-      <div class="cc-row2">
-        <span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span>
-        <span class="${wsC(c.work_status)} cc-st">${wsT(c.work_status||'รับเรื่อง')}</span>
-        ${svcs}${ex}
-      </div>
-      ${expChips?`<div class="cc-exps">${expChips}</div>`:''}
-      <div class="cc-acts" onclick="event.stopPropagation()">
-        <button class="cc-btn" onclick="openDetail(${c.id})">ดูรายละเอียด</button>
-        <button class="cc-btn ghost" onclick="openEdit(${c.id})">แก้ไข</button>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--g3)"><path d="M9 18l6-6-6-6"/></svg>
       </div>
     </div>`;
   }).join('');
