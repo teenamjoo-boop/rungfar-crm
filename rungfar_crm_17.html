@@ -718,6 +718,9 @@ textarea.fi2{resize:vertical;min-height:65px}
 .att-tab:hover{border-color:var(--p);color:var(--p)}.att-tab.att-on{background:var(--p);border-color:var(--p);color:#fff}
 .att-subnav .att-tab{display:inline-flex;align-items:center;gap:6px}
 .att-tab-ic{width:15px;height:15px;flex-shrink:0}
+/* STAGE 10: ปุ่ม/หัวข้อที่มีไอคอน SVG เรียบ */
+.ui-ic{width:15px;height:15px;flex-shrink:0;vertical-align:-2px}
+.btn .ui-ic,.bulk-btn .ui-ic,.sc-edit .ui-ic,.mt .ui-ic{margin-right:5px}
 .att-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--g4);text-align:center}
 .att-checkin-card{background:#fff;border-radius:var(--rx);padding:28px;border:1px solid var(--g2);box-shadow:var(--s1);text-align:center;max-width:400px;margin:0 auto}
 .att-btn-in{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:16px;width:100%;padding:20px;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--font);box-shadow:0 4px 14px rgba(22,163,74,.35);transition:all .2s;margin-bottom:12px}
@@ -1211,7 +1214,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       <button class="lang-btn" id="langMY" onclick="setLang('my')">🇲🇲 မြန်မာ</button>
     </div>
     <button class="mob-only mob-iconbtn" id="mobLogout" onclick="doLogout()" aria-label="ออกจากระบบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></button>
-    <button class="btn btn-g btn-sm" onclick="gv('import')">📥 นำเข้า Excel</button>
+    <button class="btn btn-g btn-sm" onclick="gv('import')"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้า Excel</button>
     <button class="btn btn-p" onclick="openAdd()">+ เพิ่มลูกค้า</button>
   </div>
   <div class="abanner" id="abanner"></div>
@@ -1230,13 +1233,13 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       <div class="twrap">
         <div class="bulk-bar" id="bulkBar">
   <span>เลือก</span><span class="bulk-count" id="bulkCount">0</span><span>รายการ</span>
-  <button class="bulk-btn" onclick="openBulkGrp()">🗂️ เปลี่ยนกลุ่ม</button>
-  <button class="bulk-btn" onclick="openBulkSt()">📋 เปลี่ยนสถานะ</button>
-  <button class="bulk-btn" onclick="doBulkExport()">📤 Export ที่เลือก</button>
-  <button class="bulk-btn danger" onclick="doBulkDelete()">🗑️ ลบที่เลือก</button>
+  <button class="bulk-btn" onclick="openBulkGrp()">เปลี่ยนกลุ่ม</button>
+  <button class="bulk-btn" onclick="openBulkSt()">เปลี่ยนสถานะ</button>
+  <button class="bulk-btn" onclick="doBulkExport()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export ที่เลือก</button>
+  <button class="bulk-btn danger" onclick="doBulkDelete()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>ลบที่เลือก</button>
   <button class="bulk-btn" onclick="clearSelection()" style="margin-left:auto">✕ ยกเลิก</button>
 </div>
-<div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()">📤 Export CSV</button><button class="btn btn-g btn-sm" onclick="doExportXlsx()">📑 Export Excel</button></div></div>
+<div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export CSV</button><button class="btn btn-g btn-sm" onclick="doExportXlsx()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8l6 8M15 8l-6 8"/></svg>Export Excel</button></div></div>
         <div class="ctbl-scroll">
         <table><thead><tr><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th style="width:44px">#</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th>จัดการ</th></tr></thead>
         <tbody id="tbody"></tbody></table>
@@ -1251,7 +1254,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <div class="view" id="view-employers"><div id="empContent"></div></div>
     <div class="view" id="view-groups"><div id="grpContent"></div></div>
     <div class="view" id="view-import"><div class="mob-only doc-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 20h20"/></svg><span>แนะนำให้นำเข้าไฟล์ Excel ผ่านคอมพิวเตอร์เพื่อความสะดวกในการจัดการข้อมูล</span></div><div id="importContent"></div></div>
-    <div class="view" id="view-settings"><div style="max-width:560px"><div id="settingsTitleDiv" style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
+    <div class="view" id="view-settings"><div style="max-width:560px"><div id="settingsTitleDiv" style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
     <div class="view" id="view-staffinfo"><div id="staffinfoContent"></div></div>
     <div class="view" id="view-attendance"><div style="max-width:960px" id="att_content"></div></div>
@@ -1335,7 +1338,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <input type="hidden" id="sef_id">
     <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:18px">
       <div id="sef_photo_prev" class="staff-detail-av">A</div>
-      <label style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--p);background:var(--pp);padding:7px 14px;border-radius:9px">📷 เปลี่ยนรูปโปรไฟล์<input type="file" id="sef_photo" accept="image/*" capture="user" style="display:none" onchange="staffHandlePhoto(event)"></label>
+      <label style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--p);background:var(--pp);padding:7px 14px;border-radius:9px">เปลี่ยนรูปโปรไฟล์<input type="file" id="sef_photo" accept="image/*" capture="user" style="display:none" onchange="staffHandlePhoto(event)"></label>
     </div>
     <div class="fgi" id="sef_row_fullname" style="margin-bottom:12px"><label class="fl">ชื่อ-นามสกุล</label><input class="fi2" id="sef_full_name"></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเล่น</label><input class="fi2" id="sef_nickname"></div>
@@ -1344,7 +1347,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <div class="fgi" id="sef_row_position" style="margin-bottom:12px"><label class="fl">ตำแหน่ง</label><input class="fi2" id="sef_position"></div>
     <div class="fgi" id="sef_row_status"><label class="fl">สถานะ</label><select class="fi2" id="sef_status"><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option><option value="resigned">ลาออก</option></select></div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="closeStaffEdit()">ยกเลิก</button><button class="btn btn-p" id="sefSaveBtn" onclick="staffSaveEdit()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="closeStaffEdit()">ยกเลิก</button><button class="btn btn-p" id="sefSaveBtn" onclick="staffSaveEdit()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: ADD/EDIT CUSTOMER -->
@@ -1354,12 +1357,12 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
   <div class="mbody">
     <div class="dup-warn" id="dupWarn">⚠️ <span id="dupMsg"></span></div>
     <div class="tbar3">
-      <button class="tbtn on" onclick="swTab(0)">👤 ข้อมูล</button>
-      <button class="tbtn" onclick="swTab(1)">📋 บริการ</button>
-      <button class="tbtn" onclick="swTab(2)">📅 วันหมด</button>
-      <button class="tbtn" onclick="swTab(3)">💰 การเงิน</button>
-      <button class="tbtn" onclick="swTab(4)">📎 เอกสาร</button>
-      <button class="tbtn" onclick="swTab(5)">📝 บันทึก</button>
+      <button class="tbtn on" onclick="swTab(0)">ข้อมูล</button>
+      <button class="tbtn" onclick="swTab(1)">บริการ</button>
+      <button class="tbtn" onclick="swTab(2)">วันหมด</button>
+      <button class="tbtn" onclick="swTab(3)">การเงิน</button>
+      <button class="tbtn" onclick="swTab(4)">เอกสาร</button>
+      <button class="tbtn" onclick="swTab(5)">บันทึก</button>
     </div>
     <div id="ct0">
       <!-- Round C: ลำดับตาม Excel — ประเภท → รูปถ่าย → นายจ้าง → ข้อมูลพื้นฐาน → เจ้าหน้าที่ -->
@@ -1367,11 +1370,11 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
         <div style="display:flex;gap:8px">
           <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 13px;border:1.5px solid var(--g2);border-radius:var(--r);cursor:pointer;background:var(--g0)" id="ct-free-lbl">
             <input type="radio" name="ctype" value="freelance" id="r_free" onchange="ctChange()" style="accent-color:var(--pur)">
-            <div><div style="font-weight:700;font-size:13px">🧑 ไม่มีนายจ้าง</div><div style="font-size:11px;color:var(--g5)">ทำงานอิสระ</div></div>
+            <div><div style="font-weight:700;font-size:13px">ไม่มีนายจ้าง</div><div style="font-size:11px;color:var(--g5)">ทำงานอิสระ</div></div>
           </label>
           <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 13px;border:1.5px solid var(--g2);border-radius:var(--r);cursor:pointer;background:var(--g0)" id="ct-comp-lbl">
             <input type="radio" name="ctype" value="company" id="r_comp" onchange="ctChange()" style="accent-color:var(--blu)">
-            <div><div style="font-weight:700;font-size:13px">🏢 ลูกจ้างในนามบริษัท</div><div style="font-size:11px;color:var(--g5)">มีนายจ้าง/บริษัท</div></div>
+            <div><div style="font-weight:700;font-size:13px">ลูกจ้างในนามบริษัท</div><div style="font-size:11px;color:var(--g5)">มีนายจ้าง/บริษัท</div></div>
           </label>
         </div>
       </div>
@@ -1478,14 +1481,14 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
         <div class="fst" id="t_docs">เอกสารแนบ (ไม่จำกัดจำนวน)</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <select class="fi2" id="newDocType" style="max-width:180px">
-            <option value="passport_photo">📘 รูปพาสปอร์ต</option>
-            <option value="visa">🛂 VISA</option>
-            <option value="wp">📄 Work Permit</option>
-            <option value="employer_card">🪪 บัตรนายจ้าง</option>
-            <option value="receipt">🧾 ใบเสร็จ</option>
-            <option value="photo">📷 รูปถ่าย</option>
+            <option value="passport_photo">รูปพาสปอร์ต</option>
+            <option value="visa">VISA</option>
+            <option value="wp">Work Permit</option>
+            <option value="employer_card">บัตรนายจ้าง</option>
+            <option value="receipt">ใบเสร็จ</option>
+            <option value="photo">รูปถ่าย</option>
             <option value="pow">📜 หนังสือมอบอำนาจ</option>
-            <option value="other">📎 อื่นๆ</option>
+            <option value="other">อื่นๆ</option>
           </select>
           <input class="fi2" id="newDocLabel" placeholder="ชื่อเอกสาร (ถ้ามี)" style="max-width:180px">
           <button class="btn btn-p btn-sm" onclick="triggerMultiDoc()">+ เพิ่มไฟล์</button>
@@ -1500,13 +1503,13 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       </div>
     </div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('cModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCustomer()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('cModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCustomer()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: DETAIL -->
 <div class="mo" id="dModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-lg" onclick="event.stopPropagation()">
-  <div class="mh"><div class="mt" id="dTitle">รายละเอียด</div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" id="dEditBtn" onclick="editFromDetail()">✏️ แก้ไข</button><button class="xbtn" onclick="document.getElementById('dModal').style.display='none'">×</button></div></div>
+  <div class="mh"><div class="mt" id="dTitle">รายละเอียด</div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" id="dEditBtn" onclick="editFromDetail()">แก้ไข</button><button class="xbtn" onclick="document.getElementById('dModal').style.display='none'">×</button></div></div>
   <div class="mbody" id="dBody"></div>
 </div></div>
 
@@ -1518,7 +1521,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อกลุ่ม *</label><input class="fi2" id="gf_name" placeholder="เช่น มติ 24, MOU เมียนมา"></div>
     <div class="fgi"><label class="fl">คำอธิบาย</label><input class="fi2" id="gf_desc" placeholder="รายละเอียดกลุ่ม"></div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('grpModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveGroup()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('grpModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveGroup()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: EMPLOYER -->
@@ -1535,7 +1538,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       <div class="fgi full"><label class="fl">หมายเหตุ</label><textarea class="fi2" id="ef_note" placeholder="บันทึก..."></textarea></div>
     </div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('empModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveEmployer()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('empModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveEmployer()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: CONTACT LOG -->
@@ -1544,7 +1547,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
   <div class="mh"><div class="mt" id="clogMT">บันทึกการติดต่อ</div><button class="xbtn" onclick="document.getElementById('clogModal').style.display='none'">×</button></div>
   <div class="mbody">
     <div class="fg" style="gap:11px">
-      <div class="fgi"><label class="fl">ประเภท</label><select class="fi2" id="clf_type"><option value="call">📞 โทรศัพท์</option><option value="line">💬 LINE</option><option value="walk-in">🚶 Walk-in</option><option value="other">📌 อื่นๆ</option></select></div>
+      <div class="fgi"><label class="fl">ประเภท</label><select class="fi2" id="clf_type"><option value="call">โทรศัพท์</option><option value="line">💬 LINE</option><option value="walk-in">🚶 Walk-in</option><option value="other">📌 อื่นๆ</option></select></div>
       <div class="fgi"><label class="fl">วันที่</label><input class="fi2" type="date" id="clf_date"></div>
       <div class="fgi full"><label class="fl">สรุปการติดต่อ *</label><textarea class="fi2" id="clf_sum" placeholder="สรุปว่าคุยอะไร..."></textarea></div>
       <div class="fgi full"><label class="fl">เอกสารที่ได้รับแล้ว</label><input class="fi2" id="clf_recv" placeholder="เช่น พาสปอร์ต, รูปถ่าย"></div>
@@ -1553,7 +1556,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       <div class="fgi"><label class="fl">วันนัด</label><input class="fi2" type="date" id="clf_ndate"></div>
     </div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('clogModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveContactLog()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('clogModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveContactLog()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: TIMELINE -->
@@ -1603,7 +1606,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       </div>
     </div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('uModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveUser()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('uModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveUser()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: LOAD USERS — RLS-HARDEN-2D: admin password สำหรับโหลดรายชื่อผู้ใช้ -->
@@ -1627,7 +1630,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 <!-- MODAL: DELETE USER — RLS-HARDEN-2D: admin password สำหรับยืนยันลบ user -->
 <div class="mo" id="delUserModal" style="display:none" onclick="if(event.target===this)closeDelUserModal()">
 <div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:380px">
-  <div class="mh"><div class="mt">🗑️ ยืนยันการลบผู้ใช้</div><button class="xbtn" onclick="closeDelUserModal()">×</button></div>
+  <div class="mh"><div class="mt"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>ยืนยันการลบผู้ใช้</div><button class="xbtn" onclick="closeDelUserModal()">×</button></div>
   <div class="mbody">
     <div style="font-size:13px;margin-bottom:4px">ลบผู้ใช้: <strong id="dum_name"></strong></div>
     <div style="font-size:12px;color:var(--red);margin-bottom:14px">การลบนี้ไม่สามารถเรียกคืนได้</div>
@@ -1639,14 +1642,14 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
   </div>
   <div class="mfoo">
     <button class="btn btn-g" onclick="closeDelUserModal()">ยกเลิก</button>
-    <button class="btn" id="dum_confirm_btn" style="background:var(--red);color:#fff" onclick="confirmDelUser()">🗑️ ยืนยันลบ</button>
+    <button class="btn" id="dum_confirm_btn" style="background:var(--red);color:#fff" onclick="confirmDelUser()">ยืนยันลบ</button>
   </div>
 </div></div>
 
 <!-- MODAL: DELETE EMPLOYEE (STAGE 6) — admin password เพื่อเช็ค app_users สดก่อนลบถาวร -->
 <div class="mo" id="attEmpDelModal" style="display:none" onclick="if(event.target===this)closeAttEmpDelModal()">
 <div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:400px">
-  <div class="mh"><div class="mt">🗑️ ลบพนักงานถาวร</div><button class="xbtn" onclick="closeAttEmpDelModal()">×</button></div>
+  <div class="mh"><div class="mt"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>ลบพนักงานถาวร</div><button class="xbtn" onclick="closeAttEmpDelModal()">×</button></div>
   <div class="mbody">
     <div style="font-size:13px;margin-bottom:4px">ลบพนักงาน: <strong id="aed_name"></strong></div>
     <div style="font-size:12px;color:var(--red);margin-bottom:14px">⚠️ การลบนี้กู้คืนไม่ได้ — ระบบจะตรวจสอบบัญชี Login ก่อนลบ</div>
@@ -1658,7 +1661,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
   </div>
   <div class="mfoo">
     <button class="btn btn-g" onclick="closeAttEmpDelModal()">ยกเลิก</button>
-    <button class="btn" id="aed_confirm_btn" style="background:var(--red);color:#fff" onclick="attEmpDelConfirm()">🗑️ ยืนยันลบ</button>
+    <button class="btn" id="aed_confirm_btn" style="background:var(--red);color:#fff" onclick="attEmpDelConfirm()">ยืนยันลบ</button>
   </div>
 </div></div>
 
@@ -1702,7 +1705,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       </div>
     </div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attEmpModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attEmpSave()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attEmpModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attEmpSave()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: BRANCH (BRANCH-MGMT) -->
@@ -1727,7 +1730,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
         <label class="fl" style="font-weight:700;color:var(--g6)">📍 พิกัด GPS สาขา</label>
         <!-- GPS-BRANCH-UX-LITE: วางพิกัดจาก Google Maps -->
         <div style="margin-top:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r);padding:10px">
-          <div style="font-size:11px;font-weight:600;color:#0369a1;margin-bottom:6px">📋 วางพิกัดจาก Google Maps</div>
+          <div style="font-size:11px;font-weight:600;color:#0369a1;margin-bottom:6px">วางพิกัดจาก Google Maps</div>
           <div style="display:flex;gap:6px;align-items:stretch">
             <input class="fi2" id="abf_coords_paste" placeholder="วางพิกัดที่นี่ เช่น 13.756330, 100.501765" autocomplete="off" style="flex:1;font-size:12px">
             <button type="button" onclick="attBranchParseCoords()" style="padding:0 14px;background:#0369a1;color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0">ดึงพิกัด</button>
@@ -1745,7 +1748,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
         <!-- ปุ่มแถวล่าง: ใช้ตำแหน่งปัจจุบัน + เปิด Google Maps -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
           <button type="button" onclick="attBranchGetMyLocation()" style="padding:9px 6px;background:var(--pp);color:var(--pd);border:1.5px dashed var(--p);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">📍 ใช้ตำแหน่งปัจจุบัน</button>
-          <button type="button" onclick="attBranchOpenMap()" style="padding:9px 6px;background:#16a34a;color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">🗺️ เปิด Google Maps</button>
+          <button type="button" onclick="attBranchOpenMap()" style="padding:9px 6px;background:#16a34a;color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;gap:6px"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11"/><circle cx="12" cy="10" r="2.5"/></svg>เปิด Google Maps</button>
         </div>
         <div id="abf_loc_msg" style="font-size:11px;color:var(--g5);margin-top:4px;min-height:16px"></div>
       </div>
@@ -1769,7 +1772,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       </div>
     </div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attBranchModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attBranchSave()">💾 บันทึก</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('attBranchModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="attBranchSave()">บันทึก</button></div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -1899,22 +1902,22 @@ const LANG = {
     dashboard:'แจ้งเตือน', customers:'ลูกค้า', alerts:'การแจ้งเตือน',
     employers:'นายจ้าง / บริษัท', groups:'จัดการกลุ่ม', import:'เอกสาร',
     settings:'ตั้งค่าแจ้งเตือน', users:'จัดการผู้ใช้',
-    addCustomer:'+ เพิ่มลูกค้า', importExcel:'📥 นำเข้า Excel',
+    addCustomer:'+ เพิ่มลูกค้า', importExcel:'นำเข้า Excel',
     search:'ค้นหา ชื่อ / พาสปอร์ต / เลขต่างด้าว / เบอร์ / นายจ้าง...',
     allNat:'สัญชาติทั้งหมด', allType:'ประเภททั้งหมด', allStatus:'สถานะทั้งหมด',
     allGroup:'กลุ่มทั้งหมด', allBranch:'สาขาทั้งหมด',
-    found:'พบ', records:'รายการ', exportCSV:'📤 Export CSV',
+    found:'พบ', records:'รายการ', exportCSV:'Export CSV',
     name:'ชื่อลูกค้า', type:'ประเภท', nat:'สัญชาติ', employer:'นายจ้าง',
     group:'กลุ่ม', service:'บริการ', workStatus:'สถานะงาน',
     day90:'90วัน', visawp:'VISA/WP', manage:'จัดการ',
     tblName:'รายชื่อ', tblReqNo:'เลขคำขอ', tblItems:'รายการ', tblStatus:'สถานะ', tblExp:'ใกล้หมดอายุ', tblRenew:'ต่ออายุล่าสุด', tblPay:'ชำระเงิน', tblNote:'หมายเหตุ',
     noData:'ไม่พบข้อมูล',
     addNew:'เพิ่มลูกค้าใหม่', editInfo:'แก้ไขข้อมูล',
-    custType:'ประเภทลูกค้า', freelance:'🧑 ไม่มีนายจ้าง', company:'🏢 ลูกจ้างในนามบริษัท',
+    custType:'ประเภทลูกค้า', freelance:'ไม่มีนายจ้าง', company:'ลูกจ้างในนามบริษัท',
     basicInfo:'ข้อมูลพื้นฐาน', empInfo:'ข้อมูลนายจ้าง', staff:'เจ้าหน้าที่รับผิดชอบ',
     photo:'รูปถ่าย', services:'บริการที่ใช้', docs:'เอกสาร', notes:'บันทึก',
     expiry:'วันหมดอายุเอกสาร', finance:'ข้อมูลการเงิน',
-    save:'💾 บันทึก', cancel:'ยกเลิก',
+    save:'บันทึก', cancel:'ยกเลิก',
     welcome:'ยินดีต้อนรับ 👋', loginSub:'กรุณาเข้าสู่ระบบเพื่อใช้งาน',
     username:'ชื่อผู้ใช้', password:'รหัสผ่าน', login:'เข้าสู่ระบบ →',
     logout:'ออกจากระบบ',
@@ -1924,20 +1927,20 @@ const LANG = {
     addFile:'+ เพิ่มไฟล์', docType:'ประเภทเอกสาร', docName:'ชื่อเอกสาร (ถ้ามี)',
     docsSection:'เอกสารแนบ (ไม่จำกัดจำนวน)',
     contactLog:'ประวัติการติดต่อ', addLog:'+ บันทึก',
-    tlHistory:'ประวัติสถานะ', updateStatus:'📋 อัปเดตสถานะ',
+    tlHistory:'ประวัติสถานะ', updateStatus:'อัปเดตสถานะ',
     selectAll:'☐ เลือกทั้งหมด', selected:'เลือก', items:'รายการ',
-    changeGroup:'🗂️ เปลี่ยนกลุ่ม', changeStatus:'📋 เปลี่ยนสถานะ',
-    exportSel:'📤 Export ที่เลือก', deleteSel:'🗑️ ลบที่เลือก', clearSel:'✕ ยกเลิก',
+    changeGroup:'เปลี่ยนกลุ่ม', changeStatus:'เปลี่ยนสถานะ',
+    exportSel:'Export ที่เลือก', deleteSel:'ลบที่เลือก', clearSel:'✕ ยกเลิก',
     loginPlUser:'กรอกชื่อผู้ใช้', loginPlPass:'กรอกรหัสผ่าน',
     natMM:'🇲🇲 เมียนมา', natKH:'🇰🇭 กัมพูชา', natLA:'🇱🇦 ลาว', natVN:'🇻🇳 เวียดนาม',
     typeFreelance:'ไม่มีนายจ้าง', typeCompany:'ลูกจ้างบริษัท',
     srcNone:'ไม่ระบุ', srcWalkin:'Walk-in', srcReferral:'แนะนำ', srcOnline:'ออนไลน์', srcRepeat:'ลูกค้าเก่า',
     payCash:'เงินสด', payTransfer:'โอนเงิน', payOther:'อื่นๆ',
     fstPaid:'ชำระครบแล้ว', fstPartial:'ชำระบางส่วน', fstUnpaid:'ยังไม่ชำระ',
-    docPassport:'📘 รูปพาสปอร์ต', docVisa:'🛂 VISA', docWP:'📄 Work Permit',
-    docEmployerCard:'🪪 บัตรนายจ้าง', docReceipt:'🧾 ใบเสร็จ', docPhoto:'📷 รูปถ่าย',
-    docPOW:'📜 หนังสือมอบอำนาจ', docOther:'📎 อื่นๆ',
-    clfCall:'📞 โทรศัพท์', clfLine:'💬 LINE', clfWalkin:'🚶 Walk-in', clfOther:'📌 อื่นๆ',
+    docPassport:'รูปพาสปอร์ต', docVisa:'VISA', docWP:'Work Permit',
+    docEmployerCard:'บัตรนายจ้าง', docReceipt:'ใบเสร็จ', docPhoto:'รูปถ่าย',
+    docPOW:'📜 หนังสือมอบอำนาจ', docOther:'อื่นๆ',
+    clfCall:'โทรศัพท์', clfLine:'💬 LINE', clfWalkin:'🚶 Walk-in', clfOther:'📌 อื่นๆ',
     roleAdmin:'Admin - ผู้ดูแลระบบ', roleStaff:'Staff - พนักงานออฟฟิศ',
     empStatusActive:'✅ ใช้งาน (Active)', empStatusInactive:'⛔ ปิดใช้งาน (Inactive)',
     attStatAll:'ทุกสถานะ', attStatOk:'✅ ปกติ', attStatLate:'⚠️ มาสาย',
@@ -1948,9 +1951,9 @@ const LANG = {
     attEmpNotFound:'ไม่พบข้อมูลพนักงานที่ผูกกับบัญชีนี้',
     attEmpContact:'กรุณาติดต่อผู้ดูแลระบบ',
     attLoading:'กำลังโหลด...', attCurTime:'เวลาปัจจุบัน',
-    attSearchPH:'ค้นหาชื่อ/รหัสพนักงาน', attHistOwn:'👤 แสดงเฉพาะประวัติของ',
+    attSearchPH:'ค้นหาชื่อ/รหัสพนักงาน', attHistOwn:'แสดงเฉพาะประวัติของ',
     attBtnIn:'🟢 &nbsp;เข้างาน', attBtnOut:'🔵 &nbsp;ออกงาน',
-    attSelLabel:'👤 เลือกพนักงาน', attEmpLabel:'👤 พนักงาน',
+    attSelLabel:'เลือกพนักงาน', attEmpLabel:'พนักงาน',
     attHdrDate:'วันที่', attHdrEmp:'พนักงาน', attHdrIn:'เข้างาน', attHdrOut:'ออกงาน',
     attHdrHrs:'ชม.ทำงาน', attHdrStatus:'สถานะ',
     // ── LANG-FULL additions ──
@@ -1966,11 +1969,11 @@ const LANG = {
     dashMissBooklet:'ยังไม่มีเล่ม', dashTodoNone:'ยังไม่มีงานที่ต้องทำ', dashAbsentNone:'ยังไม่มีข้อมูลพนักงานขาดงาน',
     xlSection:'ข้อมูลตาม Excel', xlSubmit:'วันที่ยื่น', xlAgent:'ตัวแทน', xlMedical:'ใบแพทย์', xlInsurance:'ประกัน', xlCardFee:'ค่าบัตร', xlBooklet:'สถานะเล่ม', xlBookletHas:'มีเล่ม', xlBookletNone:'ไม่มีเล่ม', xlAppt:'นัดหมาย', xlApptTime:'เวลา', xlApptPlace:'สถานที่', xlQueue:'คิวว่าง', xlReceive:'วันรับเล่ม', xlYes:'มี', xlPaid:'จ่ายแล้ว',
     dashD15:'≤15 วัน', dashD1630:'16-30 วัน',
-    dashPP:'📘 พาสปอร์ต (30 วัน)', dashVWP:'🛂 VISA/WP (30 วัน)', dash90:'📅 รายงาน 90 วัน',
+    dashPP:'พาสปอร์ต (30 วัน)', dashVWP:'VISA/WP (30 วัน)', dash90:'รายงาน 90 วัน',
     dashVISA15:'VISA ≤15 วัน', dashWP15:'WP ≤15 วัน',
-    dashByNat:'📊 แยกตามสัญชาติ', dashTopEmp:'🏢 นายจ้างมีแรงงานมากสุด',
-    dashTopUrgent:'🚨 ด่วนที่สุด', dashSeeAll:'ดูทั้งหมด →', dashTopSvc:'📋 บริการที่ใช้',
-    dashSummGrp:'🗂️ สรุปตามกลุ่มงาน',
+    dashByNat:'แยกตามสัญชาติ', dashTopEmp:'นายจ้างมีแรงงานมากสุด',
+    dashTopUrgent:'ด่วนที่สุด', dashSeeAll:'ดูทั้งหมด →', dashTopSvc:'บริการที่ใช้',
+    dashSummGrp:'สรุปตามกลุ่มงาน',
     bannerFmt:'มี {n} รายการที่ต้องดำเนินการ', bannerSeeAll:'ดูทั้งหมด →',
     alertNone:'ไม่มีรายการแจ้งเตือน',
     empTitle:'นายจ้าง / บริษัท ทั้งหมด', empAdd:'+ เพิ่มนายจ้าง',
@@ -1990,13 +1993,13 @@ const LANG = {
     detBoss:'นายจ้าง', detPhone:'เบอร์โทร', detPassport:'เลขพาสปอร์ต',
     detAlien:'เลขต่างด้าว', detWP:'เลขคำขอ WP', detBranch:'สาขา',
     detReceiver:'คนรับเคส', detDocStaff:'คนดูแลเอกสาร', detCloser:'คนปิดงาน',
-    detExpiry:'📅 วันหมดอายุ', detFinance:'💰 การเงิน',
+    detExpiry:'วันหมดอายุ', detFinance:'การเงิน',
     detFeeLabel:'ค่าบริการ', detPaidLabel:'ชำระแล้ว', detDueLabel:'ค้างชำระ',
-    detPayStatus:'สถานะ', detDocs:'📎 เอกสารแนบ', detFiles:'ไฟล์',
-    detContacts:'📞 ประวัติการติดต่อ', detAddLog:'+ บันทึก',
-    detHistory:'📋 ประวัติสถานะ', detNoContact:'ยังไม่มีประวัติ',
-    detUpdated:'อัปเดต', detTimeline:'🗂️ Timeline สถานะงาน',
-    detCustComp:'🏢 ลูกจ้างบริษัท', detCustFree:'🧑 ไม่มีนายจ้าง',
+    detPayStatus:'สถานะ', detDocs:'เอกสารแนบ', detFiles:'ไฟล์',
+    detContacts:'ประวัติการติดต่อ', detAddLog:'+ บันทึก',
+    detHistory:'ประวัติสถานะ', detNoContact:'ยังไม่มีประวัติ',
+    detUpdated:'อัปเดต', detTimeline:'Timeline สถานะงาน',
+    detCustComp:'ลูกจ้างบริษัท', detCustFree:'ไม่มีนายจ้าง',
     payFull:'✅ ครบ', payPart:'⚠️ บางส่วน', payNo:'❌ ยังไม่ได้',
     attTitle:'ระบบตอกบัตรพนักงาน',
     attTabCheckin:'ตอกบัตรเข้า-ออก', attTabHistory:'ประวัติตอกบัตร',
@@ -2008,7 +2011,7 @@ const LANG = {
     attStPresent:'✅ ปกติ', attStLate:'⚠️ สาย', attStAbsent:'❌ ขาด',
     attStHalfDay:'🌗 ครึ่งวัน', attStHoliday:'🎌 หยุด', attStLeave:'🏖 ลา', attStOutside:'📍 นอกพื้นที่',
     attNoOut:'ไม่รูด',
-    attRptTitle:'📊 รายงานมาสาย / OT ประจำเดือน', attRptView:'ดูรายงาน',
+    attRptTitle:'รายงานมาสาย / OT ประจำเดือน', attRptView:'ดูรายงาน',
     attRptNormal:'✅ ปกติ', attRptLate:'⚠️ มาสาย', attRptAbsent:'❌ ขาดงาน', attRptOT:'⏱ OT รวม',
     attRptNoData:'ไม่มีข้อมูลในเดือนนี้',
     attRptTblEmp:'พนักงาน', attRptTblDays:'วันทำงาน', attRptTblLate:'สาย',
@@ -2047,9 +2050,9 @@ const LANG = {
     empClear:'ล้างการค้นหา', empNoResult:'ไม่พบนายจ้างที่ตรงกัน',
     toastSaved:'บันทึกแล้ว', toastEmpAdded:'เพิ่มนายจ้างแล้ว', toastGrpAdded:'เพิ่มกลุ่มแล้ว',
     toastError:'เกิดข้อผิดพลาด', errEmpName:'กรุณากรอกชื่อนายจ้าง',
-    settingsTitle:'⚙️ ตั้งค่าการแจ้งเตือนล่วงหน้า',
+    settingsTitle:'ตั้งค่าการแจ้งเตือนล่วงหน้า',
     clogTitle:'บันทึกการติดต่อ', tlModalTitle:'อัปเดตสถานะงาน', tlBtnSave:'✅ อัปเดต',
-    detTitle:'รายละเอียด', btnEdit:'✏️ แก้ไข',
+    detTitle:'รายละเอียด', btnEdit:'แก้ไข',
     grpNameLabel:'ชื่อกลุ่ม *', grpDescLabel:'คำอธิบาย',
     efNameLabel:'ชื่อนายจ้าง/บริษัท *', efBizLabel:'ประเภทธุรกิจ', efPhoneLabel:'เบอร์โทร',
     efContactLabel:'ผู้ติดต่อ', efAddrLabel:'ที่อยู่', efNoteLabel:'หมายเหตุ',
@@ -2069,22 +2072,22 @@ const LANG = {
     dashboard:'သတိပေးချက်', customers:'ဖောက်သည်', alerts:'သတိပေးချက်',
     employers:'အလုပ်ရှင် / ကုမ္ပဏီ', groups:'အုပ်စုစီမံခန့်ခွဲ', import:'စာရွက်စာတမ်း',
     settings:'သတိပေးချက်ပြင်ဆင်', users:'အသုံးပြုသူစီမံ',
-    addCustomer:'+ ဖောက်သည်ထည့်', importExcel:'📥 Excel တင်သွင်း',
+    addCustomer:'+ ဖောက်သည်ထည့်', importExcel:'Excel တင်သွင်း',
     search:'ရှာဖွေ ชื่อ / နိုင်ငံကူး / ID / ဖုန်း / အလုပ်ရှင်...',
     allNat:'အမျိုးသားရေး အားလုံး', allType:'အမျိုးအစား အားလုံး', allStatus:'အခြေအနေ အားလုံး',
     allGroup:'အုပ်စု အားလုံး', allBranch:'ဌာနခွဲ အားလုံး',
-    found:'တွေ့ရသည်', records:'မှတ်တမ်း', exportCSV:'📤 CSV ထုတ်ယူ',
+    found:'တွေ့ရသည်', records:'မှတ်တမ်း', exportCSV:'CSV ထုတ်ယူ',
     name:'ဖောက်သည်အမည်', type:'အမျိုးအစား', nat:'နိုင်ငံသားဆိုင်ရာ', employer:'အလုပ်ရှင်',
     group:'အုပ်စု', service:'ဝန်ဆောင်မှု', workStatus:'အလုပ်အခြေအနေ',
     day90:'90 ရက်', visawp:'VISA/WP', manage:'စီမံ',
     tblName:'အမည်', tblReqNo:'လျှောက်လွှာနံပါတ်', tblItems:'စာရင်း', tblStatus:'အခြေအနေ', tblExp:'သက်တမ်းကုန်', tblRenew:'နောက်ဆုံးသက်တမ်းတိုး', tblPay:'ငွေပေးချေမှု', tblNote:'မှတ်ချက်',
     noData:'ဒေတာမတွေ့ပါ',
     addNew:'ဖောက်သည်အသစ်ထည့်', editInfo:'အချက်အလက်ပြင်ဆင်',
-    custType:'ဖောက်သည်အမျိုးအစား', freelance:'🧑 အလုပ်ရှင်မရှိ', company:'🏢 ကုမ္ပဏီဝန်ထမ်း',
+    custType:'ဖောက်သည်အမျိုးအစား', freelance:'အလုပ်ရှင်မရှိ', company:'ကုမ္ပဏီဝန်ထမ်း',
     basicInfo:'အခြေခံအချက်အလက်', empInfo:'အလုပ်ရှင်အချက်အလက်', staff:'တာဝန်ခံဝန်ထမ်း',
     photo:'ဓာတ်ပုံ', services:'ဝန်ဆောင်မှုများ', docs:'စာရွက်စာတမ်း', notes:'မှတ်စု',
     expiry:'စာရွက်စာတမ်းသက်တမ်းကုန်ဆုံးရက်', finance:'ငွေကြေးအချက်အလက်',
-    save:'💾 သိမ်းဆည်း', cancel:'မလုပ်တော့',
+    save:'သိမ်းဆည်း', cancel:'မလုပ်တော့',
     welcome:'ကြိုဆိုပါသည် 👋', loginSub:'ဝင်ရောက်ရန် အကောင့်ဖြင့် ဆက်သွယ်ပါ',
     username:'အသုံးပြုသူအမည်', password:'စကားဝှက်', login:'ဝင်ရောက် →',
     logout:'ထွက်မည်',
@@ -2094,20 +2097,20 @@ const LANG = {
     addFile:'+ ဖိုင်ထည့်', docType:'စာရွက်စာတမ်းအမျိုးအစား', docName:'စာရွက်အမည် (ရှိပါက)',
     docsSection:'ပူးတွဲဖိုင်များ (အကန့်အသတ်မရှိ)',
     contactLog:'ဆက်သွယ်မှုမှတ်တမ်း', addLog:'+ မှတ်တမ်းထည့်',
-    tlHistory:'အခြေအနေမှတ်တမ်း', updateStatus:'📋 အခြေအနေပြင်ဆင်',
+    tlHistory:'အခြေအနေမှတ်တမ်း', updateStatus:'အခြေအနေပြင်ဆင်',
     selectAll:'☐ အားလုံးရွေး', selected:'ရွေးထား', items:'မှတ်တမ်း',
-    changeGroup:'🗂️ အုပ်စုပြောင်း', changeStatus:'📋 အခြေအနေပြောင်း',
-    exportSel:'📤 ရွေးထားသည်ထုတ်ယူ', deleteSel:'🗑️ ရွေးထားသည်ဖျက်', clearSel:'✕ မပြုတော့',
+    changeGroup:'အုပ်စုပြောင်း', changeStatus:'အခြေအနေပြောင်း',
+    exportSel:'ရွေးထားသည်ထုတ်ယူ', deleteSel:'ရွေးထားသည်ဖျက်', clearSel:'✕ မပြုတော့',
     loginPlUser:'အသုံးပြုသူအမည်ထည့်ပါ', loginPlPass:'စကားဝှက်ထည့်ပါ',
     natMM:'🇲🇲 မြန်မာ', natKH:'🇰🇭 ကမ္ဘောဒီးယား', natLA:'🇱🇦 လာအို', natVN:'🇻🇳 ဗီယက်နမ်',
     typeFreelance:'အလုပ်ရှင်မရှိ', typeCompany:'ကုမ္ပဏီဝန်ထမ်း',
     srcNone:'မသတ်မှတ်', srcWalkin:'Walk-in', srcReferral:'ညွှန်းဆိုမှု', srcOnline:'အွန်လိုင်း', srcRepeat:'ဖောက်သည်ဟောင်း',
     payCash:'ငွေသား', payTransfer:'ငွေလွှဲ', payOther:'အခြား',
     fstPaid:'ပေးချေပြီး', fstPartial:'တစ်စိတ်တစ်ပိုင်းပေး', fstUnpaid:'မပေးရသေး',
-    docPassport:'📘 နိုင်ငံကူးပုံ', docVisa:'🛂 VISA', docWP:'📄 Work Permit',
-    docEmployerCard:'🪪 အလုပ်ရှင်ကတ်', docReceipt:'🧾 ငွေလက်ခံ', docPhoto:'📷 ဓာတ်ပုံ',
-    docPOW:'📜 လုပ်ပိုင်ခွင့်စာ', docOther:'📎 အခြား',
-    clfCall:'📞 ဖုန်း', clfLine:'💬 LINE', clfWalkin:'🚶 Walk-in', clfOther:'📌 အခြား',
+    docPassport:'နိုင်ငံကူးပုံ', docVisa:'VISA', docWP:'Work Permit',
+    docEmployerCard:'အလုပ်ရှင်ကတ်', docReceipt:'ငွေလက်ခံ', docPhoto:'ဓာတ်ပုံ',
+    docPOW:'📜 လုပ်ပိုင်ခွင့်စာ', docOther:'အခြား',
+    clfCall:'ဖုန်း', clfLine:'💬 LINE', clfWalkin:'🚶 Walk-in', clfOther:'📌 အခြား',
     roleAdmin:'Admin - စီမံခန့်ခွဲသူ', roleStaff:'Staff - ရုံးဝန်ထမ်း',
     empStatusActive:'✅ အသုံးပြုနေသည် (Active)', empStatusInactive:'⛔ ပိတ်ထားသည် (Inactive)',
     attStatAll:'အခြေအနေအားလုံး', attStatOk:'✅ ပုံမှန်', attStatLate:'⚠️ နောက်ကျ',
@@ -2118,9 +2121,9 @@ const LANG = {
     attEmpNotFound:'ဤအကောင့်နှင့်ချိတ်ဆက်ထားသောဝန်ထမ်းမတွေ့ပါ',
     attEmpContact:'စီမံခန့်ခွဲသူထံဆက်သွယ်ပါ',
     attLoading:'တင်နေသည်...', attCurTime:'လက်ရှိအချိန်',
-    attSearchPH:'ဝန်ထမ်းအမည်/ကုဒ်ရှာဖွေ', attHistOwn:'👤 ကိုယ်ပိုင်မှတ်တမ်း ─',
+    attSearchPH:'ဝန်ထမ်းအမည်/ကုဒ်ရှာဖွေ', attHistOwn:'ကိုယ်ပိုင်မှတ်တမ်း ─',
     attBtnIn:'🟢 &nbsp;အလုပ်ဝင်', attBtnOut:'🔵 &nbsp;အလုပ်ထွက်',
-    attSelLabel:'👤 ဝန်ထမ်းရွေးချယ်ပါ', attEmpLabel:'👤 ဝန်ထမ်း',
+    attSelLabel:'ဝန်ထမ်းရွေးချယ်ပါ', attEmpLabel:'ဝန်ထမ်း',
     attHdrDate:'ရက်စွဲ', attHdrEmp:'ဝန်ထမ်း', attHdrIn:'အဝင်', attHdrOut:'အထွက်',
     attHdrHrs:'နာရီ', attHdrStatus:'အခြေအနေ',
     // ── LANG-FULL additions ──
@@ -2136,11 +2139,11 @@ const LANG = {
     dashMissBooklet:'စာအုပ်မရှိသေး', dashTodoNone:'လုပ်စရာမရှိသေး', dashAbsentNone:'ပျက်ကွက်ဝန်ထမ်းဒေတာမရှိသေး',
     xlSection:'Excel ဒေတာ', xlSubmit:'တင်သွင်းရက်', xlAgent:'ကိုယ်စားလှယ်', xlMedical:'ဆေးလက်မှတ်', xlInsurance:'အာမခံ', xlCardFee:'ကတ်ခ', xlBooklet:'စာအုပ်အခြေအနေ', xlBookletHas:'စာအုပ်ရှိ', xlBookletNone:'စာအုပ်မရှိ', xlAppt:'ချိန်းဆိုရက်', xlApptTime:'အချိန်', xlApptPlace:'နေရာ', xlQueue:'ကျူးလွတ်ရက်', xlReceive:'စာအုပ်ရရက်', xlYes:'ရှိ', xlPaid:'ပေးပြီး',
     dashD15:'≤15 ရက်', dashD1630:'16-30 ရက်',
-    dashPP:'📘 နိုင်ငံကူး (30 ရက်)', dashVWP:'🛂 VISA/WP (30 ရက်)', dash90:'📅 90 ရက်အစီရင်ခံ',
+    dashPP:'နိုင်ငံကူး (30 ရက်)', dashVWP:'VISA/WP (30 ရက်)', dash90:'90 ရက်အစီရင်ခံ',
     dashVISA15:'VISA ≤15 ရက်', dashWP15:'WP ≤15 ရက်',
-    dashByNat:'📊 နိုင်ငံသားဆိုင်ရာ', dashTopEmp:'🏢 လုပ်သားအများဆုံးသော အလုပ်ရှင်',
-    dashTopUrgent:'🚨 အရေးပေါ်ဆုံး', dashSeeAll:'အားလုံးကြည့် →', dashTopSvc:'📋 ဝန်ဆောင်မှုများ',
-    dashSummGrp:'🗂️ အုပ်စုအလိုက်',
+    dashByNat:'နိုင်ငံသားဆိုင်ရာ', dashTopEmp:'လုပ်သားအများဆုံးသော အလုပ်ရှင်',
+    dashTopUrgent:'အရေးပေါ်ဆုံး', dashSeeAll:'အားလုံးကြည့် →', dashTopSvc:'ဝန်ဆောင်မှုများ',
+    dashSummGrp:'အုပ်စုအလိုက်',
     bannerFmt:'ဆောင်ရွက်ရမည့် မှတ်တမ်း {n} ခု ရှိသည်', bannerSeeAll:'အားလုံးကြည့် →',
     alertNone:'သတိပေးချက်မရှိပါ',
     empTitle:'အလုပ်ရှင် / ကုမ္ပဏီ အားလုံး', empAdd:'+ အလုပ်ရှင်ထည့်',
@@ -2160,13 +2163,13 @@ const LANG = {
     detBoss:'အလုပ်ရှင်', detPhone:'ဖုန်းနံပါတ်', detPassport:'နိုင်ငံကူးနံပါတ်',
     detAlien:'နိုင်ငံခြားသားနံပါတ်', detWP:'WP တောင်းဆိုနံပါတ်', detBranch:'ဌာနခွဲ',
     detReceiver:'လက်ခံဝန်ထမ်း', detDocStaff:'စာရွက်တာဝန်ခံ', detCloser:'ပိတ်သိမ်းသူ',
-    detExpiry:'📅 သက်တမ်းကုန်ဆုံးရက်', detFinance:'💰 ငွေကြေးအချက်အလက်',
+    detExpiry:'သက်တမ်းကုန်ဆုံးရက်', detFinance:'ငွေကြေးအချက်အလက်',
     detFeeLabel:'ဝန်ဆောင်ခ', detPaidLabel:'ပေးပြီး', detDueLabel:'ကျန်ရှိ',
-    detPayStatus:'အခြေအနေ', detDocs:'📎 ပူးတွဲဖိုင်', detFiles:'ဖိုင်',
-    detContacts:'📞 ဆက်သွယ်မှုမှတ်တမ်း', detAddLog:'+ မှတ်တမ်းထည့်',
-    detHistory:'📋 အခြေအနေမှတ်တမ်း', detNoContact:'မှတ်တမ်းမရှိသေး',
-    detUpdated:'ပြင်ဆင်ပြီး', detTimeline:'🗂️ Timeline အခြေအနေ',
-    detCustComp:'🏢 ကုမ္ပဏီဝန်ထမ်း', detCustFree:'🧑 အလုပ်ရှင်မရှိ',
+    detPayStatus:'အခြေအနေ', detDocs:'ပူးတွဲဖိုင်', detFiles:'ဖိုင်',
+    detContacts:'ဆက်သွယ်မှုမှတ်တမ်း', detAddLog:'+ မှတ်တမ်းထည့်',
+    detHistory:'အခြေအနေမှတ်တမ်း', detNoContact:'မှတ်တမ်းမရှိသေး',
+    detUpdated:'ပြင်ဆင်ပြီး', detTimeline:'Timeline အခြေအနေ',
+    detCustComp:'ကုမ္ပဏီဝန်ထမ်း', detCustFree:'အလုပ်ရှင်မရှိ',
     payFull:'✅ ပေးပြီး', payPart:'⚠️ တစ်စိတ်တစ်ပိုင်း', payNo:'❌ မပေးရသေး',
     attTitle:'နှိပ်ကတ်စနစ်',
     attTabCheckin:'ဝင်/ထွက်နှိပ်', attTabHistory:'နှိပ်မှတ်တမ်း',
@@ -2178,7 +2181,7 @@ const LANG = {
     attStPresent:'✅ ပုံမှန်', attStLate:'⚠️ နောက်ကျ', attStAbsent:'❌ ပျက်',
     attStHalfDay:'🌗 တစ်ဝက်', attStHoliday:'🎌 ရုံးပိတ်', attStLeave:'🏖 ခွင့်', attStOutside:'📍 နယ်မြေပြင်ပ',
     attNoOut:'ထွက်မနှိပ်',
-    attRptTitle:'📊 နောက်ကျ / OT အစီရင်ခံ', attRptView:'အစီရင်ခံကြည့်',
+    attRptTitle:'နောက်ကျ / OT အစီရင်ခံ', attRptView:'အစီရင်ခံကြည့်',
     attRptNormal:'✅ ပုံမှန်', attRptLate:'⚠️ နောက်ကျ', attRptAbsent:'❌ ပျက်', attRptOT:'⏱ OT စုစုပေါင်း',
     attRptNoData:'ဤလတွင် ဒေတာမရှိပါ',
     attRptTblEmp:'ဝန်ထမ်း', attRptTblDays:'အလုပ်ရက်', attRptTblLate:'နောက်ကျ',
@@ -2217,9 +2220,9 @@ const LANG = {
     empClear:'ရှင်းလင်း', empNoResult:'ကိုက်ညီသောအလုပ်ရှင်မတွေ့ပါ',
     toastSaved:'သိမ်းဆည်းပြီ', toastEmpAdded:'အလုပ်ရှင်ထည့်ပြီ', toastGrpAdded:'အုပ်စုထည့်ပြီ',
     toastError:'အမှားဖြစ်သည်', errEmpName:'အလုပ်ရှင်အမည်ထည့်ပါ',
-    settingsTitle:'⚙️ သတိပေးချက်ကြိုတင်ပြင်ဆင်',
+    settingsTitle:'သတိပေးချက်ကြိုတင်ပြင်ဆင်',
     clogTitle:'ဆက်သွယ်မှတ်တမ်း', tlModalTitle:'အလုပ်အခြေအနေပြင်ဆင်', tlBtnSave:'✅ ပြင်ဆင်',
-    detTitle:'အသေးစိတ်', btnEdit:'✏️ ပြင်ဆင်',
+    detTitle:'အသေးစိတ်', btnEdit:'ပြင်ဆင်',
     grpNameLabel:'အုပ်စုအမည် *', grpDescLabel:'ဖော်ပြချက်',
     efNameLabel:'အလုပ်ရှင်/ကုမ္ပဏီအမည် *', efBizLabel:'စီးပွားရေးအမျိုးအစား', efPhoneLabel:'ဖုန်းနံပါတ်',
     efContactLabel:'ဆက်သွယ်ရမည့်သူ', efAddrLabel:'လိပ်စာ', efNoteLabel:'မှတ်ချက်',
@@ -2348,7 +2351,7 @@ function applyLang(){
   // ===== MODAL FORM LABELS =====
   // Tab buttons
   const tbns=document.querySelectorAll('#cModal .tbtn');
-  const tabLabels=['👤 '+L.basicInfo,'📋 '+L.services,'📅 '+L.expiry,'💰 '+L.finance,'📎 '+L.docs,'📝 '+L.notes];
+  const tabLabels=[L.basicInfo,L.services,L.expiry,L.finance,L.docs,L.notes];
   tbns.forEach((tb,i)=>{if(tabLabels[i])tb.textContent=tabLabels[i];});
 
   // Form section titles (Round C order: custType, photo, empInfo, basicInfo, staff)
@@ -2572,7 +2575,7 @@ function impCompressDataURL(dataUrl,maxPx,quality){
 async function handleMultiDoc(e){
   const files=Array.from(e.target.files);
   const type=document.getElementById('newDocType').value;
-  const typeLabel={passport_photo:'📘 รูปพาสปอร์ต',visa:'🛂 VISA',wp:'📄 Work Permit',employer_card:'🪪 บัตรนายจ้าง',receipt:'🧾 ใบเสร็จ',photo:'📷 รูปถ่าย',pow:'📜 หนังสือมอบอำนาจ',other:'📎 อื่นๆ'}[type]||'เอกสาร';
+  const typeLabel={passport_photo:'รูปพาสปอร์ต',visa:'VISA',wp:'Work Permit',employer_card:'บัตรนายจ้าง',receipt:'ใบเสร็จ',photo:'รูปถ่าย',pow:'📜 หนังสือมอบอำนาจ',other:'อื่นๆ'}[type]||'เอกสาร';
   const customLabel=document.getElementById('newDocLabel').value.trim();
   for(const file of files){
     try{
@@ -3406,7 +3409,7 @@ function renderDash(){
   const tabBar=`<div class="att-subnav dash-tabs">${TABS.map(([k,l,b])=>`<button class="att-tab${dashFilter===k?' att-on':''}" onclick="dashGo('${k}')">${l}${b}</button>`).join('')}</div>`;
   const summaryHTML=`
   <div class="sg">
-    <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">${T('dashAllWorkers')}</div><div class="sc-sub">🧑 ${customers.filter(c=>c.customer_type==='freelance').length} &nbsp; 🏢 ${customers.filter(c=>c.customer_type==='company').length}</div></div>
+    <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">${T('dashAllWorkers')}</div><div class="sc-sub">${customers.filter(c=>c.customer_type==='freelance').length} &nbsp; ${customers.filter(c=>c.customer_type==='company').length}</div></div>
     <div class="sc c2" onclick="dashGo('renew')"><div class="sc-num" style="color:${al.length>0?'var(--amb)':'var(--grn)'}">${al.length}</div><div class="sc-lbl">${T('dashMustAct')}</div><div class="sc-sub" style="color:${al.length>0?'var(--red)':'var(--grn)'}">${al.length>0?'⚠️ '+T('dashUrgentWarn'):'✅ '+T('dashOkAll')}</div></div>
     <div class="sc c3" onclick="gv('employers')"><div class="sc-num">${employers.length}</div><div class="sc-lbl">${T('employers')}</div><div class="sc-sub">${T('dashAllInSys')}</div></div>
     <div class="sc c4"><div class="sc-num">${groups.length}</div><div class="sc-lbl">${T('groups')}</div><div class="sc-sub">${groups.slice(0,2).map(g=>esc(g.name)).join(', ')||T('dashNoGroup')}</div></div>
@@ -3494,7 +3497,7 @@ function renderEmpGrid(){
       </div>
       <div style="font-weight:700;font-size:14px;color:var(--g9);margin-bottom:4px">${esc(e.name)}</div>
       ${e.business_type?`<div style="font-size:11px;color:var(--g5);margin-bottom:4px">${esc(e.business_type)}</div>`:''}
-      ${e.phone||e.contact_person?`<div style="font-size:11px;color:var(--g5);margin-bottom:6px">${e.phone?'📞 '+esc(e.phone):''}${e.phone&&e.contact_person?' &nbsp;·&nbsp; ':''}${e.contact_person?'👤 '+esc(e.contact_person):''}</div>`:''}
+      ${e.phone||e.contact_person?`<div style="font-size:11px;color:var(--g5);margin-bottom:6px">${e.phone?''+esc(e.phone):''}${e.phone&&e.contact_person?' &nbsp;·&nbsp; ':''}${e.contact_person?''+esc(e.contact_person):''}</div>`:''}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--g1)">
         <span style="font-size:12px;color:var(--g5)">${T('empWorkers')}</span>
         <span style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--p)">${cnt}</span>
@@ -3770,7 +3773,7 @@ async function saveCustomer(){
   }finally{
     hideLoading();
     const _sb=document.querySelector('#cModal .mfoo .btn-p');
-    if(_sb){_sb.disabled=false;_sb.textContent='💾 บันทึก';}
+    if(_sb){_sb.disabled=false;_sb.textContent='บันทึก';}
   }
 }
 async function delCust(id){
@@ -3894,7 +3897,7 @@ async function delGrp(id){if(!confirm('ลบกลุ่มนี้?'))return;
 
 function renderImport(){
   document.getElementById('importContent').innerHTML=`<div style="max-width:800px">
-    <div style="font-size:16px;font-weight:700;margin-bottom:6px">📥 นำเข้าข้อมูล Excel / CSV</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px"><svg class="ui-ic" style="width:17px;height:17px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้าข้อมูล Excel / CSV</div>
     <div style="font-size:13px;color:var(--g5);margin-bottom:16px">รองรับ .xlsx, .xls, .csv — ตรวจสอบข้อมูลซ้ำอัตโนมัติ</div>
     <div id="impDrop" style="border:2px dashed var(--g3);border-radius:var(--rx);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g3)'" onclick="document.getElementById('impFile').click()" ondragenter="impDragOver(event)" ondragover="impDragOver(event)" ondragleave="impDragLeave(event)" ondrop="impDrop(event)">
       <div style="font-size:40px;margin-bottom:10px">📂</div>
@@ -4082,7 +4085,7 @@ function renderImpPreview(){
       else{thumb='<div class="imp-ph-none">ไม่พบรูป</div>';badge='<span class="imp-ph-b no">ไม่พบรูป</span>';}
       return`<div class="imp-ph-row"><div class="imp-ph-rn">#${i+2}</div>${thumb}<div class="imp-ph-meta"><div class="imp-ph-nm">${esc(nm)}</div><div class="imp-ph-sub">${esc(emp)} · ${esc(al)}</div><div class="imp-ph-sub">วันที่ยื่น: ${esc(sd)}</div></div>${badge}</div>`;
     }).join('');
-    photoPanel=`<div class="twrap" style="margin-bottom:14px"><div class="tbar2" style="flex-wrap:wrap;gap:8px"><div style="font-size:13px;font-weight:700">🖼️ จับคู่รูปถ่ายจาก Excel</div><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="eb eb-ok">พบ ${_nF}</span>${_nU?`<span class="eb eb-w">ไม่มั่นใจ ${_nU}</span>`:''}${_nNo>0?`<span class="eb eb-u">ไม่พบ ${_nNo}</span>`:''}</div></div><div style="padding:9px 12px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⚠️ <b>พรีวิวเท่านั้น</b> — รอบนี้ยังไม่บันทึกรูปลงระบบ · แตะรูปเพื่อดูใหญ่และตรวจให้ตรงคนก่อน (รูปอิงตำแหน่งในชีต อาจคลาดเคลื่อนถ้ามีแถวว่าง/merge cell)</div><div class="imp-ph-list">${_rows}${impData.length>_cap?`<div style="text-align:center;padding:10px;font-size:11px;color:var(--g5)">แสดง ${_cap} แถวแรก จาก ${impData.length}</div>`:''}</div></div>`;
+    photoPanel=`<div class="twrap" style="margin-bottom:14px"><div class="tbar2" style="flex-wrap:wrap;gap:8px"><div style="font-size:13px;font-weight:700">จับคู่รูปถ่ายจาก Excel</div><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="eb eb-ok">พบ ${_nF}</span>${_nU?`<span class="eb eb-w">ไม่มั่นใจ ${_nU}</span>`:''}${_nNo>0?`<span class="eb eb-u">ไม่พบ ${_nNo}</span>`:''}</div></div><div style="padding:9px 12px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⚠️ <b>พรีวิวเท่านั้น</b> — รอบนี้ยังไม่บันทึกรูปลงระบบ · แตะรูปเพื่อดูใหญ่และตรวจให้ตรงคนก่อน (รูปอิงตำแหน่งในชีต อาจคลาดเคลื่อนถ้ามีแถวว่าง/merge cell)</div><div class="imp-ph-list">${_rows}${impData.length>_cap?`<div style="text-align:center;padding:10px;font-size:11px;color:var(--g5)">แสดง ${_cap} แถวแรก จาก ${impData.length}</div>`:''}</div></div>`;
   }
   document.getElementById('impPreview').innerHTML=`${photoPanel}<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ</button></div>
   <div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value);renderImpPreview()"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
@@ -4169,7 +4172,7 @@ async function doImport(){
   const _unsup=impCols.map((c,i)=>({c,i})).filter(x=>x.c&&String(x.c).trim()&&!_mappedIdx.has(x.i)).map(x=>x.c);
   const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">คอลัมน์ที่ไม่ได้จับคู่กับฟิลด์ใดจะไม่ถูกนำเข้า (เช่น ลำดับ, รูปถ่าย) — หากต้องการนำเข้า ให้จับคู่คอลัมน์ในส่วน "จับคู่คอลัมน์" ด้านบน</div></div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">📊 สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">🖼️ รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${unsupHTML}${skipHTML}</div></div>`;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
@@ -4449,7 +4452,7 @@ async function confirmDelUser(){
     console.error('[confirmDelUser] error:',e);
     errEl.textContent='เกิดข้อผิดพลาด กรุณาลองใหม่';
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='🗑️ ยืนยันลบ';}
+    if(btn){btn.disabled=false;btn.textContent='ยืนยันลบ';}
   }
 }
 
@@ -4770,6 +4773,19 @@ function attTabIcon(k){
   };
   const p=I[k];return p?`<svg class="att-tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`:'';
 }
+// STAGE 10: ไอคอน SVG เรียบสำหรับปุ่ม/หัวข้อ (แทน emoji decorative) — inline ไม่โหลด library
+function uiIcon(name){
+  const I={
+    edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/>',
+    import:'<path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/>',
+    export:'<path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/>',
+    excel:'<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8l6 8M15 8l-6 8"/>',
+    settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+    map:'<path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11"/><circle cx="12" cy="10" r="2.5"/>'
+  };
+  const p=I[name];return p?`<svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`:'';
+}
 function renderAttendance(){
   // MERGE: calendar ย้ายเข้า subtab ของ history แล้ว — staff เห็น checkin+history+report
   const isEmp=curUser?.role!=='admin';
@@ -4876,7 +4892,7 @@ function attUIHistory(){
       <button id="att_hsub_btn_table"
         onclick="attHistGo('table')"
         style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:${calOn?'2px solid transparent':'2px solid var(--p)'};color:${calOn?'var(--g5)':'var(--p)'};margin-bottom:-2px;font-family:var(--font)">
-        📋 ตาราง
+        ตาราง
       </button>
     </div>
     <div id="att_hist_sub"></div>
@@ -5201,7 +5217,7 @@ function attRenderStaffReport(arr,summDiv,tableDiv,yr,mo){
   }
   const fmtMin=m=>m>0?[Math.floor(m/60)?Math.floor(m/60)+' ชม.':null,m%60?m%60+' นาที':null].filter(Boolean).join(' '):'—';
   // header card
-  const headerHtml=`<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r);padding:14px;margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:#0369a1">📊 รายงานของฉัน — ${monthLabel}</div><div style="font-size:12px;color:#0369a1;margin-top:5px">👤 ${esc(empName)} &nbsp;·&nbsp; รหัส: <strong>${esc(empCode)}</strong> &nbsp;·&nbsp; 🏢 ${esc(branchName)}</div></div>`;
+  const headerHtml=`<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:var(--r);padding:14px;margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:#0369a1">รายงานของฉัน — ${monthLabel}</div><div style="font-size:12px;color:#0369a1;margin-top:5px">${esc(empName)} &nbsp;·&nbsp; รหัส: <strong>${esc(empCode)}</strong> &nbsp;·&nbsp; ${esc(branchName)}</div></div>`;
   // กรณีไม่มี log ในเดือนนี้
   if(!arr.length){
     if(summDiv)summDiv.innerHTML=headerHtml+`<div style="text-align:center;padding:24px;color:var(--g5)">ยังไม่มีบันทึกการมาทำงานในเดือนนี้</div>`;
@@ -5260,7 +5276,7 @@ function attRenderStaffReport(arr,summDiv,tableDiv,yr,mo){
       <td style="padding:7px 6px;font-size:12px;text-align:center">${gpsCell}</td>
     </tr>`;
   }).join('');
-  if(tableDiv)tableDiv.innerHTML=`<div style="font-size:12px;font-weight:600;color:var(--g6);margin-bottom:8px">📋 ตารางรายวัน</div>
+  if(tableDiv)tableDiv.innerHTML=`<div style="font-size:12px;font-weight:600;color:var(--g6);margin-bottom:8px">ตารางรายวัน</div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:#f3f4f6;border-bottom:2px solid var(--g2)">
         <th style="padding:8px 6px;text-align:left;font-size:12px">วันที่</th>
@@ -5601,7 +5617,7 @@ function attCalDayPopup(d){
         badges+=`<span style="font-size:11px;background:#fee2e2;color:#dc2626;border-radius:4px;padding:3px 8px;display:inline-block;margin:2px">📍 GPS นอกพื้นที่</span>`;
       const badgesDiv=badges?`<div style="margin-bottom:12px;display:flex;flex-wrap:wrap">${badges}</div>`:'';
       // branch
-      const branchHtml=log.branch_name?`<div style="font-size:12px;color:var(--g5)">🏢 สาขา: ${esc(log.branch_name)}</div>`:'';
+      const branchHtml=log.branch_name?`<div style="font-size:12px;color:var(--g5)">สาขา: ${esc(log.branch_name)}</div>`:'';
       bodyHtml=stBadge+empInfo+timeCards+workHtml+badgesDiv+branchHtml;
     }
   }else{
@@ -5648,7 +5664,7 @@ function attCalDayPopup(d){
   ov.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);padding:16px;box-sizing:border-box';
   ov.innerHTML=`<div id="att_cal_popup_box" style="background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:20px;position:relative;box-sizing:border-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div style="font-size:14px;font-weight:700;color:var(--g8)">📅 ${dateLabel}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--g8)">${dateLabel}</div>
       <button id="att_cal_popup_close" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--g5);padding:0 4px">✕</button>
     </div>
     <div>${bodyHtml}</div>
@@ -5932,7 +5948,7 @@ async function attEmpDelConfirm(){
   }catch(err){
     errEl.textContent='เกิดข้อผิดพลาด กรุณาลองใหม่';console.error('[attEmpDelConfirm]',err);
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='🗑️ ยืนยันลบ';}
+    if(btn){btn.disabled=false;btn.textContent='ยืนยันลบ';}
   }
 }
 
@@ -6003,7 +6019,7 @@ function staffRenderCards(){
         <div class="r">${icoPin}<span>${e.branch_name?esc(e.branch_name):'—'}</span></div>
         <div class="r">${icoTag}<span>${e.position?esc(e.position):'—'}</span></div>
       </div>
-      <div class="sc-foot"><span class="sc-st ${isAct?'act':'inact'}">${stLabel}</span>${canEdit?`<button class="sc-edit" onclick="event.stopPropagation();staffOpenEdit(${e.id})">✏️ แก้ไข</button>`:''}</div>
+      <div class="sc-foot"><span class="sc-st ${isAct?'act':'inact'}">${stLabel}</span>${canEdit?`<button class="sc-edit" onclick="event.stopPropagation();staffOpenEdit(${e.id})">${uiIcon('edit')}แก้ไข</button>`:''}</div>
     </div>`;
   }).join('')+'</div>';
 }
@@ -6019,7 +6035,7 @@ function staffOpenDetail(id){
     +row('สาขา',e.branch_name?esc(e.branch_name):'—')
     +row('ตำแหน่ง',e.position?esc(e.position):'—')
     +row('สถานะ',`<span class="sc-st ${isAct?'act':'inact'}">${stLabel}</span>`)
-    +(canEdit?`<button class="btn btn-p" style="width:100%;margin-top:16px" onclick="closeStaffDetail();staffOpenEdit(${e.id})">✏️ แก้ไขข้อมูล</button>`:'');
+    +(canEdit?`<button class="btn btn-p" style="width:100%;margin-top:16px" onclick="closeStaffDetail();staffOpenEdit(${e.id})">${uiIcon('edit')}แก้ไขข้อมูล</button>`:'');
   document.getElementById('staffDetailModal').style.display='flex';
 }
 function closeStaffDetail(){document.getElementById('staffDetailModal').style.display='none';}
@@ -6092,7 +6108,7 @@ async function staffSaveEdit(){
   }catch(err){
     toast('บันทึกไม่สำเร็จ กรุณาลองใหม่','err');console.error('[staffSaveEdit]',err);
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='💾 บันทึก';}
+    if(btn){btn.disabled=false;btn.textContent='บันทึก';}
   }
 }
 
@@ -6103,7 +6119,7 @@ function attUIBranches(){
   if(curUser?.role!=='admin')return`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccess')}</div>`;
   return`<div class="twrap">
     <div class="tbar2">
-      <div style="font-size:13px;font-weight:700">🏢 จัดการสาขา</div>
+      <div style="font-size:13px;font-weight:700">จัดการสาขา</div>
       <button class="btn btn-p btn-sm" onclick="attBranchOpenAdd()">+ เพิ่มสาขา</button>
     </div>
     <div id="att_branch_list_wrap"><div style="text-align:center;padding:30px;color:var(--g5)">กำลังโหลด...</div></div>
@@ -6294,7 +6310,7 @@ function attEmpBranchChange(val){
 
 function attUISettings(){
   return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:560px">
-    <div style="font-weight:700;font-size:15px;margin-bottom:20px">⚙️ ตั้งค่าระบบตอกบัตร</div>
+    <div style="font-weight:700;font-size:15px;margin-bottom:20px">ตั้งค่าระบบตอกบัตร</div>
 
     <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--g2)">🕐 เวลาทำงาน (ค่าเริ่มต้น Fallback)</div>
     <div style="font-size:11px;color:var(--g5);margin-bottom:12px;padding:7px 10px;background:var(--pp);border-radius:var(--r);line-height:1.6">
@@ -6308,7 +6324,7 @@ function attUISettings(){
       <div class="fgi"><label class="fl">รัศมีที่อนุญาต (เมตร)</label><input id="att_cfg_radius" class="fi2" type="number" min="50" max="5000" value="200"></div>
     </div>
 
-    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g2)">📅 วันทำงาน</div>
+    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g2)">วันทำงาน</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
       ${[['จ',1],['อ',2],['พ',3],['พฤ',4],['ศ',5],['ส',6],['อา',0]].map(([lb,v])=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:6px 10px;border:1.5px solid var(--g2);border-radius:8px;user-select:none"><input type="checkbox" id="att_wd_${v}" value="${v}" style="cursor:pointer"> ${lb}</label>`).join('')}
     </div>
@@ -6337,7 +6353,7 @@ function attUISettings(){
       </div>
     </div>
 
-    <button id="att_cfg_save_btn" onclick="attSaveSettings()" class="btn btn-p" style="width:100%;padding:13px;font-size:14px">💾 บันทึกการตั้งค่า</button>
+    <button id="att_cfg_save_btn" onclick="attSaveSettings()" class="btn btn-p" style="width:100%;padding:13px;font-size:14px">บันทึกการตั้งค่า</button>
     <div id="att_cfg_msg" style="margin-top:12px;font-size:13px"></div>
   </div>`;
 }
@@ -6377,7 +6393,7 @@ async function attInitSettingsView(){
   }catch(e){
     if(msg)msg.innerHTML=`<div style="color:#dc2626;padding:10px 14px;background:#fee2e2;border-radius:8px">❌ โหลดข้อมูลไม่สำเร็จ: ${e.message}</div>`;
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='💾 บันทึกการตั้งค่า';}
+    if(btn){btn.disabled=false;btn.textContent='บันทึกการตั้งค่า';}
   }
 }
 
@@ -6438,13 +6454,13 @@ async function attSaveSettings(){
   }catch(e){
     if(msg)msg.innerHTML=`<div style="color:#dc2626;padding:10px 14px;background:#fee2e2;border-radius:8px">❌ บันทึกไม่สำเร็จ: ${e.message||'ไม่ทราบสาเหตุ'}</div>`;
   }finally{
-    btn.disabled=false;btn.textContent='💾 บันทึกการตั้งค่า';
+    btn.disabled=false;btn.textContent='บันทึกการตั้งค่า';
   }
 }
 
 function attUIExport(){
   return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:16px">📤 ส่งออกรายงานเวลาทำงาน</div>
+    <div style="font-weight:700;font-size:14px;margin-bottom:16px">ส่งออกรายงานเวลาทำงาน</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
       <div class="fgi" style="flex:1;min-width:150px">
         <label class="fl">เดือน</label>
@@ -6457,8 +6473,8 @@ function attUIExport(){
       <button class="btn btn-g btn-sm" onclick="attLoadExportPreview()" style="white-space:nowrap">🔍 ดูตัวอย่าง</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-      <button class="btn btn-p btn-sm" onclick="attExportDetailCSV()">📄 ส่งออกรายการละเอียด (.csv)</button>
-      <button class="btn btn-g btn-sm" onclick="attExportSummaryXLS()">📊 ส่งออกรายงานสรุปประจำเดือน (.xls)</button>
+      <button class="btn btn-p btn-sm" onclick="attExportDetailCSV()">ส่งออกรายการละเอียด (.csv)</button>
+      <button class="btn btn-g btn-sm" onclick="attExportSummaryXLS()">ส่งออกรายงานสรุปประจำเดือน (.xls)</button>
     </div>
     <div id="att_exp_preview"></div>
   </div>`;
@@ -6562,7 +6578,7 @@ function attRenderExportPreview(summary,yr,mo){
     <td style="padding:6px 8px;font-size:12px;text-align:center;color:#7c3aed">${fmtMin(r.ot_minutes)}</td>
   </tr>`).join('');
   return`<div style="overflow-x:auto;margin-top:4px">
-    <div style="font-size:12px;color:var(--g5);margin-bottom:6px">📋 ตัวอย่างรายงานสรุป ${monthTH[mo]} ${yr+543} (${summary.length} คน)</div>
+    <div style="font-size:12px;color:var(--g5);margin-bottom:6px">ตัวอย่างรายงานสรุป ${monthTH[mo]} ${yr+543} (${summary.length} คน)</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:var(--p);color:#fff">
         ${headers.map(h=>`<th style="padding:7px 8px;white-space:nowrap;font-weight:700">${h}</th>`).join('')}
@@ -6950,8 +6966,8 @@ function attWaitUserSelfie(pv){
     const uid='att_sf_'+Date.now();
     pv.innerHTML=
       '<div style="text-align:center;padding:20px 16px">'+
-      '<div style="font-size:13px;color:var(--g6);margin-bottom:14px">📷 กดปุ่มด้านล่างเพื่อถ่ายเซลฟี่ยืนยันตัวตน</div>'+
-      '<label for="'+uid+'" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:var(--p);color:#fff;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:600;user-select:none">📷 ถ่ายเซลฟี่</label>'+
+      '<div style="font-size:13px;color:var(--g6);margin-bottom:14px">กดปุ่มด้านล่างเพื่อถ่ายเซลฟี่ยืนยันตัวตน</div>'+
+      '<label for="'+uid+'" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:var(--p);color:#fff;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:600;user-select:none">ถ่ายเซลฟี่</label>'+
       '<input type="file" id="'+uid+'" accept="image/*" capture="user" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">'+
       '<br><button style="margin-top:12px;font-size:12px;color:var(--g5);background:none;border:none;cursor:pointer;text-decoration:underline" id="'+uid+'_sk">ข้ามขั้นตอนเซลฟี่</button>'+
       '</div>';
@@ -7228,11 +7244,11 @@ function attShowResultPreview(type,payload,gps,selfieB64,emp,settings){
   el.innerHTML=`<div style="background:${bg};border-radius:var(--rx);border:2px solid ${color}33;padding:18px">
     <div style="font-size:14px;font-weight:800;color:${color};margin-bottom:14px">${icon} พร้อมบันทึก${isIn?'เข้างาน':'ออกงาน'}</div>
     <div style="display:grid;gap:10px;font-size:13px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span class="emp-code" style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span class="emp-code" style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">🕐 เวลา</span><span><strong>${timeLabel}</strong>&nbsp;&nbsp;${stBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
-      ${isIn?`<div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>`:''}
+      ${isIn?`<div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">เซลฟี่</span>${selfieHtml}</div>`:''}
     </div>
     ${isIn?'':`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--r);padding:12px 14px;margin-top:12px;text-align:left">
       <div style="font-size:13px;font-weight:800;color:var(--g7);margin-bottom:4px">📝 สรุปการทำงานวันนี้ <span style="color:#dc2626">*</span></div>
@@ -7396,13 +7412,13 @@ function attShowSavedSuccess(type,payload,gps,selfieB64,emp,settings){
   el.innerHTML=`<div style="background:${bg};border-radius:var(--rx);border:2px solid ${color}33;padding:18px">
     <div style="font-size:14px;font-weight:800;color:${color};margin-bottom:14px">✅ บันทึก${isIn?'เข้างาน':'ออกงาน'}สำเร็จ</div>
     <div style="display:grid;gap:10px;font-size:13px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">👤 พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span class="emp-code" style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">พนักงาน</span><span><strong>${esc(emp.full_name)}</strong> <span class="emp-code" style="color:var(--g4)">(${esc(emp.employee_code||'—')})</span></span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">🕐 เวลา</span><span><strong>${timeLabel}</strong>&nbsp;&nbsp;${stBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📡 GPS</span><span>${gpsBadge}</span></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--g4);width:110px;flex-shrink:0">📍 ระยะสาขา</span><span>${distBadge}</span></div>
       ${extraRow}
       ${otRow}
-      ${isIn?`<div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">📷 เซลฟี่</span>${selfieHtml}</div>`:''}
+      ${isIn?`<div style="display:flex;align-items:center;gap:10px"><span style="color:var(--g4);width:110px;flex-shrink:0">เซลฟี่</span>${selfieHtml}</div>`:''}
     </div>
     <div style="margin-top:14px;padding:10px 14px;background:${color}18;border-radius:8px;font-size:12px;color:${color};font-weight:700">✅ บันทึกลง Supabase สำเร็จแล้ว</div>
   </div>`;
@@ -7824,9 +7840,9 @@ function renderMetaAds(){
   const showDateBar=(!isImp)||meta_data.hasDays;
   const dateBar=showDateBar
     ?`<div class="ma-seg">${seg('today','วันนี้')}${seg('7d','7 วัน')}${seg('30d','30 วัน')}${seg('month','เดือนนี้')}${seg('custom','กำหนดเอง')}</div>${custom}`
-    :`<span style="font-size:12px;color:var(--ma-mut)">📅 ช่วงข้อมูล: ${esc(meta_data.periodLabel||'ตามไฟล์นำเข้า')}</span>`;
+    :`<span style="font-size:12px;color:var(--ma-mut)">ช่วงข้อมูล: ${esc(meta_data.periodLabel||'ตามไฟล์นำเข้า')}</span>`;
   const isReport=meta_state.screen==='report';
-  const screenSeg=`<div class="ma-seg ma-screen"><button class="${!isReport?'on':''}" onclick="metaSetScreen('dash')">📊 แดชบอร์ด</button><button class="${isReport?'on':''}" onclick="metaSetScreen('report')">📑 รายงาน</button></div>`;
+  const screenSeg=`<div class="ma-seg ma-screen"><button class="${!isReport?'on':''}" onclick="metaSetScreen('dash')">แดชบอร์ด</button><button class="${isReport?'on':''}" onclick="metaSetScreen('report')">📑 รายงาน</button></div>`;
   const dashBody=`
     <div class="ma-kpis">
       ${kpi('💸 Spend',mMoney(agg.spend),'ค่าโฆษณารวม','#FF7A1A','#FFB066')}
@@ -7869,11 +7885,11 @@ function renderMetaAds(){
   el.innerHTML=`<div class="meta-root">
     <input type="file" id="metaFile" accept=".csv,text/csv" style="display:none" onchange="metaImportFile(this)">
     <div class="meta-hd">
-      <div><h2>📊 วิเคราะห์โฆษณา Meta Ads</h2><div class="ma-sub">${sub}</div></div>
+      <div><h2>วิเคราะห์โฆษณา Meta Ads</h2><div class="ma-sub">${sub}</div></div>
       ${badge}
       <div class="ma-spacer"></div>
       ${screenSeg}
-      <button class="ma-btn pri" onclick="document.getElementById('metaFile').click()">📥 นำเข้าไฟล์ Meta Ads</button>
+      <button class="ma-btn pri" onclick="document.getElementById('metaFile').click()">นำเข้าไฟล์ Meta Ads</button>
       <button class="ma-btn" onclick="metaRefresh()">↻ รีเฟรช</button>
       ${reportActions}
       ${clearBtn}
@@ -7909,7 +7925,7 @@ function metaBuildClaudeReport(){
   const isImp=meta_data.source==='import';
   const periodTxt=isImp?(meta_data.periodLabel||(meta_data.hasDays?`${from} ถึง ${to}`:'ทั้งไฟล์')):`${from} ถึง ${to}`;
   const L=[];
-  L.push('📊 สรุปผลโฆษณา Meta Ads — รุ่งฟ้า CRM');
+  L.push('สรุปผลโฆษณา Meta Ads — รุ่งฟ้า CRM');
   if(isImp)L.push(`แหล่งข้อมูล: ไฟล์นำเข้าจาก Meta Ads Manager — ${meta_data.fileName||'(ไม่ทราบชื่อไฟล์)'}`);
   else L.push(`บัญชี: ${meta_data.account.name} (${meta_data.account.id})`);
   L.push(`ช่วงวันที่: ${periodTxt}`);
