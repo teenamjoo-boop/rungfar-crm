@@ -732,10 +732,11 @@ textarea.fi2{resize:vertical;min-height:65px}
 .btn .ui-ic,.bulk-btn .ui-ic,.sc-edit .ui-ic,.mt .ui-ic{margin-right:5px}
 .att-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--g4);text-align:center}
 .att-checkin-card{background:#fff;border-radius:var(--rx);padding:28px;border:1px solid var(--g2);box-shadow:var(--s1);text-align:center;max-width:400px;margin:0 auto}
-.att-btn-in{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:16px;width:100%;padding:20px;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--font);box-shadow:0 4px 14px rgba(22,163,74,.35);transition:all .2s;margin-bottom:12px}
-.att-btn-in:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(22,163,74,.45)}
-.att-btn-out{background:linear-gradient(135deg,#1d4ed8,#60a5fa);color:#fff;border:none;border-radius:16px;width:100%;padding:20px;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--font);box-shadow:0 4px 14px rgba(29,78,216,.3);transition:all .2s}
-.att-btn-out:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(29,78,216,.4)}
+.att-btn-in{background:#f0fdf4;color:#15803d;border:1.5px solid #bbf7d0;border-radius:15px;width:100%;padding:10px 14px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.att-btn-in:hover:not(:disabled){background:#dcfce7;border-color:#86efac}
+.att-btn-out{background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;border-radius:15px;width:100%;padding:10px 14px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s;display:flex;align-items:center;gap:12px}
+.att-btn-out:hover:not(:disabled){background:#dbeafe;border-color:#93c5fd}
+.att-btn-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .att-clock{font-size:42px;font-weight:800;font-family:Arial,Helvetica,sans-serif;color:var(--g9);letter-spacing:3px;margin:10px 0}
 .att-date{font-size:13px;color:var(--g5);margin-bottom:18px}
 .att-badge-ok{background:#dcfce7;color:#15803d;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
@@ -746,7 +747,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 @media (max-width:600px){
   .att-checkin-card{padding:20px 16px;max-width:100%}
   .att-clock{font-size:34px;letter-spacing:2px;margin:8px 0}
-  .att-btn-in,.att-btn-out{padding:15px;font-size:16px;border-radius:14px}
+  .att-btn-in,.att-btn-out{padding:9px 12px;font-size:14px;border-radius:13px}
   .att-subnav{gap:6px;margin-bottom:14px;padding-bottom:10px}
   .att-tab{padding:6px 13px;font-size:12px}
   /* History filter: ให้ input/select ยืดเต็มแถว + wrap ไม่ล้นขอบบนจอแคบ (ไม่แตะ field/query) */
@@ -1963,7 +1964,7 @@ const LANG = {
     attEmpContact:'กรุณาติดต่อผู้ดูแลระบบ',
     attLoading:'กำลังโหลด...', attCurTime:'เวลาปัจจุบัน',
     attSearchPH:'ค้นหาชื่อ/รหัสพนักงาน', attHistOwn:'แสดงเฉพาะประวัติของ',
-    attBtnIn:'🟢 &nbsp;เข้างาน', attBtnOut:'🔵 &nbsp;ออกงาน',
+    attBtnIn:'เข้างาน', attBtnOut:'ออกงาน',
     attSelLabel:'เลือกพนักงาน', attEmpLabel:'พนักงาน',
     attHdrDate:'วันที่', attHdrEmp:'พนักงาน', attHdrIn:'เข้างาน', attHdrOut:'ออกงาน',
     attHdrHrs:'ชม.ทำงาน', attHdrStatus:'สถานะ',
@@ -2133,7 +2134,7 @@ const LANG = {
     attEmpContact:'စီမံခန့်ခွဲသူထံဆက်သွယ်ပါ',
     attLoading:'တင်နေသည်...', attCurTime:'လက်ရှိအချိန်',
     attSearchPH:'ဝန်ထမ်းအမည်/ကုဒ်ရှာဖွေ', attHistOwn:'ကိုယ်ပိုင်မှတ်တမ်း ─',
-    attBtnIn:'🟢 &nbsp;အလုပ်ဝင်', attBtnOut:'🔵 &nbsp;အလုပ်ထွက်',
+    attBtnIn:'အလုပ်ဝင်', attBtnOut:'အလုပ်ထွက်',
     attSelLabel:'ဝန်ထမ်းရွေးချယ်ပါ', attEmpLabel:'ဝန်ထမ်း',
     attHdrDate:'ရက်စွဲ', attHdrEmp:'ဝန်ထမ်း', attHdrIn:'အဝင်', attHdrOut:'အထွက်',
     attHdrHrs:'နာရီ', attHdrStatus:'အခြေအနေ',
@@ -4819,7 +4820,9 @@ function uiIcon(name){
     export:'<path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/>',
     excel:'<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8l6 8M15 8l-6 8"/>',
     settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
-    map:'<path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11"/><circle cx="12" cy="10" r="2.5"/>'
+    map:'<path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11"/><circle cx="12" cy="10" r="2.5"/>',
+    calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
   };
   const p=I[name];return p?`<svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`:'';
 }
@@ -4902,8 +4905,8 @@ function attUICheckin(){
     <div class="att-clock" id="att_clock">${timeStr}</div>
     <div class="att-date">${dateStr}</div>
     ${empSection}
-    <button id="att_btn_in"  class="att-btn-in"  onclick="attDoCheckin()">${T('attBtnIn')}</button>
-    <button id="att_btn_out" class="att-btn-out" onclick="attDoCheckout()">${T('attBtnOut')}</button>
+    <button id="att_btn_in"  class="att-btn-in"  onclick="attDoCheckin()"><span class="att-btn-ico" style="background:#dcfce7"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></span><span>${T('attBtnIn')}</span></button>
+    <button id="att_btn_out" class="att-btn-out" onclick="attDoCheckout()"><span class="att-btn-ico" style="background:#dbeafe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span><span>${T('attBtnOut')}</span></button>
     <div id="att_preview" style="margin-top:16px;text-align:left"></div>
   </div>`;
 }
@@ -4924,7 +4927,7 @@ function attUIHistory(){
       <button id="att_hsub_btn_calendar"
         onclick="attHistGo('calendar')"
         style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:${calOn?'2px solid var(--p)':'2px solid transparent'};color:${calOn?'var(--p)':'var(--g5)'};margin-bottom:-2px;font-family:var(--font)">
-        🗓 ปฏิทิน
+        ${uiIcon('calendar')} ปฏิทิน
       </button>
       <button id="att_hsub_btn_table"
         onclick="attHistGo('table')"
@@ -5337,14 +5340,14 @@ function attUICalendar(){
   const mo=String(now.getMonth()+1).padStart(2,'0');
   return`<div class="twrap">
     <div class="tbar2" style="margin-bottom:10px">
-      <div style="font-size:13px;font-weight:700">🗓 ปฏิทินการเข้างาน</div>
+      <div style="font-size:13px;font-weight:700">${uiIcon('calendar')} ปฏิทินการเข้างาน</div>
       <input type="month" class="fi" id="att_cal_month" value="${yr}-${mo}"
         style="width:auto;font-size:13px" onchange="attLoadCalendar()">
     </div>
     <div id="att_cal_filter"></div>
     <div id="att_cal_wrap">
       <div style="text-align:center;padding:40px;color:var(--g5)">
-        <div style="font-size:32px;margin-bottom:10px;opacity:.4">🗓</div>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 10px;opacity:.3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <div style="font-size:13px">กำลังโหลดปฏิทิน…</div>
       </div>
     </div>
@@ -5370,7 +5373,7 @@ async function attLoadCalendar(){
   const isEmp=curUser?.role!=='admin';
 
   // Loading state
-  wrap.innerHTML=`<div style="text-align:center;padding:40px;color:var(--g5)"><div style="font-size:32px;margin-bottom:10px;opacity:.4">🗓</div><div style="font-size:13px">กำลังโหลดปฏิทิน…</div></div>`;
+  wrap.innerHTML=`<div style="text-align:center;padding:40px;color:var(--g5)"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 10px;opacity:.3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div style="font-size:13px">กำลังโหลดปฏิทิน…</div></div>`;
 
   try{
     // ── Admin: dropdown filter พนักงาน ─────────────────────────────
@@ -6348,7 +6351,7 @@ function attUISettings(){
   return`<div style="background:#fff;border-radius:var(--rx);border:1px solid var(--g2);padding:20px;max-width:560px">
     <div style="font-weight:700;font-size:15px;margin-bottom:20px">ตั้งค่าระบบตอกบัตร</div>
 
-    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--g2)">🕐 เวลาทำงาน (ค่าเริ่มต้น Fallback)</div>
+    <div style="font-size:11px;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--g2)">${uiIcon('clock')} เวลาทำงาน (ค่าเริ่มต้น Fallback)</div>
     <div style="font-size:11px;color:var(--g5);margin-bottom:12px;padding:7px 10px;background:var(--pp);border-radius:var(--r);line-height:1.6">
       ⚠️ ค่านี้เป็น <strong>fallback ลำดับสุดท้าย</strong> — ระบบจะใช้เวลาของพนักงานรายคน → สาขา → ค่านี้ ตามลำดับ<br>
       ถ้าพนักงานหรือสาขามีเวลาตั้งไว้แล้ว ค่านี้จะไม่ถูกนำมาใช้
@@ -6900,7 +6903,7 @@ function attCheckGPSLock(gps, branch, pv, type){
   // 1. พนักงานไม่มีสาขา (branch_id null หรือ branch ไม่เจอใน cache)
   if(!branch||branch.id==null){
     return _block(`<div style="background:#fef2f2;border-radius:var(--rx);border:2px solid #fca5a5;padding:22px;text-align:center">
-      <div style="font-size:32px;margin-bottom:10px">🏢</div>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 10px;opacity:.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
       <div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:8px">ยังไม่ได้กำหนดสาขา</div>
       <div style="font-size:13px;color:#6b7280;margin-bottom:16px">พนักงานนี้ยังไม่ได้กำหนดสาขา<br>กรุณาติดต่อผู้ดูแลระบบ</div>
       <button onclick="${retry}" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🔄 ลองใหม่</button>
