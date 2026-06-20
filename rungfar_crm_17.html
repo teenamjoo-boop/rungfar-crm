@@ -340,6 +340,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 /* customer table typography — employer/name บาลานซ์กัน (ไม่ใช้ 800/900) */
 .ctbl-emp{font-size:12px;font-weight:600;color:var(--g7);max-width:180px;min-width:120px}
 .ctbl-emp-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;line-height:1.35;max-width:180px}
+.ctbl-edit{font-size:10px;color:var(--g4);margin-top:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
 .ctbl-name{font-size:13px;font-weight:600;color:var(--g9)}
 .ctbl-sub{font-size:11px;font-weight:400;color:var(--g5)}
 /* numeric UI — กันเลข 0 slashed/dotted ทุกกรณี (เผื่อ fallback font) */
@@ -1831,7 +1832,7 @@ const NC={'เมียนมา':'nb-mm','กัมพูชา':'nb-kh','ล�
 const WS=['รับเรื่อง','รอเอกสาร','เอกสารครบ','ยื่นแล้ว','รอผล','นัดรับ','ปิดงาน'];
 const WSC=['ws-0','ws-1','ws-2','ws-3','ws-4','ws-5','ws-6'];
 const DOCS=[{k:'passport_photo',l:'รูปพาสปอร์ต',i:'📘'},{k:'visa',l:'VISA',i:'🛂'},{k:'wp',l:'Work Permit',i:'📄'},{k:'employer_card',l:'บัตรนายจ้าง',i:'🪪'},{k:'receipt',l:'ใบเสร็จ',i:'🧾'},{k:'photo',l:'รูปถ่าย',i:'📷'},{k:'pow',l:'หนังสือมอบอำนาจ',i:'📜'},{k:'other',l:'เอกสารอื่นๆ',i:'📎'}];
-let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[];
+let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[],empProfMap={};
 let filtered=[],curPage=1;const PG=15;
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
@@ -2868,6 +2869,8 @@ async function loadAll(silent=false){
       dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required'),
       dbGet('employers','?order=name.asc'),
     ]);
+    // Stage 2: โหลด attendance_employees เพื่อ map ผู้แก้ไขล่าสุด (ไม่กระทบโหลดหลักถ้าล้มเหลว)
+    try{const _ep=await dbGet('attendance_employees','?select=employee_code,full_name,nickname,profile_image,status');buildEmpProfMap(Array.isArray(_ep)?_ep:[]);}catch(e){empProfMap={};}
     // Deduplicate customers by id (safety net)
     const seenIds=new Set();
     customers=customers.filter(c=>{if(seenIds.has(c.id))return false;seenIds.add(c.id);return true;});
@@ -3595,6 +3598,9 @@ function renderCustomerCards(list){
   }).join('');
 }
 
+// Stage 2: build/lookup employee profile map สำหรับแสดงผู้แก้ไขล่าสุด (key = normalized employee_code)
+function buildEmpProfMap(list){empProfMap={};(Array.isArray(list)?list:[]).forEach(e=>{const k=_normCode(e&&e.employee_code);if(k)empProfMap[k]=e;});}
+function editorInfo(code){const k=code?_normCode(code):'';const e=k?empProfMap[k]:null;return{emp:e||null,name:e?(e.nickname||e.full_name||code):(code||'')};}
 function renderTable(){
   const total=filtered.length;
   const rcnt=document.getElementById('rcnt');
@@ -3613,6 +3619,14 @@ function renderTable(){
     const reqNo=c.wp_no||c.visa_no||'';
     const payMap={paid:`<span class="eb eb-ok">${T('payFull')}</span>`,partial:`<span class="eb eb-s">${T('payPart')}</span>`,unpaid:`<span class="eb eb-u">${T('payNo')}</span>`};
     const payBadge=payMap[c.pay_status]||mDash;
+    // Stage 2: บรรทัด "แก้ไข: <ชื่อ/code> · <วันที่>" ใต้หมายเหตุ (text เล็ก muted, ไม่ใช้รูปในตาราง)
+    const _ei=editorInfo(c.updated_by_code);
+    const _edDate=c.updated_at?fd(c.updated_at):'';
+    let _editTxt='';
+    if(_ei.name&&_edDate)_editTxt=`แก้ไข: ${esc(_ei.name)} · ${_edDate}`;
+    else if(_ei.name)_editTxt=`แก้ไข: ${esc(_ei.name)}`;
+    else if(_edDate)_editTxt=`แก้ไข: ${_edDate}`;
+    const editLine=_editTxt?`<div class="ctbl-edit" title="${esc(_editTxt)}">${_editTxt}</div>`:'';
     return`<tr onclick="openDetail(${c.id})" style="cursor:pointer" id="row-${c.id}" class="${selectedIds.has(c.id)?'row-selected':''}">
       <td style="font-size:10px;color:var(--g5);font-family:var(--mono)">${c.id}</td>
       <td style="font-size:11px;white-space:nowrap">${c.submit_date?fd(c.submit_date):mDash}</td>
@@ -3628,7 +3642,7 @@ function renderTable(){
       <td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:mDash}</td>
       <td style="font-size:11px">${c.last_renew?fd(c.last_renew):mDash}</td>
       <td>${payBadge}</td>
-      <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.note||'')}">${c.note?esc(c.note):mDash}</td>
+      <td style="font-size:11px;max-width:150px" title="${esc(c.note||'')}"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.note?esc(c.note):mDash}</div>${editLine}</td>
       <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedIds.has(c.id)?'checked':''} onchange="toggleRow(${c.id},this.checked)"></td>
       <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})" style="font-size:11px">✏️</button><button class="bic" onclick="delCust(${c.id})" style="font-size:11px;color:var(--red)">🗑️</button></div></td>
     </tr>`;
@@ -3756,7 +3770,7 @@ async function saveCustomer(){
     const total=parseFloat(V('f_ftotal'))||0;const paid=parseFloat(V('f_fpaid'))||0;
     const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),photo:photoB64,
       submit_date:V('f_submit')||null,agent_name:VT('f_agent')||null,medical_cert:VC('f_medical'),insurance:VC('f_insurance'),fee_100_paid:VC('f_fee100'),fee_900_paid:VC('f_fee900'),card_fee_paid:VC('f_cardfee'),booklet_status:V('f_booklet')||null,appt_date:V('f_apptdate')||null,appt_time:VT('f_appttime')||null,appt_place:VT('f_apptplace')||null,queue_date:V('f_queue')||null,receive_date:V('f_receive')||null,
-      updated_at:new Date().toISOString()};
+      updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})};
     let savedId=editId;
     if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
     else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}toast('เพิ่มลูกค้าแล้ว');}
@@ -3871,7 +3885,7 @@ async function openDetail(id){
   </div>`:''}
   ${_clogSec}
   ${_histSec}
-  <div style="font-size:11px;color:var(--g5);text-align:right;margin-top:8px">${T('detUpdated')}: ${c.updated_at?new Date(c.updated_at).toLocaleString('th-TH'):'—'}</div>`;
+  <div style="font-size:11px;color:var(--g5);text-align:right;margin-top:8px">${T('detUpdated')}: ${editorInfo(c.updated_by_code).name?esc(editorInfo(c.updated_by_code).name)+' · ':''}${c.updated_at?new Date(c.updated_at).toLocaleString('th-TH'):'—'}</div>`;
   document.getElementById('dModal').style.display='flex';
 }
 function editFromDetail(){document.getElementById('dModal').style.display='none';openEdit(detId);}
@@ -4668,7 +4682,7 @@ async function doBulkGroup(){
   const ids=[...selectedIds];
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
   try{
-    await Promise.all(ids.map(id=>dbPatch('customers',id,{group_id:grpId?parseInt(grpId):null,updated_at:new Date().toISOString()})));
+    await Promise.all(ids.map(id=>dbPatch('customers',id,{group_id:grpId?parseInt(grpId):null,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,group_id:grpId?parseInt(grpId):null}:c);
     clearSelection();renderDash();renderSidebar();doFilter();
     document.getElementById('bulkGrpModal').style.display='none';
@@ -4681,7 +4695,7 @@ async function doBulkStatus(){
   const ids=[...selectedIds];
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
   try{
-    await Promise.all(ids.map(id=>dbPatch('customers',id,{work_status:status,updated_at:new Date().toISOString()})));
+    await Promise.all(ids.map(id=>dbPatch('customers',id,{work_status:status,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,work_status:status}:c);
     clearSelection();doFilter();
     document.getElementById('bulkStModal').style.display='none';
