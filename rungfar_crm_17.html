@@ -902,6 +902,10 @@ textarea.fi2{resize:vertical;min-height:65px}
   #mobMore{display:none!important}
   .content{padding-bottom:calc(26px + env(safe-area-inset-bottom,0px))!important}
   .staff-cards{grid-template-columns:1fr;gap:10px}
+  /* STAGE: staffinfo toolbar มือถือ — ค้นหาเต็มแถว, toggle ซ้าย, จำนวนชิดขวา */
+  #staffinfoContent .staff-toolbar{gap:8px!important}
+  #staffinfoContent .staff-toolbar .srch{flex:1 1 100%!important;min-width:0!important}
+  #staffinfoContent .staff-toolbar #staffCount{margin-left:auto;font-weight:600}
   #mobDrawer{display:block;position:fixed;inset:0;z-index:90;background:rgba(30,18,10,.45);opacity:0;pointer-events:none;transition:opacity .25s}
   #mobDrawer.on{opacity:1;pointer-events:auto}
   #mobDrawer .dpanel{position:absolute;left:0;top:0;bottom:0;width:84%;max-width:312px;background:#fff;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:2px 0 26px rgba(0,0,0,.2)}
@@ -3079,7 +3083,16 @@ function renderSidebar(){
 
 // ===== ALERT DASHBOARD (Round E) — หน้า "แจ้งเตือน" พร้อม sub-filter =====
 let dashFilter='all'; // all | renew | 90 | docs | todo | absent
-function dashGo(f){dashFilter=f;renderDash();}
+function dashGo(f){
+  // preserve ตำแหน่งเลื่อนแท็บ (mobile horizontal scroll) ไม่ให้เด้งกลับหลัง re-render
+  const tb=document.querySelector('#dbContent .dash-tabs');
+  const sl=tb?tb.scrollLeft:0;
+  dashFilter=f;renderDash();
+  const tb2=document.querySelector('#dbContent .dash-tabs');
+  if(tb2&&sl){tb2.scrollLeft=sl;}
+  // กันกรณีแท็บที่เลือกอยู่นอกจอ → เลื่อนให้เห็น (เฉพาะมือถือ)
+  if(window.innerWidth<=768&&tb2){const on=tb2.querySelector('.att-on');if(on&&on.scrollIntoView)on.scrollIntoView({block:'nearest',inline:'nearest'});}
+}
 function dashGrid(html){return `<div class="dash-grid">${html}</div>`;}
 function dashAlertCardHTML(c,x,d){
   return `<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot ${d<=7?'adot-r':d<=14?'adot-o':'adot-g'}">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`;
@@ -5955,7 +5968,7 @@ function staffInfoPaint(){
   const c=document.getElementById('staffinfoContent');if(!c)return;
   const isAdmin=curUser?.role==='admin';
   const toggle=isAdmin?`<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--g6);cursor:pointer;white-space:nowrap"><input type="checkbox" id="staffShowInactive" ${staff_showInactive?'checked':''} onchange="staffToggleInactive(this.checked)" style="width:15px;height:15px;cursor:pointer">แสดงพนักงานที่ปิดใช้งาน</label>`:'';
-  c.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
+  c.innerHTML=`<div class="staff-toolbar" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
     <div class="srch" style="flex:1;min-width:200px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="si" id="staffSearchInput" placeholder="ค้นหา ชื่อ / ชื่อเล่น / สาขา" oninput="staffInfoSearch(this.value)"></div>
     ${toggle}
     <div style="font-size:12px;color:var(--g5)" id="staffCount"></div>
