@@ -313,9 +313,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .bic{padding:5px;border-radius:6px;background:transparent;border:1.5px solid var(--g2);color:var(--g4);cursor:pointer;display:inline-flex;align-items:center;transition:all .15s}
 .bic:hover{background:var(--g1);color:var(--g7)}
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
-.sc{background:#fff;border-radius:var(--rx);padding:16px 18px;cursor:pointer;transition:all .2s;box-shadow:var(--s1);border:1px solid var(--g2);position:relative;overflow:hidden}
-.sc:hover{box-shadow:var(--s2);border-color:var(--g3)}
-.sc::after{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:var(--rx) 0 0 var(--rx)}
+.sc{background:#fff;border-radius:16px;padding:17px 18px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:var(--s1);border:1px solid var(--g2);position:relative;overflow:hidden}
+.sc:hover{box-shadow:var(--s2);border-color:var(--g3);transform:translateY(-2px)}
+.sc::after{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:16px 0 0 16px}
+.dash-stat{display:inline-flex;align-items:center;gap:5px}
+.dash-stat .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dash-stat.ok{color:var(--grn)}.dash-stat.ok .dot{background:var(--grn)}
+.dash-stat.warn{color:var(--red)}.dash-stat.warn .dot{background:var(--red)}
 .sc.c1::after{background:var(--p)}
 .sc.c2::after{background:var(--ac)}
 .sc.c3::after{background:var(--g5)}
@@ -325,8 +329,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .sc-sub{font-size:11px;color:var(--g4);margin-top:5px}
 .dg2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px}
 .dg3{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-.dc{background:#fff;border:1px solid var(--g2);border-radius:var(--rx);padding:16px 18px;box-shadow:var(--s1)}
-.dct{font-size:12px;font-weight:700;color:var(--g8);margin-bottom:10px;display:flex;align-items:center;gap:5px;padding-bottom:8px;border-bottom:1px solid var(--g1)}
+.dc{background:#fff;border:1px solid var(--g2);border-radius:16px;padding:16px 18px;box-shadow:var(--s1);transition:box-shadow .15s}
+.dc:hover{box-shadow:var(--s2)}
+.dct{font-size:12.5px;font-weight:700;color:var(--g9);margin-bottom:11px;display:flex;align-items:center;gap:5px;padding-bottom:9px;border-bottom:1px solid var(--g1);letter-spacing:.1px}
 .er{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--g1);font-size:12px}
 .er:last-child{border-bottom:none}
 .twrap{background:#fff;border:1px solid var(--g2);border-radius:var(--rx);overflow:hidden;box-shadow:var(--s1)}
@@ -3410,7 +3415,7 @@ function renderDash(){
   const summaryHTML=`
   <div class="sg">
     <div class="sc c1" onclick="gv('customers')"><div class="sc-num">${total}</div><div class="sc-lbl">${T('dashAllWorkers')}</div><div class="sc-sub">${customers.filter(c=>c.customer_type==='freelance').length} &nbsp; ${customers.filter(c=>c.customer_type==='company').length}</div></div>
-    <div class="sc c2" onclick="dashGo('renew')"><div class="sc-num" style="color:${al.length>0?'var(--amb)':'var(--grn)'}">${al.length}</div><div class="sc-lbl">${T('dashMustAct')}</div><div class="sc-sub" style="color:${al.length>0?'var(--red)':'var(--grn)'}">${al.length>0?'⚠️ '+T('dashUrgentWarn'):'✅ '+T('dashOkAll')}</div></div>
+    <div class="sc c2" onclick="dashGo('renew')"><div class="sc-num" style="color:${al.length>0?'var(--amb)':'var(--grn)'}">${al.length}</div><div class="sc-lbl">${T('dashMustAct')}</div><div class="sc-sub"><span class="dash-stat ${al.length>0?'warn':'ok'}"><span class="dot"></span>${al.length>0?T('dashUrgentWarn'):T('dashOkAll')}</span></div></div>
     <div class="sc c3" onclick="gv('employers')"><div class="sc-num">${employers.length}</div><div class="sc-lbl">${T('employers')}</div><div class="sc-sub">${T('dashAllInSys')}</div></div>
     <div class="sc c4"><div class="sc-num">${groups.length}</div><div class="sc-lbl">${T('groups')}</div><div class="sc-sub">${groups.slice(0,2).map(g=>esc(g.name)).join(', ')||T('dashNoGroup')}</div></div>
   </div>
@@ -3424,7 +3429,7 @@ function renderDash(){
     <div class="dc"><div class="dct">${T('dashTopEmp')}</div>${topE.length?topE.map(([n,c])=>`<div class="bx"><div style="font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n)}</div><div class="bx-bar" style="width:${Math.round(c/maxE*70)}px;flex-shrink:0"></div><div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--p);flex-shrink:0">${c}</div></div>`).join(''):'<div style="color:var(--g5);font-size:12px;padding:8px 0;text-align:center">'+T('dashNoData')+'</div>'}</div>
   </div>
   <div class="dg3">
-    <div class="dc"><div class="dct" style="justify-content:space-between">${T('dashTopUrgent')} <span style="font-size:11px;color:var(--p);cursor:pointer;font-weight:400" onclick="dashGo('renew')">${T('dashSeeAll')}</span></div>${urg.filter(x=>x.d<=7).slice(0,4).map(({c,x,d})=>`<div class="ac urg" onclick="openDetail(${c.id})"><div class="adot adot-r">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} • ${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="dr">${el(d)}</div></div>`).join('')||'<div style="color:var(--g5);font-size:12px;padding:8px 0">'+T('dashNoUrgent')+'</div>'}</div>
+    <div class="dc"><div class="dct" style="justify-content:space-between">${T('dashTopUrgent')} <span style="font-size:11px;color:var(--p);cursor:pointer;font-weight:400" onclick="dashGo('renew')">${T('dashSeeAll')}</span></div>${urg.filter(x=>x.d<=7).slice(0,4).map(({c,x,d})=>`<div class="ac urg" onclick="openDetail(${c.id})">${dashCustAvatar(c,'adot-r')}<div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} • ${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="dr">${el(d)}</div></div>`).join('')||'<div style="color:var(--g5);font-size:12px;padding:8px 0">'+T('dashNoUrgent')+'</div>'}</div>
     <div class="dc"><div class="dct">${T('dashTopSvc')}</div>${topS.length?topS.map(([s,n])=>`<div class="bx"><span class="xb ${SC[s]||'xb-ot'}">${s}</span><div class="bx-bar" style="width:${Math.round(n/maxS*70)}px;flex-shrink:0"></div><div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--p);flex-shrink:0;margin-left:auto">${n}</div></div>`).join(''):'<div style="color:var(--g5);font-size:12px;padding:8px 0;text-align:center">'+T('dashNoData')+'</div>'}</div>
   </div>
   ${grpRows.length?`<div class="dc" style="margin-bottom:14px"><div class="dct">${T('dashSummGrp')}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${grpRows.map(({g,cnt})=>`<div onclick="gv('customers',{grp:${g.id},title:${JSON.stringify(g.name)}})" style="padding:8px 14px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--r);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><span style="font-size:12px;font-weight:700;color:var(--p)">${esc(g.name)}</span><span style="font-size:16px;font-weight:800;font-family:var(--mono);color:var(--g9)">${cnt}</span><span style="font-size:10px;color:var(--g5)">${T('dashPerson')}</span></div>`).join('')}</div></div>`:''}`;
