@@ -1246,7 +1246,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 </div>
 <div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export CSV</button><button class="btn btn-g btn-sm" onclick="doExportXlsx()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8l6 8M15 8l-6 8"/></svg>Export Excel</button></div></div>
         <div class="ctbl-scroll">
-        <table><thead><tr><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th style="width:44px">#</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th>จัดการ</th></tr></thead>
+        <table><thead><tr><th style="width:44px">#</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th>จัดการ</th></tr></thead>
         <tbody id="tbody"></tbody></table>
         </div>
         <!-- Stage 2: mobile customer card list (แสดงเฉพาะ <=768px, ใช้ข้อมูล filtered เดิม) -->
@@ -2326,10 +2326,10 @@ function applyLang(){
   const qbr=document.getElementById('qbr');if(qbr&&qbr.options[0])qbr.options[0].text=L.allBranch;
 
   // ===== TABLE HEADERS (Round B column order — index-mapped) =====
-  // 0=checkbox 1=# 2=รูป 3=นายจ้าง 4=รายชื่อ 5=เลขต่างด้าว 6=สัญชาติ 7=เลขคำขอ
-  // 8=รายการ 9=สถานะ 10=ใกล้หมดอายุ 11=90วัน 12=ต่ออายุล่าสุด 13=ชำระเงิน 14=หมายเหตุ 15=จัดการ
+  // 0=# 1=รูป 2=นายจ้าง 3=รายชื่อ 4=เลขต่างด้าว 5=สัญชาติ 6=เลขคำขอ 7=รายการ
+  // 8=สถานะ 9=ใกล้หมดอายุ 10=90วัน 11=ต่ออายุล่าสุด 12=ชำระเงิน 13=หมายเหตุ 14=checkbox 15=จัดการ
   const ths=document.querySelectorAll('#view-customers thead th');
-  const hmap={2:L.photo,3:L.employer,4:T('tblName'),5:T('detAlien'),6:L.nat,7:T('tblReqNo'),8:T('tblItems'),9:T('tblStatus'),10:T('tblExp'),11:L.day90,12:T('tblRenew'),13:T('tblPay'),14:T('tblNote'),15:L.manage};
+  const hmap={1:L.photo,2:L.employer,3:T('tblName'),4:T('detAlien'),5:L.nat,6:T('tblReqNo'),7:T('tblItems'),8:T('tblStatus'),9:T('tblExp'),10:L.day90,11:T('tblRenew'),12:T('tblPay'),13:T('tblNote'),15:L.manage};
   ths.forEach((th,i)=>{if(hmap[i]!==undefined)th.textContent=hmap[i];});
 
   // ===== BULK BAR =====
@@ -3613,7 +3613,6 @@ function renderTable(){
     const payMap={paid:`<span class="eb eb-ok">${T('payFull')}</span>`,partial:`<span class="eb eb-s">${T('payPart')}</span>`,unpaid:`<span class="eb eb-u">${T('payNo')}</span>`};
     const payBadge=payMap[c.pay_status]||mDash;
     return`<tr onclick="openDetail(${c.id})" style="cursor:pointer" id="row-${c.id}" class="${selectedIds.has(c.id)?'row-selected':''}">
-      <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedIds.has(c.id)?'checked':''} onchange="toggleRow(${c.id},this.checked)"></td>
       <td style="font-size:10px;color:var(--g5);font-family:var(--mono)">${c.id}</td>
       <td onclick="event.stopPropagation()">${avatarHtml}</td>
       <td class="ctbl-emp">${c.employer_id?esc(empN(c.employer_id)):mDash}</td>
@@ -3628,6 +3627,7 @@ function renderTable(){
       <td style="font-size:11px">${c.last_renew?fd(c.last_renew):mDash}</td>
       <td>${payBadge}</td>
       <td style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.note||'')}">${c.note?esc(c.note):mDash}</td>
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedIds.has(c.id)?'checked':''} onchange="toggleRow(${c.id},this.checked)"></td>
       <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})" style="font-size:11px">✏️</button><button class="bic" onclick="delCust(${c.id})" style="font-size:11px;color:var(--red)">🗑️</button></div></td>
     </tr>`;
   }).join('');
