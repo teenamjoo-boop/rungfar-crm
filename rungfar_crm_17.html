@@ -411,7 +411,7 @@ select.fi:focus{border-color:var(--p)}
 @keyframes popIn{from{transform:scale(.94) translateY(8px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 .mh{padding:15px 20px 13px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;border-radius:20px 20px 0 0}
 .mt{font-size:16px;font-weight:700;color:var(--p)}
-.mbody{padding:18px 20px}
+.mbody{padding:14px 16px}
 .mfoo{padding:13px 20px;border-top:1px solid var(--g2);display:flex;gap:8px;justify-content:flex-end}
 .xbtn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--g4);line-height:1;padding:3px 5px;border-radius:6px}
 .xbtn:hover{color:var(--g7);background:var(--g1)}
@@ -443,13 +443,13 @@ textarea.fi2{resize:vertical;min-height:65px}
 .photo-up{border:2px dashed var(--g3);border-radius:var(--rl);padding:14px;text-align:center;cursor:pointer;transition:all .2s}
 .photo-up:hover{border-color:var(--p);background:var(--pp)}
 .photo-prev{width:76px;height:96px;object-fit:cover;border-radius:8px;border:2px solid var(--g2)}
-.dh{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--g2)}
+.dh{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--g2)}
 .dav{width:56px;height:56px;border-radius:12px;background:var(--pp);border:2px solid var(--pp2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden}
 .dav img{width:100%;height:100%;object-fit:cover}
-.dg4{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:14px}
-.df{background:var(--g0);border-radius:var(--r);padding:9px 11px;border:1px solid var(--g2)}
+.dg4{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px}
+.df{background:var(--g0);border-radius:var(--r);padding:7px 9px;border:1px solid var(--g2)}
 .dfl{font-size:10px;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
-.dfv{font-size:13px;font-weight:600;margin-top:2px;color:var(--g9)}
+.dfv{font-size:12px;font-weight:600;margin-top:2px;color:var(--g9)}
 .doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:8px}
 .doc-card{background:var(--g0);border:1.5px solid var(--g2);border-radius:var(--rl);padding:12px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
 .doc-card:hover{border-color:var(--p);background:var(--pp)}
@@ -459,13 +459,13 @@ textarea.fi2{resize:vertical;min-height:65px}
 .doc-st{font-size:10px;margin-top:3px;color:var(--g5)}
 .doc-del{position:absolute;top:4px;right:4px;background:#fff;border:1px solid var(--g2);border-radius:50%;width:17px;height:17px;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;color:var(--red)}
 .doc-card.has .doc-del{display:flex}
-.clog{background:var(--g0);border-radius:var(--rl);padding:11px;border:1px solid var(--g2);margin-bottom:8px}
+.clog{background:var(--g0);border-radius:var(--rl);padding:9px 10px;border:1px solid var(--g2);margin-bottom:6px}
 .clog-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
 .clog-type{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
 .clg-call{background:#DBEAFE;color:#1D4ED8}.clg-line{background:#DCFCE7;color:#15803D}
 .clg-walk{background:var(--pp);color:var(--pd)}.clg-other{background:var(--g1);color:var(--g6)}
 .clog-date{font-size:11px;color:var(--g5)}
-.clog-text{font-size:13px;color:var(--g8)}
+.clog-text{font-size:12px;color:var(--g8)}
 .clog-tag{font-size:11px;color:var(--g5);margin-top:4px}
 .pay-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .pay-box{background:var(--g0);border-radius:var(--r);padding:10px 12px;border:1px solid var(--g2)}
@@ -3822,11 +3822,11 @@ async function openDetail(id){
   // ── pre-compute sections ที่ซ่อนด้วย SIMPLE_CUSTOMER_DETAIL ──
   // เปลี่ยน SIMPLE_CUSTOMER_DETAIL=false เพื่อเปิด timeline/finance/staff/contact-log/history กลับมา
   const _updBtn=`<button class="btn btn-p btn-sm" onclick="openTLModal(${c.id})">${T('updateStatus')}</button>`;
-  const _tlSec=(`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('detTimeline')}</div><div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${wsT(s)}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div></div>`);
-  const _finSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detFinance')}</div><div class="pay-sum"><div class="pay-box"><div class="pay-num" style="color:var(--g9)">${Number(c.fee_total||0).toLocaleString()}</div><div class="pay-lbl">${T('detFeeLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:var(--grn)">${Number(c.fee_paid||0).toLocaleString()}</div><div class="pay-lbl">${T('detPaidLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:${c.fee_due>0?'var(--red)':'var(--grn)'}">${Number(c.fee_due||0).toLocaleString()}</div><div class="pay-lbl">${T('detDueLabel')}</div></div><div class="pay-box"><div class="pay-num" style="font-size:13px">${{paid:T('payFull'),partial:T('payPart'),unpaid:T('payNo')}[c.pay_status]||'—'}</div><div class="pay-lbl">${T('detPayStatus')}</div></div></div></div>`);
-  const _staffGrid=SIMPLE_CUSTOMER_DETAIL?'':(`<div class="dg4" style="margin-bottom:14px"><div class="df"><div class="dfl">${T('detReceiver')}</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div><div class="df"><div class="dfl">${T('detDocStaff')}</div><div class="dfv">${esc(c.staff_document||'—')}</div></div><div class="df"><div class="dfl">${T('detCloser')}</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div></div>`);
-  const _clogSec=(`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}</div>`);
-  const _histSec=tl.length?(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:12px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:5px 8px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`):(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detHistory')}</div><div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div></div>`);
+  const _tlSec=(`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detTimeline')}</div><div class="tl-wrap">${WS.map((s,i)=>`<div class="tl-step"><div class="tl-dot ${i<curWi?'done':i===curWi?'cur':''}">${i<curWi?'✓':i+1}</div><div class="tl-lbl ${i<curWi?'done':i===curWi?'cur':''}">${wsT(s)}</div></div>`).join('<div style="flex:1;height:2px;background:var(--g2);margin-top:13px;flex-shrink:1"></div>')}</div></div>`);
+  const _finSec=SIMPLE_CUSTOMER_DETAIL?'':(`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detFinance')}</div><div class="pay-sum"><div class="pay-box"><div class="pay-num" style="color:var(--g9)">${Number(c.fee_total||0).toLocaleString()}</div><div class="pay-lbl">${T('detFeeLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:var(--grn)">${Number(c.fee_paid||0).toLocaleString()}</div><div class="pay-lbl">${T('detPaidLabel')}</div></div><div class="pay-box"><div class="pay-num" style="color:${c.fee_due>0?'var(--red)':'var(--grn)'}">${Number(c.fee_due||0).toLocaleString()}</div><div class="pay-lbl">${T('detDueLabel')}</div></div><div class="pay-box"><div class="pay-num" style="font-size:13px">${{paid:T('payFull'),partial:T('payPart'),unpaid:T('payNo')}[c.pay_status]||'—'}</div><div class="pay-lbl">${T('detPayStatus')}</div></div></div></div>`);
+  const _staffGrid=SIMPLE_CUSTOMER_DETAIL?'':(`<div class="dg4" style="margin-bottom:10px"><div class="df"><div class="dfl">${T('detReceiver')}</div><div class="dfv">${esc(c.staff_receiver||'—')}</div></div><div class="df"><div class="dfl">${T('detDocStaff')}</div><div class="dfv">${esc(c.staff_document||'—')}</div></div><div class="df"><div class="dfl">${T('detCloser')}</div><div class="dfv">${esc(c.staff_closer||'—')}</div></div></div>`);
+  const _clogSec=(`<div style="margin-bottom:12px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">${T('detContacts')}</div><button class="btn btn-g btn-sm" onclick="openClog(${c.id})" style="font-size:11px">${T('addLog')}</button></div>${clogs.length?clogs.map(l=>`<div class="clog"><div class="clog-hd"><span class="clog-type clg-${l.contact_type}">${({'call':T('clfCall'),'line':T('clfLine'),'walk-in':T('clfWalkin')}[l.contact_type])||T('clfOther')}</span><span class="clog-date">${fd(l.created_at?.split('T')[0])} ${l.created_by?'• '+esc(l.created_by):''}</span></div><div class="clog-text">${esc(l.summary)}</div>${l.docs_received?`<div class="clog-tag">✅ ได้รับ: ${esc(l.docs_received)}</div>`:''}${l.docs_missing?`<div class="clog-tag" style="color:var(--red)">❌ ขาด: ${esc(l.docs_missing)}</div>`:''}${l.next_action?`<div class="clog-tag" style="color:var(--blu)">📌 นัด: ${esc(l.next_action)} ${l.next_date?fd(l.next_date):''}</div>`:''}</div>`).join(''):`<div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div>`}</div>`);
+  const _histSec=tl.length?(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detHistory')}</div>${tl.map((t,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:8px"><div style="width:24px;height:24px;border-radius:50%;background:${i===tl.length-1?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===tl.length-1?'●':'✓'}</div><div><div style="font-size:13px;font-weight:600">${esc(t.status)}</div><div style="font-size:11px;color:var(--g5);margin-top:2px">${new Date(t.created_at).toLocaleString('th-TH')} ${t.created_by?'• '+esc(t.created_by):''}</div>${t.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:4px 7px;border-radius:6px">${esc(t.note)}</div>`:''}</div></div>`).join('')}</div>`):(`<div><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detHistory')}</div><div style="color:var(--g5);font-size:12px;padding:8px 0">${T('detNoContact')}</div></div>`);
   // Round F1B-1: section "ข้อมูลตาม Excel" (read-only, แสดงเฉพาะที่มีค่า)
   const _xlRows=[];
   const _xlAdd=(label,val)=>{if(val!==''&&val!=null)_xlRows.push(`<div class="df"><div class="dfl">${label}</div><div class="dfv">${val}</div></div>`);};
@@ -3843,7 +3843,7 @@ async function openDetail(id){
   _xlAdd(T('xlApptPlace'),c.appt_place?esc(c.appt_place):'');
   _xlAdd(T('xlQueue'),c.queue_date?fd(c.queue_date):'');
   _xlAdd(T('xlReceive'),c.receive_date?fd(c.receive_date):'');
-  const _xlSec=_xlRows.length?`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('xlSection')}</div><div class="dg4">${_xlRows.join('')}</div></div>`:'';
+  const _xlSec=_xlRows.length?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('xlSection')}</div><div class="dg4">${_xlRows.join('')}</div></div>`:'';
   document.getElementById('dBody').innerHTML=`
   <div class="dh">
     <div class="dav">${c.photo?`<img src="${esc(c.photo)}">`:(NF[c.nationality]||'👤')}</div>
@@ -3870,11 +3870,11 @@ async function openDetail(id){
     <div class="df"><div class="dfl">${T('detBranch')}</div><div class="dfv">${c.branch_id?esc(brN(c.branch_id)):'—'}</div></div>
   </div>
   ${_staffGrid}
-  ${exps.length?`<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
+  ${exps.length?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
   ${_finSec}
   ${_xlSec}
-  ${docs.length?`<div style="margin-bottom:16px">
-    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${T('detDocs')} (${docs.length} ${T('detFiles')})</div>
+  ${docs.length?`<div style="margin-bottom:12px">
+    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detDocs')} (${docs.length} ${T('detFiles')})</div>
     <div class="mdoc-grid">${docs.map(d=>{
       const isPdf=d.file_type==='application/pdf';
       const thumb=isPdf
