@@ -716,6 +716,8 @@ textarea.fi2{resize:vertical;min-height:65px}
 .att-subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--g2)}
 .att-tab{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--g2);color:var(--g5);background:#fff;font-family:var(--font);transition:all .2s}
 .att-tab:hover{border-color:var(--p);color:var(--p)}.att-tab.att-on{background:var(--p);border-color:var(--p);color:#fff}
+.att-subnav .att-tab{display:inline-flex;align-items:center;gap:6px}
+.att-tab-ic{width:15px;height:15px;flex-shrink:0}
 .att-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--g4);text-align:center}
 .att-checkin-card{background:#fff;border-radius:var(--rx);padding:28px;border:1px solid var(--g2);box-shadow:var(--s1);text-align:center;max-width:400px;margin:0 auto}
 .att-btn-in{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:16px;width:100%;padding:20px;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--font);box-shadow:0 4px 14px rgba(22,163,74,.35);transition:all .2s;margin-bottom:12px}
@@ -1992,10 +1994,10 @@ const LANG = {
     detUpdated:'อัปเดต', detTimeline:'🗂️ Timeline สถานะงาน',
     detCustComp:'🏢 ลูกจ้างบริษัท', detCustFree:'🧑 ไม่มีนายจ้าง',
     payFull:'✅ ครบ', payPart:'⚠️ บางส่วน', payNo:'❌ ยังไม่ได้',
-    attTitle:'📋 ระบบตอกบัตรพนักงาน',
-    attTabCheckin:'📲 ตอกบัตรเข้า-ออก', attTabHistory:'📋 ประวัติตอกบัตร',
-    attTabReport:'📊 รายงาน', attTabEmployees:'👥 จัดการพนักงาน',
-    attTabSettings:'⚙️ ตั้งค่าเวลา', attTabExport:'📤 ส่งออก Excel',
+    attTitle:'ระบบตอกบัตรพนักงาน',
+    attTabCheckin:'ตอกบัตรเข้า-ออก', attTabHistory:'ประวัติตอกบัตร',
+    attTabReport:'รายงาน', attTabEmployees:'จัดการพนักงาน',
+    attTabSettings:'ตั้งค่าเวลา', attTabExport:'ส่งออก Excel',
     attHistTitle:'ประวัติตอกบัตร', attHistMine:'เฉพาะของคุณ',
     attHistSearch:'🔍 ค้นหา', attHistTo:'ถึง', attNoRecord:'ไม่พบข้อมูลในช่วงที่เลือก',
     attHdrOT:'OT', attHdrGPS:'GPS',
@@ -2162,10 +2164,10 @@ const LANG = {
     detUpdated:'ပြင်ဆင်ပြီး', detTimeline:'🗂️ Timeline အခြေအနေ',
     detCustComp:'🏢 ကုမ္ပဏီဝန်ထမ်း', detCustFree:'🧑 အလုပ်ရှင်မရှိ',
     payFull:'✅ ပေးပြီး', payPart:'⚠️ တစ်စိတ်တစ်ပိုင်း', payNo:'❌ မပေးရသေး',
-    attTitle:'📋 နှိပ်ကတ်စနစ်',
-    attTabCheckin:'📲 ဝင်/ထွက်နှိပ်', attTabHistory:'📋 နှိပ်မှတ်တမ်း',
-    attTabReport:'📊 အစီရင်ခံ', attTabEmployees:'👥 ဝန်ထမ်းစီမံ',
-    attTabSettings:'⚙️ အချိန်ပြင်ဆင်', attTabExport:'📤 Excel ထုတ်ယူ',
+    attTitle:'နှိပ်ကတ်စနစ်',
+    attTabCheckin:'ဝင်/ထွက်နှိပ်', attTabHistory:'နှိပ်မှတ်တမ်း',
+    attTabReport:'အစီရင်ခံ', attTabEmployees:'ဝန်ထမ်းစီမံ',
+    attTabSettings:'အချိန်ပြင်ဆင်', attTabExport:'Excel ထုတ်ယူ',
     attHistTitle:'နှိပ်မှတ်တမ်း', attHistMine:'ကိုယ်ပိုင်မှတ်တမ်းသာ',
     attHistSearch:'🔍 ရှာဖွေ', attHistTo:'မှ', attNoRecord:'ရွေးချယ်သောကာလတွင် မှတ်တမ်းမတွေ့ပါ',
     attHdrOT:'OT', attHdrGPS:'GPS',
@@ -4742,6 +4744,19 @@ function doExportXlsx(){
 let att_curTab='checkin', att_clockTimer=null;
 let _att_histView='calendar'; // MERGE: subtab ใน history — 'calendar' | 'table'
 
+// STAGE 9: ไอคอน SVG เรียบสำหรับแท็บตอกบัตร (แทน emoji decorative) — inline ไม่โหลด library
+function attTabIcon(k){
+  const I={
+    checkin:'<rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/>',
+    history:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    report:'<path d="M4 19V5M4 19h16"/><path d="M8 16v-3M12 16v-6M16 16v-4"/>',
+    employees:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/>',
+    branches:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+    attsettings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+    export:'<path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/>'
+  };
+  const p=I[k];return p?`<svg class="att-tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`:'';
+}
 function renderAttendance(){
   // MERGE: calendar ย้ายเข้า subtab ของ history แล้ว — staff เห็น checkin+history+report
   const isEmp=curUser?.role!=='admin';
@@ -4752,14 +4767,14 @@ function renderAttendance(){
     {k:'report',    l:T('attTabReport')},
     ...(!isEmp?[
       {k:'employees',    l:T('attTabEmployees')},
-      {k:'branches',     l:'🏢 สาขา'},
+      {k:'branches',     l:'สาขา'},
       {k:'attsettings',  l:T('attTabSettings')},
       {k:'export',       l:T('attTabExport')},
     ]:[]),
   ];
   document.getElementById('att_content').innerHTML=
     `<div style="font-size:16px;font-weight:700;margin-bottom:14px">${T('attTitle')}</div>
-     <div class="att-subnav">${tabs.map(t=>`<button class="att-tab${att_curTab===t.k?' att-on':''}" onclick="attGo('${t.k}')">${t.l}</button>`).join('')}</div>
+     <div class="att-subnav">${tabs.map(t=>`<button class="att-tab${att_curTab===t.k?' att-on':''}" onclick="attGo('${t.k}')">${attTabIcon(t.k)}<span>${t.l}</span></button>`).join('')}</div>
      <div id="att_sub"></div>`;
   attRender(att_curTab);
 }
