@@ -3892,14 +3892,15 @@ async function openDetail(id){
     const _dt=c.updated_at?new Date(c.updated_at).toLocaleString('th-TH',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     const _name=_hasCode?(_ei.name||c.updated_by_code):'';
     let _av='';
-    if(_ei.emp&&_ei.emp.profile_image)_av=`<img src="${esc(_ei.emp.profile_image)}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid var(--g2)">`;
-    else if(_name)_av=`<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${esc((_name.trim().charAt(0)||'?').toUpperCase())}</div>`;
+    if(_ei.emp&&_ei.emp.profile_image)_av=`<img src="${esc(_ei.emp.profile_image)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--g2)">`;
+    else if(_name)_av=`<div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${esc((_name.trim().charAt(0)||'?').toUpperCase())}</div>`;
     const _detail=_name
       ?`<span style="font-weight:600;color:var(--g7)">${esc(_name)}</span>${_dt?` <span style="color:var(--g5)">· ${_dt}</span>`:''}`
       :(_dt?`<span style="color:var(--g5)">${_dt}</span>`:`<span style="color:var(--g4)">ไม่พบผู้แก้</span>`);
-    return `<div style="margin-top:14px;padding:10px 12px;background:var(--g0);border:1px solid var(--g2);border-radius:10px">
-      <div style="font-size:10px;font-weight:700;color:var(--g6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">แก้ไขล่าสุด</div>
-      <div style="display:flex;align-items:center;gap:9px;min-width:0">${_av}<div style="font-size:12px;line-height:1.35;min-width:0;word-break:break-word">${_detail}</div></div>
+    return `<div style="margin-top:10px;padding:5px 10px;background:var(--g0);border:1px solid var(--g2);border-radius:7px;display:flex;align-items:center;gap:7px;min-width:0;overflow:hidden">
+      <span style="font-size:10px;font-weight:600;color:var(--g5);white-space:nowrap;flex-shrink:0;letter-spacing:.3px">แก้ไขล่าสุด</span>
+      ${_av?_av:''}
+      <div style="font-size:11px;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_detail}</div>
     </div>`;
   })()}`;
   document.getElementById('dModal').style.display='flex';
