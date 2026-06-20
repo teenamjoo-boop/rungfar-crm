@@ -1622,7 +1622,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 
 <!-- MODAL: LOAD USERS — RLS-HARDEN-2D: admin password สำหรับโหลดรายชื่อผู้ใช้ -->
 <div class="mo" id="loadUsersModal" style="display:none" onclick="if(event.target===this)closeLoadUsersModal()">
-<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:380px">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
   <div class="mh"><div class="mt">🔐 ยืนยันตัวตน</div><button class="xbtn" onclick="closeLoadUsersModal()">×</button></div>
   <div class="mbody">
     <div style="font-size:13px;color:var(--g6);margin-bottom:14px">กรุณากรอกรหัสผ่าน Admin เพื่อโหลดรายชื่อผู้ใช้ในระบบ</div>
@@ -1640,7 +1640,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 
 <!-- MODAL: DELETE USER — RLS-HARDEN-2D: admin password สำหรับยืนยันลบ user -->
 <div class="mo" id="delUserModal" style="display:none" onclick="if(event.target===this)closeDelUserModal()">
-<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:380px">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
   <div class="mh"><div class="mt"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>ยืนยันการลบผู้ใช้</div><button class="xbtn" onclick="closeDelUserModal()">×</button></div>
   <div class="mbody">
     <div style="font-size:13px;margin-bottom:4px">ลบผู้ใช้: <strong id="dum_name"></strong></div>
@@ -3530,7 +3530,7 @@ function openEmpDet(id){
   if(!m){m=document.createElement('div');m.id='empDetModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};m.innerHTML=`<div class="mb mb-lg" onclick="event.stopPropagation()"><div class="mh"><div class="mt" id="empDetTitle"></div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" id="empDetEditBtn" onclick="openEditEmp(${id})">${T('btnEdit')}</button><button class="xbtn" onclick="document.getElementById('empDetModal').style.display='none'">×</button></div></div><div class="mbody" id="empDetBody"></div></div>`;document.body.appendChild(m);}
   document.getElementById('empDetTitle').textContent=e.name;document.getElementById('empDetBody').innerHTML=html;
   // Update edit button text and ID in case modal was reused
-  const edb=document.getElementById('empDetEditBtn');if(edb){edb.textContent=T('btnEdit');edb.onclick=()=>openEditEmp(id);}
+  const edb=document.getElementById('empDetEditBtn');if(edb){edb.textContent=T('btnEdit');edb.onclick=()=>{document.getElementById('empDetModal').style.display='none';openEditEmp(id);};}
   m.style.display='flex';
 }
 
