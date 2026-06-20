@@ -336,9 +336,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .er:last-child{border-bottom:none}
 .twrap{background:#fff;border:1px solid var(--g2);border-radius:var(--rx);overflow:hidden;box-shadow:var(--s1)}
 .ctbl-scroll{overflow-x:auto}
-.ctbl-scroll table{min-width:1080px}
+.ctbl-scroll table{min-width:1130px}
 /* customer table typography — employer/name บาลานซ์กัน (ไม่ใช้ 800/900) */
-.ctbl-emp{font-size:12px;font-weight:600;color:var(--g7);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctbl-emp{font-size:12px;font-weight:600;color:var(--g7);max-width:180px;min-width:120px}
+.ctbl-emp-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;line-height:1.35;max-width:180px}
 .ctbl-name{font-size:13px;font-weight:600;color:var(--g9)}
 .ctbl-sub{font-size:11px;font-weight:400;color:var(--g5)}
 /* numeric UI — กันเลข 0 slashed/dotted ทุกกรณี (เผื่อ fallback font) */
@@ -1246,7 +1247,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 </div>
 <div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export CSV</button><button class="btn btn-g btn-sm" onclick="doExportXlsx()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8l6 8M15 8l-6 8"/></svg>Export Excel</button></div></div>
         <div class="ctbl-scroll">
-        <table><thead><tr><th style="width:44px">#</th><th style="width:70px">วันที่ยื่น</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th>จัดการ</th></tr></thead>
+        <table><thead><tr><th style="width:44px">ลำดับ</th><th style="width:70px">วันที่ยื่น</th><th style="width:40px">รูปถ่าย</th><th>นายจ้าง</th><th>รายชื่อ</th><th>เลขต่างด้าว</th><th>สัญชาติ</th><th>เลขคำขอ</th><th>รายการ</th><th>สถานะ</th><th>ใกล้หมดอายุ</th><th>90 วัน</th><th>ต่ออายุล่าสุด</th><th>ชำระเงิน</th><th>หมายเหตุ</th><th style="width:36px"><input type="checkbox" id="masterCheck" class="row-check" onclick="toggleMasterCheck(this)"></th><th>จัดการ</th></tr></thead>
         <tbody id="tbody"></tbody></table>
         </div>
         <!-- Stage 2: mobile customer card list (แสดงเฉพาะ <=768px, ใช้ข้อมูล filtered เดิม) -->
@@ -3616,7 +3617,7 @@ function renderTable(){
       <td style="font-size:10px;color:var(--g5);font-family:var(--mono)">${c.id}</td>
       <td style="font-size:11px;white-space:nowrap">${c.submit_date?fd(c.submit_date):mDash}</td>
       <td onclick="event.stopPropagation()">${avatarHtml}</td>
-      <td class="ctbl-emp">${c.employer_id?esc(empN(c.employer_id)):mDash}</td>
+      <td class="ctbl-emp" title="${c.employer_id?esc(empN(c.employer_id)):''}">${c.employer_id?`<span class="ctbl-emp-text">${esc(empN(c.employer_id))}</span>`:mDash}</td>
       <td><div class="ctbl-name">${esc(c.name)}</div>${c.name_th?`<div class="ctbl-sub">${esc(c.name_th)}</div>`:''}</td>
       <td style="font-size:11px;font-family:var(--mono)">${c.alien_id?esc(c.alien_id):mDash}</td>
       <td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td>
