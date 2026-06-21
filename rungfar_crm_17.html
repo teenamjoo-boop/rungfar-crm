@@ -723,6 +723,15 @@ textarea.fi2{resize:vertical;min-height:65px}
 .lang-btn{background:var(--g1);border:1.5px solid var(--g2);color:var(--g6);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .2s}
 .lang-btn:hover{background:var(--pp);border-color:transparent;color:var(--p)}
 .lang-btn.active{background:var(--pp2);border-color:transparent;color:var(--p)}
+/* compact segmented pill — wraps lang buttons in topbar + login */
+.lang-sw{display:inline-flex;background:var(--g1);border:1.5px solid var(--g2);border-radius:20px;padding:2px;flex-shrink:0;align-items:center}
+.lang-sw .lang-btn{background:transparent;border:none;border-radius:16px;padding:3px 9px;font-size:11.5px;color:var(--g5);box-shadow:none}
+.lang-sw .lang-btn:hover:not(.active){background:var(--pp);color:var(--p)}
+.lang-sw .lang-btn.active{background:var(--w);color:var(--p);box-shadow:var(--s1)}
+#loginScreen .lang-sw{background:var(--lcream);border-color:var(--lbor);border-radius:10px;padding:1px 2px}
+#loginScreen .lang-sw .lang-btn{background:transparent;border:none;border-radius:8px;padding:3px 10px;font-size:12px;color:var(--lmut);box-shadow:none}
+#loginScreen .lang-sw .lang-btn.active{background:var(--lso);color:var(--lo);box-shadow:none}
+#loginScreen .lang-sw .lang-btn:hover:not(.active){background:transparent;color:var(--lo)}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--g3);border-radius:10px}
 /* ===== ATTENDANCE MODULE ===== */
@@ -773,7 +782,9 @@ textarea.fi2{resize:vertical;min-height:65px}
   .topbar{position:sticky;top:0;z-index:60;padding:0 12px;height:52px;gap:8px}
   .topbar>.btn{display:none!important}
   .ttitle{font-size:15px}
-  #appScreen .lang-btn{padding:4px 8px;font-size:11px}
+  /* font-size ต้องใส่ !important เพื่อชนะกฎกัน iOS zoom: button{font-size:16px!important} ที่ ≤768px (เฉพาะปุ่มสลับภาษา, ไม่กระทบปุ่ม/อินพุตอื่น) */
+  #appScreen .lang-sw .lang-btn{padding:2px 7px;font-size:10.5px!important}
+  #loginScreen .lang-sw .lang-btn{font-size:12px!important}
   .content{padding:12px 12px calc(76px + env(safe-area-inset-bottom,0px))}
   .abanner{padding:8px 12px;font-size:12px}
   #mobNav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;border-top:1px solid var(--g2);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -2px 14px rgba(120,70,30,.10)}
@@ -1044,9 +1055,13 @@ html[data-theme="dark"] .sb-exp{background:#3A1A1A;color:#F87171}
 html[data-theme="dark"] .adot-r{background:#3A1A1A}
 html[data-theme="dark"] .adot-o{background:#3A2A12}
 html[data-theme="dark"] .adot-g{background:#33300F}
-/* theme button ในโหมดมืด: หลอดไฟ "ติด" สีอุ่น */
+/* theme button ในโหมดมืด: ดวงอาทิตย์ "สว่าง" สีอุ่น */
 html[data-theme="dark"] .theme-btn{background:var(--g1);border-color:var(--g2);color:#FFC247}
 html[data-theme="dark"] .theme-btn:hover{background:var(--pp);color:var(--pl)}
+/* lang-sw active pill ในโหมดมืด: ต้องสว่างกว่า container */
+html[data-theme="dark"] .lang-sw .lang-btn.active{background:var(--g2);color:var(--p)}
+/* pagination buttons dark */
+html[data-theme="dark"] .pb{background:var(--w)}
 /* ---- login dark (สีเท่านั้น — ไม่แตะ layout/slideshow/auth) ---- */
 html[data-theme="dark"] #loginScreen{
   --lcream:#1E2128;--lcream2:#242830;--lsurf:#242830;--ltext:#EDF0F4;--lmut:#9AA2B0;--lbor:#383F4A;--lso:#3A2C20;
@@ -1056,6 +1071,8 @@ html[data-theme="dark"] .linput{background:var(--lcream2);color:var(--ltext)}
 html[data-theme="dark"] .linput:focus{background:#2A2F38}
 html[data-theme="dark"] #loginScreen .lang-btn{background:var(--lcream2);color:var(--lmut);border-color:var(--lbor)}
 html[data-theme="dark"] #loginScreen .lang-btn.active{background:var(--lso);color:var(--lo);border-color:transparent}
+html[data-theme="dark"] #loginScreen .lang-sw .lang-btn{background:transparent;border:none}
+html[data-theme="dark"] #loginScreen .lang-sw .lang-btn.active{background:var(--lso);color:var(--lo)}
 html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border-color:var(--lbor);color:#FFC247}
 </style>
 <script>/* THEME-EARLY: ตั้ง data-theme ก่อน render กัน flash (visual only, ไม่กระทบ auth/data) */(function(){try{if(localStorage.getItem('crm_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
@@ -1245,9 +1262,11 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="lg-right">
     <div class="lg-form">
       <div class="lg-langrow">
-        <button class="lang-btn" id="llLangTH" onclick="setLang('th')">ไทย</button>
-        <button class="lang-btn" id="llLangMY" onclick="setLang('my')">မြန်မာ</button>
-        <button class="theme-btn" id="themeBtnLogin" onclick="toggleTheme()" aria-label="สลับโหมดมืด/สว่าง" title="โหมดมืด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .9 1.6h5.2c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/></svg></button>
+        <div class="lang-sw">
+          <button class="lang-btn" id="llLangTH" onclick="setLang('th')">TH ไทย</button>
+          <button class="lang-btn" id="llLangMY" onclick="setLang('my')">MM မြန်မာ</button>
+        </div>
+        <button class="theme-btn" id="themeBtnLogin" onclick="toggleTheme()" aria-label="สลับโหมดมืด/สว่าง" title="โหมดมืด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
       </div>
       <div class="l-logo-wrap"><img id="llLogo" src="" alt="Rungfar"></div>
       <div class="l-company">บริษัท <span>รุ่งฟ้า รุ่งฟ้า</span> จำกัด</div>
@@ -1321,10 +1340,12 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="topbar">
     <button class="mob-only mob-iconbtn" id="mobHamb" onclick="mobDrawerOpen()" aria-label="เมนู"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
     <div class="ttitle" id="ttitle">แดชบอร์ด</div>
-    <div style="display:flex;gap:4px;margin-right:4px">
-      <button class="lang-btn active" id="langTH" onclick="setLang('th')">🇹🇭 ไทย</button>
-      <button class="lang-btn" id="langMY" onclick="setLang('my')">🇲🇲 မြန်မာ</button>
-      <button class="theme-btn" id="themeBtnApp" onclick="toggleTheme()" aria-label="สลับโหมดมืด/สว่าง" title="โหมดมืด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .9 1.6h5.2c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/></svg></button>
+    <div style="display:flex;gap:6px;align-items:center;margin-right:4px">
+      <div class="lang-sw">
+        <button class="lang-btn active" id="langTH" onclick="setLang('th')">TH ไทย</button>
+        <button class="lang-btn" id="langMY" onclick="setLang('my')">MM မြန်မာ</button>
+      </div>
+      <button class="theme-btn" id="themeBtnApp" onclick="toggleTheme()" aria-label="สลับโหมดมืด/สว่าง" title="โหมดมืด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
     </div>
     <button class="mob-only mob-iconbtn" id="mobLogout" onclick="doLogout()" aria-label="ออกจากระบบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></button>
     <button class="btn btn-g btn-sm" onclick="gv('import')"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้า Excel</button>
