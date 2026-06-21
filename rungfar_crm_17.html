@@ -731,6 +731,15 @@ textarea.fi2{resize:vertical;min-height:65px}
 .mdoc-dl{display:none;align-items:center;gap:6px;background:var(--p);color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
 .mdoc-dl:hover{background:var(--pd)}
 @media (max-width:768px){.mdoc-pdfbox{width:94vw;height:74vh}}
+/* MULTI DOC BADGES & META */
+.mdoc-badge{display:inline-flex;align-items:center;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:.3px;flex-shrink:0}
+.mdoc-badge-pdf{background:#fee2e2;color:#b91c1c}
+.mdoc-badge-img{background:#dcfce7;color:#15803d}
+.mdoc-badge-file{background:var(--g1);color:var(--g5)}
+.mdoc-meta{font-size:8px;color:var(--g4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdoc-badge-type{background:var(--pp);color:var(--pd);font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mdoc-det-wrap{max-height:380px;overflow-y:auto;border:1px solid var(--g2);border-radius:var(--r);padding:8px}
+@media(max-width:600px){.mdoc-det-wrap{max-height:320px}}
 /* LANG SWITCH */
 .lang-btn{background:var(--g1);border:1.5px solid var(--g2);color:var(--g6);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .2s}
 .lang-btn:hover{background:var(--pp);border-color:transparent;color:var(--p)}
@@ -1048,6 +1057,8 @@ html[data-theme="dark"] .tl-dot,
 html[data-theme="dark"] #mobNav,
 html[data-theme="dark"] #mobMore .sheet,
 html[data-theme="dark"] #mobDrawer .dpanel{background:var(--w)}
+html[data-theme="dark"] .mdoc-badge-pdf{background:#3A1A1A;color:#F87171}
+html[data-theme="dark"] .mdoc-badge-img{background:#10371F;color:#4ADE80}
 /* DARK-FIX rd2: dashboard expiry badges (.eb-*) → dark-tinted ให้อ่านง่ายบนการ์ดมืด */
 html[data-theme="dark"] .eb-u{background:#3A1A1A;color:#F87171}
 html[data-theme="dark"] .eb-w{background:#3A2410;color:#FB923C}
@@ -2714,6 +2725,33 @@ function applyLang(){
 let multiDocs = []; // [{id, type, label, data, fileType}]
 let multiDocEditingId = null; // customer id when editing
 
+const _DOC_TYPE_LABELS={passport_photo:'รูปพาสปอร์ต',visa:'VISA',wp:'Work Permit',employer_card:'บัตรนายจ้าง',receipt:'ใบเสร็จ',photo:'รูปถ่าย',pow:'หนังสือมอบอำนาจ',other:'อื่นๆ'};
+function docTypeLabel(t){return _DOC_TYPE_LABELS[t]||'อื่นๆ';}
+function ftypeBadge(ft){
+  if(ft==='application/pdf')return'<span class="mdoc-badge mdoc-badge-pdf">PDF</span>';
+  if(ft&&ft.startsWith('image/'))return'<span class="mdoc-badge mdoc-badge-img">รูปภาพ</span>';
+  return'<span class="mdoc-badge mdoc-badge-file">ไฟล์</span>';
+}
+function renderDetailDocSection(docs){
+  if(!docs||!docs.length)return'';
+  const _order=['passport_photo','visa','wp','employer_card','receipt','photo','pow','other'];
+  const sorted=[...docs].sort((a,b)=>{const ai=_order.indexOf(a.doc_type||'other'),bi=_order.indexOf(b.doc_type||'other');if(ai<0&&bi<0)return 0;if(ai<0)return 1;if(bi<0)return-1;return ai-bi;});
+  const cards=sorted.map(d=>{
+    const isPdf=d.file_type==='application/pdf';
+    const safeLabel=d.doc_name?esc(d.doc_name):docTypeLabel(d.doc_type||'other');
+    const dateStr=d.created_at?new Date(d.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}):'';
+    const meta=[dateStr,d.uploaded_by?esc(d.uploaded_by):''].filter(Boolean).join(' · ');
+    const thumb=isPdf
+      ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDb('${esc(d.file_data)}','${safeLabel}','${esc(d.file_type||'')}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+      :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDb('${esc(d.file_data)}','${safeLabel}','${esc(d.file_type||'')}')" alt="${safeLabel}">`;
+    return`<div class="mdoc-item">${thumb}<div class="mdoc-info"><div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-bottom:2px"><span class="mdoc-badge mdoc-badge-type">${docTypeLabel(d.doc_type||'other')}</span>${ftypeBadge(d.file_type)}</div><div class="mdoc-label">${safeLabel}</div>${meta?`<div class="mdoc-meta">${meta}</div>`:''}</div></div>`;
+  }).join('');
+  return`<div style="margin-bottom:12px">
+    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detDocs')} (${docs.length} ${T('detFiles')})</div>
+    <div class="mdoc-det-wrap"><div class="mdoc-grid" style="margin-top:0">${cards}</div></div>
+  </div>`;
+}
+
 function triggerMultiDoc(){document.getElementById('multiDocFile').click();}
 
 // ── Round C2: image compression + safe file read (กัน base64 ใหญ่จน save ค้าง) ──
@@ -2793,14 +2831,18 @@ function renderMultiDocGrid(){
   }
   grid.innerHTML=multiDocs.map(doc=>{
     const isPdf=doc.fileType==='application/pdf';
+    const safeLabel=doc.label?doc.label:docTypeLabel(doc.type||'other');
+    const dateStr=doc.createdAt?new Date(doc.createdAt).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}):'';
+    const meta=[dateStr,doc.uploadedBy||''].filter(Boolean).join(' · ');
     const thumb=isPdf
       ?`<div class="mdoc-thumb-pdf" onclick="viewMdoc('${doc.id}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
-      :`<img class="mdoc-thumb" src="${doc.data}" onclick="viewMdoc('${doc.id}')" alt="${doc.label}">`;
+      :`<img class="mdoc-thumb" src="${doc.data}" onclick="viewMdoc('${doc.id}')" alt="${safeLabel}">`;
     return`<div class="mdoc-item" id="mdoc-${doc.id}">
       ${thumb}
       <div class="mdoc-info">
-        <div class="mdoc-label">${doc.label}</div>
-        <div class="mdoc-type">${doc.name||doc.type}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${ftypeBadge(doc.fileType)}</div>
+        <div class="mdoc-label">${safeLabel}</div>
+        ${meta?`<div class="mdoc-meta">${meta}</div>`:''}
       </div>
       <button class="mdoc-del" onclick="delMdoc('${doc.id}')">×</button>
     </div>`;
@@ -3973,7 +4015,7 @@ function openEdit(id){
   document.getElementById('cModalTitle').textContent=T('editInfo');
   dbGet('documents',`?customer_id=eq.${id}&order=created_at.asc`).then(docs=>{
     if(docs&&docs.length){
-      multiDocs=docs.map(d=>({id:'db_'+d.id,dbId:d.id,type:d.doc_type,label:d.doc_name,data:d.file_data,fileType:d.file_type,name:d.doc_name}));
+      multiDocs=docs.map(d=>({id:'db_'+d.id,dbId:d.id,type:d.doc_type,label:d.doc_name,data:d.file_data,fileType:d.file_type,name:d.doc_name,createdAt:d.created_at,uploadedBy:d.uploaded_by}));
     }
     renderMultiDocGrid();
   }).catch(()=>{});
@@ -4133,16 +4175,7 @@ async function openDetail(id){
   ${exps.length?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
   ${_finSec}
   ${_xlSec}
-  ${docs.length?`<div style="margin-bottom:12px">
-    <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detDocs')} (${docs.length} ${T('detFiles')})</div>
-    <div class="mdoc-grid">${docs.map(d=>{
-      const isPdf=d.file_type==='application/pdf';
-      const thumb=isPdf
-        ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}','${esc(d.file_type||'')}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
-        :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}','${esc(d.file_type||'')}')" alt="${esc(d.doc_name)}">`;
-      return`<div class="mdoc-item">${thumb}<div class="mdoc-info"><div class="mdoc-label">${esc(d.doc_name)}</div><div class="mdoc-type">${new Date(d.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short'})}</div></div></div>`;
-    }).join('')}</div>
-  </div>`:''}
+  ${docs.length?renderDetailDocSection(docs):''}
   ${_clogSec}
   ${_histSec}
   ${(()=>{
