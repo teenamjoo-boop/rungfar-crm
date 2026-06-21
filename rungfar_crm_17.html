@@ -963,7 +963,102 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 @media (max-width:768px){
   input,select,textarea,button,.linput,.fi,.fi2,.si{font-size:16px!important}
 }
+/* ===================== THEME TOGGLE BUTTON (light + dark) ===================== */
+.theme-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;background:var(--g1);border:1.5px solid var(--g2);color:var(--g6);border-radius:20px;cursor:pointer;transition:all .2s;flex-shrink:0}
+.theme-btn svg{width:16px;height:16px;display:block}
+.theme-btn:hover{background:var(--pp);border-color:transparent;color:var(--p)}
+.theme-btn:focus,.theme-btn:focus-visible{outline:none;box-shadow:none}
+#loginScreen .theme-btn{background:#fff;border:1.5px solid var(--lbor);color:var(--lmut);border-radius:8px}
+#loginScreen .theme-btn:hover{border-color:var(--lso);color:var(--lo)}
+@media(max-width:760px){#appScreen .theme-btn{width:27px;height:27px}}
+
+/* ===================== DARK MODE THEME (visual only — html[data-theme="dark"]) ===================== */
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --primary:#FF8A33;--primary-dark:#FF9A4D;
+  --bg-main:#15181E;--bg-soft:#1E2128;--surface:#242830;--surface-warm:#2A2F38;
+  --text-main:#EDF0F4;--text-muted:#9AA2B0;--border:#383F4A;--soft-orange:#3A2C20;
+  --p:var(--primary);--pd:var(--primary-dark);--pl:#FFB066;
+  --pp:#2A2620;--pp2:#3A2C20;
+  --w:#242830;--bg:var(--bg-main);
+  --g0:#242830;--g1:#2A2F38;--g2:#383F4A;--g3:#4A515E;--g4:#6B7280;
+  --g5:#9AA2B0;--g6:#B6BDC8;--g7:#CFD5DD;--g8:#E2E6EC;--g9:#EDF0F4;
+  --grnb:#10371F;--blub:#13294A;--ambb:#3A2E10;--redb:#3A1A1A;--purb:#241B40;
+  --blu:#5B8DEF;--grn:#34D27B;
+  --s1:0 1px 2px rgba(0,0,0,.4);--s2:0 2px 8px rgba(0,0,0,.45);--s3:0 8px 20px rgba(0,0,0,.5);--s4:0 18px 40px rgba(0,0,0,.6);
+}
+/* hardcoded #fff surfaces (CSS rules) → dark surface */
+html[data-theme="dark"] .sidebar,
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] .twrap,
+html[data-theme="dark"] .ac,
+html[data-theme="dark"] .mb,
+html[data-theme="dark"] .mh,
+html[data-theme="dark"] .btn-g,
+html[data-theme="dark"] input.si,
+html[data-theme="dark"] select.fi{background:var(--w)}
+html[data-theme="dark"] .fi2:focus,
+html[data-theme="dark"] input.si:focus{background:var(--g1)}
+/* DARK-FIX rd2: การ์ด/แผง/แถวที่ hardcode background:#fff ใน CSS-rule (ตกหล่นรอบแรก) → พื้นมืด
+   หมายเหตุ: active state (.att-tab.att-on, .svt.on, .tbtn.on) มี specificity สูงกว่า/พื้นของตัวเอง — ไม่โดนทับ */
+html[data-theme="dark"] .sc,
+html[data-theme="dark"] .dc,
+html[data-theme="dark"] .emp-card,
+html[data-theme="dark"] .staff-card,
+html[data-theme="dark"] .cust-card,
+html[data-theme="dark"] .att-card,
+html[data-theme="dark"] .att-checkin-card,
+html[data-theme="dark"] .sr,
+html[data-theme="dark"] .att-tab,
+html[data-theme="dark"] .tbtn.on,
+html[data-theme="dark"] .svt,
+html[data-theme="dark"] .pb,
+html[data-theme="dark"] .map-sel,
+html[data-theme="dark"] .mdoc-add,
+html[data-theme="dark"] .doc-del,
+html[data-theme="dark"] .tl-dot,
+html[data-theme="dark"] #mobNav,
+html[data-theme="dark"] #mobMore .sheet,
+html[data-theme="dark"] #mobDrawer .dpanel{background:var(--w)}
+/* DARK-FIX rd2: dashboard expiry badges (.eb-*) → dark-tinted ให้อ่านง่ายบนการ์ดมืด */
+html[data-theme="dark"] .eb-u{background:#3A1A1A;color:#F87171}
+html[data-theme="dark"] .eb-w{background:#3A2410;color:#FB923C}
+html[data-theme="dark"] .eb-s{background:#3A2E10;color:#FBBF24}
+html[data-theme="dark"] .eb-ok{background:#10371F;color:#4ADE80}
+/* DARK-FIX rd2: service badges (.xb-*) → dark-tinted */
+html[data-theme="dark"] .xb-pp,html[data-theme="dark"] .xb-ad{background:#13294A;color:#93B4FF}
+html[data-theme="dark"] .xb-vi{background:#10371F;color:#4ADE80}
+html[data-theme="dark"] .xb-wp{background:#3A2E10;color:#FBBF24}
+html[data-theme="dark"] .xb-mu{background:#241B40;color:#C4B5FD}
+html[data-theme="dark"] .xb-ch{background:#3A2410;color:#FB923C}
+html[data-theme="dark"] .xb-90{background:#3A1A1A;color:#F87171}
+/* inline background:#fff (JS templates) → dark surface — เจาะจง #fff 3 หลักเท่านั้น (ไม่โดน #fff3e0/#fffbeb) */
+html[data-theme="dark"] [style*="background:#fff;"],
+html[data-theme="dark"] [style$="background:#fff"]{background:var(--w)!important}
+/* status badges → dark-tinted (อ่านง่ายบนพื้นมืด) */
+html[data-theme="dark"] .sb-act{background:#10371F;color:#4ADE80}
+html[data-theme="dark"] .sb-pnd{background:#3A2A12;color:#FB923C}
+html[data-theme="dark"] .sb-prc{background:#13294A;color:#7DA9FF}
+html[data-theme="dark"] .sb-exp{background:#3A1A1A;color:#F87171}
+/* avatar dots → dark-tinted */
+html[data-theme="dark"] .adot-r{background:#3A1A1A}
+html[data-theme="dark"] .adot-o{background:#3A2A12}
+html[data-theme="dark"] .adot-g{background:#33300F}
+/* theme button ในโหมดมืด: หลอดไฟ "ติด" สีอุ่น */
+html[data-theme="dark"] .theme-btn{background:var(--g1);border-color:var(--g2);color:#FFC247}
+html[data-theme="dark"] .theme-btn:hover{background:var(--pp);color:var(--pl)}
+/* ---- login dark (สีเท่านั้น — ไม่แตะ layout/slideshow/auth) ---- */
+html[data-theme="dark"] #loginScreen{
+  --lcream:#1E2128;--lcream2:#242830;--lsurf:#242830;--ltext:#EDF0F4;--lmut:#9AA2B0;--lbor:#383F4A;--lso:#3A2C20;
+  background:radial-gradient(62% 52% at 90% 6%,rgba(255,138,51,.10),transparent 60%),radial-gradient(54% 48% at 4% 98%,rgba(255,95,109,.08),transparent 60%),linear-gradient(160deg,#15181E 0%,#1A1E25 58%,#20242C 100%);
+}
+html[data-theme="dark"] .linput{background:var(--lcream2);color:var(--ltext)}
+html[data-theme="dark"] .linput:focus{background:#2A2F38}
+html[data-theme="dark"] #loginScreen .lang-btn{background:var(--lcream2);color:var(--lmut);border-color:var(--lbor)}
+html[data-theme="dark"] #loginScreen .lang-btn.active{background:var(--lso);color:var(--lo);border-color:transparent}
+html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border-color:var(--lbor);color:#FFC247}
 </style>
+<script>/* THEME-EARLY: ตั้ง data-theme ก่อน render กัน flash (visual only, ไม่กระทบ auth/data) */(function(){try{if(localStorage.getItem('crm_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 </head>
 <body>
 <!-- LOGIN -->
@@ -1152,6 +1247,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
       <div class="lg-langrow">
         <button class="lang-btn" id="llLangTH" onclick="setLang('th')">ไทย</button>
         <button class="lang-btn" id="llLangMY" onclick="setLang('my')">မြန်မာ</button>
+        <button class="theme-btn" id="themeBtnLogin" onclick="toggleTheme()" aria-label="สลับโหมดมืด/สว่าง" title="โหมดมืด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .9 1.6h5.2c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/></svg></button>
       </div>
       <div class="l-logo-wrap"><img id="llLogo" src="" alt="Rungfar"></div>
       <div class="l-company">บริษัท <span>รุ่งฟ้า รุ่งฟ้า</span> จำกัด</div>
@@ -1228,6 +1324,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
     <div style="display:flex;gap:4px;margin-right:4px">
       <button class="lang-btn active" id="langTH" onclick="setLang('th')">🇹🇭 ไทย</button>
       <button class="lang-btn" id="langMY" onclick="setLang('my')">🇲🇲 မြန်မာ</button>
+      <button class="theme-btn" id="themeBtnApp" onclick="toggleTheme()" aria-label="สลับโหมดมืด/สว่าง" title="โหมดมืด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .9 1.6h5.2c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/></svg></button>
     </div>
     <button class="mob-only mob-iconbtn" id="mobLogout" onclick="doLogout()" aria-label="ออกจากระบบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></button>
     <button class="btn btn-g btn-sm" onclick="gv('import')"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้า Excel</button>
@@ -2295,6 +2392,18 @@ function setLang(lang){
     }
   }
 }
+
+/* ===== THEME (dark/light) — visual only, ไม่กระทบ auth/session/lang/data ===== */
+function getTheme(){try{return localStorage.getItem('crm_theme')==='dark'?'dark':'light';}catch(e){return 'light';}}
+function applyTheme(t){
+  const dark=(t==='dark');
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  try{localStorage.setItem('crm_theme',dark?'dark':'light');}catch(e){}
+  const mc=document.querySelector('meta[name="theme-color"]');
+  if(mc)mc.setAttribute('content',dark?'#15181E':'#FF7A1A');
+  document.querySelectorAll('.theme-btn').forEach(b=>{b.setAttribute('aria-pressed',dark?'true':'false');b.title=dark?'โหมดสว่าง':'โหมดมืด';});
+}
+function toggleTheme(){applyTheme(getTheme()==='dark'?'light':'dark');}
 
 function applyLang(){
   const L=LANG[curLang]||LANG['th'];
@@ -7642,6 +7751,7 @@ async function attNotifyLine(type,savedLog){
 
 // INIT — RLS-HARDEN-2C/2D: validate session กับ DB ก่อนเข้า app (ไม่ trust localStorage อย่างเดียว)
 (async function(){
+  try{applyTheme(getTheme());}catch(e){}
   let ok=false;
   try{ok=await validateSession();}catch(e){console.warn('[SEC] validateSession error:',e.message);ok=false;}
   if(ok){
