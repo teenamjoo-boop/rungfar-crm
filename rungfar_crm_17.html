@@ -356,7 +356,12 @@ td{padding:10px 13px;border-bottom:1px solid var(--g1);font-size:13px;vertical-a
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--pp)}
 .row-selected td{background:var(--pp) !important}
-.toolbar{display:flex;gap:7px;align-items:center;margin-bottom:13px;flex-wrap:wrap}
+.toolbar{display:flex;gap:7px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+/* WORKFLOW QUICK-VIEW CHIPS — preset filter for ลูกค้า page (Stage 1) */
+.qv-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.qv-chip{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;border:1.5px solid var(--g2);background:var(--g0);color:var(--g6);transition:all .15s;white-space:nowrap}
+.qv-chip:hover:not(.active){background:var(--pp);border-color:var(--pl);color:var(--pd)}
+.qv-chip.active{background:var(--p);border-color:var(--pd);color:#fff;box-shadow:var(--s1)}
 .srch{position:relative;flex:1;min-width:180px}
 .srch svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g4)}
 input.si{width:100%;background:#fff;border:1.5px solid var(--g2);color:var(--g9);padding:8px 11px 8px 33px;border-radius:var(--r);font-family:var(--font);font-size:13px;outline:none;transition:all .2s}
@@ -866,6 +871,8 @@ textarea.fi2{resize:vertical;min-height:65px}
   #view-customers .toolbar .srch{grid-column:1 / -1;min-width:0}
   #view-customers .toolbar .fi{width:100%}
   #view-customers .tbar2{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  #view-customers .qv-chips{gap:5px;margin-bottom:8px}
+  #view-customers .qv-chip{font-size:11px;padding:4px 10px}
   #view-customers #selAllBtn{display:none}
   #view-customers .pag{flex-wrap:wrap;gap:8px;padding:10px 12px}
 }
@@ -999,6 +1006,9 @@ html[data-theme="dark"]{
   --s1:0 1px 2px rgba(0,0,0,.4);--s2:0 2px 8px rgba(0,0,0,.45);--s3:0 8px 20px rgba(0,0,0,.5);--s4:0 18px 40px rgba(0,0,0,.6);
 }
 /* hardcoded #fff surfaces (CSS rules) → dark surface */
+html[data-theme="dark"] .qv-chip{background:var(--g1);border-color:var(--g2);color:var(--g5)}
+html[data-theme="dark"] .qv-chip:hover:not(.active){background:var(--pp);color:var(--pd)}
+html[data-theme="dark"] .qv-chip.active{background:var(--p);border-color:var(--pd);color:#fff}
 html[data-theme="dark"] .sidebar,
 html[data-theme="dark"] .topbar,
 html[data-theme="dark"] .twrap,
@@ -1363,6 +1373,12 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
         <select class="fi" id="qws" onchange="doFilter()"><option value="">สถานะทั้งหมด</option></select>
         <select class="fi" id="qgrp" onchange="doFilter()"><option value="">กลุ่มทั้งหมด</option></select>
         <select class="fi" id="qbr" onchange="doFilter()"><option value="">สาขาทั้งหมด</option></select>
+      </div>
+      <div class="qv-chips" id="custQvChips">
+        <button class="qv-chip active" id="qvc-all" onclick="setQuickView('')">ทั้งหมด</button>
+        <button class="qv-chip" id="qvc-pending" onclick="setQuickView('pending')">รายการรอยื่น</button>
+        <button class="qv-chip" id="qvc-submitted" onclick="setQuickView('submitted')">ยื่นแล้ว</button>
+        <button class="qv-chip" id="qvc-unpaid" onclick="setQuickView('unpaid')">ค้างชำระ</button>
       </div>
       <div class="twrap">
         <div class="bulk-bar" id="bulkBar">
@@ -1961,6 +1977,7 @@ const WSC=['ws-0','ws-1','ws-2','ws-3','ws-4','ws-5','ws-6'];
 const DOCS=[{k:'passport_photo',l:'รูปพาสปอร์ต',i:'📘'},{k:'visa',l:'VISA',i:'🛂'},{k:'wp',l:'Work Permit',i:'📄'},{k:'employer_card',l:'บัตรนายจ้าง',i:'🪪'},{k:'receipt',l:'ใบเสร็จ',i:'🧾'},{k:'photo',l:'รูปถ่าย',i:'📷'},{k:'pow',l:'หนังสือมอบอำนาจ',i:'📜'},{k:'other',l:'เอกสารอื่นๆ',i:'📎'}];
 let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[],empProfMap={};
 let filtered=[],curPage=1;const PG=15;
+let customerQuickView=''; // '' | 'pending' | 'submitted' | 'unpaid'
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
 let _pendingDelUserId=null; // RLS-HARDEN-2D: id ที่รอยืนยันลบ — cleared on cancel/logout
@@ -3688,14 +3705,24 @@ async function saveEmployer(){
   try{if(editEid){await dbPatch('employers',editEid,data);employers=employers.map(e=>e.id===editEid?{...e,...data}:e);toast(T('toastSaved'));}else{const r=await dbPost('employers',data);if(r&&r[0])employers.push(r[0]);toast(T('toastEmpAdded'));}document.getElementById('empModal').style.display='none';renderEmployers();fillSelects();}catch(e){toast(T('toastError'),'err');}
 }
 
+function setQuickView(v){
+  customerQuickView=v;
+  ['all','pending','submitted','unpaid'].forEach(k=>{
+    const el=document.getElementById('qvc-'+k);
+    if(el)el.classList.toggle('active',(k==='all'?v==='':k===v));
+  });
+  doFilter();
+}
 function doFilter(){
   const q=(document.getElementById('qs')?.value||'').toLowerCase();
   const nat=document.getElementById('qnat')?.value||'';const ct=document.getElementById('qct')?.value||'';
   const ws=document.getElementById('qws')?.value||'';const grp=document.getElementById('qgrp')?.value||'';const br=document.getElementById('qbr')?.value||'';
+  const pendingWS=new Set([WS[0],WS[1],WS[2]]);
   filtered=customers.filter(c=>{
     const emp2=c.employer_id?employers.find(e=>e.id===c.employer_id):null;
     const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,c.agent_name,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
-    return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br));
+    const mqv=customerQuickView==='pending'?pendingWS.has(c.work_status):customerQuickView==='submitted'?c.work_status===WS[3]:customerQuickView==='unpaid'?(c.pay_status==='partial'||c.pay_status==='unpaid'||(!c.pay_status&&Number(c.fee_due)>0)):true;
+    return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br))&&mqv;
   });
   // Round F1B-2: เรียงใหม่สุดก่อนเสมอ — created_at DESC, fallback id DESC
   filtered.sort((a,b)=>{
