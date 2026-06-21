@@ -908,7 +908,7 @@ textarea.fi2{resize:vertical;min-height:65px}
   #att_rpt_table,#att_cal_wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
   /* D) seclog filter responsive */
   #seclogContent #sl_cards{grid-template-columns:1fr 1fr!important}
-  #seclogContent input[type=text],#seclogContent input[type=date],#seclogContent select{width:100%!important;box-sizing:border-box}
+  #seclogContent input[type=text],#seclogContent input[type=date],#seclogContent input[type=password],#seclogContent select{width:100%!important;box-sizing:border-box}
   /* E) ซ่อนรหัสพนักงานบนมือถือ (display only — หลังบ้านยังเก็บเหมือนเดิม) */
   .emp-code{display:none!important}
 }
@@ -2192,6 +2192,12 @@ const LANG = {
     seclogNoDataRange:'ไม่พบข้อมูลในช่วงเวลาที่เลือก',
     seclogUpgrading:'ฟีเจอร์นี้อยู่ระหว่างอัปเกรดความปลอดภัย',
     seclogUpgradeSub:'ระบบ Security Log กำลังอัปเกรดเป็น Supabase Auth<br>การบันทึก Login Activity ยังคงทำงานปกติ<br>เฉพาะหน้าแสดงผลรอการอัปเกรด',
+    seclogLoading:'กำลังโหลดบันทึก...',
+    seclogReadErr:'ไม่สามารถอ่านบันทึกได้ในขณะนี้ (ตรวจสอบการเชื่อมต่อ)',
+    seclogAdminPass:'รหัสผ่าน Admin',
+    seclogEnterPass:'กรอกรหัสผ่าน Admin แล้วกด "ค้นหา" เพื่อดูประวัติการเข้าใช้งาน',
+    seclogWrongPass:'รหัสผ่าน Admin ไม่ถูกต้อง',
+    seclogMigrationNeeded:'ยังไม่ได้ติดตั้งฟังก์ชันในฐานข้อมูล<br>กรุณา apply migration 20260621_admin_list_security_logs_rpc.sql ใน Supabase ก่อน',
     settingsDays:'วัน', settingsNotifyBefore:'แจ้งเตือนล่วงหน้า',
     // ── LANG-FULL-PATCH ──
     wsS0:'รับเรื่อง', wsS1:'รอเอกสาร', wsS2:'เอกสารครบ', wsS3:'ยื่นแล้ว', wsS4:'รอผล', wsS5:'นัดรับ', wsS6:'ปิดงาน',
@@ -2362,6 +2368,12 @@ const LANG = {
     seclogNoDataRange:'ရွေးချယ်သောကာလတွင် ဒေတာမတွေ့ပါ',
     seclogUpgrading:'ဤဖီချာကို လုံခြုံရေးဆိုင်ရာ အဆင့်မြှင့်နေသည်',
     seclogUpgradeSub:'Security Log ကို Supabase Auth သို့ အဆင့်မြှင့်နေသည်<br>Login Activity မှတ်တမ်းသည် ပုံမှန်လည်ပတ်နေသည်<br>ပြသမှုစာမျက်နှာသာ အဆင့်မြှင့်ဆဲ',
+    seclogLoading:'မှတ်တမ်းများ ဖွင့်နေသည်...',
+    seclogReadErr:'မှတ်တမ်းများကို ယခုဖတ်၍မရပါ (ချိတ်ဆက်မှု စစ်ဆေးပါ)',
+    seclogAdminPass:'Admin စကားဝှက်',
+    seclogEnterPass:'Admin စကားဝှက်ထည့်ပြီး "ရှာဖွေ" ကိုနှိပ်၍ ဝင်ရောက်မှတ်တမ်းကြည့်ပါ',
+    seclogWrongPass:'Admin စကားဝှက် မမှန်ပါ',
+    seclogMigrationNeeded:'ဒေတာဘေ့စ်တွင် function မထည့်ရသေးပါ<br>Supabase တွင် migration 20260621_admin_list_security_logs_rpc.sql ကို အရင် apply လုပ်ပါ',
     settingsDays:'ရက်', settingsNotifyBefore:'ကြိုတင်အကြောင်းကြား',
     // ── LANG-FULL-PATCH ──
     wsS0:'လက်ခံ', wsS1:'စာရွက်တောင်း', wsS2:'စာရွက်ပြည့်', wsS3:'တင်ပြပြီ', wsS4:'ရလဒ်စောင့်', wsS5:'ချိန်းဆို', wsS6:'ပိတ်သိမ်း',
@@ -4713,6 +4725,10 @@ function renderSecLog(){
           <input type="checkbox" id="slSusp" style="width:15px;height:15px;cursor:pointer">
           <label for="slSusp" style="font-size:13px;color:var(--g7);cursor:pointer;font-weight:500">${T('seclogSuspOnly')}</label>
         </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${T('seclogAdminPass')}</div>
+          <input type="password" id="slAdminPass" autocomplete="off" placeholder="••••••" onkeydown="if(event.key==='Enter')secLogFilter()" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff;width:120px">
+        </div>
         <button onclick="secLogFilter()" class="btn btn-p btn-sm">${T('seclogSearch')}</button>
         <button onclick="secLogClear()" class="btn btn-g btn-sm">${T('seclogClear')}</button>
       </div>
@@ -4727,10 +4743,54 @@ async function secLogLoad(){
   const wrap=document.getElementById('sl_table_wrap');
   const cards=document.getElementById('sl_cards');
   if(!wrap)return;
+  const box=(txt)=>`<div style="padding:44px 20px;text-align:center;color:var(--g6);background:#fff;border:1px solid var(--g2);border-radius:var(--rl);font-size:13px;line-height:1.8">${txt}</div>`;
+  // Admin-only (ด่าน UI; ด่านจริงคือการตรวจ credential ใน RPC SECURITY DEFINER)
+  if(curUser?.role!=='admin'){if(cards)cards.innerHTML='';wrap.innerHTML=box(T('seclogNoAccess'));return;}
   if(cards)cards.innerHTML='';
-  // SEC-F-c: direct SELECT ปิดโดย RLS (Option B) — รอ Supabase Auth
-  // logLoginActivity INSERT ยังทำงานปกติผ่าน policy anon INSERT
-  wrap.innerHTML=`<div style="padding:40px;text-align:center;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:var(--rl)"><div style="font-size:28px;margin-bottom:10px">🔐</div><div style="font-weight:700;color:#92400e;font-size:15px;margin-bottom:8px">${T('seclogUpgrading')}</div><div style="font-size:12px;color:#b45309;line-height:1.7">${T('seclogUpgradeSub')}</div></div>`;
+  const pass=(document.getElementById('slAdminPass')?.value||'').trim();
+  // ยังไม่กรอกรหัส → แสดงคำแนะนำ (ไม่ยิง RPC โดยไม่จำเป็น)
+  if(!pass){wrap.innerHTML=box(T('seclogEnterPass'));return;}
+  wrap.innerHTML=box(T('seclogLoading'));
+  // อ่านผ่าน RPC SECURITY DEFINER เท่านั้น — ไม่ direct SELECT security_login_logs
+  const body={
+    p_admin_username:curUser.username,
+    p_admin_password:pass,
+    p_start_date:(document.getElementById('slFrom')?.value||'')||null,
+    p_end_date:(document.getElementById('slTo')?.value||'')||null,
+    p_username:(document.getElementById('slUser')?.value||'').trim()||null,
+    p_status:(document.getElementById('slStatus')?.value||'')||null,
+    p_device:(document.getElementById('slDevice')?.value||'')||null,
+    p_suspicious_only:!!(document.getElementById('slSusp')?.checked)
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_list_security_logs`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body),mode:'cors'
+    });
+  }catch(e){
+    console.warn('[SEC] rpc network error (non-critical):',e.message);
+    wrap.innerHTML=box(T('seclogReadErr'));return;
+  }
+  if(!res.ok){
+    let err={};try{err=await res.json();}catch(_){}
+    const code=err?.code||'';const msg=err?.message||'';
+    // RPC ยังไม่ถูก apply ใน DB
+    if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){
+      wrap.innerHTML=box(T('seclogMigrationNeeded'));return;
+    }
+    // รหัสผ่าน admin ผิด (RPC raise 'unauthorized')
+    if(msg==='unauthorized'){
+      wrap.innerHTML=box(T('seclogWrongPass'));
+      const pf=document.getElementById('slAdminPass');if(pf){pf.value='';pf.focus();}
+      return;
+    }
+    console.warn('[SEC] rpc error:',res.status,msg||code);
+    wrap.innerHTML=box(T('seclogReadErr'));return;
+  }
+  let data=[];try{data=await res.json();}catch(_){data=[];}
+  secLogRender(Array.isArray(data)?data:[]);
 }
 
 function secLogRender(logs){
