@@ -3475,7 +3475,7 @@ function renderDash(){
 function renderAlerts(){
   const urg=[];customers.forEach(c=>getExps(c).forEach(x=>{const d=du(x.d);if(d!==null&&d<=x.w)urg.push({c,x,d});}));urg.sort((a,b)=>a.d-b.d);
   if(!urg.length){document.getElementById('alertContent').innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--g5)"><div style="font-size:44px;opacity:.3;margin-bottom:10px">✅</div>${T('alertNone')}</div>`;return;}
-  document.getElementById('alertContent').innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">'+urg.map(({c,x,d})=>`<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot ${d<=7?'adot-r':d<=14?'adot-o':'adot-g'}">${NF[c.nationality]||'👤'}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} หมด ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`).join('')+'</div>';
+  document.getElementById('alertContent').innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">'+urg.map(({c,x,d})=>{const dotCls=d<=7?'adot-r':d<=14?'adot-o':'adot-g';return`<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff">${dashCustAvatar(c,dotCls)}<div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} หมด ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`;}).join('')+'</div>';
 }
 
 function renderEmployers(){
@@ -3659,7 +3659,7 @@ function renderTable(){
       <td>${payBadge}</td>
       <td style="font-size:11px;max-width:150px" title="${esc(c.note||'')}"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.note?esc(c.note):mDash}</div>${editLine}</td>
       <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedIds.has(c.id)?'checked':''} onchange="toggleRow(${c.id},this.checked)"></td>
-      <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})" style="font-size:11px">✏️</button><button class="bic" onclick="delCust(${c.id})" style="font-size:11px;color:var(--red)">🗑️</button></div></td>
+      <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})">${uiIcon('edit')}</button><button class="bic" onclick="delCust(${c.id})" style="color:var(--red)">${uiIcon('trash')}</button></div></td>
     </tr>`;
   }).join('');
   renderCustomerCards(filtered.slice(s,e));
