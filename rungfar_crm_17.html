@@ -724,6 +724,13 @@ textarea.fi2{resize:vertical;min-height:65px}
 .mdoc-viewer-close{position:fixed;top:16px;right:20px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:26px;cursor:pointer;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
 .mdoc-viewer-close:hover{background:rgba(255,255,255,.3)}
 .mdoc-viewer-caption{color:rgba(255,255,255,.7);font-size:13px}
+/* PDF preview inside doc viewer — iframe(blob) + download (render-only) */
+.mdoc-pdfbox{display:none;flex-direction:column;width:90vw;max-width:900px;height:80vh;background:#fff;border-radius:8px;overflow:hidden}
+.mdoc-pdfbox iframe{flex:1;width:100%;border:none;background:#fff}
+.mdoc-pdf-fallback{display:none;padding:18px;text-align:center;color:#92400e;background:#fffbeb;font-size:13px;line-height:1.6}
+.mdoc-dl{display:none;align-items:center;gap:6px;background:var(--p);color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
+.mdoc-dl:hover{background:var(--pd)}
+@media (max-width:768px){.mdoc-pdfbox{width:94vw;height:74vh}}
 /* LANG SWITCH */
 .lang-btn{background:var(--g1);border:1.5px solid var(--g2);color:var(--g6);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .2s}
 .lang-btn:hover{background:var(--pp);border-color:transparent;color:var(--p)}
@@ -1930,7 +1937,12 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 <div class="mdoc-viewer" id="mdocViewer" onclick="closeMdocViewer()">
   <button class="mdoc-viewer-close" onclick="closeMdocViewer()">×</button>
   <img id="mdocViewerImg" src="" alt="">
+  <div class="mdoc-pdfbox" id="mdocViewerPdfBox" onclick="event.stopPropagation()">
+    <iframe id="mdocViewerPdf" title="PDF" src="about:blank"></iframe>
+    <div class="mdoc-pdf-fallback" id="mdocViewerPdfFallback">ไม่สามารถแสดงตัวอย่าง PDF ในหน้านี้ได้ — กรุณากดปุ่มดาวน์โหลดด้านล่าง</div>
+  </div>
   <div class="mdoc-viewer-caption" id="mdocViewerCaption"></div>
+  <a id="mdocViewerDl" class="mdoc-dl" download onclick="event.stopPropagation()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>ดาวน์โหลด</a>
 </div>
 
 <!-- LOADING OVERLAY -->
@@ -2782,7 +2794,7 @@ function renderMultiDocGrid(){
   grid.innerHTML=multiDocs.map(doc=>{
     const isPdf=doc.fileType==='application/pdf';
     const thumb=isPdf
-      ?`<div class="mdoc-thumb-pdf"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+      ?`<div class="mdoc-thumb-pdf" onclick="viewMdoc('${doc.id}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
       :`<img class="mdoc-thumb" src="${doc.data}" onclick="viewMdoc('${doc.id}')" alt="${doc.label}">`;
     return`<div class="mdoc-item" id="mdoc-${doc.id}">
       ${thumb}
@@ -2800,22 +2812,71 @@ function delMdoc(id){
   renderMultiDocGrid();
 }
 
+// ── Doc viewer helpers (render-only): รองรับ PDF ผ่าน Blob URL + ดาวน์โหลด ──
+let _docBlobUrl=null;
+function _isPdfDoc(fileType,data){return fileType==='application/pdf'||/^data:application\/pdf/i.test(data||'');}
+function dataUrlToBlobUrl(dataUrl){
+  try{
+    const m=/^data:([^;,]*)(;base64)?,/.exec(dataUrl||'');
+    if(!m)return null;
+    const mime=m[1]||'application/octet-stream';
+    const body=dataUrl.slice(dataUrl.indexOf(',')+1);
+    let bytes;
+    if(m[2]){ // base64
+      const bin=atob(body);bytes=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    }else{
+      const txt=decodeURIComponent(body);bytes=new Uint8Array(txt.length);
+      for(let i=0;i<txt.length;i++)bytes[i]=txt.charCodeAt(i);
+    }
+    return URL.createObjectURL(new Blob([bytes],{type:mime}));
+  }catch(e){console.warn('[doc] blob conversion failed:',e&&e.message);return null;}
+}
+function cleanupDocBlobUrl(){if(_docBlobUrl){try{URL.revokeObjectURL(_docBlobUrl);}catch(_){}_docBlobUrl=null;}}
+function _openDocViewer(data,label,fileType,fileName){
+  cleanupDocBlobUrl();
+  const img=document.getElementById('mdocViewerImg');
+  const pdfBox=document.getElementById('mdocViewerPdfBox');
+  const pdf=document.getElementById('mdocViewerPdf');
+  const fb=document.getElementById('mdocViewerPdfFallback');
+  const dl=document.getElementById('mdocViewerDl');
+  document.getElementById('mdocViewerCaption').textContent=label||'เอกสาร';
+  if(_isPdfDoc(fileType,data)){
+    const blobUrl=dataUrlToBlobUrl(data);_docBlobUrl=blobUrl;
+    if(img){img.style.display='none';img.src='';}
+    if(pdfBox)pdfBox.style.display='flex';
+    if(pdf)pdf.src=blobUrl||'about:blank';
+    if(fb)fb.style.display=blobUrl?'none':'block';
+    if(dl){
+      const base=String(fileName||label||'document').replace(/\.pdf$/i,'');
+      dl.href=blobUrl||data||'#';dl.download=base+'.pdf';dl.style.display='inline-flex';
+    }
+  }else{
+    if(pdfBox)pdfBox.style.display='none';
+    if(pdf)pdf.src='about:blank';
+    if(dl)dl.style.display='none';
+    if(img){img.style.display='';img.src=data||'';}
+  }
+  document.getElementById('mdocViewer').classList.add('show');
+}
+
 function viewMdoc(id){
   const doc=multiDocs.find(d=>d.id===id);
   if(!doc)return;
-  if(doc.fileType==='application/pdf'){window.open(doc.data);return;}
-  document.getElementById('mdocViewerImg').src=doc.data;
-  document.getElementById('mdocViewerCaption').textContent=doc.label+' — '+doc.name;
-  document.getElementById('mdocViewer').classList.add('show');
+  const label=doc.label+(doc.name?' — '+doc.name:'');
+  _openDocViewer(doc.data,label,doc.fileType,doc.name||doc.label);
 }
 
-function viewMdocFromDb(data,label){
-  document.getElementById('mdocViewerImg').src=data;
-  document.getElementById('mdocViewerCaption').textContent=label||'เอกสาร';
-  document.getElementById('mdocViewer').classList.add('show');
+function viewMdocFromDb(data,label,fileType){
+  _openDocViewer(data,label||'เอกสาร',fileType,label);
 }
 
-function closeMdocViewer(){document.getElementById('mdocViewer').classList.remove('show');}
+function closeMdocViewer(){
+  document.getElementById('mdocViewer').classList.remove('show');
+  const pdf=document.getElementById('mdocViewerPdf');if(pdf)pdf.src='about:blank';
+  const img=document.getElementById('mdocViewerImg');if(img)img.src='';
+  cleanupDocBlobUrl();
+}
 
 // Close viewer on Escape
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMdocViewer();});
@@ -4063,8 +4124,8 @@ async function openDetail(id){
     <div class="mdoc-grid">${docs.map(d=>{
       const isPdf=d.file_type==='application/pdf';
       const thumb=isPdf
-        ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
-        :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}')" alt="${esc(d.doc_name)}">`;
+        ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}','${esc(d.file_type||'')}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+        :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}','${esc(d.file_type||'')}')" alt="${esc(d.doc_name)}">`;
       return`<div class="mdoc-item">${thumb}<div class="mdoc-info"><div class="mdoc-label">${esc(d.doc_name)}</div><div class="mdoc-type">${new Date(d.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short'})}</div></div></div>`;
     }).join('')}</div>
   </div>`:''}
