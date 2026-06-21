@@ -2623,7 +2623,7 @@ function renderMultiDocGrid(){
   grid.innerHTML=multiDocs.map(doc=>{
     const isPdf=doc.fileType==='application/pdf';
     const thumb=isPdf
-      ?`<div class="mdoc-thumb-pdf">📄</div>`
+      ?`<div class="mdoc-thumb-pdf"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
       :`<img class="mdoc-thumb" src="${doc.data}" onclick="viewMdoc('${doc.id}')" alt="${doc.label}">`;
     return`<div class="mdoc-item" id="mdoc-${doc.id}">
       ${thumb}
@@ -3122,7 +3122,7 @@ function dashAlertCardHTML(c,x,d){
   return `<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff">${dashCustAvatar(c,dotCls)}<div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`;
 }
 function dashCustCardHTML(c){
-  return `<div class="ac son" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot adot-g">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;align-self:center">${wsT(c.work_status||'รับเรื่อง')}</span></div>`;
+  return `<div class="ac son" onclick="openDetail(${c.id})" style="background:#fff">${dashCustAvatar(c,'adot-g')}<div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;align-self:center">${wsT(c.work_status||'รับเรื่อง')}</span></div>`;
 }
 function dashEmptyHTML(msg){
   return `<div style="text-align:center;padding:60px 20px;color:var(--g5)"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;margin-bottom:10px"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><div style="font-size:13px">${msg}</div></div>`;
@@ -3893,7 +3893,7 @@ async function openDetail(id){
     <div class="mdoc-grid">${docs.map(d=>{
       const isPdf=d.file_type==='application/pdf';
       const thumb=isPdf
-        ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}')">📄</div>`
+        ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
         :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDb('${esc(d.file_data)}','${esc(d.doc_name)}')" alt="${esc(d.doc_name)}">`;
       return`<div class="mdoc-item">${thumb}<div class="mdoc-info"><div class="mdoc-label">${esc(d.doc_name)}</div><div class="mdoc-type">${new Date(d.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short'})}</div></div></div>`;
     }).join('')}</div>
