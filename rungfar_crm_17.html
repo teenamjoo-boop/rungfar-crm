@@ -1628,7 +1628,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
 <!-- MODAL: LOAD USERS — RLS-HARDEN-2D: admin password สำหรับโหลดรายชื่อผู้ใช้ -->
 <div class="mo" id="loadUsersModal" style="display:none" onclick="if(event.target===this)closeLoadUsersModal()">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
-  <div class="mh"><div class="mt">🔐 ยืนยันตัวตน</div><button class="xbtn" onclick="closeLoadUsersModal()">×</button></div>
+  <div class="mh"><div class="mt"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> ยืนยันตัวตน</div><button class="xbtn" onclick="closeLoadUsersModal()">×</button></div>
   <div class="mbody">
     <div style="font-size:13px;color:var(--g6);margin-bottom:14px">กรุณากรอกรหัสผ่าน Admin เพื่อโหลดรายชื่อผู้ใช้ในระบบ</div>
     <div class="fgi full">
@@ -1639,7 +1639,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-a
   </div>
   <div class="mfoo">
     <button class="btn btn-g" onclick="closeLoadUsersModal()">ยกเลิก</button>
-    <button class="btn btn-p" onclick="confirmLoadUsers()">🔓 โหลดรายชื่อ</button>
+    <button class="btn btn-p" onclick="confirmLoadUsers()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> โหลดรายชื่อ</button>
   </div>
 </div></div>
 
@@ -4837,7 +4837,9 @@ function uiIcon(name){
     settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
     map:'<path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11"/><circle cx="12" cy="10" r="2.5"/>',
     calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-    clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+    clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    unlock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
   };
   const p=I[name];return p?`<svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`:'';
 }
