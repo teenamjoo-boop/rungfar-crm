@@ -738,6 +738,9 @@ textarea.fi2{resize:vertical;min-height:65px}
 .mdoc-badge-file{background:var(--g1);color:var(--g5)}
 .mdoc-meta{font-size:8px;color:var(--g4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mdoc-badge-type{background:var(--pp);color:var(--pd);font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Stage 1 assignee chip (ผู้รับผิดชอบ) */
+.asg-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;background:var(--pp);color:var(--pd);padding:1px 8px;border-radius:10px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.asg-none{font-size:10px;color:var(--g4)}
 .mdoc-det-wrap{max-height:380px;overflow-y:auto;border:1px solid var(--g2);border-radius:var(--r);padding:8px}
 @media(max-width:600px){.mdoc-det-wrap{max-height:320px}}
 /* LANG SWITCH */
@@ -1391,6 +1394,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
         <select class="fi" id="qws" onchange="doFilter()"><option value="">สถานะทั้งหมด</option></select>
         <select class="fi" id="qgrp" onchange="doFilter()"><option value="">กลุ่มทั้งหมด</option></select>
         <select class="fi" id="qbr" onchange="doFilter()"><option value="">สาขาทั้งหมด</option></select>
+        <select class="fi" id="qassignee" onchange="doFilter()"><option value="">ผู้รับผิดชอบทั้งหมด</option></select>
       </div>
       <div class="qv-chips" id="custQvChips">
         <button class="qv-chip active" id="qvc-all" onclick="setQuickView('')">ทั้งหมด</button>
@@ -1575,6 +1579,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
           <div class="fgi"><label class="fl">วันเกิด</label><input class="fi2" type="date" id="f_dob"></div>
           <div class="fgi"><label class="fl">กลุ่ม</label><select class="fi2" id="f_grp"><option value="">-- ไม่ระบุ --</option></select></div>
           <div class="fgi"><label class="fl">สาขา</label><select class="fi2" id="f_branch"><option value="">-- ไม่ระบุ --</option></select></div>
+          <div class="fgi"><label class="fl">ผู้รับผิดชอบ</label><select class="fi2" id="f_assignee"><option value="">ยังไม่ระบุ</option></select></div>
           <div class="fgi"><label class="fl">วันที่ยื่น</label><input class="fi2" type="date" id="f_submit"></div>
           <div class="fgi"><label class="fl">ตัวแทน</label><input class="fi2" id="f_agent" placeholder="ชื่อตัวแทน"></div>
         </div>
@@ -1998,7 +2003,7 @@ const NC={'เมียนมา':'nb-mm','กัมพูชา':'nb-kh','ล�
 const WS=['รับเรื่อง','รอเอกสาร','เอกสารครบ','ยื่นแล้ว','รอผล','นัดรับ','ปิดงาน'];
 const WSC=['ws-0','ws-1','ws-2','ws-3','ws-4','ws-5','ws-6'];
 const DOCS=[{k:'passport_photo',l:'รูปพาสปอร์ต',i:'📘'},{k:'visa',l:'VISA',i:'🛂'},{k:'wp',l:'Work Permit',i:'📄'},{k:'employer_card',l:'บัตรนายจ้าง',i:'🪪'},{k:'receipt',l:'ใบเสร็จ',i:'🧾'},{k:'photo',l:'รูปถ่าย',i:'📷'},{k:'pow',l:'หนังสือมอบอำนาจ',i:'📜'},{k:'other',l:'เอกสารอื่นๆ',i:'📎'}];
-let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[],empProfMap={};
+let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[],empProfMap={},assigneeEmps=[];
 let filtered=[],curPage=1;const PG=15;
 let customerQuickView=''; // '' | 'pending' | 'submitted' | 'unpaid'
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
@@ -2166,7 +2171,7 @@ const LANG = {
     pagShow:'แสดง', pagFrom:'จาก',
     detBoss:'นายจ้าง', detPhone:'เบอร์โทร', detPassport:'เลขพาสปอร์ต',
     detAlien:'เลขต่างด้าว', detWP:'เลขคำขอ WP', detBranch:'สาขา',
-    detReceiver:'คนรับเคส', detDocStaff:'คนดูแลเอกสาร', detCloser:'คนปิดงาน',
+    detReceiver:'คนรับเคส', detDocStaff:'คนดูแลเอกสาร', detCloser:'คนปิดงาน', detAssignee:'ผู้รับผิดชอบ',
     detExpiry:'วันหมดอายุ', detFinance:'การเงิน',
     detFeeLabel:'ค่าบริการ', detPaidLabel:'ชำระแล้ว', detDueLabel:'ค้างชำระ',
     detPayStatus:'สถานะ', detDocs:'เอกสารแนบ', detFiles:'ไฟล์',
@@ -2342,7 +2347,7 @@ const LANG = {
     pagShow:'ပြသနေသည်', pagFrom:'မှ',
     detBoss:'အလုပ်ရှင်', detPhone:'ဖုန်းနံပါတ်', detPassport:'နိုင်ငံကူးနံပါတ်',
     detAlien:'နိုင်ငံခြားသားနံပါတ်', detWP:'WP တောင်းဆိုနံပါတ်', detBranch:'ဌာနခွဲ',
-    detReceiver:'လက်ခံဝန်ထမ်း', detDocStaff:'စာရွက်တာဝန်ခံ', detCloser:'ပိတ်သိမ်းသူ',
+    detReceiver:'လက်ခံဝန်ထမ်း', detDocStaff:'စာရွက်တာဝန်ခံ', detCloser:'ပိတ်သိမ်းသူ', detAssignee:'တာဝန်ခံဝန်ထမ်း',
     detExpiry:'သက်တမ်းကုန်ဆုံးရက်', detFinance:'ငွေကြေးအချက်အလက်',
     detFeeLabel:'ဝန်ဆောင်ခ', detPaidLabel:'ပေးပြီး', detDueLabel:'ကျန်ရှိ',
     detPayStatus:'အခြေအနေ', detDocs:'ပူးတွဲဖိုင်', detFiles:'ဖိုင်',
@@ -3845,13 +3850,13 @@ function setQuickView(v){
 function doFilter(){
   const q=(document.getElementById('qs')?.value||'').toLowerCase();
   const nat=document.getElementById('qnat')?.value||'';const ct=document.getElementById('qct')?.value||'';
-  const ws=document.getElementById('qws')?.value||'';const grp=document.getElementById('qgrp')?.value||'';const br=document.getElementById('qbr')?.value||'';
+  const ws=document.getElementById('qws')?.value||'';const grp=document.getElementById('qgrp')?.value||'';const br=document.getElementById('qbr')?.value||'';const asg=document.getElementById('qassignee')?.value||'';
   const pendingWS=new Set([WS[0],WS[1],WS[2]]);
   filtered=customers.filter(c=>{
     const emp2=c.employer_id?employers.find(e=>e.id===c.employer_id):null;
     const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,c.agent_name,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
     const mqv=customerQuickView==='pending'?pendingWS.has(c.work_status):customerQuickView==='submitted'?c.work_status===WS[3]:customerQuickView==='unpaid'?(c.pay_status==='partial'||c.pay_status==='unpaid'||(!c.pay_status&&Number(c.fee_due)>0)):true;
-    return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br))&&mqv;
+    return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br))&&(!asg||String(c.assignee_code||'')===String(asg))&&mqv;
   });
   // Round F1B-2: เรียงใหม่สุดก่อนเสมอ — created_at DESC, fallback id DESC
   filtered.sort((a,b)=>{
@@ -3890,6 +3895,7 @@ function renderCustomerCards(list){
           <div class="cc-row2">
             <span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span>
             <span class="${wsC(c.work_status)} cc-st">${wsT(c.work_status||'รับเรื่อง')}</span>
+            ${(()=>{const _a=assigneeLabel(c.assignee_code);return _a?`<span class="asg-chip">${esc(_a)}</span>`:'';})()}
             ${payBadge}${svcs}${ex}${expChips}
           </div>
         </div>
@@ -3900,7 +3906,9 @@ function renderCustomerCards(list){
 }
 
 // Stage 2: build/lookup employee profile map สำหรับแสดงผู้แก้ไขล่าสุด (key = normalized employee_code)
-function buildEmpProfMap(list){empProfMap={};(Array.isArray(list)?list:[]).forEach(e=>{const k=_normCode(e&&e.employee_code);if(k)empProfMap[k]=e;});}
+function buildEmpProfMap(list){empProfMap={};const arr=(Array.isArray(list)?list:[]);arr.forEach(e=>{const k=_normCode(e&&e.employee_code);if(k)empProfMap[k]=e;});assigneeEmps=arr.filter(e=>e&&e.status==='active'&&_normCode(e.employee_code)).sort((a,b)=>String(a.nickname||a.full_name||'').localeCompare(String(b.nickname||b.full_name||''),'th'));}
+// Stage 1 assignee: คืนชื่อผู้รับผิดชอบ (nickname/full_name) จาก code; '' ถ้าไม่ระบุ
+function assigneeLabel(code){const k=code?_normCode(code):'';const e=k?empProfMap[k]:null;return e?(e.nickname||e.full_name||code):(code||'');}
 function editorInfo(code){const k=code?_normCode(code):'';const e=k?empProfMap[k]:null;return{emp:e||null,name:e?(e.nickname||e.full_name||code):(code||'')};}
 function renderTable(){
   const total=filtered.length;
@@ -3933,7 +3941,7 @@ function renderTable(){
       <td style="font-size:11px;white-space:nowrap">${c.submit_date?fd(c.submit_date):mDash}</td>
       <td onclick="event.stopPropagation()">${avatarHtml}</td>
       <td class="ctbl-emp" title="${c.employer_id?esc(empN(c.employer_id)):''}">${c.employer_id?`<span class="ctbl-emp-text">${esc(empN(c.employer_id))}</span>`:mDash}</td>
-      <td><div class="ctbl-name">${esc(c.name)}</div>${c.name_th?`<div class="ctbl-sub">${esc(c.name_th)}</div>`:''}</td>
+      <td><div class="ctbl-name">${esc(c.name)}</div>${c.name_th?`<div class="ctbl-sub">${esc(c.name_th)}</div>`:''}<div style="margin-top:3px">${(()=>{const _a=assigneeLabel(c.assignee_code);return _a?`<span class="asg-chip">${esc(_a)}</span>`:'<span class="asg-none">ยังไม่ระบุ</span>';})()}</div></td>
       <td style="font-size:11px;font-family:var(--mono)">${c.alien_id?esc(c.alien_id):mDash}</td>
       <td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td>
       <td style="font-size:11px;font-family:var(--mono)">${reqNo?esc(reqNo):mDash}</td>
@@ -3973,6 +3981,10 @@ function fillSelects(){
   const qws=document.getElementById('qws');if(qws)qws.innerHTML=`<option value="">${T('fillAllStatus')}</option>`+WS.map(s=>`<option value="${s}">${wsT(s)}</option>`).join('');
   const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.innerHTML=`<option value="">${T('fillAllGroup')}</option>`+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
   const qbr=document.getElementById('qbr');if(qbr)qbr.innerHTML=`<option value="">${T('fillAllBranch')}</option>`+branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  // Stage 1 assignee: เติม dropdown ผู้รับผิดชอบ (modal + filter) จาก active employees — คงค่าที่เลือกไว้
+  const _asgOpts=assigneeEmps.map(e=>`<option value="${esc(e.employee_code)}">${esc(e.nickname||e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('');
+  const fa=document.getElementById('f_assignee');if(fa){const _v=fa.value;fa.innerHTML='<option value="">ยังไม่ระบุ</option>'+_asgOpts;fa.value=_v;}
+  const qa=document.getElementById('qassignee');if(qa){const _v=qa.value;qa.innerHTML='<option value="">ผู้รับผิดชอบทั้งหมด</option>'+_asgOpts;qa.value=_v;}
   const tls=document.getElementById('tlf_status');if(tls)tls.innerHTML=WS.map(s=>`<option value="${s}">${wsT(s)}</option>`).join('');
 }
 function empSelected(){const id=document.getElementById('f_empId').value;if(id){const e=employers.find(x=>x.id===parseInt(id));if(e){document.getElementById('f_emp').value=e.name;document.getElementById('f_biz').value=e.business_type||'';document.getElementById('f_ephon').value=e.phone||'';document.getElementById('f_addr').value=e.address||'';}}}
@@ -3985,7 +3997,7 @@ function openAdd(){
   // Round F1B-1: reset field ใหม่ตาม Excel
   ['submit','agent','apptdate','appttime','apptplace','queue','receive'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   ['f_medical','f_insurance','f_fee100','f_fee900','f_cardfee'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
-  document.getElementById('f_nat').value='เมียนมา';['f_src','f_grp','f_branch','f_empId','f_fpay','f_fst','f_booklet'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
+  document.getElementById('f_nat').value='เมียนมา';['f_src','f_grp','f_branch','f_empId','f_fpay','f_fst','f_booklet','f_assignee'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
   document.getElementById('r_free').checked=true;ctChange();document.getElementById('pprev').style.display='none';document.getElementById('pphold').style.display='block';document.getElementById('dupWarn').style.display='none';
   fillSelects();document.getElementById('f_ws').value='รับเรื่อง';renderSvcT();renderMultiDocGrid();applyMvpModal();swTab(0);document.getElementById('cModal').style.display='flex';
 }
@@ -4005,7 +4017,7 @@ function openEdit(id){
   _setChk('f_medical',c.medical_cert);_setChk('f_insurance',c.insurance);_setChk('f_fee100',c.fee_100_paid);_setChk('f_fee900',c.fee_900_paid);_setChk('f_cardfee',c.card_fee_paid);
   document.getElementById('f_booklet').value=c.booklet_status||'';
   document.getElementById('f_nat').value=c.nationality||'เมียนมา';
-  fillSelects();document.getElementById('f_ws').value=c.work_status||'รับเรื่อง';document.getElementById('f_src').value=c.source||'';document.getElementById('f_fpay').value=c.pay_channel||'';document.getElementById('f_fst').value=c.pay_status||'';document.getElementById('f_grp').value=c.group_id||'';document.getElementById('f_branch').value=c.branch_id||'';
+  fillSelects();document.getElementById('f_ws').value=c.work_status||'รับเรื่อง';document.getElementById('f_src').value=c.source||'';document.getElementById('f_fpay').value=c.pay_channel||'';document.getElementById('f_fst').value=c.pay_status||'';document.getElementById('f_grp').value=c.group_id||'';document.getElementById('f_branch').value=c.branch_id||'';const _fa=document.getElementById('f_assignee');if(_fa)_fa.value=c.assignee_code||'';
   if(c.customer_type==='company'){document.getElementById('r_comp').checked=true;document.getElementById('f_empId').value=c.employer_id||'';}else document.getElementById('r_free').checked=true;
   ctChange();
   if(c.photo){document.getElementById('pprevImg').src=c.photo;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';}else{document.getElementById('pprev').style.display='none';document.getElementById('pphold').style.display='block';}
@@ -4071,6 +4083,7 @@ async function saveCustomer(){
     const total=parseFloat(V('f_ftotal'))||0;const paid=parseFloat(V('f_fpaid'))||0;
     const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),photo:photoB64,
       submit_date:V('f_submit')||null,agent_name:VT('f_agent')||null,medical_cert:VC('f_medical'),insurance:VC('f_insurance'),fee_100_paid:VC('f_fee100'),fee_900_paid:VC('f_fee900'),card_fee_paid:VC('f_cardfee'),booklet_status:V('f_booklet')||null,appt_date:V('f_apptdate')||null,appt_time:VT('f_appttime')||null,appt_place:VT('f_apptplace')||null,queue_date:V('f_queue')||null,receive_date:V('f_receive')||null,
+      assignee_code:V('f_assignee')||null,
       updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})};
     let savedId=editId;
     if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
@@ -4170,6 +4183,7 @@ async function openDetail(id){
     <div class="df"><div class="dfl">${T('detAlien')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.alien_id||'—')}</div></div>
     <div class="df"><div class="dfl">${T('detWP')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.wp_no||'—')}</div></div>
     <div class="df"><div class="dfl">${T('detBranch')}</div><div class="dfv">${c.branch_id?esc(brN(c.branch_id)):'—'}</div></div>
+    <div class="df"><div class="dfl">${T('detAssignee')}</div><div class="dfv">${(()=>{const _a=assigneeLabel(c.assignee_code);return _a?`<span class="asg-chip">${esc(_a)}</span>`:'<span class="asg-none">ยังไม่ระบุ</span>';})()}</div></div>
   </div>
   ${_staffGrid}
   ${exps.length?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
