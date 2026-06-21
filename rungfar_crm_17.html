@@ -2807,9 +2807,23 @@ function renderMultiDocGrid(){
   }).join('');
 }
 
-function delMdoc(id){
-  multiDocs=multiDocs.filter(d=>d.id!==id);
-  renderMultiDocGrid();
+async function delMdoc(id){
+  const doc=multiDocs.find(d=>d.id===id);
+  if(!doc)return;
+  if(doc.dbId){
+    if(!confirm('ต้องการลบเอกสารนี้?'))return;
+    try{
+      await dbDel('documents',doc.dbId);
+      multiDocs=multiDocs.filter(d=>d.id!==id);
+      renderMultiDocGrid();
+      toast('ลบเอกสารแล้ว');
+    }catch(e){
+      toast('ลบเอกสารไม่สำเร็จ','err');
+    }
+  }else{
+    multiDocs=multiDocs.filter(d=>d.id!==id);
+    renderMultiDocGrid();
+  }
 }
 
 // ── Doc viewer helpers (render-only): รองรับ PDF ผ่าน Blob URL + ดาวน์โหลด ──
