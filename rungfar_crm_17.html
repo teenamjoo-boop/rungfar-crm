@@ -811,7 +811,7 @@ textarea.fi2{resize:vertical;min-height:65px}
   #view-dash .dash-tabs::-webkit-scrollbar{display:none}
   #view-dash .dash-tabs .att-tab{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;padding:8px 12px;border-radius:999px;font-size:12px;box-shadow:var(--s1);white-space:nowrap}
   #view-dash .dash-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:18px;margin-left:2px;padding:0 6px;border-radius:999px;background:var(--g1);color:var(--g7);font-family:Arial,Helvetica,Tahoma,sans-serif;font-size:10.5px;font-weight:800;font-feature-settings:"zero" 0;font-variant-numeric:normal}
-  #view-dash .att-tab.att-on .dash-tab-count{background:rgba(255,255,255,.24);color:#fff}
+  #view-dash .att-tab.att-on .dash-tab-count{background:rgba(255,122,26,.15);color:var(--pd)}
   #view-dash .dash-grid{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
   #view-dash .dg2,#view-dash .dg3{grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:12px}
   #view-dash .dc{min-width:0;padding:13px 12px;border-radius:14px;overflow:hidden}
@@ -3105,6 +3105,8 @@ function renderSidebar(){
 // ===== ALERT DASHBOARD (Round E) — หน้า "แจ้งเตือน" พร้อม sub-filter =====
 let dashFilter='all'; // all | renew | 90 | docs | todo | absent
 function dashGo(f){
+  // ถ้ายังไม่ได้อยู่หน้า dashboard (เช่นกดปุ่ม "ดูทั้งหมด" จากแบนเนอร์บนหน้าอื่น) ให้สลับมาหน้านี้ก่อน แล้วค่อยใช้ฟิลเตอร์
+  if(curView!=='dash'){dashFilter=f;gv('dash');return;}
   // preserve ตำแหน่งเลื่อนแท็บ (mobile horizontal scroll) ไม่ให้เด้งกลับหลัง re-render
   const tb=document.querySelector('#dbContent .dash-tabs');
   const sl=tb?tb.scrollLeft:0;
@@ -3116,7 +3118,8 @@ function dashGo(f){
 }
 function dashGrid(html){return `<div class="dash-grid">${html}</div>`;}
 function dashAlertCardHTML(c,x,d){
-  return `<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot ${d<=7?'adot-r':d<=14?'adot-o':'adot-g'}">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`;
+  const dotCls=d<=7?'adot-r':d<=14?'adot-o':'adot-g';
+  return `<div class="ac ${d<=7?'urg':d<=14?'wrn':'son'}" onclick="openDetail(${c.id})" style="background:#fff">${dashCustAvatar(c,dotCls)}<div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${x.l} ${fd(x.d)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><div class="${d<=7?'dr':d<=14?'do_':'dg_'}">${el(d)}</div></div>`;
 }
 function dashCustCardHTML(c){
   return `<div class="ac son" onclick="openDetail(${c.id})" style="background:#fff"><div class="adot adot-g">${NF[c.nationality]||''}</div><div class="ai"><div class="an">${esc(c.name)}</div><div class="ad">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;align-self:center">${wsT(c.work_status||'รับเรื่อง')}</span></div>`;
@@ -3168,6 +3171,14 @@ function dashTodayLogDate(date){
 function dashAbsentTimeLabel(time){
   return time?String(time).slice(0,5):'—';
 }
+// STAGE 7b: avatar พนักงานบน card ขาดงาน/ยังไม่เช็คเอาท์ — ใช้ profile_image จาก empProfMap (โหลดอยู่แล้ว) / fallback อักษรย่อ
+function dashEmpAvatar(row,dotCls){
+  const e=row?empProfMap[_normCode(row.employee_code)]:null;
+  if(e&&e.profile_image)return `<div class="adot ${dotCls}" style="overflow:hidden;padding:0"><img src="${esc(e.profile_image)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`;
+  const nm=(row&&(row.full_name||row.employee_name||row.employee_code))||'';
+  const ini=esc(((String(nm).trim().charAt(0))||'?').toUpperCase());
+  return `<div class="adot ${dotCls}" style="font-weight:700;color:var(--p)">${ini}</div>`;
+}
 function dashAbsentCardHTML(row,mode){
   const isAbsent=mode==='absent';
   const cls=isAbsent?'urg':'wrn';
@@ -3178,7 +3189,7 @@ function dashAbsentCardHTML(row,mode){
   const normalTime=dashAbsentTimeLabel(row.normal_checkin_time);
   const branch=row.branch_name||'ไม่ระบุสาขา';
   return `<div class="ac ${cls} dash-att-card" style="background:#fff;cursor:default">
-    <div class="adot ${dotCls}">!</div>
+    ${dashEmpAvatar(row,dotCls)}
     <div class="ai">
       <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
       <div class="ad"><span class="emp-code">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · </span>${esc(branch)}</div>
@@ -3199,7 +3210,7 @@ function dashNooutCardHTML(row){
   const tOut=dashAbsentTimeLabel(row.normal_checkout_time);
   const branch=row.branch_name||'ไม่ระบุสาขา';
   return `<div class="ac wrn dash-att-card" style="background:#fff;cursor:default">
-    <div class="adot adot-o">!</div>
+    ${dashEmpAvatar(row,'adot-o')}
     <div class="ai">
       <div class="an">${esc(row.full_name||row.employee_name||row.employee_code||'ไม่ระบุชื่อ')}</div>
       <div class="ad"><span class="emp-code">รหัส: <span style="font-family:Arial,Helvetica,Tahoma,sans-serif;font-feature-settings:&quot;zero&quot; 0;font-variant-numeric:normal">${esc(row.employee_code||'—')}</span> · </span>${esc(branch)}</div>
