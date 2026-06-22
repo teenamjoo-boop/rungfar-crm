@@ -2152,7 +2152,7 @@ const LANG = {
     dashVISA15:'VISA ≤15 วัน', dashWP15:'WP ≤15 วัน',
     dashByNat:'แยกตามสัญชาติ', dashTopEmp:'นายจ้างมีแรงงานมากสุด',
     dashTopUrgent:'ด่วนที่สุด', dashSeeAll:'ดูทั้งหมด →', dashTopSvc:'บริการที่ใช้',
-    dashSummGrp:'สรุปตามกลุ่มงาน',
+    dashSummGrp:'สรุปตามกลุ่มงาน', dashSummAssignee:'ลูกค้าตามผู้รับผิดชอบ',
     bannerFmt:'มี {n} รายการที่ต้องดำเนินการ', bannerSeeAll:'ดูทั้งหมด →',
     alertNone:'ไม่มีรายการแจ้งเตือน',
     empTitle:'นายจ้าง / บริษัท ทั้งหมด', empAdd:'+ เพิ่มนายจ้าง',
@@ -2328,7 +2328,7 @@ const LANG = {
     dashVISA15:'VISA ≤15 ရက်', dashWP15:'WP ≤15 ရက်',
     dashByNat:'နိုင်ငံသားဆိုင်ရာ', dashTopEmp:'လုပ်သားအများဆုံးသော အလုပ်ရှင်',
     dashTopUrgent:'အရေးပေါ်ဆုံး', dashSeeAll:'အားလုံးကြည့် →', dashTopSvc:'ဝန်ဆောင်မှုများ',
-    dashSummGrp:'အုပ်စုအလိုက်',
+    dashSummGrp:'အုပ်စုအလိုက်', dashSummAssignee:'တာဝန်ခံအလိုက် ဖောက်သည်',
     bannerFmt:'ဆောင်ရွက်ရမည့် မှတ်တမ်း {n} ခု ရှိသည်', bannerSeeAll:'အားလုံးကြည့် →',
     alertNone:'သတိပေးချက်မရှိပါ',
     empTitle:'အလုပ်ရှင် / ကုမ္ပဏီ အားလုံး', empAdd:'+ အလုပ်ရှင်ထည့်',
@@ -3301,19 +3301,19 @@ function gv(v,opts={}){
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
-    if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
+    if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}if(opts.asg!==undefined){const qa=document.getElementById('qassignee');if(qa)qa.value=opts.asg;}
     const hasCache=customers.length>0;
     if(hasCache){
       // Render from cache immediately (no flicker)
       fillSelects();renderSidebar();
-      if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
+      if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}if(opts.asg!==undefined){const qa=document.getElementById('qassignee');if(qa)qa.value=opts.asg;}
       doFilter();
       // Background refresh — show slim bar instead of full overlay
       if(!_loadAllInProgress){
         showRefreshBar();
         loadAll(true).then(()=>{
           fillSelects();renderSidebar();
-          if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
+          if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}if(opts.asg!==undefined){const qa=document.getElementById('qassignee');if(qa)qa.value=opts.asg;}
           doFilter();
         }).catch(e=>{console.error('bg refresh error',e);}).finally(()=>hideRefreshBar());
       }
@@ -3322,7 +3322,7 @@ function gv(v,opts={}){
       showLoading('กำลังโหลดข้อมูลลูกค้า...',300);
       loadAll(true).then(()=>{
         fillSelects();renderSidebar();
-        if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}
+        if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}if(opts.asg!==undefined){const qa=document.getElementById('qassignee');if(qa)qa.value=opts.asg;}
         doFilter();
       }).catch(e=>{toast('โหลดข้อมูลไม่ได้: '+e.message,'err');}).finally(()=>hideLoading());
     }
@@ -3694,6 +3694,13 @@ function renderDash(){
   const sm={};customers.forEach(c=>(c.services||[]).forEach(s=>sm[s]=(sm[s]||0)+1));
   const topS=Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,6);const maxS=topS[0]?topS[0][1]:1;
   const grpRows=groups.map(g=>({g,cnt:customers.filter(c=>c.group_id===g.id).length})).sort((a,b)=>b.cnt-a.cnt);
+  // Stage 2 assignee: นับลูกค้าตามผู้รับผิดชอบ (assignee_code) แยกจากกลุ่มงานโดยสิ้นเชิง
+  const asgCount={};let asgUnassigned=0;
+  customers.forEach(c=>{const code=c.assignee_code?_normCode(c.assignee_code):'';if(code)asgCount[code]=(asgCount[code]||0)+1;else asgUnassigned++;});
+  const asgRows=[];const _asgSeen=new Set();
+  assigneeEmps.forEach(e=>{const code=_normCode(e.employee_code);_asgSeen.add(code);asgRows.push({code:e.employee_code,name:e.nickname||e.full_name||e.employee_code,cnt:asgCount[code]||0});});
+  Object.keys(asgCount).forEach(code=>{if(!_asgSeen.has(code))asgRows.push({code,name:assigneeLabel(code)||code,cnt:asgCount[code]});});
+  asgRows.sort((a,b)=>b.cnt-a.cnt||String(a.name).localeCompare(String(b.name),'th'));
   const urg=[];customers.forEach(c=>getExps(c).forEach(x=>{const d=du(x.d);if(d!==null&&d<=x.w)urg.push({c,x,d});}));urg.sort((a,b)=>a.d-b.d);
   const natD=[{l:'🇲🇲',v:mm},{l:'🇰🇭',v:kh},{l:'🇱🇦',v:la},{l:'🇻🇳',v:vn}];
   const natC=['#1F3B5C','#1D4ED8','#15803D','#DC2626'];const natMax=Math.max(mm,kh,la,vn,1);
@@ -3724,6 +3731,10 @@ function renderDash(){
     <div class="sc c3" onclick="gv('employers')"><div class="sc-num">${employers.length}</div><div class="sc-lbl">${T('employers')}</div><div class="sc-sub">${T('dashAllInSys')}</div></div>
     <div class="sc c4"><div class="sc-num">${groups.length}</div><div class="sc-lbl">${T('groups')}</div><div class="sc-sub">${groups.slice(0,2).map(g=>esc(g.name)).join(', ')||T('dashNoGroup')}</div></div>
   </div>
+  ${(asgRows.length||asgUnassigned)?`<div class="dc" style="margin-bottom:14px"><div class="dct">${T('dashSummAssignee')}</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:6px;max-height:260px;overflow-y:auto">
+    <div onclick="gv('customers',{asg:${JSON.stringify('').replace(/"/g,'&quot;')},title:${JSON.stringify('ยังไม่ระบุ').replace(/"/g,'&quot;')}})" style="padding:7px 12px;background:var(--g1);border:1px solid var(--amb);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--amb)'"><span style="font-size:12px;font-weight:700;color:var(--g7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ยังไม่ระบุ</span><span style="font-size:15px;font-weight:800;font-family:var(--mono);color:var(--g9)">${asgUnassigned}</span></div>
+    ${asgRows.map(r=>`<div onclick="gv('customers',{asg:${JSON.stringify(r.code).replace(/"/g,'&quot;')},title:${JSON.stringify('ผู้รับผิดชอบ: '+r.name).replace(/"/g,'&quot;')}})" style="padding:7px 12px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--r);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><span style="font-size:12px;font-weight:600;color:var(--g8);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.name)}</span><span style="font-size:15px;font-weight:800;font-family:var(--mono);color:${r.cnt>0?'var(--p)':'var(--g4)'}">${r.cnt}</span></div>`).join('')}
+  </div></div>`:''}
   <div class="dg2">
     <div class="dc" onclick="dashGo('renew')" style="cursor:pointer"><div class="dct">${T('dashPP')}</div><div class="er"><span style="color:var(--red);font-weight:700">${T('dashD15')}</span><span class="eb eb-u">${e15pp} ${T('dashPerson')}</span></div><div class="er"><span style="color:var(--p);font-weight:700">${T('dashD1630')}</span><span class="eb eb-w">${e30pp} ${T('dashPerson')}</span></div></div>
     <div class="dc" onclick="dashGo('renew')" style="cursor:pointer"><div class="dct">${T('dashVWP')}</div><div class="er"><span style="color:var(--red);font-weight:700">${T('dashVISA15')}</span><span class="eb eb-u">${e15v} ${T('dashPerson')}</span></div><div class="er"><span style="color:var(--red);font-weight:700">${T('dashWP15')}</span><span class="eb eb-u">${e15w} ${T('dashPerson')}</span></div><div class="er"><span style="color:var(--amb);font-weight:700">${T('dashD1630')}</span><span class="eb eb-s">${e30v+e30w} ${T('dashPerson')}</span></div></div>
