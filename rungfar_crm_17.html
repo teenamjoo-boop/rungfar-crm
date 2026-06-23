@@ -2269,6 +2269,7 @@ const LANG = {
     audit_customer_assign:'มอบหมายผู้รับผิดชอบ',
     audit_customer_create:'เพิ่มลูกค้า', audit_customer_update:'แก้ไขลูกค้า',
     audit_customer_status_change:'เปลี่ยนสถานะงาน',
+    audit_document_upload:'เพิ่มเอกสาร',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
     lgHeroDesc:'บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ',
@@ -2453,6 +2454,7 @@ const LANG = {
     audit_customer_assign:'တာဝန်ပေးအပ်',
     audit_customer_create:'ဖောက်သည်ထည့်', audit_customer_update:'ဖောက်သည်ပြင်ဆင်',
     audit_customer_status_change:'အလုပ်အခြေအနေပြောင်း',
+    audit_document_upload:'စာရွက်ထည့်',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
     lgHeroDesc:'ဖောက်သည်ဒေတာ၊ စာရွက်စာတမ်း၊ တက်ရောက်မှုနှင့် ကြိုတင်အကြောင်းကြားချက်ကို စနစ်တကျ စီမံပါ',
@@ -4227,13 +4229,18 @@ async function saveCustomer(){
     }catch(_e){console.warn('[AUDIT] customer save log skipped:',_e&&_e.message);}
     // Save multiDocs (เฉพาะไฟล์ใหม่) พร้อม progress + นับ fail (ไม่ทำให้ save หลักล้ม)
     const newDocs=multiDocs.filter(d=>!d.dbId);
-    let docFail=0;
+    let docFail=0;const _okDocs=[];
     for(let di=0;di<newDocs.length&&savedId;di++){
       const doc=newDocs[di];
       const _lt=document.getElementById('loadingText');if(_lt)_lt.textContent=`กำลังอัปโหลดเอกสาร ${di+1}/${newDocs.length}...`;
-      try{await dbPost('documents',{customer_id:savedId,doc_type:doc.type,doc_name:doc.label,file_data:doc.data,file_type:doc.fileType||'image/jpeg',uploaded_by:curUser.full_name});}
+      try{await dbPost('documents',{customer_id:savedId,doc_type:doc.type,doc_name:doc.label,file_data:doc.data,file_type:doc.fileType||'image/jpeg',uploaded_by:curUser.full_name});_okDocs.push({doc_type:doc.type||null,doc_name:doc.label||null,file_type:doc.fileType||'image/jpeg'});}
       catch(err){docFail++;console.error('[customer save] doc upload failed',doc.name,err);}
     }
+    // Stage 4 audit (best-effort): document.upload — log เฉพาะไฟล์ใหม่ที่อัปโหลดสำเร็จ, ไม่ log base64/file_data
+    if(_okDocs.length){try{
+      const _first=_okDocs[0];
+      logAudit('document.upload','document',savedId,{customer_id:savedId,customer_name:data.name,count:_okDocs.length,doc_type:(_okDocs.length===1?_first.doc_type:null),doc_name:(_okDocs.length===1?_first.doc_name:null),file_type:(_okDocs.length===1?_first.file_type:null),names:_okDocs.slice(0,8).map(d=>d.doc_name||d.doc_type).filter(Boolean),uploaded_by:(curUser&&curUser.full_name)||null,source:'saveCustomer'});
+    }catch(_e){console.warn('[AUDIT] document.upload log skipped:',_e&&_e.message);}}
     if(savedId&&data.work_status)await dbPost('work_timeline',{customer_id:savedId,status:data.work_status,created_by:curUser.full_name}).catch(e=>console.error('[customer save] timeline insert failed',e));
     document.getElementById('cModal').style.display='none';
     renderSidebar();renderDash();
@@ -5138,6 +5145,7 @@ function auditLogRender(logs){
       if(a==='customer.status_change'){const fr=d.from?esc(d.from):'—',to=d.to?esc(d.to):'—';return 'เปลี่ยนสถานะ: '+fr+' → '+to+(nm?' · '+nm:'');}
       if(a==='customer.delete'){return 'ลบลูกค้า'+(nm?': '+nm:'');}
       if(a==='customer.export'){const cnt=(d.count!=null?d.count:'?');const sc=[d.scope,d.format].filter(Boolean).map(x=>esc(String(x))).join(' · ');return 'ส่งออกข้อมูล: '+cnt+' รายการ'+(sc?' · '+sc:'');}
+      if(a==='document.upload'){const cnt=(d.count!=null?d.count:1);const cn=d.customer_name?esc(d.customer_name):'';const lbl=(cnt>1)?(cnt+' ไฟล์'):esc(d.doc_name||d.doc_type||'เอกสาร');return 'เพิ่มเอกสาร: '+lbl+(cn?' · ลูกค้า: '+cn:'');}
       if(a==='document.delete'){return 'ลบเอกสาร'+(nm?': '+nm:'');}
       if(a==='customer.assign'){const cnt=(d.count!=null?d.count:'?');const asg=d.assignee_label?esc(d.assignee_label):'';return 'มอบหมาย: '+cnt+' รายการ'+(asg?' → '+asg:'');}
       if(a==='customer.bulk_delete'){const cnt=(d.count!=null?d.count:'?');return 'ลบลูกค้าหลายรายการ: '+cnt+' รายการ';}
