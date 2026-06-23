@@ -520,7 +520,12 @@ textarea.fi2{resize:vertical;min-height:65px}
 .loading-text{font-size:13px;color:var(--g6);font-weight:600}
 /* CHECKBOX */
 .row-check{width:16px;height:16px;accent-color:var(--p);cursor:pointer}
-.bulk-bar{background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;padding:10px 18px;display:none;align-items:center;gap:12px;font-size:13px;font-weight:600;flex-shrink:0}
+.bulk-bar{background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;padding:10px 18px;display:none;align-items:center;flex-wrap:wrap;gap:8px 12px;font-size:13px;font-weight:600;flex-shrink:0}
+/* Stage 3 bulk assign (admin) — inline ในแถบ bulk */
+.bulk-asg-wrap{align-items:center;gap:5px}
+.bulk-asg-sel{background:#fff;color:var(--g8);border:1px solid rgba(255,255,255,.5);border-radius:6px;font-size:12px;font-weight:600;padding:5px 8px;font-family:var(--font);max-width:160px}
+.bulk-asg-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.bulk-asg-btn:hover{background:rgba(255,255,255,.35)}
 .bulk-bar.show{display:flex}
 .bulk-count{background:rgba(255,255,255,.25);border-radius:20px;padding:2px 10px;font-family:var(--mono)}
 .bulk-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
@@ -1412,10 +1417,12 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div class="twrap">
         <div class="bulk-bar" id="bulkBar">
   <span>เลือก</span><span class="bulk-count" id="bulkCount">0</span><span>รายการ</span>
-  <button class="bulk-btn" onclick="openBulkGrp()">เปลี่ยนกลุ่ม</button>
-  <button class="bulk-btn" onclick="openBulkSt()">เปลี่ยนสถานะ</button>
-  <button class="bulk-btn" onclick="doBulkExport()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export ที่เลือก</button>
-  <button class="bulk-btn danger" onclick="doBulkDelete()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>ลบที่เลือก</button>
+  <button class="bulk-btn" id="bulkBtnGrp" onclick="openBulkGrp()">เปลี่ยนกลุ่ม</button>
+  <button class="bulk-btn" id="bulkBtnSt" onclick="openBulkSt()">เปลี่ยนสถานะ</button>
+  <span class="bulk-asg-wrap" id="bulkAsgWrap" style="display:none"><select class="bulk-asg-sel" id="bulkAsgSel"><option value="">ยังไม่ระบุ</option></select><button class="bulk-asg-btn" onclick="doBulkAssign()">มอบหมาย</button></span>
+  <button class="bulk-asg-btn" id="bulkSelfBtn" style="display:none" onclick="doBulkAssignSelf()">มอบหมายให้ฉัน</button>
+  <button class="bulk-btn" id="bulkBtnExport" onclick="doBulkExport()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export ที่เลือก</button>
+  <button class="bulk-btn danger" id="bulkBtnDel" onclick="doBulkDelete()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>ลบที่เลือก</button>
   <button class="bulk-btn" onclick="clearSelection()" style="margin-left:auto">✕ ยกเลิก</button>
 </div>
 <div class="tbar2"><span style="font-size:12px;color:var(--g5)">พบ <strong id="rcnt">0</strong> รายการ</span><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-g btn-sm" id="selAllBtn" onclick="toggleSelectAll()">☐ เลือกทั้งหมด</button><button class="btn btn-g btn-sm" onclick="doExport()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export CSV</button><button class="btn btn-g btn-sm" onclick="doExportXlsx()"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8l6 8M15 8l-6 8"/></svg>Export Excel</button></div></div>
@@ -4019,6 +4026,7 @@ function fillSelects(){
   const _asgOpts=assigneeEmps.map(e=>`<option value="${esc(e.employee_code)}">${esc(e.nickname||e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('');
   const fa=document.getElementById('f_assignee');if(fa){const _v=fa.value;fa.innerHTML='<option value="">ยังไม่ระบุ</option>'+_asgOpts;fa.value=_v;}
   const qa=document.getElementById('qassignee');if(qa){const _v=qa.value;qa.innerHTML='<option value="">ผู้รับผิดชอบทั้งหมด</option>'+_asgOpts;qa.value=_v;}
+  const ba=document.getElementById('bulkAsgSel');if(ba){const _v=ba.value;ba.innerHTML='<option value="">ยังไม่ระบุ</option>'+_asgOpts;ba.value=_v;} // Stage 3: dropdown มอบหมายแบบกลุ่ม (admin)
   const tls=document.getElementById('tlf_status');if(tls)tls.innerHTML=WS.map(s=>`<option value="${s}">${wsT(s)}</option>`).join('');
 }
 function empSelected(){const id=document.getElementById('f_empId').value;if(id){const e=employers.find(x=>x.id===parseInt(id));if(e){document.getElementById('f_emp').value=e.name;document.getElementById('f_biz').value=e.business_type||'';document.getElementById('f_ephon').value=e.phone||'';document.getElementById('f_addr').value=e.address||'';}}}
@@ -5056,6 +5064,12 @@ function updateBulkBar(){
   if(!bar)return;
   if(selectedIds.size>0){bar.classList.add('show');if(cnt)cnt.textContent=selectedIds.size;}
   else{bar.classList.remove('show');}
+  // Stage 3: bulk controls ตาม role — admin=ครบ; staff=กลุ่ม/สถานะ/Export/มอบหมายให้ฉัน (ไม่มี ลบ + dropdown เลือกคนอื่น)
+  const isAdmin=!!(curUser&&curUser.role==='admin');
+  const asgWrap=document.getElementById('bulkAsgWrap');if(asgWrap)asgWrap.style.display=isAdmin?'inline-flex':'none'; // dropdown เลือกผู้รับผิดชอบ: admin เท่านั้น
+  const selfBtn=document.getElementById('bulkSelfBtn');if(selfBtn)selfBtn.style.display=isAdmin?'none':'inline-flex'; // มอบหมายให้ฉัน: staff เท่านั้น
+  ['bulkBtnGrp','bulkBtnSt','bulkBtnExport'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';}); // กลุ่ม/สถานะ/Export: ทั้ง admin+staff
+  const delBtn=document.getElementById('bulkBtnDel');if(delBtn)delBtn.style.display=isAdmin?'':'none'; // ลบที่เลือก: admin เท่านั้น
   if(master){
     const pageIds=filtered.slice((curPage-1)*PG,curPage*PG).map(c=>c.id);
     master.checked=pageIds.length>0&&pageIds.every(id=>selectedIds.has(id));
@@ -5097,6 +5111,38 @@ async function doBulkGroup(){
     document.getElementById('bulkGrpModal').style.display='none';
     toast(`อัปเดต ${ids.length} รายการแล้ว`);
   }catch(e){toast('เกิดข้อผิดพลาด','err');}
+  finally{hideLoading();}
+}
+async function doBulkAssign(){
+  if(!(curUser&&curUser.role==='admin')){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;} // admin-only guard
+  if(!selectedIds.size){toast('กรุณาเลือกรายการก่อน','err');return;}
+  const sel=document.getElementById('bulkAsgSel');const code=sel?sel.value:'';
+  const label=code?(assigneeLabel(code)||code):'ยังไม่ระบุ';
+  const ids=[...selectedIds];
+  if(!confirm(`มอบหมาย ${ids.length} รายการ ให้ "${label}" ?`))return;
+  showLoading(`กำลังมอบหมาย ${ids.length} รายการ...`);
+  try{
+    // อัปเดตเฉพาะ assignee_code เท่านั้น — ไม่แตะ field อื่น/updated_by_code
+    await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:code||null})));
+    customers=customers.map(c=>selectedIds.has(c.id)?{...c,assignee_code:code||null}:c);
+    clearSelection();renderDash();renderSidebar();doFilter();
+    toast(`มอบหมาย ${ids.length} รายการแล้ว`);
+  }catch(e){console.error('[bulk assign] failed',e);toast('เกิดข้อผิดพลาด ไม่ได้มอบหมาย','err');} // คงการเลือกไว้ ไม่ลบออกจาก UI
+  finally{hideLoading();}
+}
+async function doBulkAssignSelf(){
+  if(!(curUser&&curUser.username)){toast('ไม่พบผู้ใช้','err');return;}
+  if(!selectedIds.size){toast('กรุณาเลือกรายการก่อน','err');return;}
+  const me=curUser.username;const ids=[...selectedIds];
+  if(!confirm(`มอบหมาย ${ids.length} รายการ ให้ตัวเอง ?`))return;
+  showLoading(`กำลังมอบหมาย ${ids.length} รายการ...`);
+  try{
+    // อัปเดตเฉพาะ assignee_code = ตัวเอง — ไม่แตะ field อื่น
+    await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:me})));
+    customers=customers.map(c=>selectedIds.has(c.id)?{...c,assignee_code:me}:c);
+    clearSelection();renderDash();renderSidebar();doFilter();
+    toast(`มอบหมาย ${ids.length} รายการแล้ว`);
+  }catch(e){console.error('[bulk self-assign] failed',e);toast('เกิดข้อผิดพลาด ไม่ได้มอบหมาย','err');} // คงการเลือกไว้ ไม่ลบออกจาก UI
   finally{hideLoading();}
 }
 async function doBulkStatus(){
