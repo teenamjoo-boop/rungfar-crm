@@ -2263,8 +2263,8 @@ const LANG = {
     seclogNoAccessMsg:'ไม่มีสิทธิ์เข้าถึงหน้านี้',
     // ── AUDIT LOG (customer activity) ──
     seclogTabLogin:'เข้าสู่ระบบ', seclogTabActivity:'การใช้งานลูกค้า',
-    auditAction:'การกระทำ', auditDetail:'รายละเอียด',
-    audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายราย',
+    auditAction:'การกระทำ', auditDetail:'รายละเอียด', auditSearch:'ค้นหา',
+    audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายรายการ',
     audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูล',
     audit_customer_assign:'มอบหมายผู้รับผิดชอบ',
     audit_customer_create:'เพิ่มลูกค้า', audit_customer_update:'แก้ไขลูกค้า',
@@ -2449,7 +2449,7 @@ const LANG = {
     seclogNoAccessMsg:'ဝင်ရောက်ခွင့်မရှိပါ',
     // ── AUDIT LOG (customer activity) ──
     seclogTabLogin:'ဝင်ရောက်မှု', seclogTabActivity:'ဖောက်သည်အသုံးပြုမှု',
-    auditAction:'လုပ်ဆောင်ချက်', auditDetail:'အသေးစိတ်',
+    auditAction:'လုပ်ဆောင်ချက်', auditDetail:'အသေးစိတ်', auditSearch:'ရှာဖွေ',
     audit_customer_delete:'ဖောက်သည်ဖျက်', audit_customer_bulk_delete:'ဖောက်သည်များဖျက်',
     audit_document_delete:'စာရွက်ဖျက်', audit_customer_export:'ဒေတာထုတ်ယူ',
     audit_customer_assign:'တာဝန်ပေးအပ်',
@@ -5065,7 +5065,8 @@ function secLogTab(which){
 }
 
 // ── Customer activity log (audit_logs) — admin-only, อ่านผ่าน RPC SECURITY DEFINER ──
-const AUDIT_ACTIONS=['customer.delete','customer.bulk_delete','document.delete','customer.export','customer.assign'];
+const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.delete'];
+let _auditLogsCache=[]; // Stage 6: เก็บผล fetch ล่าสุดไว้กรองด้วยช่องค้นหา client-side
 function buildAuditPane(){
   const ap=document.getElementById('slActivityPane');if(!ap)return;
   const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
@@ -5084,6 +5085,8 @@ function buildAuditPane(){
             ${AUDIT_ACTIONS.map(a=>`<option value="${a}">${T('audit_'+a.replace('.','_'))}</option>`).join('')}
           </select>
         </div>
+        <div><div style="${lblCss}">${T('auditSearch')}</div>
+          <input type="text" id="alSearch" placeholder="${T('auditSearch')}" oninput="auditLogApplySearch()" style="${inCss};width:160px"></div>
         <div><div style="${lblCss}">${T('seclogAdminPass')}</div>
           <input type="password" id="alAdminPass" autocomplete="off" placeholder="••••••" onkeydown="if(event.key==='Enter')auditLogLoad()" style="${inCss};width:120px"></div>
         <button onclick="auditLogLoad()" class="btn btn-p btn-sm">${T('seclogSearch')}</button>
@@ -5123,7 +5126,20 @@ async function auditLogLoad(){
     console.warn('[AUDIT] rpc error:',res.status,msg||code);wrap.innerHTML=box(T('seclogReadErr'));return;
   }
   let data=[];try{data=await res.json();}catch(_){data=[];}
-  auditLogRender(Array.isArray(data)?data:[]);
+  _auditLogsCache=Array.isArray(data)?data:[];
+  auditLogApplySearch();
+}
+// Stage 6: กรองผลที่โหลดมาแล้วด้วยช่องค้นหา (actor, ป้าย action, รายละเอียด, ชื่อลูกค้าใน detail) — client-side เท่านั้น
+function auditLogApplySearch(){
+  const q=(document.getElementById('alSearch')?.value||'').trim().toLowerCase();
+  if(!q){auditLogRender(_auditLogsCache);return;}
+  const filtered=_auditLogsCache.filter(l=>{
+    const lbl=T('audit_'+(l.action||'').replace('.','_'))||'';
+    let dj='';try{dj=JSON.stringify(l.detail||{});}catch(_){dj='';}
+    const hay=[(l.actor_name||''),(l.actor_code||''),lbl,(l.action||''),dj].join(' ').toLowerCase();
+    return hay.indexOf(q)!==-1;
+  });
+  auditLogRender(filtered);
 }
 function auditLogRender(logs){
   const wrap=document.getElementById('al_table_wrap');if(!wrap)return;
@@ -5197,6 +5213,7 @@ function auditLogClear(){
   const t=document.getElementById('alTo');if(t)t.value=today;
   const a=document.getElementById('alActor');if(a)a.value='';
   const ac=document.getElementById('alAction');if(ac)ac.value='';
+  const sq=document.getElementById('alSearch');if(sq)sq.value='';
   auditLogLoad();
 }
 
