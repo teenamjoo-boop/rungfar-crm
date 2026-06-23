@@ -2261,6 +2261,12 @@ const LANG = {
     clfNextLabel:'นัดหมายถัดไป', clfNdateLabel:'วันนัด',
     tlStatusLabel:'สถานะใหม่', tlNoteLabel:'หมายเหตุ',
     seclogNoAccessMsg:'ไม่มีสิทธิ์เข้าถึงหน้านี้',
+    // ── AUDIT LOG (customer activity) ──
+    seclogTabLogin:'เข้าสู่ระบบ', seclogTabActivity:'การใช้งานลูกค้า',
+    auditAction:'การกระทำ', auditDetail:'รายละเอียด',
+    audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายราย',
+    audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูล',
+    audit_customer_assign:'มอบหมายผู้รับผิดชอบ',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
     lgHeroDesc:'บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ',
@@ -2437,6 +2443,12 @@ const LANG = {
     clfNextLabel:'နောက်ချိန်းဆိုမှု', clfNdateLabel:'ချိန်းဆိုရက်',
     tlStatusLabel:'အခြေအနေအသစ်', tlNoteLabel:'မှတ်ချက်',
     seclogNoAccessMsg:'ဝင်ရောက်ခွင့်မရှိပါ',
+    // ── AUDIT LOG (customer activity) ──
+    seclogTabLogin:'ဝင်ရောက်မှု', seclogTabActivity:'ဖောက်သည်အသုံးပြုမှု',
+    auditAction:'လုပ်ဆောင်ချက်', auditDetail:'အသေးစိတ်',
+    audit_customer_delete:'ဖောက်သည်ဖျက်', audit_customer_bulk_delete:'ဖောက်သည်များဖျက်',
+    audit_document_delete:'စာရွက်ဖျက်', audit_customer_export:'ဒေတာထုတ်ယူ',
+    audit_customer_assign:'တာဝန်ပေးအပ်',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
     lgHeroDesc:'ဖောက်သည်ဒေတာ၊ စာရွက်စာတမ်း၊ တက်ရောက်မှုနှင့် ကြိုတင်အကြောင်းကြားချက်ကို စနစ်တကျ စီမံပါ',
@@ -2876,6 +2888,7 @@ async function delMdoc(id){
     if(!confirm('ต้องการลบเอกสารนี้?'))return;
     try{
       await dbDel('documents',doc.dbId);
+      logAudit('document.delete','document',doc.dbId,{name:doc.label||doc.name||'',customer_id:(typeof editId!=='undefined'?editId:null)});
       multiDocs=multiDocs.filter(d=>d.id!==id);
       renderMultiDocGrid();
       toast('ลบเอกสารแล้ว');
@@ -3007,6 +3020,29 @@ async function logLoginActivity(payload){
   }catch(e){
     console.warn('[SEC] Login log failed (non-critical):',e.message);
   }
+}
+
+// ===== AUDIT-LOG STAGE 1: บันทึกประวัติการใช้งานลูกค้า =====
+// best-effort เหมือน logLoginActivity — ห้ามทำให้ action หลักพัง (เรียกแบบ fire-and-forget)
+// ต้อง apply migration 20260623_audit_logs.sql ก่อน log จึงจะถูกเก็บจริง
+function logAudit(action,entityType,entityId,detail){
+  try{
+    const payload={
+      action,
+      entity_type:entityType||null,
+      entity_id:(entityId==null?null:String(entityId)),
+      detail:detail||null,
+      actor_code:(curUser&&curUser.username)||null,
+      actor_name:(curUser&&curUser.full_name)||null,
+      actor_role:(curUser&&curUser.role)||null
+    };
+    fetch(`${SB_URL}/rest/v1/audit_logs`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json','Prefer':'return=minimal'},
+      mode:'cors',
+      body:JSON.stringify(payload)
+    }).catch(e=>console.warn('[AUDIT] log failed (non-critical):',e.message));
+  }catch(e){console.warn('[AUDIT] log build failed (non-critical):',e&&e.message);}
 }
 
 async function doLogin(){
@@ -4192,9 +4228,11 @@ async function saveCustomer(){
 }
 async function delCust(id){
   if(!confirm('ต้องการลบรายการนี้?'))return;
+  const _delName=(customers.find(c=>c.id===id)||{}).name||'';
   showLoading('กำลังลบข้อมูล...');
   try{
     await dbDel('customers',id);
+    logAudit('customer.delete','customer',id,{name:_delName});
     // Update local immediately - NO background reload
     customers=customers.filter(c=>c.id!==id);
     filtered=filtered.filter(c=>c.id!==id);
@@ -4912,6 +4950,11 @@ function renderSecLog(){
   const week=new Date(Date.now()-6*86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
   document.getElementById('seclogContent').innerHTML=`
   <div style="max-width:1100px">
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <button id="slTabLogin" onclick="secLogTab('login')" class="btn btn-sm btn-p">${T('seclogTabLogin')}</button>
+      <button id="slTabActivity" onclick="secLogTab('activity')" class="btn btn-sm btn-g">${T('seclogTabActivity')}</button>
+    </div>
+    <div id="slLoginPane">
     <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:14px 16px;margin-bottom:14px">
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
         <div>
@@ -4957,8 +5000,145 @@ function renderSecLog(){
     </div>
     <div id="sl_cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
     <div id="sl_table_wrap"></div>
+    </div>
+    <div id="slActivityPane" style="display:none"></div>
   </div>`;
+  secLogTabState='login';
+  auditPaneBuilt=false; // DOM ถูกสร้างใหม่ทุกครั้งที่เปิดหน้า → ต้อง build pane ใหม่
   secLogLoad();
+}
+
+// ── Tab switch: login security log <-> customer activity log ──
+let secLogTabState='login';
+let auditPaneBuilt=false;
+function secLogTab(which){
+  secLogTabState=which;
+  const lp=document.getElementById('slLoginPane');
+  const ap=document.getElementById('slActivityPane');
+  const bl=document.getElementById('slTabLogin');
+  const ba=document.getElementById('slTabActivity');
+  const on='btn btn-sm btn-p',off='btn btn-sm btn-g';
+  if(which==='activity'){
+    if(lp)lp.style.display='none';if(ap)ap.style.display='';
+    if(bl)bl.className=off;if(ba)ba.className=on;
+    if(!auditPaneBuilt){buildAuditPane();auditPaneBuilt=true;}
+    auditLogLoad();
+  }else{
+    if(lp)lp.style.display='';if(ap)ap.style.display='none';
+    if(bl)bl.className=on;if(ba)ba.className=off;
+  }
+}
+
+// ── Customer activity log (audit_logs) — admin-only, อ่านผ่าน RPC SECURITY DEFINER ──
+const AUDIT_ACTIONS=['customer.delete','customer.bulk_delete','document.delete','customer.export','customer.assign'];
+function buildAuditPane(){
+  const ap=document.getElementById('slActivityPane');if(!ap)return;
+  const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const week=new Date(Date.now()-6*86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const lblCss='font-size:10px;font-weight:700;color:var(--g5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px';
+  const inCss='border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;color:var(--g9);background:#fff';
+  ap.innerHTML=`
+    <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:14px 16px;margin-bottom:14px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <div><div style="${lblCss}">${T('seclogDateFrom')}</div><input type="date" id="alFrom" value="${week}" style="${inCss}"></div>
+        <div><div style="${lblCss}">${T('seclogDateTo')}</div><input type="date" id="alTo" value="${today}" style="${inCss}"></div>
+        <div><div style="${lblCss}">${T('seclogUser')}</div><input type="text" id="alActor" placeholder="${T('seclogAllPH')}" style="${inCss};width:130px"></div>
+        <div><div style="${lblCss}">${T('auditAction')}</div>
+          <select id="alAction" style="${inCss}">
+            <option value="">${T('seclogAllPH')}</option>
+            ${AUDIT_ACTIONS.map(a=>`<option value="${a}">${T('audit_'+a.replace('.','_'))}</option>`).join('')}
+          </select>
+        </div>
+        <div><div style="${lblCss}">${T('seclogAdminPass')}</div>
+          <input type="password" id="alAdminPass" autocomplete="off" placeholder="••••••" onkeydown="if(event.key==='Enter')auditLogLoad()" style="${inCss};width:120px"></div>
+        <button onclick="auditLogLoad()" class="btn btn-p btn-sm">${T('seclogSearch')}</button>
+        <button onclick="auditLogClear()" class="btn btn-g btn-sm">${T('seclogClear')}</button>
+      </div>
+    </div>
+    <div id="al_table_wrap"></div>`;
+}
+async function auditLogLoad(){
+  const wrap=document.getElementById('al_table_wrap');if(!wrap)return;
+  const box=(txt)=>`<div style="padding:44px 20px;text-align:center;color:var(--g6);background:#fff;border:1px solid var(--g2);border-radius:var(--rl);font-size:13px;line-height:1.8">${txt}</div>`;
+  if(curUser?.role!=='admin'){wrap.innerHTML=box(T('seclogNoAccess'));return;}
+  const pass=(document.getElementById('alAdminPass')?.value||'').trim();
+  if(!pass){wrap.innerHTML=box(T('seclogEnterPass'));return;}
+  wrap.innerHTML=box(T('seclogLoading'));
+  const body={
+    p_admin_username:curUser.username,
+    p_admin_password:pass,
+    p_start_date:(document.getElementById('alFrom')?.value||'')||null,
+    p_end_date:(document.getElementById('alTo')?.value||'')||null,
+    p_actor:(document.getElementById('alActor')?.value||'').trim()||null,
+    p_action:(document.getElementById('alAction')?.value||'')||null
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_list_audit_logs`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body),mode:'cors'
+    });
+  }catch(e){console.warn('[AUDIT] rpc network error (non-critical):',e.message);wrap.innerHTML=box(T('seclogReadErr'));return;}
+  if(!res.ok){
+    let err={};try{err=await res.json();}catch(_){}
+    const code=err?.code||'';const msg=err?.message||'';
+    if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){wrap.innerHTML=box(T('seclogMigrationNeeded'));return;}
+    if(msg==='unauthorized'){wrap.innerHTML=box(T('seclogWrongPass'));const pf=document.getElementById('alAdminPass');if(pf){pf.value='';pf.focus();}return;}
+    console.warn('[AUDIT] rpc error:',res.status,msg||code);wrap.innerHTML=box(T('seclogReadErr'));return;
+  }
+  let data=[];try{data=await res.json();}catch(_){data=[];}
+  auditLogRender(Array.isArray(data)?data:[]);
+}
+function auditLogRender(logs){
+  const wrap=document.getElementById('al_table_wrap');if(!wrap)return;
+  if(!logs.length){wrap.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogNoDataRange')}</div>`;return;}
+  const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return s;}};
+  const actColor={'customer.delete':'#dc2626','customer.bulk_delete':'#dc2626','document.delete':'#dc2626','customer.export':'#2563eb','customer.assign':'#7c3aed'};
+  const detSummary=l=>{
+    const d=l.detail||{};const parts=[];
+    if(d.name)parts.push(esc(d.name));
+    if(d.count!=null)parts.push(d.count+' '+T('seclogItems'));
+    if(d.format)parts.push(String(d.format).toUpperCase());
+    if(d.assignee_label)parts.push('→ '+esc(d.assignee_label));
+    return parts.join(' · ')||'—';
+  };
+  const rows=logs.map(l=>{
+    const ac=actColor[l.action]||'#6b7280';
+    const actTxt=T('audit_'+(l.action||'').replace('.','_'))||l.action||'—';
+    return`<tr style="border-bottom:1px solid var(--g2)">
+      <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(l.created_at)}</td>
+      <td style="padding:7px 10px;font-size:12px;font-weight:600">${esc(l.actor_name||l.actor_code||'—')}</td>
+      <td style="padding:7px 10px"><span style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${ac}1a;color:${ac}">${esc(actTxt)}</span></td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--g7)">${detSummary(l)}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;font-weight:700;color:var(--g8)">${T('seclogTabActivity')}</div>
+      <div style="font-size:12px;color:var(--g5)">${T('seclogShowing')} ${logs.length} ${T('seclogItems')}</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:600px">
+        <thead><tr style="background:var(--g0)">
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;white-space:nowrap;border-bottom:1px solid var(--g2)">${T('seclogTblTime')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblName')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('auditAction')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('auditDetail')}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+function auditLogClear(){
+  const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const week=new Date(Date.now()-6*86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+  const f=document.getElementById('alFrom');if(f)f.value=week;
+  const t=document.getElementById('alTo');if(t)t.value=today;
+  const a=document.getElementById('alActor');if(a)a.value='';
+  const ac=document.getElementById('alAction');if(ac)ac.value='';
+  auditLogLoad();
 }
 
 async function secLogLoad(){
@@ -5179,6 +5359,7 @@ async function doBulkAssign(){
   try{
     // อัปเดตเฉพาะ assignee_code เท่านั้น — ไม่แตะ field อื่น/updated_by_code
     await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:code||null})));
+    logAudit('customer.assign','customer',ids.join(','),{count:ids.length,ids,assignee_code:code||null,assignee_label:label,scope:'bulk'});
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,assignee_code:code||null}:c);
     clearSelection();renderDash();renderSidebar();doFilter();
     toast(`มอบหมาย ${ids.length} รายการแล้ว`);
@@ -5194,6 +5375,7 @@ async function doBulkAssignSelf(){
   try{
     // อัปเดตเฉพาะ assignee_code = ตัวเอง — ไม่แตะ field อื่น
     await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:me})));
+    logAudit('customer.assign','customer',ids.join(','),{count:ids.length,ids,assignee_code:me,assignee_label:(curUser.full_name||me),scope:'self'});
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,assignee_code:me}:c);
     clearSelection();renderDash();renderSidebar();doFilter();
     toast(`มอบหมาย ${ids.length} รายการแล้ว`);
@@ -5220,6 +5402,7 @@ async function doBulkDelete(){
   showLoading(`กำลังลบ ${ids.length} รายการ...`);
   try{
     await Promise.all(ids.map(id=>dbDel('customers',id)));
+    logAudit('customer.bulk_delete','customer',ids.join(','),{count:ids.length,ids});
     // Update local immediately - NO background reload
     const idsSet=new Set(ids);
     customers=customers.filter(c=>!idsSet.has(c.id));
@@ -5275,10 +5458,12 @@ function doBulkExport(){
   const sel=filtered.filter(c=>selectedIds.has(c.id));
   if(!sel.length){toast('กรุณาเลือกรายการก่อน','err');return;}
   exportCustomersCSV(sel,`เลือก_${sel.length}_รายการ.csv`);
+  logAudit('customer.export','customer',null,{format:'csv',scope:'selected',count:sel.length});
   toast(`Export ${sel.length} รายการแล้ว`);
 }
 function doExport(){
   exportCustomersCSV(filtered,`Rungfar_CRM_${new Date().toLocaleDateString('th')}.csv`);
+  logAudit('customer.export','customer',null,{format:'csv',scope:'filtered',count:filtered.length});
   toast('Export CSV แล้ว');
 }
 // บังคับ cell ในคอลัมน์ที่กำหนด (ข้าม header) ให้เป็น string + text format ('@') — กัน Excel แปลงเลขยาวเป็น scientific notation
@@ -5297,6 +5482,7 @@ function doExportXlsx(){
     forceExportTextCols(ws,CUST_TEXT_COLS); // บังคับคอลัมน์ ID ยาวเป็น text กัน scientific notation
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ลูกค้า');
     XLSX.writeFile(wb,`Rungfar_CRM_${new Date().toLocaleDateString('th')}.xlsx`);
+    logAudit('customer.export','customer',null,{format:'xlsx',scope:'filtered',count:filtered.length});
     toast('Export Excel แล้ว');
   }catch(e){console.error('[export xlsx] failed',e);toast('Export Excel ไม่สำเร็จ','err');}
 }
