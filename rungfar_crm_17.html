@@ -2270,6 +2270,7 @@ const LANG = {
     audit_customer_create:'เพิ่มลูกค้า', audit_customer_update:'แก้ไขลูกค้า',
     audit_customer_status_change:'เปลี่ยนสถานะงาน',
     audit_document_upload:'เพิ่มเอกสาร',
+    audit_customer_bulk_status_change:'เปลี่ยนสถานะหลายรายการ', audit_customer_bulk_group_change:'เปลี่ยนกลุ่มหลายรายการ',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
     lgHeroDesc:'บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ',
@@ -2455,6 +2456,7 @@ const LANG = {
     audit_customer_create:'ဖောက်သည်ထည့်', audit_customer_update:'ဖောက်သည်ပြင်ဆင်',
     audit_customer_status_change:'အလုပ်အခြေအနေပြောင်း',
     audit_document_upload:'စာရွက်ထည့်',
+    audit_customer_bulk_status_change:'အများအလုပ်အခြေအနေပြောင်း', audit_customer_bulk_group_change:'အများအုပ်စုပြောင်း',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
     lgHeroDesc:'ဖောက်သည်ဒေတာ၊ စာရွက်စာတမ်း၊ တက်ရောက်မှုနှင့် ကြိုတင်အကြောင်းကြားချက်ကို စနစ်တကျ စီမံပါ',
@@ -5149,6 +5151,8 @@ function auditLogRender(logs){
       if(a==='document.delete'){return 'ลบเอกสาร'+(nm?': '+nm:'');}
       if(a==='customer.assign'){const cnt=(d.count!=null?d.count:'?');const asg=d.assignee_label?esc(d.assignee_label):'';return 'มอบหมาย: '+cnt+' รายการ'+(asg?' → '+asg:'');}
       if(a==='customer.bulk_delete'){const cnt=(d.count!=null?d.count:'?');return 'ลบลูกค้าหลายรายการ: '+cnt+' รายการ';}
+      if(a==='customer.bulk_status_change'){const cnt=(d.count!=null?d.count:'?');const to=d.to?esc(d.to):'—';return 'เปลี่ยนสถานะหลายรายการ: '+cnt+' รายการ → '+to;}
+      if(a==='customer.bulk_group_change'){const cnt=(d.count!=null?d.count:'?');const gn=d.group_name?esc(d.group_name):'—';return 'เปลี่ยนกลุ่มหลายรายการ: '+cnt+' รายการ → '+gn;}
     }catch(_){}
     // Fallback ปลอดภัย: detail หาย/ผิดรูป -> ใช้ logic เดิม
     const d=l.detail||{};const parts=[];
@@ -5396,6 +5400,8 @@ async function doBulkGroup(){
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
   try{
     await Promise.all(ids.map(id=>dbPatch('customers',id,{group_id:grpId?parseInt(grpId):null,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
+    // Stage 5 audit (best-effort): customer.bulk_group_change
+    try{const _gid=grpId?parseInt(grpId):null;const _gn=_gid?((groups.find(g=>g.id===_gid)||{}).name||null):'ไม่ระบุกลุ่ม';logAudit('customer.bulk_group_change','customer',ids.join(','),{count:ids.length,ids,group_id:_gid,group_name:_gn,source:'doBulkGroup'});}catch(_e){console.warn('[AUDIT] bulk_group_change log skipped:',_e&&_e.message);}
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,group_id:grpId?parseInt(grpId):null}:c);
     clearSelection();renderDash();renderSidebar();doFilter();
     document.getElementById('bulkGrpModal').style.display='none';
@@ -5443,6 +5449,8 @@ async function doBulkStatus(){
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
   try{
     await Promise.all(ids.map(id=>dbPatch('customers',id,{work_status:status,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
+    // Stage 5 audit (best-effort): customer.bulk_status_change
+    try{logAudit('customer.bulk_status_change','customer',ids.join(','),{count:ids.length,ids,to:status||null,source:'doBulkStatus'});}catch(_e){console.warn('[AUDIT] bulk_status_change log skipped:',_e&&_e.message);}
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,work_status:status}:c);
     clearSelection();doFilter();
     document.getElementById('bulkStModal').style.display='none';
