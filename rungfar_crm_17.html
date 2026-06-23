@@ -5121,7 +5121,28 @@ function auditLogRender(logs){
   if(!logs.length){wrap.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogNoDataRange')}</div>`;return;}
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return s;}};
   const actColor={'customer.delete':'#dc2626','customer.bulk_delete':'#dc2626','document.delete':'#dc2626','customer.export':'#2563eb','customer.assign':'#7c3aed'};
+  // Stage 3: ป้ายชื่อ field (raw DB key -> ไทย) สำหรับ customer.update — โชว์เฉพาะชื่อ field ไม่โชว์ค่า
+  const _fieldTh={name:'ชื่อ',name_th:'ชื่อไทย',nationality:'สัญชาติ',passport_no:'พาสปอร์ต',alien_id:'เลขประจำตัว',phone:'เบอร์โทร',dob:'วันเกิด',work_status:'สถานะงาน',services:'บริการ',wp_no:'เลข WP',visa_no:'เลขวีซ่า',license_no:'ใบอนุญาต',employer_id:'นายจ้าง',group_id:'กลุ่ม',branch_id:'สาขา',customer_type:'ประเภท',fee_total:'ค่าบริการ',fee_paid:'ชำระแล้ว',fee_due:'ค้างชำระ',pay_status:'สถานะชำระ',pay_channel:'ช่องทางชำระ',assignee_code:'ผู้รับผิดชอบ',note:'หมายเหตุ'};
   const detSummary=l=>{
+    try{
+      const d=l.detail||{};const a=l.action||'';
+      const nm=d.name?esc(d.name):'';
+      const pid=d.passport_no||d.alien_id||'';
+      if(a==='customer.create'){return 'เพิ่มลูกค้า'+(nm?': '+nm:'')+(pid?' · '+esc(pid):'');}
+      if(a==='customer.update'){
+        let s='แก้ไขลูกค้า'+(nm?': '+nm:'');
+        const ch=Array.isArray(d.changed)?d.changed:(d.changes&&typeof d.changes==='object'?Object.keys(d.changes):[]);
+        if(ch.length){const labels=ch.map(k=>esc(_fieldTh[k]||k));s+=' ('+labels.slice(0,4).join(', ')+(labels.length>4?' …':'')+')';}
+        return s;
+      }
+      if(a==='customer.status_change'){const fr=d.from?esc(d.from):'—',to=d.to?esc(d.to):'—';return 'เปลี่ยนสถานะ: '+fr+' → '+to+(nm?' · '+nm:'');}
+      if(a==='customer.delete'){return 'ลบลูกค้า'+(nm?': '+nm:'');}
+      if(a==='customer.export'){const cnt=(d.count!=null?d.count:'?');const sc=[d.scope,d.format].filter(Boolean).map(x=>esc(String(x))).join(' · ');return 'ส่งออกข้อมูล: '+cnt+' รายการ'+(sc?' · '+sc:'');}
+      if(a==='document.delete'){return 'ลบเอกสาร'+(nm?': '+nm:'');}
+      if(a==='customer.assign'){const cnt=(d.count!=null?d.count:'?');const asg=d.assignee_label?esc(d.assignee_label):'';return 'มอบหมาย: '+cnt+' รายการ'+(asg?' → '+asg:'');}
+      if(a==='customer.bulk_delete'){const cnt=(d.count!=null?d.count:'?');return 'ลบลูกค้าหลายรายการ: '+cnt+' รายการ';}
+    }catch(_){}
+    // Fallback ปลอดภัย: detail หาย/ผิดรูป -> ใช้ logic เดิม
     const d=l.detail||{};const parts=[];
     if(d.name)parts.push(esc(d.name));
     if(d.count!=null)parts.push(d.count+' '+T('seclogItems'));
