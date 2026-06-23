@@ -3317,19 +3317,19 @@ function gv(v,opts={}){
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
-    if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}{const qa=document.getElementById('qassignee');if(qa)qa.value=(opts.asg!==undefined?opts.asg:'');}
+    if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}applyAsgFilter(opts.asg);
     const hasCache=customers.length>0;
     if(hasCache){
       // Render from cache immediately (no flicker)
       fillSelects();renderSidebar();
-      if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}{const qa=document.getElementById('qassignee');if(qa)qa.value=(opts.asg!==undefined?opts.asg:'');}
+      if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}applyAsgFilter(opts.asg);
       doFilter();
       // Background refresh — show slim bar instead of full overlay
       if(!_loadAllInProgress){
         showRefreshBar();
         loadAll(true).then(()=>{
           fillSelects();renderSidebar();
-          if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}{const qa=document.getElementById('qassignee');if(qa)qa.value=(opts.asg!==undefined?opts.asg:'');}
+          if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}applyAsgFilter(opts.asg);
           doFilter();
         }).catch(e=>{console.error('bg refresh error',e);}).finally(()=>hideRefreshBar());
       }
@@ -3338,7 +3338,7 @@ function gv(v,opts={}){
       showLoading('กำลังโหลดข้อมูลลูกค้า...',300);
       loadAll(true).then(()=>{
         fillSelects();renderSidebar();
-        if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}{const qa=document.getElementById('qassignee');if(qa)qa.value=(opts.asg!==undefined?opts.asg:'');}
+        if(opts.grp){const qgrp=document.getElementById('qgrp');if(qgrp)qgrp.value=opts.grp;}applyAsgFilter(opts.asg);
         doFilter();
       }).catch(e=>{toast('โหลดข้อมูลไม่ได้: '+e.message,'err');}).finally(()=>hideLoading());
     }
@@ -3937,8 +3937,43 @@ function renderCustomerCards(list){
 function buildEmpProfMap(list){empProfMap={};const arr=(Array.isArray(list)?list:[]);arr.forEach(e=>{const k=_normCode(e&&e.employee_code);if(k)empProfMap[k]=e;});assigneeEmps=arr.filter(e=>e&&e.status==='active'&&_normCode(e.employee_code)).sort((a,b)=>String(a.nickname||a.full_name||'').localeCompare(String(b.nickname||b.full_name||''),'th'));}
 // Stage 1 assignee: คืนชื่อผู้รับผิดชอบ (nickname/full_name) จาก code; '' ถ้าไม่ระบุ
 function assigneeLabel(code){const k=code?_normCode(code):'';const e=k?empProfMap[k]:null;return e?(e.nickname||e.full_name||code):(code||'');}
+// Stage 4 import: แปลงค่าจาก Excel (employee_code / nickname / full_name / "ชื่อ (CODE)") → employee_code; คืน '' ถ้าไม่พบ
+function resolveAssigneeCode(v){
+  v=String(v==null?'':v).trim();if(!v)return '';
+  const paren=v.match(/\(([^)]+)\)\s*$/); // "ตี้ (EMP002)" → ลองจับ code ในวงเล็บก่อน
+  if(paren){const inside=_normCode(paren[1]);const byp=assigneeEmps.find(e=>_normCode(e.employee_code)===inside);if(byp)return byp.employee_code;}
+  const nz=_normCode(v);
+  let e=assigneeEmps.find(x=>_normCode(x.employee_code)===nz);if(e)return e.employee_code;
+  e=assigneeEmps.find(x=>x.nickname&&_normCode(x.nickname)===nz);if(e)return e.employee_code;
+  e=assigneeEmps.find(x=>x.full_name&&_normCode(x.full_name)===nz);if(e)return e.employee_code;
+  return '';
+}
+// Stage 4 export: label อ่านง่าย เช่น "ตี้ (EMP002)"; ว่าง = "ยังไม่ระบุ"
+function assigneeExportLabel(code){if(!code)return 'ยังไม่ระบุ';const nm=assigneeLabel(code);return (nm&&nm!==code)?`${nm} (${code})`:code;}
 // Stage 3 (sub-view): "ลูกค้า" = ลูกค้าทั้งหมดเสมอ; "งานของฉัน" = shortcut กรองผู้รับผิดชอบ=ตัวเอง (ไม่ซ่อนข้อมูลตาม role)
-function goMyWork(){const me=(curUser&&curUser.username)||'';gv('customers',{asg:me});}
+// ตั้งค่าตัวกรองผู้รับผิดชอบแบบปลอดภัย: ถ้า option ของ code ยังไม่มี ให้ใส่ก่อน; ถ้า value ไม่ตรง option ใด → fallback "" (กันdropdownว่าง)
+function applyAsgFilter(asg){
+  const qa=document.getElementById('qassignee');if(!qa)return;
+  const v=(asg!==undefined&&asg!==null&&asg!=='')?String(asg):'';
+  if(v&&![...qa.options].some(o=>o.value===v)){const e=empProfMap[_normCode(v)];const lbl=e?(e.nickname||e.full_name||v):v;qa.insertAdjacentHTML('beforeend',`<option value="${esc(v)}">${esc(lbl)} (${esc(v)})</option>`);}
+  qa.value=v;if(qa.selectedIndex<0)qa.value='';
+}
+// "งานของฉัน": กรอง client-side ล้วน — ไม่เรียก loadAll/แถบโหลด (กันค้าง "กำลังอัปเดต..."); โหลดเฉพาะกรณีไม่มี cache เท่านั้น
+function goMyWork(){
+  const me=(curUser&&curUser.username)||'';
+  if(!customers.length){gv('customers',{asg:me});return;} // ไม่มี cache → โหลดผ่าน gv (กรณีเดียวที่แตะ DB)
+  if(curView!=='customers'){
+    document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+    const el=document.getElementById('view-customers');if(el)el.classList.add('on');
+    curView='customers';
+    document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
+    if(typeof mobNavSync==='function')mobNavSync();
+    const tt=document.getElementById('ttitle');if(tt)tt.textContent=T('customers');
+    fillSelects();renderSidebar();
+  }
+  applyAsgFilter(me);doFilter();
+  hideRefreshBar(); // เคลียร์สถานะโหลดที่อาจค้าง
+}
 // ไฮไลต์เมนูย่อย: niCustomers active เมื่ออยู่หน้าลูกค้าและตัวกรองไม่ใช่ตัวเอง; niMyWork active เมื่อตัวกรอง=ตัวเอง
 function syncCustomerNav(){
   const me=(curUser&&curUser.username)||'';
@@ -4024,9 +4059,9 @@ function fillSelects(){
   const qbr=document.getElementById('qbr');if(qbr)qbr.innerHTML=`<option value="">${T('fillAllBranch')}</option>`+branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
   // Stage 1 assignee: เติม dropdown ผู้รับผิดชอบ (modal + filter) จาก active employees — คงค่าที่เลือกไว้
   const _asgOpts=assigneeEmps.map(e=>`<option value="${esc(e.employee_code)}">${esc(e.nickname||e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('');
-  const fa=document.getElementById('f_assignee');if(fa){const _v=fa.value;fa.innerHTML='<option value="">ยังไม่ระบุ</option>'+_asgOpts;fa.value=_v;}
-  const qa=document.getElementById('qassignee');if(qa){const _v=qa.value;qa.innerHTML='<option value="">ผู้รับผิดชอบทั้งหมด</option>'+_asgOpts;qa.value=_v;}
-  const ba=document.getElementById('bulkAsgSel');if(ba){const _v=ba.value;ba.innerHTML='<option value="">ยังไม่ระบุ</option>'+_asgOpts;ba.value=_v;} // Stage 3: dropdown มอบหมายแบบกลุ่ม (admin)
+  const fa=document.getElementById('f_assignee');if(fa){const _v=fa.value;fa.innerHTML='<option value="">ยังไม่ระบุ</option>'+_asgOpts;fa.value=_v;if(fa.selectedIndex<0)fa.value='';}
+  const qa=document.getElementById('qassignee');if(qa){const _v=qa.value;qa.innerHTML='<option value="">ผู้รับผิดชอบทั้งหมด</option>'+_asgOpts;qa.value=_v;if(qa.selectedIndex<0)qa.value='';} // กัน dropdown ว่าง: ถ้า value เดิมไม่ตรง option ใด → กลับเป็นค่าเริ่มต้น
+  const ba=document.getElementById('bulkAsgSel');if(ba){const _v=ba.value;ba.innerHTML='<option value="">ยังไม่ระบุ</option>'+_asgOpts;ba.value=_v;if(ba.selectedIndex<0)ba.value='';} // Stage 3: dropdown มอบหมายแบบกลุ่ม (admin)
   const tls=document.getElementById('tlf_status');if(tls)tls.innerHTML=WS.map(s=>`<option value="${s}">${wsT(s)}</option>`).join('');
 }
 function empSelected(){const id=document.getElementById('f_empId').value;if(id){const e=employers.find(x=>x.id===parseInt(id));if(e){document.getElementById('f_emp').value=e.name;document.getElementById('f_biz').value=e.business_type||'';document.getElementById('f_ephon').value=e.phone||'';document.getElementById('f_addr').value=e.address||'';}}}
@@ -4339,6 +4374,8 @@ const IMP_FIELDS=[
   {key:'card_fee_paid',label:'ค่าบัตร',aliases:['ค่าบัตร','card_fee']},
   {key:'queue_date',label:'คิวว่าง',aliases:['คิวว่าง','queue_date']},
   {key:'receive_date',label:'วันรับเล่ม',aliases:['วันรับเล่ม','receive_date']},
+  // Stage 4: ผู้รับผิดชอบ (assignee) — รับค่า employee_code / nickname / full_name / "ชื่อ (CODE)"
+  {key:'assignee',label:'ผู้รับผิดชอบ',aliases:['ผู้รับผิดชอบ','เจ้าหน้าที่รับผิดชอบ','คนรับผิดชอบ','เจ้าหน้าที่','คนทำเคส','assignee','assignee_code','employee_code','staff']},
 ];
 function normImpStr(s){return String(s||'').trim().toUpperCase().replace(/\s+/g,'');}
 // Round F1B-2: parser สำหรับ import field ใหม่
@@ -4497,6 +4534,7 @@ async function doImport(){
   const seenInFile=new Set();
   let countNew=0,countDupEx=0,countDupFile=0,countMissing=0,countError=0;
   let countPhotoNew=0,countPhotoUpd=0,countPhotoSkip=0; // Excel embedded photo → customers.photo
+  let countAsgUnresolved=0; // Stage 4: แถวที่มีค่าผู้รับผิดชอบแต่จับคู่ employee_code ไม่ได้
   const skippedRows=[];
   // เก็บลำดับไฟล์ Excel: แถวบนสุด (ri=0) ได้ created_at ใหม่สุด → ขึ้นบนตาม sort created_at DESC เดิม
   const _impBase=Date.now();
@@ -4542,6 +4580,12 @@ async function doImport(){
       const _bh=get(row,'booklet_has'),_bn=get(row,'booklet_none');
       data.booklet_status=_bh?'has':(_bn?'none':null); // ทั้งคู่มีค่า → has
       data.created_at=new Date(_impBase-ri*1000).toISOString(); // คงลำดับ Excel (บน→ล่าง)
+      // Stage 4: ผู้รับผิดชอบ — resolve จาก Excel; ถ้าไม่มีค่า + ผู้ใช้เป็น staff → default เป็นตัวเอง; admin เว้นว่าง
+      const _asgRaw=get(row,'assignee');
+      let _asgCode=resolveAssigneeCode(_asgRaw);
+      if(_asgRaw&&!_asgCode)countAsgUnresolved++; // มีค่าแต่จับคู่ไม่ได้ → เว้นว่าง (ไม่ทำ import พัง)
+      if(!_asgRaw&&curUser&&curUser.role!=='admin'&&curUser.username)_asgCode=curUser.username; // staff default-to-self เมื่อไม่ระบุ
+      data.assignee_code=_asgCode||null;
 
       // Excel embedded photo → ย่อ + บันทึกลง field photo เดิม (เหมือน manual upload)
       const _newPh=impPhotos[ri];
@@ -4561,8 +4605,9 @@ async function doImport(){
   const _mappedIdx=new Set(Object.values(impMap).filter(v=>v!==undefined&&v>=0));
   const _unsup=impCols.map((c,i)=>({c,i})).filter(x=>x.c&&String(x.c).trim()&&!_mappedIdx.has(x.i)).map(x=>x.c);
   const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">คอลัมน์ที่ไม่ได้จับคู่กับฟิลด์ใดจะไม่ถูกนำเข้า (เช่น ลำดับ, รูปถ่าย) — หากต้องการนำเข้า ให้จับคู่คอลัมน์ในส่วน "จับคู่คอลัมน์" ด้านบน</div></div>`:'';
+  const asgWarnHTML=countAsgUnresolved>0?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ ผู้รับผิดชอบที่จับคู่ไม่ได้:</strong> ${countAsgUnresolved} แถว — ปล่อยเป็น "ยังไม่ระบุ" (ตรวจชื่อ/รหัสพนักงานให้ตรงกับระบบ)</div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${unsupHTML}${skipHTML}</div></div>`;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${asgWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
@@ -5175,7 +5220,7 @@ async function doBulkDelete(){
   finally{hideLoading();}
 }
 // ── Export column order ตาม Excel template งานจริง (24 คอลัมน์) — Round F1B-2: เติม field ใหม่ครบ ──
-const CUST_EXPORT_HEADERS=['ลำดับ','วันที่ยื่น','รูปถ่าย','นายจ้าง','รายชื่อ','เลขประจำตัวต่างด้าว','สัญชาติ','เลขคำขอ','รายการ','สถานะ','ใบแพทย์','ประกัน','100','900','ตัวแทน','นัดหมาย','เวลา','สถานที่','มีเล่ม','ไม่มีเล่ม','ค่าบัตร','คิวว่าง','วันรับเล่ม','หมายเหตุ'];
+const CUST_EXPORT_HEADERS=['ลำดับ','วันที่ยื่น','รูปถ่าย','นายจ้าง','รายชื่อ','เลขประจำตัวต่างด้าว','สัญชาติ','เลขคำขอ','รายการ','สถานะ','ใบแพทย์','ประกัน','100','900','ตัวแทน','นัดหมาย','เวลา','สถานที่','มีเล่ม','ไม่มีเล่ม','ค่าบัตร','คิวว่าง','วันรับเล่ม','หมายเหตุ','ผู้รับผิดชอบ'];
 function custExportRow(c,idx){
   const chk=b=>b?'✓':'';
   return [
@@ -5202,7 +5247,8 @@ function custExportRow(c,idx){
     chk(c.card_fee_paid),                   // ค่าบัตร
     c.queue_date||'',                       // คิวว่าง
     c.receive_date||'',                     // วันรับเล่ม
-    c.note||''                              // หมายเหตุ
+    c.note||'',                             // หมายเหตุ
+    assigneeExportLabel(c.assignee_code)     // ผู้รับผิดชอบ (Stage 4)
   ];
 }
 function exportCustomersCSV(list,fname){
