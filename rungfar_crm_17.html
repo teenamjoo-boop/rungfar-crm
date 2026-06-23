@@ -2263,7 +2263,7 @@ const LANG = {
     seclogNoAccessMsg:'ไม่มีสิทธิ์เข้าถึงหน้านี้',
     // ── AUDIT LOG (customer activity) ──
     seclogTabLogin:'เข้าสู่ระบบ', seclogTabActivity:'การใช้งานลูกค้า',
-    auditAction:'การกระทำ', auditDetail:'รายละเอียด', auditSearch:'ค้นหา', auditOpenCust:'เปิดข้อมูลลูกค้า',
+    auditAction:'การกระทำ', auditDetail:'รายละเอียด', auditSearch:'ค้นหา', auditOpenCust:'เปิดข้อมูลลูกค้า', auditPerPage:'ต่อหน้า',
     audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายรายการ',
     audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูล',
     audit_customer_assign:'มอบหมายผู้รับผิดชอบ',
@@ -2449,7 +2449,7 @@ const LANG = {
     seclogNoAccessMsg:'ဝင်ရောက်ခွင့်မရှိပါ',
     // ── AUDIT LOG (customer activity) ──
     seclogTabLogin:'ဝင်ရောက်မှု', seclogTabActivity:'ဖောက်သည်အသုံးပြုမှု',
-    auditAction:'လုပ်ဆောင်ချက်', auditDetail:'အသေးစိတ်', auditSearch:'ရှာဖွေ', auditOpenCust:'ဖောက်သည်အချက်အလက်ဖွင့်',
+    auditAction:'လုပ်ဆောင်ချက်', auditDetail:'အသေးစိတ်', auditSearch:'ရှာဖွေ', auditOpenCust:'ဖောက်သည်အချက်အလက်ဖွင့်', auditPerPage:'တစ်မျက်နှာ',
     audit_customer_delete:'ဖောက်သည်ဖျက်', audit_customer_bulk_delete:'ဖောက်သည်များဖျက်',
     audit_document_delete:'စာရွက်ဖျက်', audit_customer_export:'ဒေတာထုတ်ယူ',
     audit_customer_assign:'တာဝန်ပေးအပ်',
@@ -5070,6 +5070,8 @@ let _auditLogsCache=[]; // Stage 6: เก็บผล fetch ล่าสุด�
 let _auditLogsShown=[]; // Stage 7: แถวที่กำลังแสดง (หลัง filter/search) สำหรับ export
 let _auditDetailFn=null; // Stage 7: อ้างอิง detSummary ปัจจุบัน เพื่อ export ข้อความให้ตรงกับตาราง
 let _secLogsShown=[]; // Stage 7: แถว security log ที่กำลังแสดง สำหรับ export
+let _auditPage=1,_auditPageSize=20; // Stage 9: pagination (การใช้งานลูกค้า) — client-side เท่านั้น
+let _secPage=1,_secPageSize=20; // Stage 9: pagination (เข้าสู่ระบบ)
 function buildAuditPane(){
   const ap=document.getElementById('slActivityPane');if(!ap)return;
   const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
@@ -5134,6 +5136,7 @@ async function auditLogLoad(){
 }
 // Stage 6: กรองผลที่โหลดมาแล้วด้วยช่องค้นหา (actor, ป้าย action, รายละเอียด, ชื่อลูกค้าใน detail) — client-side เท่านั้น
 function auditLogApplySearch(){
+  _auditPage=1; // Stage 9: เปลี่ยน search/filter/date/action -> กลับหน้า 1
   const q=(document.getElementById('alSearch')?.value||'').trim().toLowerCase();
   if(!q){auditLogRender(_auditLogsCache);return;}
   const filtered=_auditLogsCache.filter(l=>{
@@ -5190,7 +5193,13 @@ function auditLogRender(logs){
     else if(l.detail&&l.detail.customer_id!=null)id=l.detail.customer_id; // เอกสาร: ใช้ customer_id ใน detail
     return (id!=null&&_custExists(id))?id:null;
   };
-  const rows=logs.map(l=>{
+  // Stage 9: แบ่งหน้า — slice เฉพาะแสดงผล (export ยังใช้ _auditLogsShown = ทุกแถวที่กรองแล้ว)
+  const _total=logs.length;
+  const _pages=Math.max(1,Math.ceil(_total/_auditPageSize));
+  if(_auditPage>_pages)_auditPage=_pages;if(_auditPage<1)_auditPage=1;
+  const _start=(_auditPage-1)*_auditPageSize;
+  const _pageLogs=logs.slice(_start,_start+_auditPageSize);
+  const rows=_pageLogs.map(l=>{
     const ac=actColor[l.action]||'#6b7280';
     const actTxt=T('audit_'+(l.action||'').replace('.','_'))||l.action||'—';
     const det=detSummary(l);
@@ -5225,8 +5234,28 @@ function auditLogRender(logs){
         <tbody>${rows}</tbody>
       </table>
     </div>
+    ${_pageFooter(_total,_auditPage,_auditPageSize,'auditGoPage','auditSetPageSize')}
   </div>`;
 }
+// Stage 9: footer แบ่งหน้าแบบใช้ร่วม (compact) — total/page/pageSize + ปุ่ม prev/next + เลือกจำนวนต่อหน้า
+function _pageFooter(total,page,ps,navFn,sizeFn){
+  const pages=Math.max(1,Math.ceil((total||0)/ps));
+  const start=total?(page-1)*ps:0;
+  const end=Math.min(start+ps,total);
+  const opts=[20,50,100].map(n=>`<option value="${n}"${n===ps?' selected':''}>${n}</option>`).join('');
+  return `<div style="padding:10px 16px;border-top:1px solid var(--g2);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+    <div style="font-size:12px;color:var(--g5)">แสดง ${total?start+1:0}–${end} จาก ${total}</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--g5)">${T('auditPerPage')}</span>
+      <select onchange="${sizeFn}(this.value)" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:4px 6px;font-family:var(--font);font-size:12px;background:#fff;color:var(--g9);outline:none">${opts}</select>
+      <button class="btn btn-g btn-sm" ${page<=1?'disabled style="opacity:.45;cursor:not-allowed"':''} onclick="${navFn}(${page-1})">‹</button>
+      <span style="font-size:12px;color:var(--g7);min-width:46px;text-align:center">${page}/${pages}</span>
+      <button class="btn btn-g btn-sm" ${page>=pages?'disabled style="opacity:.45;cursor:not-allowed"':''} onclick="${navFn}(${page+1})">›</button>
+    </div>
+  </div>`;
+}
+function auditGoPage(p){_auditPage=Number(p)||1;auditLogRender(_auditLogsShown);}
+function auditSetPageSize(n){_auditPageSize=Number(n)||20;_auditPage=1;auditLogRender(_auditLogsShown);}
 function auditLogClear(){
   const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
   const week=new Date(Date.now()-6*86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
@@ -5352,6 +5381,7 @@ async function secLogLoad(){
     wrap.innerHTML=box(T('seclogReadErr'));return;
   }
   let data=[];try{data=await res.json();}catch(_){data=[];}
+  _secPage=1; // Stage 9: โหลด/กรองใหม่ -> กลับหน้า 1
   secLogRender(Array.isArray(data)?data:[]);
 }
 
@@ -5381,7 +5411,13 @@ function secLogRender(logs){
     return;
   }
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return s;}};
-  const rows=logs.map(l=>{
+  // Stage 9: แบ่งหน้า — slice เฉพาะตาราง (summary cards ยังนับจากทุกแถว; export ใช้ _secLogsShown เต็ม)
+  const _stotal=logs.length;
+  const _spages=Math.max(1,Math.ceil(_stotal/_secPageSize));
+  if(_secPage>_spages)_secPage=_spages;if(_secPage<1)_secPage=1;
+  const _sstart=(_secPage-1)*_secPageSize;
+  const _pageLogs=logs.slice(_sstart,_sstart+_secPageSize);
+  const rows=_pageLogs.map(l=>{
     const isSucc=l.login_status==='success';
     const isFail=l.login_status==='failed';
     const isSusp=l.is_suspicious;
@@ -5431,8 +5467,11 @@ function secLogRender(logs){
         <tbody>${rows}</tbody>
       </table>
     </div>
+    ${_pageFooter(_stotal,_secPage,_secPageSize,'secGoPage','secSetPageSize')}
   </div>`;
 }
+function secGoPage(p){_secPage=Number(p)||1;secLogRender(_secLogsShown);}
+function secSetPageSize(n){_secPageSize=Number(n)||20;_secPage=1;secLogRender(_secLogsShown);}
 
 function secLogFilter(){secLogLoad();}
 function secLogClear(){
