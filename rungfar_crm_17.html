@@ -5067,6 +5067,9 @@ function secLogTab(which){
 // ── Customer activity log (audit_logs) — admin-only, อ่านผ่าน RPC SECURITY DEFINER ──
 const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.delete'];
 let _auditLogsCache=[]; // Stage 6: เก็บผล fetch ล่าสุดไว้กรองด้วยช่องค้นหา client-side
+let _auditLogsShown=[]; // Stage 7: แถวที่กำลังแสดง (หลัง filter/search) สำหรับ export
+let _auditDetailFn=null; // Stage 7: อ้างอิง detSummary ปัจจุบัน เพื่อ export ข้อความให้ตรงกับตาราง
+let _secLogsShown=[]; // Stage 7: แถว security log ที่กำลังแสดง สำหรับ export
 function buildAuditPane(){
   const ap=document.getElementById('slActivityPane');if(!ap)return;
   const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
@@ -5178,6 +5181,7 @@ function auditLogRender(logs){
     if(d.assignee_label)parts.push('→ '+esc(d.assignee_label));
     return parts.join(' · ')||'—';
   };
+  _auditLogsShown=logs;_auditDetailFn=detSummary; // Stage 7: เก็บไว้สำหรับ export (ข้อความตรงกับที่แสดง)
   const rows=logs.map(l=>{
     const ac=actColor[l.action]||'#6b7280';
     const actTxt=T('audit_'+(l.action||'').replace('.','_'))||l.action||'—';
@@ -5189,9 +5193,13 @@ function auditLogRender(logs){
     </tr>`;
   }).join('');
   wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between">
       <div style="font-size:13px;font-weight:700;color:var(--g8)">${T('seclogTabActivity')}</div>
-      <div style="font-size:12px;color:var(--g5)">${T('seclogShowing')} ${logs.length} ${T('seclogItems')}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="font-size:12px;color:var(--g5)">${T('seclogShowing')} ${logs.length} ${T('seclogItems')}</div>
+        <button onclick="auditExportCSV()" class="btn btn-g btn-sm">Export CSV</button>
+        <button onclick="auditExportXlsx()" class="btn btn-g btn-sm">Export Excel</button>
+      </div>
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;min-width:600px">
@@ -5215,6 +5223,69 @@ function auditLogClear(){
   const ac=document.getElementById('alAction');if(ac)ac.value='';
   const sq=document.getElementById('alSearch');if(sq)sq.value='';
   auditLogLoad();
+}
+
+// ── Stage 7: Export ของ audit log (เฉพาะแถวที่แสดง/กรองอยู่ใน UI — ไม่ refetch, ไม่ส่งออก JSON/base64) ──
+const _todayStrBkk=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
+const _expFmtDT=s=>{if(!s)return'';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return String(s||'');}};
+// แปลง HTML entity จาก esc() กลับเป็นข้อความอ่านได้ (รายละเอียดในตาราง esc มาแล้ว)
+const _unesc=s=>String(s==null?'':s).replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&#x27;/g,"'");
+function _csvDownload(aoa,fname){
+  const q=s=>`"${String(s==null?'':s).replace(/"/g,'""')}"`;
+  const rows=aoa.map(r=>r.map(q).join(','));
+  const b=new Blob([String.fromCharCode(65279)+rows.join('\n')],{type:'text/csv;charset=utf-8'}); // BOM กัน Excel อ่านไทยเพี้ยน
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
+}
+function _xlsxDownload(aoa,sheetName,fname){
+  if(typeof XLSX==='undefined'){toast('โหลดไลบรารี Excel ไม่สำเร็จ','err');return false;}
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  const nCols=(aoa[0]||[]).length;forceExportTextCols(ws,Array.from({length:nCols},(_,i)=>i)); // ทุกคอลัมน์เป็น text กัน scientific notation
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  XLSX.writeFile(wb,fname);return true;
+}
+// ตาราง "การใช้งานลูกค้า": เวลา · ผู้ใช้งาน · สิทธิ์ · การกระทำ · รายละเอียด
+function _auditExportAOA(){
+  const head=['เวลา','ผู้ใช้งาน','สิทธิ์','การกระทำ','รายละเอียด'];
+  const det=l=>{try{return _auditDetailFn?_unesc(String(_auditDetailFn(l))):'';}catch(_){return'';}};
+  const rows=_auditLogsShown.map(l=>[
+    _expFmtDT(l.created_at),
+    (l.actor_name||l.actor_code||''),
+    (l.actor_role||''),
+    (T('audit_'+(l.action||'').replace('.','_'))||l.action||''),
+    det(l)
+  ]);
+  return [head,...rows];
+}
+function auditExportCSV(){
+  if(!_auditLogsShown.length){toast('ไม่มีข้อมูลให้ส่งออก','err');return;}
+  _csvDownload(_auditExportAOA(),`audit_customer_logs_${_todayStrBkk()}.csv`);toast('Export CSV แล้ว');
+}
+function auditExportXlsx(){
+  if(!_auditLogsShown.length){toast('ไม่มีข้อมูลให้ส่งออก','err');return;}
+  try{if(_xlsxDownload(_auditExportAOA(),'การใช้งานลูกค้า',`audit_customer_logs_${_todayStrBkk()}.xlsx`))toast('Export Excel แล้ว');}
+  catch(e){console.error('[audit export xlsx] failed',e);toast('Export Excel ไม่สำเร็จ','err');}
+}
+// ตาราง "เข้าสู่ระบบ": เวลา Login · Username · ชื่อ-นามสกุล · สิทธิ์ · สถานะ · เหตุที่ล้มเหลว · อุปกรณ์ · Browser · Fingerprint · น่าสงสัย
+function _secExportAOA(){
+  const head=['เวลา Login','Username','ชื่อ-นามสกุล','สิทธิ์','สถานะ','เหตุที่ล้มเหลว','อุปกรณ์','Browser','Fingerprint','น่าสงสัย'];
+  const rows=_secLogsShown.map(l=>{
+    const st=l.login_status==='success'?T('seclogSuccess'):l.login_status==='failed'?T('seclogFailed'):(l.login_status||'');
+    const reason=({wrong_password:T('seclogReasonWrong'),user_not_found:T('seclogReasonNoUser'),network_error:T('seclogReasonNetwork'),inactive_account:T('seclogReasonInactive')}[l.fail_reason])||l.fail_reason||'';
+    const devType=({desktop:T('seclogDevDesktop'),mobile:T('seclogDevMobile'),tablet:T('seclogDevTablet')}[l.device_type])||l.device_type||'';
+    const fp=l.device_fingerprint?l.device_fingerprint.slice(0,8)+'…':'';
+    const susp=l.is_suspicious?T('seclogSuspYes'):'';
+    return [_expFmtDT(l.login_time),(l.username||''),(l.full_name||''),(l.role||''),st,reason,devType,(l.browser_name||''),fp,susp];
+  });
+  return [head,...rows];
+}
+function secExportCSV(){
+  if(!_secLogsShown.length){toast('ไม่มีข้อมูลให้ส่งออก','err');return;}
+  _csvDownload(_secExportAOA(),`audit_security_logs_${_todayStrBkk()}.csv`);toast('Export CSV แล้ว');
+}
+function secExportXlsx(){
+  if(!_secLogsShown.length){toast('ไม่มีข้อมูลให้ส่งออก','err');return;}
+  try{if(_xlsxDownload(_secExportAOA(),'เข้าสู่ระบบ',`audit_security_logs_${_todayStrBkk()}.xlsx`))toast('Export Excel แล้ว');}
+  catch(e){console.error('[sec export xlsx] failed',e);toast('Export Excel ไม่สำเร็จ','err');}
 }
 
 async function secLogLoad(){
@@ -5275,6 +5346,7 @@ function secLogRender(logs){
   const cards=document.getElementById('sl_cards');
   const wrap=document.getElementById('sl_table_wrap');
   if(!cards||!wrap)return;
+  _secLogsShown=logs; // Stage 7: เก็บไว้สำหรับ export
   // ─── Summary cards ───
   const todayStr=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
   const todayLogs=logs.filter(l=>(l.login_time||'').startsWith(todayStr));
@@ -5321,9 +5393,13 @@ function secLogRender(logs){
     </tr>`;
   }).join('');
   wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--g2);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between">
       <div style="font-size:13px;font-weight:700;color:var(--g8)">${T('seclogAllLogs')}</div>
-      <div style="font-size:12px;color:var(--g5)">${T('seclogShowing')} ${logs.length} ${T('seclogItems')}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="font-size:12px;color:var(--g5)">${T('seclogShowing')} ${logs.length} ${T('seclogItems')}</div>
+        <button onclick="secExportCSV()" class="btn btn-g btn-sm">Export CSV</button>
+        <button onclick="secExportXlsx()" class="btn btn-g btn-sm">Export Excel</button>
+      </div>
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;min-width:900px">
