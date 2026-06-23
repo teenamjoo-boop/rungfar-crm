@@ -3949,7 +3949,6 @@ function resolveAssigneeCode(v){
   return '';
 }
 // Stage 4 export: label อ่านง่าย เช่น "ตี้ (EMP002)"; ว่าง = "ยังไม่ระบุ"
-function assigneeExportLabel(code){if(!code)return 'ยังไม่ระบุ';const nm=assigneeLabel(code);return (nm&&nm!==code)?`${nm} (${code})`:code;}
 // Stage 3 (sub-view): "ลูกค้า" = ลูกค้าทั้งหมดเสมอ; "งานของฉัน" = shortcut กรองผู้รับผิดชอบ=ตัวเอง (ไม่ซ่อนข้อมูลตาม role)
 // ตั้งค่าตัวกรองผู้รับผิดชอบแบบปลอดภัย: ถ้า option ของ code ยังไม่มี ให้ใส่ก่อน; ถ้า value ไม่ตรง option ใด → fallback "" (กันdropdownว่าง)
 function applyAsgFilter(asg){
@@ -5232,6 +5231,8 @@ async function doBulkDelete(){
 }
 // ── Export column order ตาม Excel template งานจริง (24 คอลัมน์) — Round F1B-2: เติม field ใหม่ครบ ──
 const CUST_EXPORT_HEADERS=['ลำดับ','วันที่ยื่น','รูปถ่าย','นายจ้าง','รายชื่อ','เลขประจำตัวต่างด้าว','สัญชาติ','เลขคำขอ','รายการ','สถานะ','ใบแพทย์','ประกัน','100','900','ตัวแทน','นัดหมาย','เวลา','สถานที่','มีเล่ม','ไม่มีเล่ม','ค่าบัตร','คิวว่าง','วันรับเล่ม','หมายเหตุ','ผู้รับผิดชอบ'];
+// คอลัมน์ที่เป็นเลข ID ยาว → บังคับเป็น "text" ทั้ง CSV/Excel กันแสดงผลเป็น scientific notation (6.68E+12): เลขประจำตัวต่างด้าว(5), เลขคำขอ(7), 100(12), 900(13)
+const CUST_TEXT_COLS=[5,7,12,13];
 function custExportRow(c,idx){
   const chk=b=>b?'✓':'';
   return [
@@ -5259,12 +5260,14 @@ function custExportRow(c,idx){
     c.queue_date||'',                       // คิวว่าง
     c.receive_date||'',                     // วันรับเล่ม
     c.note||'',                             // หมายเหตุ
-    assigneeExportLabel(c.assignee_code)     // ผู้รับผิดชอบ (Stage 4)
+    c.assignee_code||''                      // ผู้รับผิดชอบ — raw employee_code เพื่อ re-import ได้ตรง (ว่าง=ไม่ระบุ)
   ];
 }
 function exportCustomersCSV(list,fname){
-  const csvCell=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
-  const rows=[CUST_EXPORT_HEADERS.map(csvCell).join(','),...list.map((c,i)=>custExportRow(c,i).map(csvCell).join(','))];
+  const q=s=>`"${String(s==null?'':s).replace(/"/g,'""')}"`;
+  // คอลัมน์ ID ยาว: นำหน้าด้วย tab → Excel มองเป็น text (ตัวเลขเต็ม ไม่ใช่ 6.68E+12); import เดิม .trim() ตัด tab ทิ้งให้เอง
+  const cell=(v,ci)=>{let s=String(v==null?'':v);if(s!==''&&CUST_TEXT_COLS.includes(ci))s='\t'+s;return q(s);};
+  const rows=[CUST_EXPORT_HEADERS.map(q).join(','),...list.map((c,i)=>custExportRow(c,i).map((v,ci)=>cell(v,ci)).join(','))];
   const b=new Blob([String.fromCharCode(65279)+rows.join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
 }
@@ -5278,11 +5281,20 @@ function doExport(){
   exportCustomersCSV(filtered,`Rungfar_CRM_${new Date().toLocaleDateString('th')}.csv`);
   toast('Export CSV แล้ว');
 }
+// บังคับ cell ในคอลัมน์ที่กำหนด (ข้าม header) ให้เป็น string + text format ('@') — กัน Excel แปลงเลขยาวเป็น scientific notation
+function forceExportTextCols(ws,cols){
+  if(!ws||!ws['!ref'])return;
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=range.s.r+1;R<=range.e.r;R++){
+    cols.forEach(C=>{const addr=XLSX.utils.encode_cell({r:R,c:C});const cell=ws[addr];if(cell&&cell.v!==undefined&&cell.v!==null&&cell.v!==''){cell.t='s';cell.v=String(cell.v);cell.z='@';}});
+  }
+}
 function doExportXlsx(){
   try{
     if(typeof XLSX==='undefined'){toast('โหลดไลบรารี Excel ไม่สำเร็จ','err');return;}
     const aoa=[CUST_EXPORT_HEADERS,...filtered.map((c,i)=>custExportRow(c,i))];
     const ws=XLSX.utils.aoa_to_sheet(aoa);
+    forceExportTextCols(ws,CUST_TEXT_COLS); // บังคับคอลัมน์ ID ยาวเป็น text กัน scientific notation
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ลูกค้า');
     XLSX.writeFile(wb,`Rungfar_CRM_${new Date().toLocaleDateString('th')}.xlsx`);
     toast('Export Excel แล้ว');
