@@ -2267,6 +2267,8 @@ const LANG = {
     audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายราย',
     audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูล',
     audit_customer_assign:'มอบหมายผู้รับผิดชอบ',
+    audit_customer_create:'เพิ่มลูกค้า', audit_customer_update:'แก้ไขลูกค้า',
+    audit_customer_status_change:'เปลี่ยนสถานะงาน',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
     lgHeroDesc:'บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ',
@@ -2449,6 +2451,8 @@ const LANG = {
     audit_customer_delete:'ဖောက်သည်ဖျက်', audit_customer_bulk_delete:'ဖောက်သည်များဖျက်',
     audit_document_delete:'စာရွက်ဖျက်', audit_customer_export:'ဒေတာထုတ်ယူ',
     audit_customer_assign:'တာဝန်ပေးအပ်',
+    audit_customer_create:'ဖောက်သည်ထည့်', audit_customer_update:'ဖောက်သည်ပြင်ဆင်',
+    audit_customer_status_change:'အလုပ်အခြေအနေပြောင်း',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
     lgHeroDesc:'ဖောက်သည်ဒေတာ၊ စာရွက်စာတမ်း၊ တက်ရောက်မှုနှင့် ကြိုတင်အကြောင်းကြားချက်ကို စနစ်တကျ စီမံပါ',
@@ -4201,8 +4205,26 @@ async function saveCustomer(){
       assignee_code:V('f_assignee')||null,
       updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})};
     let savedId=editId;
+    const _auditOld=editId?(customers.find(c=>c.id===editId)||null):null;
     if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
     else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}toast('เพิ่มลูกค้าแล้ว');}
+    // Stage 2 audit (best-effort): customer.create / customer.update — ไม่ log รูป/ไฟล์ base64
+    try{
+      const _ppid=data.passport_no||data.alien_id||null;
+      if(editId){
+        const _SKIP={photo:1,updated_at:1,updated_by_code:1};
+        const _changes={};
+        if(_auditOld){Object.keys(data).forEach(k=>{
+          if(_SKIP[k])return;
+          const ov=_auditOld[k],nv=data[k];
+          const os=Array.isArray(ov)?ov.join(','):ov,ns=Array.isArray(nv)?nv.join(','):nv;
+          if(String(os==null?'':os)!==String(ns==null?'':ns))_changes[k]={from:(ov==null?null:os),to:(nv==null?null:ns)};
+        });}
+        logAudit('customer.update','customer',editId,{name:data.name,passport_no:_ppid,changed:Object.keys(_changes),changes:_changes,source:'saveCustomer'});
+      }else{
+        logAudit('customer.create','customer',savedId,{name:data.name,passport_no:_ppid,nationality:data.nationality||null,customer_type:data.customer_type,work_status:data.work_status||null,source:'saveCustomer'});
+      }
+    }catch(_e){console.warn('[AUDIT] customer save log skipped:',_e&&_e.message);}
     // Save multiDocs (เฉพาะไฟล์ใหม่) พร้อม progress + นับ fail (ไม่ทำให้ save หลักล้ม)
     const newDocs=multiDocs.filter(d=>!d.dbId);
     let docFail=0;
@@ -4340,7 +4362,11 @@ async function saveContactLog(){
 function openTLModal(cid){tlCid=cid;const c=customers.find(x=>x.id===cid);fillSelects();if(c)document.getElementById('tlf_status').value=c.work_status||'รับเรื่อง';document.getElementById('tlf_note').value='';document.getElementById('tlModal').style.display='flex';}
 async function saveTL(){
   const status=document.getElementById('tlf_status').value;const note=document.getElementById('tlf_note').value.trim();
-  try{await dbPatch('customers',tlCid,{work_status:status,updated_at:new Date().toISOString()});await dbPost('work_timeline',{customer_id:tlCid,status,note,created_by:curUser.full_name});customers=customers.map(c=>c.id===tlCid?{...c,work_status:status}:c);document.getElementById('tlModal').style.display='none';toast('อัปเดตสถานะแล้ว');if(detId===tlCid)openDetail(tlCid);renderDash();if(curView==='customers')doFilter();}catch(e){toast('เกิดข้อผิดพลาด','err');}
+  const _tlOld=customers.find(c=>c.id===tlCid)||null;
+  try{await dbPatch('customers',tlCid,{work_status:status,updated_at:new Date().toISOString()});await dbPost('work_timeline',{customer_id:tlCid,status,note,created_by:curUser.full_name});
+    // Stage 2 audit (best-effort): customer.status_change
+    try{logAudit('customer.status_change','customer',tlCid,{name:(_tlOld&&_tlOld.name)||'',passport_no:(_tlOld&&(_tlOld.passport_no||_tlOld.alien_id))||null,from:(_tlOld&&_tlOld.work_status)||null,to:status,note:note||null,source:'saveTL'});}catch(_e){console.warn('[AUDIT] status_change log skipped:',_e&&_e.message);}
+    customers=customers.map(c=>c.id===tlCid?{...c,work_status:status}:c);document.getElementById('tlModal').style.display='none';toast('อัปเดตสถานะแล้ว');if(detId===tlCid)openDetail(tlCid);renderDash();if(curView==='customers')doFilter();}catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
 
 function renderGroups(){
