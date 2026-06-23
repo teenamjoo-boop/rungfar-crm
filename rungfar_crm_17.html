@@ -4535,6 +4535,7 @@ async function doImport(){
   let countNew=0,countDupEx=0,countDupFile=0,countMissing=0,countError=0;
   let countPhotoNew=0,countPhotoUpd=0,countPhotoSkip=0; // Excel embedded photo → customers.photo
   let countAsgUnresolved=0; // Stage 4: แถวที่มีค่าผู้รับผิดชอบแต่จับคู่ employee_code ไม่ได้
+  let countAsgUpd=0; // Stage 4: ลูกค้าเดิมที่อัปเดต assignee_code จาก Excel
   const skippedRows=[];
   // เก็บลำดับไฟล์ Excel: แถวบนสุด (ri=0) ได้ created_at ใหม่สุด → ขึ้นบนตาม sort created_at DESC เดิม
   const _impBase=Date.now();
@@ -4547,16 +4548,26 @@ async function doImport(){
     const key=makeImpKey(pp,al,name,nat,empName);
     if(key&&existingKeys.has(key)){
       countDupEx++;
+      const _exC=existingByKey.get(key);const _notes=[];
       // ลูกค้าเดิม + ยังไม่มีรูป + row import มีรูป → อัปเดตรูปให้ (ไม่สร้างลูกค้าซ้ำ)
-      let _upd=false;
-      const _exC=existingByKey.get(key);const _exPh=impPhotos[ri];
+      const _exPh=impPhotos[ri];
       if(_exC&&!_exC.photo&&_exPh&&!_exPh.unsure){
         try{const _img=await impCompressDataURL(_exPh.url,900,0.76);
-          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){await dbPatch('customers',_exC.id,{photo:_img});_exC.photo=_img;countPhotoUpd++;_upd=true;}
+          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){await dbPatch('customers',_exC.id,{photo:_img});_exC.photo=_img;countPhotoUpd++;_notes.push('อัปเดตรูป');}
           else if(_img)countPhotoSkip++;
         }catch(_){countPhotoSkip++;}
       }
-      skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำกับข้อมูลเดิม'+(_upd?' (อัปเดตรูป)':'')});continue;
+      // Stage 4: ลูกค้าเดิม → อัปเดตเฉพาะ assignee_code เมื่อ Excel ระบุผู้รับผิดชอบที่ resolve ได้ (blank=ไม่ทับ; unresolved=ไม่อัปเดต; ไม่ใช้ staff default; ไม่แตะ field อื่น)
+      const _dupAsgRaw=get(row,'assignee');
+      if(_exC&&_dupAsgRaw){
+        const _dupCode=resolveAssigneeCode(_dupAsgRaw);
+        if(_dupCode){
+          if(_normCode(_exC.assignee_code||'')!==_normCode(_dupCode)){
+            try{await dbPatch('customers',_exC.id,{assignee_code:_dupCode});_exC.assignee_code=_dupCode;countAsgUpd++;_notes.push('อัปเดตผู้รับผิดชอบ');}catch(_){/* ไม่ทำให้ import พัง */}
+          }
+        }else{countAsgUnresolved++;}
+      }
+      skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำกับข้อมูลเดิม'+(_notes.length?` (${_notes.join(', ')})`:'')});continue;
     }
     if(key&&seenInFile.has(key)){countDupFile++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำในไฟล์นำเข้า'});continue;}
     try{
@@ -4607,7 +4618,7 @@ async function doImport(){
   const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">คอลัมน์ที่ไม่ได้จับคู่กับฟิลด์ใดจะไม่ถูกนำเข้า (เช่น ลำดับ, รูปถ่าย) — หากต้องการนำเข้า ให้จับคู่คอลัมน์ในส่วน "จับคู่คอลัมน์" ด้านบน</div></div>`:'';
   const asgWarnHTML=countAsgUnresolved>0?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ ผู้รับผิดชอบที่จับคู่ไม่ได้:</strong> ${countAsgUnresolved} แถว — ปล่อยเป็น "ยังไม่ระบุ" (ตรวจชื่อ/รหัสพนักงานให้ตรงกับระบบ)</div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${asgWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
