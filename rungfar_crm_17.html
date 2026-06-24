@@ -299,6 +299,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .gi{display:flex;align-items:center;gap:6px;padding:6px 14px 6px 30px;color:var(--g5);font-size:12px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
 .gi:hover{background:var(--pp);color:var(--pd)}
 .gi .gdot{width:5px;height:5px;border-radius:50%;background:var(--p);flex-shrink:0}
+/* Stage 21A: desktop sidebar collapsible (parity กับ mobile drawer) — chevron ขวา + body ยุบด้วย max-height */
+.ni-chev{margin-left:auto;width:16px;height:16px;color:var(--g4);flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;transition:transform .25s ease,background .15s}
+.ni-chev svg{width:14px;height:14px;display:block}
+.ni-chev:hover{background:var(--g1);color:var(--p)}
+.ni-parent.open .ni-chev{transform:rotate(180deg)}
+.ni-acc{max-height:0;overflow:hidden;transition:max-height .26s ease}
+/* Stage 21A: ส่วน "ผู้ดูแลระบบ" ซ่อนทั้ง section สำหรับ staff (เหมือน #mobDrawer.staff .admin-only) */
+.sidebar.staff .admin-only{display:none}
 .sfoot{padding:12px 14px;border-top:1px solid var(--g1);margin-top:auto;display:flex;align-items:center;gap:9px}
 .sfav{width:32px;height:32px;border-radius:var(--r);background:var(--p);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700;flex-shrink:0}
 .sfname{font-size:12px;font-weight:600;color:var(--g8)}
@@ -1400,21 +1408,34 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="nsec" id="sideMain">
     <div class="ni" id="niDash" onclick="gv('dash')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span>หน้าหลัก <span class="nbadge" id="nbAlert">0</span></div>
     <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg></span>ตอกบัตร</div>
-    <div class="ni" id="niCustomers" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span></div>
-    <div class="ni ni-sub" id="niMyWork" onclick="goMyWork()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.3 3-5.5 7-5.5"/><path d="M15 18l1.8 1.8L20 16"/></svg></span>งานของฉัน</div>
-    <div class="ni" id="niStaffInfo" onclick="gv('staffinfo')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M16 14.4c2.6.2 4.5 2 4.5 4.6"/></svg></span>ข้อมูลพนักงาน</div>
-    <div class="ni ni-sub" id="niMyProfile" onclick="openMyProfile()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>โปรไฟล์ของฉัน</div>
+    <!-- Stage 21A: ลูกค้า = หัวข้อยุบ/ขยาย (แตะแถว=ไปหน้าลูกค้า, แตะ chevron=ยุบ/ขยาย) → งานของฉัน -->
+    <div class="ni ni-parent" id="niCustomers" data-acc="cust" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span><span class="ni-chev" onclick="event.stopPropagation();sideToggle('cust')" aria-label="ยุบ/ขยาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
+    <div class="ni-acc" id="sacc-cust">
+      <div class="ni ni-sub" id="niMyWork" onclick="goMyWork()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.3 3-5.5 7-5.5"/><path d="M15 18l1.8 1.8L20 16"/></svg></span>งานของฉัน</div>
+    </div>
+    <!-- Stage 21A: ข้อมูลพนักงาน = หัวข้อยุบ/ขยาย → โปรไฟล์ของฉัน -->
+    <div class="ni ni-parent" id="niStaffInfo" data-acc="staff" onclick="gv('staffinfo')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M16 14.4c2.6.2 4.5 2 4.5 4.6"/></svg></span>ข้อมูลพนักงาน<span class="ni-chev" onclick="event.stopPropagation();sideToggle('staff')" aria-label="ยุบ/ขยาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
+    <div class="ni-acc" id="sacc-staff">
+      <div class="ni ni-sub" id="niMyProfile" onclick="openMyProfile()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>โปรไฟล์ของฉัน</div>
+    </div>
     <div class="ni" id="niEmployers" onclick="gv('employers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg></span>นายจ้าง / บริษัท</div>
     <div class="ni" id="niImport" onclick="gv('import')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></span>เอกสาร</div>
-    <div class="ni" id="niMetaAds" onclick="gv('metaads')" style="display:none"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
   </div>
-  <div class="nsec" id="sideGroups"></div>
-  <div class="nsec" id="sideSys">
-    <div class="nlbl" id="sideSysLbl">ตั้งค่า</div>
+  <!-- Stage 21A: กลุ่มงาน = หัวข้อยุบ/ขยาย (แตะแถวทั้งแถวเพื่อสลับ) → รายการกลุ่ม (#sideGroups เติมโดย renderSidebar) + จัดการกลุ่ม (ไม่ใช่ admin) -->
+  <div class="nsec" id="sideGroupsSec">
+    <div class="ni ni-parent" data-acc="grp" onclick="sideToggle('grp')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>กลุ่มงาน<span class="ni-chev" aria-label="ยุบ/ขยาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
+    <div class="ni-acc" id="sacc-grp">
+      <div id="sideGroups"></div>
+    </div>
     <div class="ni" id="niGroups" onclick="gv('groups')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>จัดการกลุ่ม</div>
-    <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>ตั้งค่าแจ้งเตือน</div>
+  </div>
+  <!-- Stage 21A: ส่วนผู้ดูแลระบบ — แยกชัดเจน, แสดงเฉพาะ admin (CSS .sidebar.staff .admin-only{display:none}); จัดการกลุ่ม "ไม่" อยู่ในนี้ -->
+  <div class="nsec admin-only" id="sideAdmin">
+    <div class="nlbl">ผู้ดูแลระบบ</div>
     <div class="ni" id="niUsers" onclick="gv('users')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg></span>จัดการผู้ใช้</div>
-    <div class="ni" id="niSecLog" onclick="gv('seclog')" style="display:none"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>ประวัติการใช้งาน</div>
+    <div class="ni" id="niSecLog" onclick="gv('seclog')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>ประวัติการใช้งาน</div>
+    <div class="ni" id="niMetaAds" onclick="gv('metaads')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
+    <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>ตั้งค่าแจ้งเตือน</div>
   </div>
   <div class="nsec" id="sideFoot">
     <div class="ni" id="niLogout" onclick="doLogout()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></span>ออกจากระบบ</div>
@@ -2599,10 +2620,12 @@ function applyLang(){
     if(!el)return;
     const ic=el.querySelector('.ic');
     const badge=el.querySelector('.nbadge');
+    const chev=el.querySelector('.ni-chev'); // Stage 21A: คง chevron ของหัวข้อยุบ/ขยายไว้เมื่อสลับภาษา
     el.innerHTML='';
     if(ic)el.appendChild(ic);
     el.appendChild(document.createTextNode(txt));
     if(badge){el.appendChild(document.createTextNode(' '));el.appendChild(badge);}
+    if(chev)el.appendChild(chev);
   }
   setNiText('niDash',L.dashboard);
   setNiText('niAttendance',L.attendance);
@@ -3238,17 +3261,10 @@ async function showApp(){
   document.getElementById('sfav').textContent=curUser.full_name.charAt(0).toUpperCase();
   if(typeof mobNavSync==='function')mobNavSync();
   if(typeof mobZoomReset==='function')setTimeout(mobZoomReset,60);
-  // 1) Reset ทุก element ก่อนเสมอ — ป้องกัน state ค้างจาก session ก่อน
-  ['sideMain','sideGroups','sideSysLbl','niGroups','niImport','niSettings','niUsers','niSecLog','niAttendance','niMetaAds','niLogout'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.style.display='';
-  });
-  // 2) ซ่อน admin-only items ถ้าเป็น staff (หรือ legacy employee)
-  // niImport = นำเข้าข้อมูล → staff เห็นได้ (พนักงานออฟฟิศใช้ CRM จริง)
-  if(!isAdmin){
-    ['niSettings','niUsers','niSecLog','niMetaAds'].forEach(id=>{
-      const el=document.getElementById(id);if(el)el.style.display='none';
-    });
-  }
+  // Stage 21A: ซ่อน "ทั้ง section ผู้ดูแลระบบ" สำหรับ staff ผ่าน class เดียว (.sidebar.staff .admin-only{display:none})
+  // — เลียนแบบ mobile drawer; route guard ใน gv() ยังบังคับซ้ำอีกชั้น (จัดการผู้ใช้/ประวัติ/Meta/ตั้งค่า)
+  // — จัดการกลุ่ม/นำเข้าข้อมูล "ไม่" อยู่ใน .admin-only → staff ยังเห็น/ใช้ได้
+  const _sb=document.querySelector('.sidebar'); if(_sb)_sb.classList.toggle('staff',!isAdmin);
   showLoading('กำลังโหลดข้อมูล...',0);
   await loadAll(true);
   hideLoading();
@@ -3544,6 +3560,22 @@ function gv(v,opts={}){
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
 }
 
+// Stage 21A: ยุบ/ขยายหัวข้อใน desktop sidebar (parity กับ drawerToggle ของ mobile) — วัด scrollHeight ตอนเปิดเพื่อ animate ลื่น
+function sideToggle(key){
+  const head=document.querySelector('.ni-parent[data-acc="'+key+'"]');
+  const body=document.getElementById('sacc-'+key);
+  if(!head||!body)return;
+  const open=head.classList.toggle('open');
+  body.style.maxHeight=open?(body.scrollHeight+'px'):'0px';
+}
+// บังคับเปิด (ใช้ตอน "active อยู่ใน section นั้น" → คงเปิดให้เห็น item ที่ active)
+function sideExpand(key){
+  const head=document.querySelector('.ni-parent[data-acc="'+key+'"]');
+  const body=document.getElementById('sacc-'+key);
+  if(!head||!body||head.classList.contains('open'))return;
+  head.classList.add('open');
+  body.style.maxHeight=body.scrollHeight+'px';
+}
 function renderSidebar(){
   const total=customers.length;
   const al=customers.filter(isAlert).length;
@@ -3552,8 +3584,13 @@ function renderSidebar(){
   const nb=document.getElementById('nbAlert');
   if(nb){nb.textContent=al;nb.className='nbadge'+(al>0?'':' ok');}
   const sg=document.getElementById('sideGroups');
-  if(!groups.length){sg.innerHTML='';return;}
-  sg.innerHTML='<div class="nlbl" id="sideGrpLbl">'+T('sideGrpLabel')+'</div>'+groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;const t=JSON.stringify(g.name).replace(/"/g,'&quot;');return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:${t}})">${esc(g.name)}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
+  if(sg){
+    // Stage 21A: ไม่ใส่ label "กลุ่มงาน" ซ้ำแล้ว (หัวข้อ accordion เป็น label อยู่ในตัว) — รายการ+จำนวนเหมือนเดิม
+    sg.innerHTML=(!groups.length)?'' : groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;const t=JSON.stringify(g.name).replace(/"/g,'&quot;');return`<div class="gi" onclick="gv('customers',{grp:${g.id},title:${t}})">${esc(g.name)}<span style="margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--g4)">${cnt}</span></div>`;}).join('');
+    // ถ้า accordion กลุ่มงานเปิดอยู่ → คำนวณความสูงใหม่ให้พอดีรายการที่เพิ่งเรนเดอร์
+    const gh=document.querySelector('.ni-parent[data-acc="grp"]'),gb=document.getElementById('sacc-grp');
+    if(gh&&gb&&gh.classList.contains('open'))gb.style.maxHeight=gb.scrollHeight+'px';
+  }
 }
 
 // ===== ALERT DASHBOARD (Round E) — หน้า "แจ้งเตือน" พร้อม sub-filter =====
@@ -4214,6 +4251,12 @@ function syncCustomerNav(){
   const niM=document.getElementById('niMyWork');if(niM)niM.classList.toggle('on',isMine);
   const dC=document.querySelector('#mobDrawer .di[data-view="customers"]');if(dC)dC.classList.toggle('on',onCust&&!isMine);
   const dM=document.getElementById('drawerMyWork');if(dM)dM.classList.toggle('on',isMine);
+  // Stage 21A: คง section ที่ "active" ของ desktop sidebar ให้เปิดอยู่ — งานของฉัน → ลูกค้า, ตัวกรองกลุ่ม → กลุ่มงาน
+  if(typeof sideExpand==='function'){
+    if(isMine)sideExpand('cust');
+    const qg=document.getElementById('qgrp');
+    if(onCust&&qg&&qg.value)sideExpand('grp');
+  }
 }
 function editorInfo(code){const k=code?_normCode(code):'';const e=k?empProfMap[k]:null;return{emp:e||null,name:e?(e.nickname||e.full_name||code):(code||'')};}
 function renderTable(){
