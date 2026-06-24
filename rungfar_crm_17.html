@@ -1359,6 +1359,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="ni" id="niCustomers" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span></div>
     <div class="ni ni-sub" id="niMyWork" onclick="goMyWork()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.3 3-5.5 7-5.5"/><path d="M15 18l1.8 1.8L20 16"/></svg></span>งานของฉัน</div>
     <div class="ni" id="niStaffInfo" onclick="gv('staffinfo')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M16 14.4c2.6.2 4.5 2 4.5 4.6"/></svg></span>ข้อมูลพนักงาน</div>
+    <div class="ni ni-sub" id="niMyProfile" onclick="openMyProfile()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>โปรไฟล์ของฉัน</div>
     <div class="ni" id="niEmployers" onclick="gv('employers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg></span>นายจ้าง / บริษัท</div>
     <div class="ni" id="niImport" onclick="gv('import')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></span>เอกสาร</div>
     <div class="ni" id="niMetaAds" onclick="gv('metaads')" style="display:none"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
@@ -1374,7 +1375,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="nsec" id="sideFoot">
     <div class="ni" id="niLogout" onclick="doLogout()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></span>ออกจากระบบ</div>
   </div>
-  <div class="sfoot">
+  <div class="sfoot" onclick="openMyProfile()" style="cursor:pointer" title="โปรไฟล์ของฉัน">
     <div class="sfav" id="sfav">A</div>
     <div><div class="sfname" id="sfname"></div><div class="sfrole" id="sfrole"></div><div id="sfbranch" style="font-size:10px;color:var(--g4);margin-top:1px"></div></div>
   </div>
@@ -1492,6 +1493,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="dpanel-menu">
       <div class="di" data-view="dash" onclick="mobNav('dash');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span>แจ้งเตือน</span><span class="dbadge" id="drawerAlertBadge" style="display:none">0</span></div>
       <div class="di" data-view="staffinfo" onclick="mobNav('staffinfo');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M16 14.4c2.6.2 4.5 2 4.5 4.6"/></svg><span>ข้อมูลพนักงาน</span></div>
+      <div class="di di-sub" id="drawerMyProfile" onclick="openMyProfile();mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg><span>โปรไฟล์ของฉัน</span></div>
       <div class="di" data-view="attendance" onclick="mobNav('attendance');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>ตอกบัตร</span></div>
       <div class="di" data-view="customers" onclick="mobNav('customers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span></div>
       <div class="di di-sub" id="drawerMyWork" onclick="goMyWork();mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.3 3-5.5 7-5.5"/><path d="M15 18l1.8 1.8L20 16"/></svg><span>งานของฉัน</span></div>
@@ -1515,6 +1517,13 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 <div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:440px">
   <div class="mh"><div class="mt">ข้อมูลพนักงาน</div><button class="xbtn" onclick="closeStaffDetail()">×</button></div>
   <div class="mbody" id="staffDetailBody"></div>
+</div></div>
+
+<!-- MODAL: MY PROFILE / โปรไฟล์ของฉัน (Stage 13) — บัตรประจำตัวพนักงานของผู้ที่ login -->
+<div class="mo" id="myProfileModal" style="display:none" onclick="if(event.target===this)closeMyProfile()">
+<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:400px">
+  <div class="mh"><div class="mt">โปรไฟล์ของฉัน</div><button class="xbtn" onclick="closeMyProfile()">×</button></div>
+  <div class="mbody" id="myProfileBody"></div>
 </div></div>
 
 <!-- MODAL: STAFF INFO EDIT (Stage 5) -->
@@ -3196,16 +3205,14 @@ async function showApp(){
   if(niInit)niInit.classList.add('on');
   // Apply saved language
   setLang(curLang);
-  // BRANCH-LIGHT: staff → fetch ข้อมูลพนักงานตัวเองในพื้นหลัง เพื่อแสดงสาขาใน sidebar
-  if(!isAdmin){
-    curEmpInfo=null;
-    dbGet('attendance_employees',`?employee_code=eq.${encodeURIComponent(curUser.username)}&select=id,employee_code,full_name,branch_id,branch_name,normal_checkin_time,normal_checkout_time&limit=1`)
-      .then(rows=>{
-        curEmpInfo=(Array.isArray(rows)&&rows[0])||null;
-        const el=document.getElementById('sfbranch');
-        if(el)el.textContent=(curEmpInfo&&curEmpInfo.branch_name)||'';
-      }).catch(()=>{});
-  }
+  // BRANCH-LIGHT: fetch ข้อมูลพนักงานตัวเองในพื้นหลัง → แสดงสาขา (staff) + รูปโปรไฟล์ในกล่องผู้ใช้มุมซ้ายล่าง (Stage 13)
+  curEmpInfo=null;
+  dbGet('attendance_employees',`?employee_code=eq.${encodeURIComponent(curUser.username)}&select=id,employee_code,full_name,branch_id,branch_name,profile_image,normal_checkin_time,normal_checkout_time&limit=1`)
+    .then(rows=>{
+      curEmpInfo=(Array.isArray(rows)&&rows[0])||null;
+      if(!isAdmin){const el=document.getElementById('sfbranch');if(el)el.textContent=(curEmpInfo&&curEmpInfo.branch_name)||'';}
+      applyMyAvatar();
+    }).catch(()=>{});
 }
 
 async function loadAll(silent=false){
@@ -7057,6 +7064,65 @@ async function staffSaveEdit(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent='บันทึก';}
   }
+}
+
+// ===== STAGE 13: "โปรไฟล์ของฉัน" — บัตรประจำตัวพนักงานของผู้ที่ login อยู่ =====
+// reuse attendance_employees (จับคู่ด้วย employee_code === curUser.username) + reuse staffOpenEdit เดิม (field gating ปลอดภัย)
+// ไม่สร้างตาราง/ที่เก็บใหม่ · role มาจาก curUser (ตาราง employee ไม่มี role) · employee_code/role อ่านอย่างเดียว
+async function openMyProfile(){
+  const m=document.getElementById('myProfileModal');
+  const body=document.getElementById('myProfileBody');
+  if(!m||!body)return;
+  body.innerHTML='<div style="text-align:center;padding:40px;color:var(--g5)">⏳ กำลังโหลด...</div>';
+  m.style.display='flex';
+  // โหลด staff_list ถ้ายังไม่มี (ใช้ query เดียวกับหน้า "ข้อมูลพนักงาน" — ไม่ดึง field ลับ)
+  if(!Array.isArray(staff_list)||!staff_list.length){
+    try{
+      const data=await dbGet('attendance_employees','?order=employee_code.asc&select=id,employee_code,full_name,nickname,phone,position,branch_id,branch_name,profile_image,status');
+      staff_list=Array.isArray(data)?data:[];
+    }catch(e){
+      body.innerHTML=`<div style="color:#dc2626;padding:24px;text-align:center">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message||'')}</div>`;return;
+    }
+  }
+  const uname=_normCode(curUser&&curUser.username);
+  const e=uname?staff_list.find(x=>_normCode(x.employee_code)===uname):null;
+  if(!e){
+    body.innerHTML=`<div style="text-align:center;padding:40px 24px;color:var(--g5)"><div style="font-size:42px;opacity:.3;margin-bottom:12px">👤</div><div style="font-size:14px;font-weight:700;color:var(--g6);margin-bottom:6px">ยังไม่พบข้อมูลพนักงานของบัญชีนี้</div><div style="font-size:12px">กรุณาติดต่อผู้ดูแลระบบเพื่อเพิ่มข้อมูลพนักงาน</div></div>`;
+    return;
+  }
+  myProfilePaint(e);
+}
+function myProfilePaint(e){
+  const body=document.getElementById('myProfileBody');if(!body)return;
+  const isAdmin=curUser?.role==='admin';
+  const roleTh=isAdmin?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
+  const code=e.employee_code||(curUser&&curUser.username)||'—';
+  const isAct=e.status==='active';
+  const stLabel=isAct?'ใช้งาน':(e.status==='resigned'?'ลาออก':'ปิดใช้งาน');
+  const av=e.profile_image
+    ?`<img src="${esc(e.profile_image)}" alt="" style="width:96px;height:96px;border-radius:22px;object-fit:cover;border:3px solid var(--pp)">`
+    :`<div style="width:96px;height:96px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:var(--pp);color:var(--pd);font-size:38px;font-weight:800">${esc((e.full_name||'?').charAt(0).toUpperCase())}</div>`;
+  const row=(l,v,mono)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--g1)"><span style="color:var(--g5);font-size:12.5px;flex-shrink:0">${l}</span><span style="font-weight:600;font-size:13px;text-align:right;word-break:break-word${mono?';font-family:var(--mono)':''}">${v}</span></div>`;
+  body.innerHTML=
+    `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:8px">${av}
+      <div style="font-size:18px;font-weight:800;text-align:center;color:var(--g9)">${esc(e.full_name||'—')}</div>
+      ${e.nickname?`<div style="color:var(--g5);font-size:13px">(${esc(e.nickname)})</div>`:''}
+      <span style="padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${isAdmin?'#ede9fe':'var(--pp)'};color:${isAdmin?'#7c3aed':'var(--pd)'}">${esc(roleTh)}</span>
+    </div>`
+    +row('รหัสพนักงาน',esc(code),true)
+    +row('ตำแหน่ง',e.position?esc(e.position):'—')
+    +row('สาขา',e.branch_name?esc(e.branch_name):'—')
+    +row('เบอร์โทร',e.phone?esc(e.phone):'—',true)
+    +row('สถานะพนักงาน',`<span class="sc-st ${isAct?'act':'inact'}">${esc(stLabel)}</span>`)
+    +`<button class="btn btn-p" style="width:100%;margin-top:16px" onclick="closeMyProfile();staffOpenEdit(${e.id})">${uiIcon('edit')}แก้ไขโปรไฟล์</button>`;
+}
+function closeMyProfile(){const m=document.getElementById('myProfileModal');if(m)m.style.display='none';}
+// STAGE 13: ใช้รูปโปรไฟล์พนักงานปัจจุบันเป็น avatar กล่องผู้ใช้มุมซ้ายล่าง — ไม่มีรูป → คงตัวอักษรย่อเดิม
+function applyMyAvatar(){
+  const el=document.getElementById('sfav');if(!el)return;
+  const img=curEmpInfo&&curEmpInfo.profile_image;
+  if(img){el.innerHTML=`<img src="${esc(img)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r);display:block">`;}
+  else{el.innerHTML='';el.textContent=((curUser&&curUser.full_name)||'?').charAt(0).toUpperCase();}
 }
 
 // ===== BRANCH MANAGEMENT (BRANCH-MGMT) =====
