@@ -2271,6 +2271,7 @@ const LANG = {
     audit_customer_status_change:'เปลี่ยนสถานะงาน',
     audit_document_upload:'เพิ่มเอกสาร',
     audit_customer_bulk_status_change:'เปลี่ยนสถานะหลายรายการ', audit_customer_bulk_group_change:'เปลี่ยนกลุ่มหลายรายการ',
+    audit_group_create:'เพิ่มกลุ่ม', audit_group_update:'แก้ไขกลุ่ม', audit_group_delete:'ลบกลุ่ม',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
     lgHeroDesc:'บริหารข้อมูลลูกค้า เอกสาร การตอกบัตรพนักงาน และการแจ้งเตือนล่วงหน้า อย่างเป็นระบบ',
@@ -2457,6 +2458,7 @@ const LANG = {
     audit_customer_status_change:'အလုပ်အခြေအနေပြောင်း',
     audit_document_upload:'စာရွက်ထည့်',
     audit_customer_bulk_status_change:'အများအလုပ်အခြေအနေပြောင်း', audit_customer_bulk_group_change:'အများအုပ်စုပြောင်း',
+    audit_group_create:'အုပ်စုထည့်', audit_group_update:'အုပ်စုပြင်ဆင်', audit_group_delete:'အုပ်စုဖျက်',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
     lgHeroDesc:'ဖောက်သည်ဒေတာ၊ စာရွက်စာတမ်း၊ တက်ရောက်မှုနှင့် ကြိုတင်အကြောင်းကြားချက်ကို စနစ်တကျ စီမံပါ',
@@ -4388,9 +4390,9 @@ function openEditGrp(id){editGid=id;const g=groups.find(x=>x.id===id);if(!g)retu
 async function saveGroup(){
   const name=document.getElementById('gf_name').value.trim();if(!name){toast('กรุณากรอกชื่อกลุ่ม','err');return;}
   const data={name,description:document.getElementById('gf_desc').value.trim()};
-  try{if(editGid){await dbPatch('groups',editGid,data);groups=groups.map(g=>g.id===editGid?{...g,...data}:g);toast('บันทึกแล้ว');}else{const r=await dbPost('groups',data);if(r&&r[0])groups.push(r[0]);toast('เพิ่มกลุ่มแล้ว');}document.getElementById('grpModal').style.display='none';renderGroups();renderSidebar();fillSelects();}catch(e){toast('เกิดข้อผิดพลาด','err');}
+  try{if(editGid){await dbPatch('groups',editGid,data);groups=groups.map(g=>g.id===editGid?{...g,...data}:g);try{logAudit('group.update','group',editGid,{name:data.name});}catch(_){}toast('บันทึกแล้ว');}else{const r=await dbPost('groups',data);const _ng=(r&&r[0])||null;if(_ng)groups.push(_ng);try{logAudit('group.create','group',(_ng&&_ng.id)||null,{name:data.name});}catch(_){}toast('เพิ่มกลุ่มแล้ว');}document.getElementById('grpModal').style.display='none';renderGroups();renderSidebar();fillSelects();}catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
-async function delGrp(id){if(!confirm('ลบกลุ่มนี้?'))return;try{await dbDel('groups',id);groups=groups.filter(g=>g.id!==id);renderGroups();renderSidebar();fillSelects();toast('ลบแล้ว','err');}catch(e){toast('เกิดข้อผิดพลาด','err');}}
+async function delGrp(id){if(!confirm('ลบกลุ่มนี้?'))return;const _gn=(groups.find(g=>g.id===id)||{}).name||'';try{await dbDel('groups',id);try{logAudit('group.delete','group',id,{name:_gn});}catch(_){}groups=groups.filter(g=>g.id!==id);renderGroups();renderSidebar();fillSelects();toast('ลบแล้ว','err');}catch(e){toast('เกิดข้อผิดพลาด','err');}}
 
 function renderImport(){
   document.getElementById('importContent').innerHTML=`<div style="max-width:800px">
@@ -5065,7 +5067,7 @@ function secLogTab(which){
 }
 
 // ── Customer activity log (audit_logs) — admin-only, อ่านผ่าน RPC SECURITY DEFINER ──
-const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.delete'];
+const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.delete','group.create','group.update','group.delete'];
 let _auditLogsCache=[]; // Stage 6: เก็บผล fetch ล่าสุดไว้กรองด้วยช่องค้นหา client-side
 let _auditLogsShown=[]; // Stage 7: แถวที่กำลังแสดง (หลัง filter/search) สำหรับ export
 let _auditDetailFn=null; // Stage 7: อ้างอิง detSummary ปัจจุบัน เพื่อ export ข้อความให้ตรงกับตาราง
@@ -5151,7 +5153,7 @@ function auditLogRender(logs){
   const wrap=document.getElementById('al_table_wrap');if(!wrap)return;
   if(!logs.length){wrap.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogNoDataRange')}</div>`;return;}
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return s;}};
-  const actColor={'customer.delete':'#dc2626','customer.bulk_delete':'#dc2626','document.delete':'#dc2626','customer.export':'#2563eb','customer.assign':'#7c3aed'};
+  const actColor={'customer.delete':'#dc2626','customer.bulk_delete':'#dc2626','document.delete':'#dc2626','group.delete':'#dc2626','customer.export':'#2563eb','customer.assign':'#7c3aed'};
   // Stage 3: ป้ายชื่อ field (raw DB key -> ไทย) สำหรับ customer.update — โชว์เฉพาะชื่อ field ไม่โชว์ค่า
   const _fieldTh={name:'ชื่อ',name_th:'ชื่อไทย',nationality:'สัญชาติ',passport_no:'พาสปอร์ต',alien_id:'เลขประจำตัว',phone:'เบอร์โทร',dob:'วันเกิด',work_status:'สถานะงาน',services:'บริการ',wp_no:'เลข WP',visa_no:'เลขวีซ่า',license_no:'ใบอนุญาต',employer_id:'นายจ้าง',group_id:'กลุ่ม',branch_id:'สาขา',customer_type:'ประเภท',fee_total:'ค่าบริการ',fee_paid:'ชำระแล้ว',fee_due:'ค้างชำระ',pay_status:'สถานะชำระ',pay_channel:'ช่องทางชำระ',assignee_code:'ผู้รับผิดชอบ',note:'หมายเหตุ'};
   const detSummary=l=>{
@@ -5175,6 +5177,9 @@ function auditLogRender(logs){
       if(a==='customer.bulk_delete'){const cnt=(d.count!=null?d.count:'?');return 'ลบลูกค้าหลายรายการ: '+cnt+' รายการ';}
       if(a==='customer.bulk_status_change'){const cnt=(d.count!=null?d.count:'?');const to=d.to?esc(d.to):'—';return 'เปลี่ยนสถานะหลายรายการ: '+cnt+' รายการ → '+to;}
       if(a==='customer.bulk_group_change'){const cnt=(d.count!=null?d.count:'?');const gn=d.group_name?esc(d.group_name):'—';return 'เปลี่ยนกลุ่มหลายรายการ: '+cnt+' รายการ → '+gn;}
+      if(a==='group.create'){return 'เพิ่มกลุ่ม'+(nm?': '+nm:'');}
+      if(a==='group.update'){return 'แก้ไขกลุ่ม'+(nm?': '+nm:'');}
+      if(a==='group.delete'){return 'ลบกลุ่ม'+(nm?': '+nm:'');}
     }catch(_){}
     // Fallback ปลอดภัย: detail หาย/ผิดรูป -> ใช้ logic เดิม
     const d=l.detail||{};const parts=[];
