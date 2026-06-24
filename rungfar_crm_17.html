@@ -309,6 +309,33 @@ body{font-family:var(--font);background:var(--bg);color:var(--g9);font-size:14px
 .abanner{background:#FFFBEB;border-bottom:1px solid #FCD34D;padding:8px 22px;font-size:13px;color:#92400E;display:none;align-items:center;gap:8px}
 .content{flex:1;overflow-y:auto;padding:18px 22px}
 .view{display:none}.view.on{display:block}
+/* Stage 16: dashboard employee hero — time-of-day sky theme (auto by local time, var-driven) */
+.dhero{position:relative;display:flex;align-items:center;gap:16px;border-radius:var(--rx);padding:16px 20px;margin-bottom:14px;overflow:hidden;color:var(--dh-text,#6e4a2e);box-shadow:0 4px 16px var(--dh-shadow,rgba(150,110,70,.18));transition:background .4s ease}
+.dhero>.dhero-sky{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.dhero>*{position:relative;z-index:1}
+.dhero-ava{flex-shrink:0}
+.dhero-av{width:62px;height:62px;border-radius:18px;object-fit:cover;display:block;border:3px solid var(--dh-av-bd,rgba(255,255,255,.7))}
+.dhero-av.dhero-av-ph{display:flex;align-items:center;justify-content:center;background:var(--dh-ph-bg,rgba(255,255,255,.4));color:var(--dh-text,#6e4a2e);font-size:26px;font-weight:800}
+.dhero-main{flex:1;min-width:0}
+.dhero-greet{font-size:13px;font-weight:600;opacity:.9}
+.dhero-name{font-size:20px;font-weight:800;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dhero-nick{font-size:14px;font-weight:600;opacity:.82}
+.dhero-sub{font-size:12.5px;opacity:.82;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dhero-date{flex-shrink:0;align-self:flex-start;background:var(--dh-chip-bg,rgba(255,255,255,.5));border:1px solid var(--dh-chip-bd,rgba(255,255,255,.65));color:var(--dh-text);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;white-space:nowrap}
+/* — sky themes — */
+.dhero-morning{background:radial-gradient(circle at 85% 16%,rgba(255,244,222,.9),transparent 38%),radial-gradient(135% 90% at 28% -16%,rgba(255,255,255,.55),transparent 60%),linear-gradient(120deg,#FFE7CE 0%,#FFD8BE 36%,#FBEFDA 68%,#DCEAF6 100%);--dh-text:#7a4a2a;--dh-av-bd:rgba(255,255,255,.85);--dh-ph-bg:rgba(255,255,255,.5);--dh-chip-bg:rgba(255,255,255,.55);--dh-chip-bd:rgba(255,255,255,.78);--dh-shadow:rgba(214,150,90,.22);--dh-cloud:rgba(255,255,255,.62)}
+.dhero-day{background:radial-gradient(circle at 85% 14%,rgba(255,255,255,.92),transparent 40%),radial-gradient(135% 90% at 24% -16%,rgba(255,255,255,.6),transparent 60%),linear-gradient(120deg,#CDE4F7 0%,#E3F0FB 42%,#FBF4E6 100%);--dh-text:#2f5270;--dh-av-bd:#fff;--dh-ph-bg:rgba(255,255,255,.6);--dh-chip-bg:rgba(255,255,255,.62);--dh-chip-bd:rgba(255,255,255,.85);--dh-shadow:rgba(120,160,200,.22);--dh-cloud:rgba(255,255,255,.72)}
+.dhero-evening{background:radial-gradient(circle at 84% 20%,rgba(255,240,214,.72),transparent 40%),radial-gradient(135% 90% at 28% -14%,rgba(255,242,228,.38),transparent 60%),linear-gradient(120deg,#F9CDA0 0%,#F1A985 46%,#E2949E 100%);--dh-text:#6e3a2e;--dh-av-bd:rgba(255,255,255,.82);--dh-ph-bg:rgba(255,255,255,.45);--dh-chip-bg:rgba(255,255,255,.48);--dh-chip-bd:rgba(255,255,255,.62);--dh-shadow:rgba(200,110,90,.24);--dh-cloud:rgba(255,240,225,.46)}
+.dhero-night{background:radial-gradient(circle at 85% 20%,rgba(226,229,255,.3),transparent 42%),radial-gradient(135% 90% at 20% -16%,rgba(255,255,255,.08),transparent 60%),linear-gradient(125deg,#2b2f52 0%,#353a64 46%,#46406e 100%);--dh-text:#F4E7D4;--dh-av-bd:rgba(255,255,255,.4);--dh-ph-bg:rgba(255,255,255,.16);--dh-chip-bg:rgba(255,255,255,.14);--dh-chip-bd:rgba(255,255,255,.26);--dh-shadow:rgba(0,0,0,.38);--dh-cloud:rgba(210,216,255,.13)}
+@media (max-width:768px){
+  .dhero{flex-wrap:wrap;gap:12px;padding:14px 16px}
+  .dhero-av{width:54px;height:54px;border-radius:16px}
+  .dhero-name{font-size:18px;white-space:normal}
+  .dhero-sub{white-space:normal}
+  .dhero-date{order:3;width:100%;text-align:center;align-self:auto;box-sizing:border-box}
+}
+html[data-theme="dark"] .dhero{box-shadow:0 4px 16px rgba(0,0,0,.45)}
+html[data-theme="dark"] .dhero-morning,html[data-theme="dark"] .dhero-day,html[data-theme="dark"] .dhero-evening{filter:brightness(.95) saturate(.97)}
 .btn{padding:8px 16px;border-radius:var(--r);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
 .btn-p{background:var(--pp);color:var(--p);border:1.5px solid transparent;box-shadow:none}
 .btn-p:hover{background:var(--pp2);border-color:transparent}
@@ -1354,7 +1381,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     </div>
   </div>
   <div class="nsec" id="sideMain">
-    <div class="ni" id="niDash" onclick="gv('dash')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>แจ้งเตือน <span class="nbadge" id="nbAlert">0</span></div>
+    <div class="ni" id="niDash" onclick="gv('dash')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span>หน้าหลัก <span class="nbadge" id="nbAlert">0</span></div>
     <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg></span>ตอกบัตร</div>
     <div class="ni" id="niCustomers" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span></div>
     <div class="ni ni-sub" id="niMyWork" onclick="goMyWork()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.3 3-5.5 7-5.5"/><path d="M15 18l1.8 1.8L20 16"/></svg></span>งานของฉัน</div>
@@ -1398,7 +1425,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="abanner" id="abanner"></div>
   <div id="refreshBar" style="display:none;background:var(--pp);padding:3px 22px;font-size:11px;color:var(--pd);text-align:center">⟳ กำลังอัปเดตข้อมูล...</div>
   <div class="content">
-    <div class="view on" id="view-dash"><div id="dbContent"><div style="text-align:center;padding:60px;color:var(--g5)">⏳ กำลังโหลด...</div></div></div>
+    <div class="view on" id="view-dash"><div id="dashHero"></div><div id="dbContent"><div style="text-align:center;padding:60px;color:var(--g5)">⏳ กำลังโหลด...</div></div></div>
     <div class="view" id="view-customers">
       <div class="toolbar">
         <div class="srch"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="si" id="qs" placeholder="ค้นหา ชื่อ / พาสปอร์ต / เลขต่างด้าว / เบอร์..." oninput="doFilter()"></div>
@@ -1453,7 +1480,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 <!-- ===== MOBILE BOTTOM NAV + MORE SHEET (foundation — แสดงเฉพาะ <=768px, UI only) ===== -->
 <nav id="mobNav" aria-label="เมนูมือถือ">
   <div class="nav-admin">
-    <button class="mn-item" data-view="dash" onclick="mobNav('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>แจ้งเตือน<span class="mn-badge" id="mobAlertBadge" style="display:none">0</span></button>
+    <button class="mn-item" data-view="dash" onclick="mobNav('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg>หน้าหลัก<span class="mn-badge" id="mobAlertBadge" style="display:none">0</span></button>
     <button class="mn-item" data-view="attendance" onclick="mobNav('attendance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>ตอกบัตร</button>
     <button class="mn-item" data-view="customers" onclick="mobNav('customers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg>ลูกค้า</button>
     <button class="mn-item" data-view="import" onclick="mobNav('import')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg>เอกสาร</button>
@@ -1469,7 +1496,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 <div id="mobMore" onclick="if(event.target===this)mobMoreClose()">
   <div class="sheet">
     <div class="grab"></div>
-    <div class="ms-item staff-only" onclick="mobNav('dash');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span>แจ้งเตือน</span></div>
+    <div class="ms-item staff-only" onclick="mobNav('dash');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span>หน้าหลัก</span></div>
     <div class="ms-item staff-only" onclick="mobNav('customers');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span></div>
     <div class="ms-item staff-only" onclick="mobNav('import');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span>เอกสาร</span></div>
     <div class="ms-item admin-only" onclick="mobNav('employers');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg><span>นายจ้าง / บริษัท</span></div>
@@ -1491,7 +1518,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <button class="dpanel-x" onclick="mobDrawerClose()" aria-label="ปิด">×</button>
     </div>
     <div class="dpanel-menu">
-      <div class="di" data-view="dash" onclick="mobNav('dash');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span>แจ้งเตือน</span><span class="dbadge" id="drawerAlertBadge" style="display:none">0</span></div>
+      <div class="di" data-view="dash" onclick="mobNav('dash');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span>หน้าหลัก</span><span class="dbadge" id="drawerAlertBadge" style="display:none">0</span></div>
       <div class="di" data-view="staffinfo" onclick="mobNav('staffinfo');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M16 14.4c2.6.2 4.5 2 4.5 4.6"/></svg><span>ข้อมูลพนักงาน</span></div>
       <div class="di di-sub" id="drawerMyProfile" onclick="openMyProfile();mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg><span>โปรไฟล์ของฉัน</span></div>
       <div class="di" data-view="attendance" onclick="mobNav('attendance');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>ตอกบัตร</span></div>
@@ -2102,7 +2129,7 @@ let curLang = localStorage.getItem('crm_lang') || 'th';
 
 const LANG = {
   th: {
-    dashboard:'แจ้งเตือน', customers:'ลูกค้า', alerts:'การแจ้งเตือน',
+    dashboard:'หน้าหลัก', customers:'ลูกค้า', alerts:'การแจ้งเตือน',
     employers:'นายจ้าง / บริษัท', groups:'จัดการกลุ่ม', import:'เอกสาร',
     settings:'ตั้งค่าแจ้งเตือน', users:'จัดการผู้ใช้',
     addCustomer:'+ เพิ่มลูกค้า', importExcel:'นำเข้า Excel',
@@ -2289,7 +2316,7 @@ const LANG = {
     lgFeat3Sub:'แจ้งเตือนงานและการตอกบัตรผ่าน LINE อัตโนมัติ',
   },
   my: {
-    dashboard:'သတိပေးချက်', customers:'ဖောက်သည်', alerts:'သတိပေးချက်',
+    dashboard:'ပင်မ', customers:'ဖောက်သည်', alerts:'သတိပေးချက်',
     employers:'အလုပ်ရှင် / ကုမ္ပဏီ', groups:'အုပ်စုစီမံခန့်ခွဲ', import:'စာရွက်စာတမ်း',
     settings:'သတိပေးချက်ပြင်ဆင်', users:'အသုံးပြုသူစီမံ',
     addCustomer:'+ ဖောက်သည်ထည့်', importExcel:'Excel တင်သွင်း',
@@ -3198,7 +3225,7 @@ async function showApp(){
   showLoading('กำลังโหลดข้อมูล...',0);
   await loadAll(true);
   hideLoading();
-  fillSelects();renderDash();renderSidebar();renderSettings();
+  fillSelects();renderDash();renderDashHero();renderSidebar();renderSettings();
   // set initial nav active (dash) — ไม่ผ่าน gv() เพื่อไม่ re-render
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niInit=document.querySelector(`.ni[onclick*="'dash'"]`);
@@ -3207,11 +3234,12 @@ async function showApp(){
   setLang(curLang);
   // BRANCH-LIGHT: fetch ข้อมูลพนักงานตัวเองในพื้นหลัง → แสดงสาขา (staff) + รูปโปรไฟล์ในกล่องผู้ใช้มุมซ้ายล่าง (Stage 13)
   curEmpInfo=null;
-  dbGet('attendance_employees',`?employee_code=eq.${encodeURIComponent(curUser.username)}&select=id,employee_code,full_name,branch_id,branch_name,profile_image,normal_checkin_time,normal_checkout_time&limit=1`)
+  dbGet('attendance_employees',`?employee_code=eq.${encodeURIComponent(curUser.username)}&select=id,employee_code,full_name,nickname,position,branch_id,branch_name,profile_image,normal_checkin_time,normal_checkout_time&limit=1`)
     .then(rows=>{
       curEmpInfo=(Array.isArray(rows)&&rows[0])||null;
       if(!isAdmin){const el=document.getElementById('sfbranch');if(el)el.textContent=(curEmpInfo&&curEmpInfo.branch_name)||'';}
       applyMyAvatar();
+      renderDashHero(); // Stage 16: อัปเดต banner เมื่อได้ข้อมูลพนักงาน (รูป/ชื่อเล่น/ตำแหน่ง/สาขา)
     }).catch(()=>{});
 }
 
@@ -3331,7 +3359,13 @@ function mobDrawerSync(){
   const setT=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   setT('drawerName',nm);
   setT('drawerRole',isAdmin?'ผู้ดูแลระบบ':'พนักงาน');
-  setT('drawerAv',(nm.charAt(0)||'?').toUpperCase());
+  // Stage 14: drawer header avatar = รูปโปรไฟล์พนักงานปัจจุบัน (curEmpInfo) ให้ตรงกับ sidebar/โปรไฟล์ของฉัน — ไม่มีรูป → คงตัวอักษรย่อเดิม
+  const _dav=document.getElementById('drawerAv');
+  if(_dav){
+    const _img=curEmpInfo&&curEmpInfo.profile_image;
+    if(_img){_dav.innerHTML=`<img src="${esc(_img)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block">`;}
+    else{_dav.innerHTML='';_dav.textContent=(nm.charAt(0)||'?').toUpperCase();}
+  }
   d.querySelectorAll('.di[data-view]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-view')===curView));
   if(typeof syncCustomerNav==='function')syncCustomerNav(); // Stage 3: ไฮไลต์ ลูกค้า/งานของฉัน ให้ถูกต้องตอนเปิด drawer
   const src=document.getElementById('nbAlert'),bd=document.getElementById('drawerAlertBadge');
@@ -3831,6 +3865,80 @@ function renderDash(){
   else dashRefreshAbsentCount();
   if(dashFilter==='noout')dashRenderNooutToday();
   else dashRefreshNooutCount();
+}
+
+// Stage 16: แบนเนอร์ข้อมูลพนักงานบนหน้าแดชบอร์ด — UI only, ใช้ curEmpInfo/curUser เดิม (จับคู่ employee_code===username)
+function renderDashHero(){
+  const host=document.getElementById('dashHero');if(!host)return;
+  const e=curEmpInfo||{};
+  const name=e.full_name||(curUser&&curUser.full_name)||(curUser&&curUser.username)||'—';
+  const nick=e.nickname||'';
+  const sub=[e.position,e.branch_name].filter(Boolean).map(esc).join(' · ');
+  const img=e.profile_image||'';
+  const initial=esc((name||'?').charAt(0).toUpperCase());
+  const av=img
+    ?`<img src="${esc(img)}" alt="" class="dhero-av">`
+    :`<div class="dhero-av dhero-av-ph">${initial}</div>`;
+  // ธีมท้องฟ้าตามช่วงเวลาท้องถิ่น (เช้า/กลางวัน/เย็น/ค่ำ) — เลือกอัตโนมัติจาก local time
+  const h=new Date().getHours();
+  let period;
+  if(h>=5&&h<11)period='morning';
+  else if(h>=11&&h<16)period='day';
+  else if(h>=16&&h<19)period='evening';
+  else period='night';
+  // คำทักทาย 5 ช่วง (กลางวัน/บ่าย แยกกัน) — ไม่มี emoji, บรรทัดทักทายมีเฉพาะคำทักทาย
+  const greet=(h>=5&&h<11)?'สวัสดีตอนเช้าค่ะ'
+    :(h>=11&&h<13)?'สวัสดีตอนกลางวันค่ะ'
+    :(h>=13&&h<16)?'สวัสดีตอนบ่ายค่ะ'
+    :(h>=16&&h<19)?'สวัสดีตอนเย็นค่ะ'
+    :'สวัสดีตอนค่ำค่ะ';
+  // ชื่อที่แสดงบรรทัดใหญ่: full_name → nickname → username ; "คุณ" นำหน้าในบรรทัดชื่อ
+  const hasFullName=!!(e.full_name||(curUser&&curUser.full_name));
+  const displayName=e.full_name||(curUser&&curUser.full_name)||e.nickname||(curUser&&curUser.username)||'—';
+  let dateStr;try{dateStr=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}catch(_){dateStr='';}
+  host.innerHTML=`<div class="dhero dhero-${period}">
+    ${skyScene(period)}
+    <div class="dhero-ava">${av}</div>
+    <div class="dhero-main">
+      <div class="dhero-greet">${esc(greet)}</div>
+      <div class="dhero-name">คุณ ${esc(displayName)}${(hasFullName&&nick)?` <span class="dhero-nick">(${esc(nick)})</span>`:''}</div>
+      ${sub?`<div class="dhero-sub">${sub}</div>`:''}
+    </div>
+    ${dateStr?`<div class="dhero-date">${esc(dateStr)}</div>`:''}
+  </div>`;
+}
+
+// Stage 16: ฉาก SVG ท้องฟ้าตามช่วงเวลา (decorative, อยู่หลังข้อความ) — ไม่มีไฟล์ภายนอก/ไลบรารี
+function skyScene(period){
+  const svg=s=>`<svg class="dhero-sky" viewBox="0 0 360 132" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">${s}</svg>`;
+  if(period==='morning'){
+    return svg(`<defs><radialGradient id="skM" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFF6DE"/><stop offset=".55" stop-color="#FFE6B2" stop-opacity=".75"/><stop offset="1" stop-color="#FFE6B2" stop-opacity="0"/></radialGradient></defs>`
+      +`<circle cx="316" cy="30" r="52" fill="url(#skM)"/><circle cx="316" cy="30" r="16" fill="#FFE3B4"/>`
+      +`<g fill="#fff"><g opacity=".8"><ellipse cx="248" cy="26" rx="24" ry="10"/><ellipse cx="268" cy="22" rx="15" ry="8"/><ellipse cx="230" cy="22" rx="13" ry="7"/></g>`
+      +`<g opacity=".5"><ellipse cx="116" cy="52" rx="20" ry="8"/><ellipse cx="131" cy="48" rx="12" ry="6"/></g></g>`
+      +`<path d="M0 104C70 92 130 110 200 100 270 90 320 106 360 98L360 132 0 132Z" fill="#FBE6CE" opacity=".7"/>`
+      +`<path d="M0 117C90 107 160 123 250 113 310 107 340 117 360 113L360 132 0 132Z" fill="#F6D7BB" opacity=".55"/>`);
+  }
+  if(period==='day'){
+    return svg(`<defs><radialGradient id="skD" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>`
+      +`<circle cx="322" cy="24" r="46" fill="url(#skD)"/><circle cx="322" cy="24" r="14" fill="#fff" opacity=".95"/>`
+      +`<g fill="#fff"><g opacity=".9"><ellipse cx="232" cy="30" rx="26" ry="11"/><ellipse cx="254" cy="25" rx="16" ry="8"/><ellipse cx="212" cy="25" rx="14" ry="7"/></g>`
+      +`<g opacity=".7"><ellipse cx="110" cy="52" rx="22" ry="9"/><ellipse cx="128" cy="47" rx="13" ry="7"/></g></g>`
+      +`<path d="M0 110C80 100 150 118 230 108 300 99 330 110 360 105L360 132 0 132Z" fill="#DCEBF8" opacity=".7"/>`);
+  }
+  if(period==='evening'){
+    return svg(`<defs><radialGradient id="skE" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFE9C2"/><stop offset=".5" stop-color="#FBC987" stop-opacity=".8"/><stop offset="1" stop-color="#FBC987" stop-opacity="0"/></radialGradient></defs>`
+      +`<circle cx="300" cy="60" r="50" fill="url(#skE)"/><circle cx="300" cy="60" r="18" fill="#FBC56F"/>`
+      +`<g fill="#fff" opacity=".42"><ellipse cx="120" cy="30" rx="22" ry="9"/><ellipse cx="138" cy="26" rx="13" ry="6"/><ellipse cx="225" cy="24" rx="16" ry="7"/></g>`
+      +`<path d="M0 100C60 112 140 92 210 104 280 116 330 98 360 106L360 132 0 132Z" fill="#D58475" opacity=".5"/>`
+      +`<path d="M0 116C80 108 150 122 240 114 300 109 340 118 360 114L360 132 0 132Z" fill="#BC6470" opacity=".5"/>`);
+  }
+  // night
+  return svg(`<defs><radialGradient id="skN" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#F2F0FF"/><stop offset=".5" stop-color="#CFCFF2" stop-opacity=".5"/><stop offset="1" stop-color="#CFCFF2" stop-opacity="0"/></radialGradient></defs>`
+    +`<circle cx="316" cy="30" r="40" fill="url(#skN)"/><circle cx="316" cy="30" r="15" fill="#ECEAFA"/>`
+    +`<g fill="#fff"><circle cx="60" cy="26" r="1.4" opacity=".9"/><circle cx="98" cy="44" r="1" opacity=".7"/><circle cx="138" cy="22" r="1.3" opacity=".85"/><circle cx="176" cy="38" r="1" opacity=".7"/><circle cx="210" cy="20" r="1.4" opacity=".9"/><circle cx="250" cy="42" r="1" opacity=".7"/><circle cx="276" cy="24" r="1.2" opacity=".8"/></g>`
+    +`<path d="M0 106C70 116 140 98 210 108 280 118 330 102 360 110L360 132 0 132Z" fill="#20243f" opacity=".55"/>`
+    +`<path d="M0 120C90 112 160 124 250 116 310 111 340 120 360 116L360 132 0 132Z" fill="#171a31" opacity=".5"/>`);
 }
 
 function renderAlerts(){
@@ -7093,28 +7201,51 @@ async function openMyProfile(){
   myProfilePaint(e);
 }
 function myProfilePaint(e){
+  // Stage 15: elegant HR identity-card style — UI only. ข้อมูล/การแก้ไข/สิทธิ์ ใช้ของเดิมทั้งหมด
   const body=document.getElementById('myProfileBody');if(!body)return;
   const isAdmin=curUser?.role==='admin';
   const roleTh=isAdmin?'ผู้ดูแลระบบ':'เจ้าหน้าที่';
   const code=e.employee_code||(curUser&&curUser.username)||'—';
   const isAct=e.status==='active';
   const stLabel=isAct?'ใช้งาน':(e.status==='resigned'?'ลาออก':'ปิดใช้งาน');
+  const initial=esc((e.full_name||'?').charAt(0).toUpperCase());
   const av=e.profile_image
-    ?`<img src="${esc(e.profile_image)}" alt="" style="width:96px;height:96px;border-radius:22px;object-fit:cover;border:3px solid var(--pp)">`
-    :`<div style="width:96px;height:96px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:var(--pp);color:var(--pd);font-size:38px;font-weight:800">${esc((e.full_name||'?').charAt(0).toUpperCase())}</div>`;
-  const row=(l,v,mono)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--g1)"><span style="color:var(--g5);font-size:12.5px;flex-shrink:0">${l}</span><span style="font-weight:600;font-size:13px;text-align:right;word-break:break-word${mono?';font-family:var(--mono)':''}">${v}</span></div>`;
+    ?`<img src="${esc(e.profile_image)}" alt="" style="width:104px;height:104px;border-radius:26px;object-fit:cover;display:block">`
+    :`<div style="width:104px;height:104px;border-radius:26px;display:flex;align-items:center;justify-content:center;background:var(--pp);color:var(--pd);font-size:42px;font-weight:800">${initial}</div>`;
+  const ICO={
+    code:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M13 9.5h5M13 13.5h5M5.5 15.5c.4-1.1 1.4-1.7 3-1.7s2.6.6 3 1.7"/>',
+    pos:'<path d="M3 12V7a2 2 0 0 1 2-2h5l9 9-7 7z"/><circle cx="7.5" cy="9.5" r="1.3"/>',
+    branch:'<path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11"/><circle cx="12" cy="10" r="2.5"/>',
+    phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 5a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 1-1"/>'
+  };
+  const ico=k=>`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--pd)">${ICO[k]}</svg>`;
+  const infoRow=(k,label,val,mono)=>`<div style="display:flex;align-items:center;gap:11px;padding:11px 13px">
+      <span style="width:30px;height:30px;border-radius:9px;background:var(--pp);display:flex;align-items:center;justify-content:center">${ico(k)}</span>
+      <span style="font-size:11.5px;color:var(--g5);flex-shrink:0">${label}</span>
+      <span style="margin-left:auto;font-weight:700;font-size:13px;color:var(--g8);text-align:right;word-break:break-word${mono?';font-family:var(--mono)':''}">${val}</span>
+    </div>`;
+  const sep='<div style="height:1px;background:var(--g1);margin:0 13px"></div>';
+  const badge=(txt,bg,fg)=>`<span style="padding:4px 13px;border-radius:20px;font-size:11px;font-weight:700;background:${bg};color:${fg};white-space:nowrap">${esc(txt)}</span>`;
+  const stColors=isAct?['#dcfce7','#15803d']:['var(--g2)','var(--g6)'];
   body.innerHTML=
-    `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:8px">${av}
-      <div style="font-size:18px;font-weight:800;text-align:center;color:var(--g9)">${esc(e.full_name||'—')}</div>
-      ${e.nickname?`<div style="color:var(--g5);font-size:13px">(${esc(e.nickname)})</div>`:''}
-      <span style="padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${isAdmin?'#ede9fe':'var(--pp)'};color:${isAdmin?'#7c3aed':'var(--pd)'}">${esc(roleTh)}</span>
-    </div>`
-    +row('รหัสพนักงาน',esc(code),true)
-    +row('ตำแหน่ง',e.position?esc(e.position):'—')
-    +row('สาขา',e.branch_name?esc(e.branch_name):'—')
-    +row('เบอร์โทร',e.phone?esc(e.phone):'—',true)
-    +row('สถานะพนักงาน',`<span class="sc-st ${isAct?'act':'inact'}">${esc(stLabel)}</span>`)
-    +`<button class="btn btn-p" style="width:100%;margin-top:16px" onclick="closeMyProfile();staffOpenEdit(${e.id})">${uiIcon('edit')}แก้ไขโปรไฟล์</button>`;
+    `<div style="text-align:center;padding:6px 18px 2px">
+       <div style="display:flex;justify-content:center">
+         <div style="padding:4px;background:var(--w);border:1px solid var(--g2);border-radius:30px;box-shadow:var(--s1)">${av}</div>
+       </div>
+       <div style="font-size:20px;font-weight:800;color:var(--g9);line-height:1.25;margin-top:12px">${esc(e.full_name||'—')}</div>
+       ${e.nickname?`<div style="color:var(--g5);font-size:13px;margin-top:2px">(${esc(e.nickname)})</div>`:''}
+       <div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+         ${badge(roleTh,isAdmin?'#ede9fe':'var(--pp)',isAdmin?'#7c3aed':'var(--pd)')}
+         ${badge(stLabel,stColors[0],stColors[1])}
+       </div>
+     </div>
+     <div style="background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);margin:16px 0 0;overflow:hidden">
+       ${infoRow('code','Username',esc(code),true)}${sep}
+       ${infoRow('pos','ตำแหน่ง',e.position?esc(e.position):'—')}${sep}
+       ${infoRow('branch','สาขา',e.branch_name?esc(e.branch_name):'—')}${sep}
+       ${infoRow('phone','เบอร์โทร',e.phone?esc(e.phone):'—',true)}
+     </div>
+     <button class="btn btn-p" style="width:100%;margin-top:16px" onclick="closeMyProfile();staffOpenEdit(${e.id})">${uiIcon('edit')}แก้ไขโปรไฟล์</button>`;
 }
 function closeMyProfile(){const m=document.getElementById('myProfileModal');if(m)m.style.display='none';}
 // STAGE 13: ใช้รูปโปรไฟล์พนักงานปัจจุบันเป็น avatar กล่องผู้ใช้มุมซ้ายล่าง — ไม่มีรูป → คงตัวอักษรย่อเดิม
