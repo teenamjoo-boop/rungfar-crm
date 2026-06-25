@@ -2956,6 +2956,7 @@ function applyLang(){
 // ===== MULTI-DOC SYSTEM =====
 let multiDocs = []; // [{id, type, label, data, fileType}]
 let multiDocEditingId = null; // customer id when editing
+let _detailDocCache = []; // docs fetched for detail modal — avoid embedding base64 in onclick HTML
 
 const _DOC_TYPE_LABELS={passport_photo:'รูปพาสปอร์ต',visa:'VISA',wp:'Work Permit',employer_card:'บัตรนายจ้าง',receipt:'ใบเสร็จ',photo:'รูปถ่าย',pow:'หนังสือมอบอำนาจ',other:'อื่นๆ'};
 function docTypeLabel(t){return _DOC_TYPE_LABELS[t]||'อื่นๆ';}
@@ -2968,14 +2969,15 @@ function renderDetailDocSection(docs){
   if(!docs||!docs.length)return'';
   const _order=['passport_photo','visa','wp','employer_card','receipt','photo','pow','other'];
   const sorted=[...docs].sort((a,b)=>{const ai=_order.indexOf(a.doc_type||'other'),bi=_order.indexOf(b.doc_type||'other');if(ai<0&&bi<0)return 0;if(ai<0)return 1;if(bi<0)return-1;return ai-bi;});
-  const cards=sorted.map(d=>{
+  _detailDocCache=sorted; // store for index-based viewer — avoid embedding base64 in onclick HTML
+  const cards=sorted.map((d,idx)=>{
     const isPdf=d.file_type==='application/pdf';
     const safeLabel=d.doc_name?esc(d.doc_name):docTypeLabel(d.doc_type||'other');
     const dateStr=d.created_at?new Date(d.created_at).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}):'';
     const meta=[dateStr,d.uploaded_by?esc(d.uploaded_by):''].filter(Boolean).join(' · ');
     const thumb=isPdf
-      ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDb('${esc(d.file_data)}','${safeLabel}','${esc(d.file_type||'')}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
-      :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDb('${esc(d.file_data)}','${safeLabel}','${esc(d.file_type||'')}')" alt="${safeLabel}">`;
+      ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDetailCache(${idx})"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+      :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDetailCache(${idx})" alt="${safeLabel}">`;
     return`<div class="mdoc-item">${thumb}<div class="mdoc-info"><div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-bottom:2px"><span class="mdoc-badge mdoc-badge-type">${docTypeLabel(d.doc_type||'other')}</span>${ftypeBadge(d.file_type)}</div><div class="mdoc-label">${safeLabel}</div>${meta?`<div class="mdoc-meta">${meta}</div>`:''}</div></div>`;
   }).join('');
   return`<div style="margin-bottom:12px">
@@ -3037,15 +3039,18 @@ async function handleMultiDoc(e){
   for(const file of files){
     try{
       let dataUrl,ftype;
+      const _isPdf=file.type==='application/pdf';
       if(file.type&&file.type.startsWith('image/')){
         dataUrl=await compressImage(file,1600,0.72);ftype='image/jpeg'; // เอกสาร: max 1600px, q0.72
       }else{
-        if(file.size>5*1024*1024){toast('ไฟล์ '+file.name+' ใหญ่เกิน 5MB','err');continue;}
+        const _rawLim=_isPdf?10*1024*1024:5*1024*1024;
+        if(file.size>_rawLim){toast((_isPdf?'PDF':'ไฟล์')+' '+file.name+' ใหญ่เกิน '+(_isPdf?'10':'5')+'MB','err');continue;}
         dataUrl=await readAsDataURL(file);ftype=file.type||'application/octet-stream';
       }
       if(!dataUrl){toast('อ่านไฟล์ '+file.name+' ไม่ได้','err');continue;}
       const bytes=approxBytesFromDataURL(dataUrl);
-      if(bytes>DOC_MAX_BYTES){console.warn('[document upload] skipped large file',file.name,bytes);toast('ไฟล์ '+file.name+' ใหญ่เกิน 1.5MB หลังย่อ ลองถ่าย/สแกนใหม่','err');continue;}
+      const _byteLim=_isPdf?Math.round(10*1024*1024*1.34):DOC_MAX_BYTES; // PDF: ≤10MB raw; image: ≤1.5MB after compression
+      if(bytes>_byteLim){console.warn('[document upload] skipped large file',file.name,bytes);toast(_isPdf?'PDF '+file.name+' ใหญ่เกิน 10MB กรุณาลดขนาดไฟล์':'ไฟล์ '+file.name+' ใหญ่เกิน 1.5MB หลังย่อ ลองถ่าย/สแกนใหม่','err');continue;}
       multiDocs.push({id:'doc_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),type,label:customLabel||typeLabel,data:dataUrl,fileType:ftype,name:file.name});
       renderMultiDocGrid();
     }catch(err){console.error('[document add] failed',file&&file.name,err);toast('เพิ่มไฟล์ไม่สำเร็จ','err');}
@@ -3172,6 +3177,10 @@ function viewMdoc(id){
 
 function viewMdocFromDb(data,label,fileType){
   _openDocViewer(data,label||'เอกสาร',fileType,label);
+}
+function viewMdocFromDetailCache(i){
+  const d=_detailDocCache[i];if(!d)return;
+  _openDocViewer(d.file_data,d.doc_name||docTypeLabel(d.doc_type||'other'),d.file_type,d.doc_name);
 }
 
 function closeMdocViewer(){
