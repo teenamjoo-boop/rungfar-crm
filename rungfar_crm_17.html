@@ -5075,7 +5075,10 @@ function renderImpPreview(){
     }).join('');
     photoPanel=`<div class="twrap" style="margin-bottom:14px"><div class="tbar2" style="flex-wrap:wrap;gap:8px"><div style="font-size:13px;font-weight:700">จับคู่รูปถ่ายจาก Excel</div><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="eb eb-ok">พบ ${_nF}</span>${_nU?`<span class="eb eb-w">ไม่มั่นใจ ${_nU}</span>`:''}${_nNo>0?`<span class="eb eb-u">ไม่พบ ${_nNo}</span>`:''}</div></div><div style="padding:9px 12px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⚠️ <b>พรีวิวเท่านั้น</b> — รอบนี้ยังไม่บันทึกรูปลงระบบ · แตะรูปเพื่อดูใหญ่และตรวจให้ตรงคนก่อน (รูปอิงตำแหน่งในชีต อาจคลาดเคลื่อนถ้ามีแถวว่าง/merge cell)</div><div class="imp-ph-list">${_rows}${impData.length>_cap?`<div style="text-align:center;padding:10px;font-size:11px;color:var(--g5)">แสดง ${_cap} แถวแรก จาก ${impData.length}</div>`:''}</div></div>`;
   }
-  document.getElementById('impPreview').innerHTML=`${photoPanel}<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ</button></div>
+  // ขวดคอหลักคือการย่อรูป (Canvas, sequential) — text-only ชุด insert ได้เร็วมากแล้ว
+  const _photoCount=impPhotoScan?Object.keys(impPhotos).length:0;
+  const _estNote=(_photoCount>=30||cntNew>=400)?`<div style="padding:6px 15px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⏱ คาดว่าใช้เวลา ${_photoCount>=200||cntNew>=500?'2–3 นาที':_photoCount>=80||cntNew>=400?'~1 นาที':'~30 วินาที'} — กรุณาอย่าปิดหน้าต่างระหว่างนำเข้า</div>`:'';
+  document.getElementById('impPreview').innerHTML=`${photoPanel}<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ</button></div>${_estNote}
   <div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value);renderImpPreview()"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
   <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map((r,i)=>{const st=rowStatus[i];return`<tr ${st==='dup-existing'||st==='dup-file'?'class="imp-dup"':st==='missing'?'style="background:#fff0f0"':''}>${r.map((v,ci)=>`<td>${dateColIdx.has(ci)?(impDate(v)||''):(v||'')}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
   ${impData.length>5?`<div style="padding:8px 15px;font-size:11px;color:var(--g5);border-top:1px solid var(--g1)">แสดง 5 แถวแรก จาก ${impData.length} แถวทั้งหมด</div>`:``}</div>`;
@@ -5101,8 +5104,11 @@ async function doImport(){
   const skippedRows=[];
   // เก็บลำดับไฟล์ Excel: แถวบนสุด (ri=0) ได้ created_at ใหม่สุด → ขึ้นบนตาม sort created_at DESC เดิม
   const _impBase=Date.now();
+  // Phase 1: ตรวจซ้ำ, สร้างนายจ้าง, ย่อรูป — sequential เพราะต้องการ dedup/employer/photo (ไม่ใช่ DB insert)
+  const pendingInserts=[];
   for(let ri=0;ri<impData.length;ri++){
     const row=impData[ri];
+    if(ri>0&&ri%25===0){const _p=document.getElementById('loadingText');if(_p)_p.textContent=`กำลังตรวจสอบข้อมูล (${ri}/${impData.length})...`;}
     const name=get(row,'name');
     if(!name){countMissing++;skippedRows.push({ri:ri+2,name:'—',id:'—',reason:'ไม่มีชื่อ'});continue;}
     const pp=get(row,'passport_no');const al=get(row,'alien_id');
@@ -5153,13 +5159,12 @@ async function doImport(){
       const _bh=get(row,'booklet_has'),_bn=get(row,'booklet_none');
       data.booklet_status=_bh?'has':(_bn?'none':null); // ทั้งคู่มีค่า → has
       data.created_at=new Date(_impBase-ri*1000).toISOString(); // คงลำดับ Excel (บน→ล่าง)
-      // Stage 4: ผู้รับผิดชอบ — resolve จาก Excel; ถ้าไม่มีค่า + ผู้ใช้เป็น staff → default เป็นตัวเอง; admin เว้นว่าง
+      // Stage 4: ผู้รับผิดชอบ — resolve จาก Excel; ถ้าไม่มีค่า + staff → default ตัวเอง; admin เว้นว่าง
       const _asgRaw=get(row,'assignee');
       let _asgCode=resolveAssigneeCode(_asgRaw);
-      if(_asgRaw&&!_asgCode)countAsgUnresolved++; // มีค่าแต่จับคู่ไม่ได้ → เว้นว่าง (ไม่ทำ import พัง)
-      if(!_asgRaw&&curUser&&curUser.role!=='admin'&&curUser.username)_asgCode=curUser.username; // staff default-to-self เมื่อไม่ระบุ
+      if(_asgRaw&&!_asgCode)countAsgUnresolved++;
+      if(!_asgRaw&&curUser&&curUser.role!=='admin'&&curUser.username)_asgCode=curUser.username;
       data.assignee_code=_asgCode||null;
-
       // Excel embedded photo → ย่อ + บันทึกลง field photo เดิม (เหมือน manual upload)
       const _newPh=impPhotos[ri];
       if(_newPh&&!_newPh.unsure){
@@ -5168,10 +5173,26 @@ async function doImport(){
           else if(_img)countPhotoSkip++;
         }catch(_){countPhotoSkip++;}
       }
-
-      const r=await dbPost('customers',data);
-      if(r&&r[0]){customers.unshift(r[0]);if(key)seenInFile.add(key);countNew++;}
+      if(key)seenInFile.add(key); // ป้องกันแถวซ้ำในไฟล์เดียวกัน (ต้องเซตก่อนแถวถัดไป)
+      pendingInserts.push({ri,name,pp,al,data});
     }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'เกิดข้อผิดพลาด'});}
+  }
+  // Phase 2: chunked insert — 25 แถวต่อ request (PostgREST array), fallback row-by-row ถ้า chunk fail
+  const _CHUNK=25;
+  for(let ci=0;ci<pendingInserts.length;ci+=_CHUNK){
+    const chunk=pendingInserts.slice(ci,ci+_CHUNK);
+    const _p2=document.getElementById('loadingText');
+    if(_p2)_p2.textContent=`กำลังบันทึก (${Math.min(ci+_CHUNK,pendingInserts.length)}/${pendingInserts.length})...`;
+    try{
+      const rows=await dbPost('customers',chunk.map(r=>r.data));
+      if(rows&&rows.length){rows.forEach(r=>customers.unshift(r));countNew+=rows.length;}
+    }catch(_chunkErr){
+      // chunk fail → fallback row-by-row เฉพาะ chunk นี้ (แถวที่ดีในก้อนเดิมยังบันทึกได้)
+      for(const r of chunk){
+        try{const sr=await dbPost('customers',r.data);if(sr&&sr[0]){customers.unshift(sr[0]);countNew++;}}
+        catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:r.pp||r.al||'—',reason:'เกิดข้อผิดพลาด'});}
+      }
+    }
   }
   hideLoading();
   logAudit('customer.import','customer',null,{imported:countNew,dup_existing:countDupEx,dup_file:countDupFile,missing_name:countMissing,errors:countError,total:impData.length});
