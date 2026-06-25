@@ -4929,13 +4929,25 @@ const IMP_FIELDS=[
 function normImpStr(s){return String(s||'').trim().toUpperCase().replace(/\s+/g,'');}
 // Round F1B-2: parser สำหรับ import field ใหม่
 function impBool(v){return /^(✓|✔|\/|x|มี|ใช่|true|yes|y|1|จ่ายแล้ว|จ่าย)$/i.test(String(v==null?'':v).trim());}
+// แปลง string วันที่ Buddhist Era (ปีไทย ≥2400) → ISO CE: "15/3/2568"→"2025-03-15", "2568-03-15"→"2025-03-15", "15 มี.ค. 2568"→"2025-03-15"
+function _impConvertBEDate(v){
+  if(!v)return null;let m;
+  m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](2[4-9]\d{2})$/); // DD/MM/YYYY BE
+  if(m){const y=parseInt(m[3]),mo=parseInt(m[2]),d=parseInt(m[1]);if(mo>=1&&mo<=12&&d>=1&&d<=31)return`${y-543}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+  m=v.match(/^(2[4-9]\d{2})-(\d{1,2})-(\d{1,2})$/); // YYYY-MM-DD BE
+  if(m){const y=parseInt(m[1]),mo=parseInt(m[2]),d=parseInt(m[3]);if(mo>=1&&mo<=12&&d>=1&&d<=31)return`${y-543}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+  const TM={'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12,'มกราคม':1,'กุมภาพันธ์':2,'มีนาคม':3,'เมษายน':4,'พฤษภาคม':5,'มิถุนายน':6,'กรกฎาคม':7,'สิงหาคม':8,'กันยายน':9,'ตุลาคม':10,'พฤศจิกายน':11,'ธันวาคม':12};
+  for(const[mn,mnum]of Object.entries(TM)){const re=new RegExp(`^(\\d{1,2})\\s*${mn.replace(/\./g,'\\.')}\\s*(\\d{4})$`);m=v.match(re);if(m){const y=parseInt(m[2]),d=parseInt(m[1]);return`${y>=2400?y-543:y}-${String(mnum).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}}
+  return null;
+}
 function impDate(v){
   v=String(v==null?'':v).trim();if(!v)return null;
   const n=Number(v);
   if(Number.isFinite(n)&&n>=20000&&n<80000&&!v.includes('-')&&!v.includes('/')&&typeof XLSX!=='undefined'&&XLSX.SSF&&XLSX.SSF.parse_date_code){
-    const d=XLSX.SSF.parse_date_code(n); // Excel serial → date
+    const d=XLSX.SSF.parse_date_code(n); // Excel serial → date (Gregorian, ถูกต้องเสมอ)
     if(d&&d.y)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
   }
+  const _be=_impConvertBEDate(v);if(_be)return _be; // Thai Buddhist Era year → CE
   return v; // สมมติเป็น ISO/string อยู่แล้ว
 }
 function makeImpKey(pp,al,name,nat,empName){const p=normImpStr(pp);if(p)return 'PP:'+p;const a=normImpStr(al);if(a)return 'AL:'+a;const n=normImpStr(name);if(n)return 'NM:'+n+'|'+normImpStr(nat)+'|'+normImpStr(empName);return null;}
@@ -5071,6 +5083,7 @@ function renderImpPreview(){
 
 async function doImport(){
   if(!impData.length){toast('ไม่มีข้อมูล','err');return;}
+  showLoading(`กำลังนำเข้าข้อมูล ${impData.length} แถว...`);
   const get=(row,key)=>impMap[key]!==undefined&&impMap[key]>=0?String(row[impMap[key]]||'').trim():'';
   const existingKeys=buildExistingKeys();
   // map key→ลูกค้าเดิม (key เดียวกับ buildExistingKeys) — ใช้หาเพื่ออัปเดตรูปให้คนเดิมที่ยังไม่มีรูป
@@ -5160,6 +5173,8 @@ async function doImport(){
       if(r&&r[0]){customers.unshift(r[0]);if(key)seenInFile.add(key);countNew++;}
     }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'เกิดข้อผิดพลาด'});}
   }
+  hideLoading();
+  logAudit('customer.import','customer',null,{imported:countNew,dup_existing:countDupEx,dup_file:countDupFile,missing_name:countMissing,errors:countError,total:impData.length});
   renderDash();renderSidebar();
   // Round D: รายงานคอลัมน์ที่ยังไม่รองรับ (ไม่ได้ map เข้า field ที่มี DB) — ไม่ทำให้ import พัง
   const _mappedIdx=new Set(Object.values(impMap).filter(v=>v!==undefined&&v>=0));
