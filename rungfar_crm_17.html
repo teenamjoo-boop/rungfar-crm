@@ -1965,6 +1965,29 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   </div>
 </div></div>
 
+<!-- MODAL: ENABLE/DISABLE USER (STAGE 23) — admin password เพื่อเปิด/ปิดใช้งานบัญชี (ไม่ใช่ลบ) -->
+<div class="mo" id="setActiveModal" style="display:none" onclick="if(event.target===this)closeSetActiveModal()">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><span id="sam_title">ปิดใช้งานผู้ใช้</span></div><button class="xbtn" onclick="closeSetActiveModal()">×</button></div>
+  <div class="mbody">
+    <div style="font-size:13px;margin-bottom:8px"><span id="sam_verb">ปิดใช้งาน</span>: <strong id="sam_name"></strong></div>
+    <div id="sam_note" style="font-size:12px;color:var(--g5);margin-bottom:12px"></div>
+    <div class="fgi full" id="sam_reason_row" style="margin-bottom:10px">
+      <label class="fl" id="sam_reason_lbl">เหตุผล (ไม่บังคับ):</label>
+      <input class="fi2" id="sam_reason" placeholder="เช่น ลาออก / พ้นสภาพ" autocomplete="off">
+    </div>
+    <div class="fgi full">
+      <label class="fl">รหัสผ่าน Admin ของคุณ</label>
+      <input class="fi2" type="password" id="sam_pass" placeholder="รหัสผ่านของคุณ" autocomplete="current-password" onkeydown="if(event.key==='Enter')confirmSetActive()">
+    </div>
+    <div id="sam_err" style="font-size:12px;color:var(--red);min-height:18px;margin-top:6px"></div>
+  </div>
+  <div class="mfoo">
+    <button class="btn btn-g" onclick="closeSetActiveModal()">ยกเลิก</button>
+    <button class="btn btn-p" id="sam_confirm_btn" onclick="confirmSetActive()">ยืนยัน</button>
+  </div>
+</div></div>
+
 <!-- MODAL: DELETE EMPLOYEE (STAGE 6) — admin password เพื่อเช็ค app_users สดก่อนลบถาวร -->
 <div class="mo" id="attEmpDelModal" style="display:none" onclick="if(event.target===this)closeAttEmpDelModal()">
 <div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:400px">
@@ -2316,6 +2339,11 @@ const LANG = {
     usersTitle:'จัดการผู้ใช้งาน', usersAdd:'+ เพิ่มผู้ใช้',
     usersTblUser:'ชื่อผู้ใช้', usersTblName:'ชื่อ-นามสกุล', usersTblRole:'สิทธิ์', usersTblManage:'จัดการ',
     usersYou:'คุณ',
+    usersTblStatus:'สถานะ', usersActive:'ใช้งาน', usersDisabled:'ปิดใช้งาน',
+    usersDisable:'ปิดใช้งาน', usersEnable:'เปิดใช้งาน',
+    usersDisableTitle:'ปิดใช้งานผู้ใช้', usersEnableTitle:'เปิดใช้งานผู้ใช้',
+    usersDisableReason:'เหตุผล (ไม่บังคับ):', usersDisableNote:'บัญชีที่ปิดใช้งานจะเข้าสู่ระบบไม่ได้ และ session เดิมจะถูกตัดเมื่อเปิดแอปใหม่',
+    usersErrSelf:'ไม่สามารถปิดใช้งานบัญชีตัวเองได้', usersErrLastAdmin:'ไม่สามารถปิด Admin คนสุดท้ายได้',
     pagShow:'แสดง', pagFrom:'จาก',
     detBoss:'นายจ้าง', detPhone:'เบอร์โทร', detPassport:'เลขพาสปอร์ต',
     detAlien:'เลขต่างด้าว', detWP:'เลขคำขอ WP', detBranch:'สาขา',
@@ -2407,6 +2435,7 @@ const LANG = {
     audit_group_create:'เพิ่มกลุ่ม', audit_group_update:'แก้ไขกลุ่ม', audit_group_delete:'ลบกลุ่ม',
     // ── STAGE 22B: คำขอลบ (delete approval) ──
     audit_delete_request_create:'ส่งคำขอลบ', audit_delete_request_approve:'อนุมัติคำขอลบ', audit_delete_request_reject:'ปฏิเสธคำขอลบ',
+    audit_user_disable:'ปิดใช้งานผู้ใช้', audit_user_enable:'เปิดใช้งานผู้ใช้',
     delreqTitle:'คำขอลบ', delreqNav:'คำขอลบ', delreqPending:'รอดำเนินการ',
     delreqType:'ประเภท', delreqBy:'ผู้ขอ', delreqTarget:'รายการที่ขอลบ', delreqTime:'เวลา', delreqReason:'เหตุผล',
     delreqApprove:'อนุมัติ', delreqReject:'ปฏิเสธ', delreqNone:'ไม่มีคำขอลบที่รอดำเนินการ',
@@ -2513,6 +2542,11 @@ const LANG = {
     usersTitle:'အသုံးပြုသူစီမံ', usersAdd:'+ အသုံးပြုသူထည့်',
     usersTblUser:'အသုံးပြုသူအမည်', usersTblName:'အမည်-နာမဆိုင်ရာ', usersTblRole:'သက်ဆိုင်ရာ', usersTblManage:'စီမံ',
     usersYou:'သင်',
+    usersTblStatus:'အခြေအနေ', usersActive:'အသုံးပြုဆဲ', usersDisabled:'ပိတ်ထား',
+    usersDisable:'ပိတ်ရန်', usersEnable:'ဖွင့်ရန်',
+    usersDisableTitle:'အသုံးပြုသူပိတ်ရန်', usersEnableTitle:'အသုံးပြုသူဖွင့်ရန်',
+    usersDisableReason:'အကြောင်းပြချက် (မဖြစ်မနေမဟုတ်):', usersDisableNote:'ပိတ်ထားသောအကောင့်သည် ဝင်၍မရတော့ပါ၊ ရှိပြီးသား session ကိုလည်း အက်ပ်ပြန်ဖွင့်ချိန်တွင် ဖြတ်တောက်ပါမည်',
+    usersErrSelf:'မိမိအကောင့်ကို ပိတ်၍မရပါ', usersErrLastAdmin:'နောက်ဆုံး Admin ကို ပိတ်၍မရပါ',
     pagShow:'ပြသနေသည်', pagFrom:'မှ',
     detBoss:'အလုပ်ရှင်', detPhone:'ဖုန်းနံပါတ်', detPassport:'နိုင်ငံကူးနံပါတ်',
     detAlien:'နိုင်ငံခြားသားနံပါတ်', detWP:'WP တောင်းဆိုနံပါတ်', detBranch:'ဌာနခွဲ',
@@ -2604,6 +2638,7 @@ const LANG = {
     audit_group_create:'အုပ်စုထည့်', audit_group_update:'အုပ်စုပြင်ဆင်', audit_group_delete:'အုပ်စုဖျက်',
     // ── STAGE 22B: ဖျက်ရန်တောင်းဆိုမှု (delete approval) ──
     audit_delete_request_create:'ဖျက်ရန်တောင်းဆို', audit_delete_request_approve:'ဖျက်ခွင့်အတည်ပြု', audit_delete_request_reject:'ဖျက်ခွင့်ငြင်းပယ်',
+    audit_user_disable:'အသုံးပြုသူပိတ်', audit_user_enable:'အသုံးပြုသူဖွင့်',
     delreqTitle:'ဖျက်ရန်တောင်းဆိုမှု', delreqNav:'ဖျက်ရန်တောင်းဆိုမှု', delreqPending:'ဆောင်ရွက်ဆဲ',
     delreqType:'အမျိုးအစား', delreqBy:'တောင်းဆိုသူ', delreqTarget:'ဖျက်မည့်အရာ', delreqTime:'အချိန်', delreqReason:'အကြောင်းပြချက်',
     delreqApprove:'အတည်ပြု', delreqReject:'ငြင်းပယ်', delreqNone:'ဆောင်ရွက်ရန်ကျန်သော ဖျက်တောင်းဆိုမှု မရှိပါ',
@@ -3257,6 +3292,23 @@ async function doLogin(){
       logLoginActivity({...devInfo,username:u,login_status:'failed',fail_reason:'wrong_credentials'});
       return;
     }
+    // STAGE 23: บังคับสถานะบัญชี — ผู้ใช้ที่ถูกปิดใช้งาน (is_active=false) ต้อง login ไม่ได้
+    const _u0=found[0];
+    let _active=(_u0.is_active!==false); // RPC คืน is_active=false → ปิดแน่นอน
+    if(_active && _u0.is_active===undefined){
+      // RPC เก่าอาจไม่คืน is_active → ยืนยันสดด้วย app_verify_session (บังคับ is_active=true ใน DB)
+      try{
+        const _vs=await sb('rpc/app_verify_session','POST',{p_user_id:String(_u0.id),p_username:_u0.username});
+        if(!(_vs&&_vs.id!=null))_active=false; // คืน null = ถูกปิดใช้งาน/ลบ
+      }catch(_e){/* RPC ยังไม่ deploy → คง active (fail-open เท่ากับ validateSession เดิม) */}
+    }
+    if(!_active){
+      err.textContent='บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ';
+      document.getElementById('lp').value='';
+      // SEC-D: บันทึก login ที่ถูกบล็อกเพราะบัญชีถูกปิด (ไม่เก็บรหัสผ่าน)
+      logLoginActivity({...devInfo,user_id:_u0.id,username:_u0.username,full_name:_u0.full_name,role:normalizeRole(_u0.role),branch_id:_u0.branch_id||null,login_status:'failed',fail_reason:'account_disabled'});
+      return;
+    }
     // RLS-HARDEN-2C/2D: normalize role → admin/staff เท่านั้น ก่อนเก็บ session
     curUser={...found[0],role:normalizeRole(found[0].role)};
     localStorage.setItem('crm_sess',JSON.stringify({user:curUser,exp:Date.now()+8*3600000}));
@@ -3296,6 +3348,7 @@ function doLogout(){
 // (legacy) checkSess — trust localStorage อย่างเดียว ไม่ใช้ใน boot แล้ว (ดู validateSession)
 function checkSess(){try{const s=JSON.parse(localStorage.getItem('crm_sess')||'null');if(s&&s.exp>Date.now()){curUser=s.user;return true;}}catch(e){}return false;}
 
+let _sessionKickReason=null; // STAGE 23: เหตุที่ session ถูกตัด ('disabled' = บัญชีถูกปิด/ลบ) เพื่อแจ้งหน้า login
 // RLS-HARDEN-2C/2D: validate session กับ DB ก่อนเข้า app — ไม่ trust localStorage อย่างเดียว
 // คืน true ถ้า session ใช้ได้ (และ set curUser เป็นข้อมูลสดจาก DB) / false ถ้าต้องกลับ login
 async function validateSession(){
@@ -3317,6 +3370,7 @@ async function validateSession(){
     }
     // คืน null/ว่าง → user ถูกลบ/inactive/role invalid/ไม่มี row → logout + clear
     console.warn('[SEC] session invalid (user removed/inactive/role) → back to login');
+    _sessionKickReason='disabled'; // STAGE 23: ให้หน้า login แจ้งเหตุ (ถูกปิดใช้งาน/ลบ) แทนการเงียบ
     clearSessionState();
     return false;
   }catch(e){
@@ -5075,8 +5129,21 @@ async function confirmLoadUsers(){
 }
 function renderUsers(){
   document.getElementById('usersContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">${T('usersTitle')}</div><button class="btn btn-p btn-sm" onclick="openAddUser()">${T('usersAdd')}</button></div>
-  <div class="twrap" style="overflow-x:auto"><table><thead><tr><th>${T('usersTblUser')}</th><th>${T('usersTblName')}</th><th>${T('usersTblRole')}</th><th>${T('usersTblManage')}</th></tr></thead><tbody>
-  ${appUsers.map(u=>{const roleLbl=u.role==='admin'?'Admin':'Staff';const roleCls=u.role==='admin'?'sb-act':'sb-prc';return`<tr><td><strong>${esc(u.username)}</strong>${u.id===curUser.id?`<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">${T('usersYou')}</span>`:''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${roleCls}">${roleLbl}</span></td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})">${uiIcon('edit')}</button>${u.id!==curUser.id?`<button class="bic" onclick="delUser(${u.id})" style="color:var(--red)">${uiIcon('trash')}</button>`:''}</div></td></tr>`;}).join('')}
+  <div class="twrap" style="overflow-x:auto"><table><thead><tr><th>${T('usersTblUser')}</th><th>${T('usersTblName')}</th><th>${T('usersTblRole')}</th><th>${T('usersTblStatus')}</th><th>${T('usersTblManage')}</th></tr></thead><tbody>
+  ${appUsers.map(u=>{
+    const roleLbl=u.role==='admin'?'Admin':'Staff';const roleCls=u.role==='admin'?'sb-act':'sb-prc';
+    const isSelf=(u.id===curUser.id);
+    const active=(u.is_active!==false); // STAGE 23: default active ถ้า field ไม่มา
+    const statusBadge=active
+      ?`<span class="sb" style="background:var(--grnb);color:var(--grn)">${T('usersActive')}</span>`
+      :`<span class="sb" style="background:#fee2e2;color:#dc2626">${T('usersDisabled')}</span>`;
+    // ปุ่มเปิด/ปิดใช้งาน — ซ่อนสำหรับบัญชีตัวเอง (กันปิดตัวเอง)
+    const toggleBtn=isSelf?''
+      :(active
+        ?`<button class="bic" title="${T('usersDisable')}" onclick="openSetActive(${u.id},false)" style="color:#d97706"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></button>`
+        :`<button class="bic" title="${T('usersEnable')}" onclick="openSetActive(${u.id},true)" style="color:var(--grn)"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button>`);
+    return`<tr${active?'':' style="opacity:.6"'}><td><strong>${esc(u.username)}</strong>${isSelf?`<span style="margin-left:5px;font-size:10px;background:var(--blub);color:var(--blu);padding:1px 5px;border-radius:10px">${T('usersYou')}</span>`:''}</td><td>${esc(u.full_name)}</td><td><span class="sb ${roleCls}">${roleLbl}</span></td><td>${statusBadge}</td><td><div style="display:flex;gap:4px"><button class="bic" onclick="openEditUser(${u.id})">${uiIcon('edit')}</button>${toggleBtn}${!isSelf?`<button class="bic" onclick="delUser(${u.id})" style="color:var(--red)">${uiIcon('trash')}</button>`:''}</div></td></tr>`;
+  }).join('')}
   </tbody></table></div>`;
 }
 function openAddUser(){
@@ -5306,6 +5373,78 @@ async function confirmDelUser(){
   }
 }
 
+// ===== STAGE 23: ENABLE/DISABLE USER (admin-only) =====
+let _pendingSetActive=null; // {id, makeActive}
+function openSetActive(id,makeActive){
+  if(curUser?.role!=='admin')return; // guard — staff เรียกไม่ได้
+  const target=appUsers.find(u=>u.id===id);
+  if(!target)return;
+  if(id===curUser.id){toast(T('usersErrSelf'),'err');return;} // กันปิดบัญชีตัวเอง
+  _pendingSetActive={id,makeActive:!!makeActive};
+  document.getElementById('sam_title').textContent=makeActive?T('usersEnableTitle'):T('usersDisableTitle');
+  document.getElementById('sam_verb').textContent=makeActive?T('usersEnable'):T('usersDisable');
+  document.getElementById('sam_name').textContent=target.full_name||target.username||String(id);
+  document.getElementById('sam_note').textContent=makeActive?'':T('usersDisableNote');
+  document.getElementById('sam_reason_lbl').textContent=T('usersDisableReason');
+  document.getElementById('sam_reason_row').style.display=makeActive?'none':''; // เหตุผลเฉพาะตอนปิด
+  document.getElementById('sam_reason').value='';
+  document.getElementById('sam_pass').value='';
+  document.getElementById('sam_err').textContent='';
+  const cb=document.getElementById('sam_confirm_btn');
+  if(cb){cb.className='btn '+(makeActive?'btn-p':'');if(!makeActive){cb.style.background='#d97706';cb.style.color='#fff';}else{cb.style.background='';cb.style.color='';}}
+  document.getElementById('setActiveModal').style.display='flex';
+  setTimeout(()=>document.getElementById('sam_pass').focus(),50);
+}
+function closeSetActiveModal(){
+  document.getElementById('setActiveModal').style.display='none';
+  document.getElementById('sam_pass').value='';
+  document.getElementById('sam_reason').value='';
+  document.getElementById('sam_err').textContent='';
+  _pendingSetActive=null;
+}
+async function confirmSetActive(){
+  if(!_pendingSetActive||curUser?.role!=='admin')return; // guard
+  const {id,makeActive}=_pendingSetActive;
+  if(id===curUser.id){document.getElementById('sam_err').textContent=T('usersErrSelf');return;} // double-guard
+  const pass=document.getElementById('sam_pass').value.trim();
+  const reason=document.getElementById('sam_reason').value.trim();
+  const errEl=document.getElementById('sam_err');
+  if(!pass){errEl.textContent='กรุณากรอกรหัสผ่าน';return;}
+  errEl.textContent='';
+  const btn=document.getElementById('sam_confirm_btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';}
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_set_user_active`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_admin_username:curUser.username,p_admin_password:pass,p_user_id:parseInt(id),p_is_active:makeActive,p_reason:makeActive?null:(reason||null)})
+    });
+    if(!res.ok){
+      let e={};try{e=await res.json();}catch(_){}
+      const msg=e?.message||'';
+      const errMap={unauthorized:'รหัสผ่าน Admin ไม่ถูกต้อง',cannot_disable_self:T('usersErrSelf'),last_admin:T('usersErrLastAdmin'),user_not_found:'ไม่พบผู้ใช้นี้ในระบบ'};
+      if(/Could not find the function|PGRST202/i.test(msg)||res.status===404){errEl.textContent='ยังไม่ได้ติดตั้งฟังก์ชัน — apply migration 20260625_user_active_disable.sql ก่อน';}
+      else{errEl.textContent=errMap[msg]||`บันทึกไม่สำเร็จ: ${msg||'unknown'}`;}
+      document.getElementById('sam_pass').value='';document.getElementById('sam_pass').focus();
+      return;
+    }
+    const updated=await res.json(); // jsonb (ฟิลด์ปลอดภัย ไม่มี password)
+    if(updated&&updated.id!=null){appUsers=appUsers.map(u=>u.id===parseInt(id)?{...u,...updated}:u);}
+    else{appUsers=appUsers.map(u=>u.id===parseInt(id)?{...u,is_active:makeActive}:u);}
+    // STAGE 23: audit log — user.disable / user.enable (เก็บเฉพาะ username/ชื่อ ไม่มีรหัสผ่าน)
+    const _t=appUsers.find(u=>u.id===parseInt(id))||{};
+    logAudit(makeActive?'user.enable':'user.disable','user',id,{username:_t.username||null,name:_t.full_name||null,reason:makeActive?undefined:(reason||undefined)});
+    closeSetActiveModal();
+    renderUsers();
+    toast(makeActive?'เปิดใช้งานผู้ใช้แล้ว':'ปิดใช้งานผู้ใช้แล้ว');
+  }catch(e){
+    console.error('[confirmSetActive] error:',e);
+    errEl.textContent='เกิดข้อผิดพลาด กรุณาลองใหม่';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='ยืนยัน';}
+  }
+}
+
 
 // ===== SEC-D: SECURITY LOG VIEW =====
 function renderSecLog(){
@@ -5397,7 +5536,7 @@ function secLogTab(which){
 }
 
 // ── Customer activity log (audit_logs) — admin-only, อ่านผ่าน RPC SECURITY DEFINER ──
-const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.delete','group.create','group.update','group.delete','delete_request.create','delete_request.approve','delete_request.reject'];
+const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.delete','group.create','group.update','group.delete','delete_request.create','delete_request.approve','delete_request.reject','user.disable','user.enable'];
 let _auditLogsCache=[]; // Stage 6: เก็บผล fetch ล่าสุดไว้กรองด้วยช่องค้นหา client-side
 let _auditLogsShown=[]; // Stage 7: แถวที่กำลังแสดง (หลัง filter/search) สำหรับ export
 let _auditDetailFn=null; // Stage 7: อ้างอิง detSummary ปัจจุบัน เพื่อ export ข้อความให้ตรงกับตาราง
@@ -5483,7 +5622,7 @@ function auditLogRender(logs){
   const wrap=document.getElementById('al_table_wrap');if(!wrap)return;
   if(!logs.length){wrap.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogNoDataRange')}</div>`;return;}
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return s;}};
-  const actColor={'customer.delete':'#dc2626','customer.bulk_delete':'#dc2626','document.delete':'#dc2626','group.delete':'#dc2626','customer.export':'#2563eb','customer.assign':'#7c3aed','delete_request.create':'#d97706','delete_request.approve':'#16a34a','delete_request.reject':'#dc2626'};
+  const actColor={'customer.delete':'#dc2626','customer.bulk_delete':'#dc2626','document.delete':'#dc2626','group.delete':'#dc2626','customer.export':'#2563eb','customer.assign':'#7c3aed','delete_request.create':'#d97706','delete_request.approve':'#16a34a','delete_request.reject':'#dc2626','user.disable':'#dc2626','user.enable':'#16a34a'};
   // Stage 3: ป้ายชื่อ field (raw DB key -> ไทย) สำหรับ customer.update — โชว์เฉพาะชื่อ field ไม่โชว์ค่า
   const _fieldTh={name:'ชื่อ',name_th:'ชื่อไทย',nationality:'สัญชาติ',passport_no:'พาสปอร์ต',alien_id:'เลขประจำตัว',phone:'เบอร์โทร',dob:'วันเกิด',work_status:'สถานะงาน',services:'บริการ',wp_no:'เลข WP',visa_no:'เลขวีซ่า',license_no:'ใบอนุญาต',employer_id:'นายจ้าง',group_id:'กลุ่ม',branch_id:'สาขา',customer_type:'ประเภท',fee_total:'ค่าบริการ',fee_paid:'ชำระแล้ว',fee_due:'ค้างชำระ',pay_status:'สถานะชำระ',pay_channel:'ช่องทางชำระ',assignee_code:'ผู้รับผิดชอบ',note:'หมายเหตุ'};
   const detSummary=l=>{
@@ -5517,6 +5656,12 @@ function auditLogRender(logs){
         const what=rt==='customer_bulk_delete'?'ลูกค้าหลายรายการ':(rt==='document_delete'?'เอกสาร':'ลูกค้า');
         const en=d.entity_name?esc(d.entity_name):'';
         return verb+what+(en?': '+en:'');
+      }
+      // STAGE 23: เปิด/ปิดใช้งานบัญชี — แสดงเฉพาะ username/ชื่อ (ไม่มีรหัสผ่าน)
+      if(a==='user.disable'||a==='user.enable'){
+        const who=d.username?esc(d.username):(d.name?esc(d.name):'');
+        const nm=(d.name&&d.username)?(' ('+esc(d.name)+')'):'';
+        return (a==='user.disable'?'ปิดใช้งานผู้ใช้':'เปิดใช้งานผู้ใช้')+(who?': '+who+nm:'');
       }
     }catch(_){}
     // Fallback ปลอดภัย: detail หาย/ผิดรูป -> ใช้ logic เดิม
@@ -9141,6 +9286,13 @@ async function attNotifyLine(type,savedLog){
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('appScreen').style.display='none';
     setLang(curLang);
+    // STAGE 23: ถ้า session ถูกตัดเพราะบัญชีถูกปิดใช้งาน/ลบ → แจ้งผู้ใช้ที่หน้า login
+    if(_sessionKickReason==='disabled'){
+      const _le=document.getElementById('lerr');
+      if(_le)_le.textContent='บัญชีนี้ถูกปิดใช้งาน กรุณาเข้าสู่ระบบใหม่หรือติดต่อผู้ดูแลระบบ';
+      try{if(typeof toast==='function')toast('บัญชีนี้ถูกปิดใช้งาน กรุณาเข้าสู่ระบบใหม่หรือติดต่อผู้ดูแลระบบ','err');}catch(_){}
+      _sessionKickReason=null;
+    }
   }
 })();
 
