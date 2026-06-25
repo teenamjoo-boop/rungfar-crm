@@ -1488,7 +1488,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <button class="theme-btn" id="themeBtnApp" onclick="toggleTheme()" aria-label="สลับโหมดมืด/สว่าง" title="โหมดมืด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
     </div>
     <button class="mob-only mob-iconbtn" id="mobLogout" onclick="doLogout()" aria-label="ออกจากระบบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0l3-3m-3 3l3 3"/></svg></button>
-    <button class="btn btn-g btn-sm" onclick="gv('import')"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้า Excel</button>
+    <button class="btn btn-g btn-sm" onclick="gv('import')"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้าไฟล์</button>
     <button class="btn btn-p" onclick="openAdd()">+ เพิ่มลูกค้า</button>
   </div>
   <div class="abanner" id="abanner"></div>
@@ -1536,7 +1536,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="view" id="view-alerts"><div id="alertContent"></div></div>
     <div class="view" id="view-employers"><div id="empContent"></div></div>
     <div class="view" id="view-groups"><div id="grpContent"></div></div>
-    <div class="view" id="view-import"><div class="mob-only doc-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 20h20"/></svg><span>แนะนำให้นำเข้าไฟล์ Excel ผ่านคอมพิวเตอร์เพื่อความสะดวกในการจัดการข้อมูล</span></div><div id="importContent"></div></div>
+    <div class="view" id="view-import"><div class="mob-only doc-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M2 20h20"/></svg><span>แนะนำให้นำเข้า Excel และอัปโหลดเอกสาร PDF/รูปผ่านคอมพิวเตอร์เพื่อความสะดวก</span></div><div id="importContent"></div></div>
     <div class="view" id="view-settings"><div style="max-width:560px"><div id="settingsTitleDiv" style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>ตั้งค่าการแจ้งเตือนล่วงหน้า</div><div id="settingsContent"></div></div></div>
     <div class="view" id="view-users"><div style="max-width:680px" id="usersContent"></div></div>
     <div class="view" id="view-staffinfo"><div id="staffinfoContent"></div></div>
@@ -2156,6 +2156,48 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('bulkStModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="doBulkStatus()">✅ บันทึก</button></div>
 </div></div>
 
+<!-- MODAL: DOCUMENT UPLOAD FROM DOCUMENTS PAGE -->
+<div class="mo" id="docUploadModal" style="display:none" onclick="if(event.target===this)closeDocUploadModal()">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt">อัปโหลดเอกสาร PDF / รูปภาพ</div><button class="xbtn" onclick="closeDocUploadModal()">×</button></div>
+  <div class="mbody" style="display:flex;flex-direction:column;gap:12px">
+    <div class="fgi">
+      <label class="fl">ลูกค้า *</label>
+      <input class="fi2" id="docUpCustSearch" placeholder="ค้นหาชื่อ / พาสปอร์ต / เลขต่างด้าว" oninput="filterDocUpCust()" onblur="setTimeout(()=>{const r=document.getElementById('docUpCustResults');if(r)r.style.display='none';},150)" autocomplete="off">
+      <div id="docUpCustResults" style="display:none;border:1px solid var(--g2);border-radius:var(--r);max-height:160px;overflow-y:auto;background:#fff;margin-top:2px;box-shadow:var(--s2)"></div>
+      <div id="docUpCustChip" style="display:none;background:var(--pp);border:1px solid var(--pp2);border-radius:7px;padding:7px 10px;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;color:var(--pd)">
+        <span id="docUpCustChipName"></span>
+        <button onclick="clearDocUpCustSel()" style="border:none;background:none;color:var(--pd);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0">×</button>
+      </div>
+    </div>
+    <div class="fgi">
+      <label class="fl">ประเภทเอกสาร</label>
+      <select class="fi2" id="docUpDocType">
+        <option value="passport_photo">รูปพาสปอร์ต</option>
+        <option value="visa">VISA</option>
+        <option value="wp">Work Permit</option>
+        <option value="employer_card">บัตรนายจ้าง</option>
+        <option value="receipt">ใบเสร็จ</option>
+        <option value="photo">รูปถ่าย</option>
+        <option value="pow">หนังสือมอบอำนาจ</option>
+        <option value="other">อื่นๆ</option>
+      </select>
+    </div>
+    <div class="fgi">
+      <label class="fl">ชื่อเอกสาร (ถ้ามี)</label>
+      <input class="fi2" id="docUpDocLabel" placeholder="เช่น Work Permit ต่ออายุ 2568">
+    </div>
+    <div id="docUpDropZone" style="border:2px dashed var(--g3);border-radius:var(--rx);padding:22px;text-align:center;cursor:pointer;background:#fff;transition:all .2s" onclick="document.getElementById('docUpFileInput').click()" onmouseover="this.style.borderColor='var(--p)'" onmouseout="if(!_docUpFile)this.style.borderColor='var(--g3)'">
+      <div style="font-size:32px;margin-bottom:6px">📎</div>
+      <div style="font-weight:700;color:var(--g7);font-size:13px">คลิกเพื่อเลือกไฟล์</div>
+      <div style="font-size:11px;color:var(--g5);margin-top:3px">PDF (≤10MB) · รูปภาพ JPEG/PNG (≤4MB ก่อนย่อ)</div>
+      <input type="file" id="docUpFileInput" accept="image/*,.pdf" style="display:none" onchange="handleDocUpFile(event)">
+    </div>
+    <div id="docUpPreview" style="display:none"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="closeDocUploadModal()">ยกเลิก</button><button class="btn btn-p" id="docUpSaveBtn" onclick="saveDocUpload()">บันทึก</button></div>
+</div></div>
+
 <!-- PHOTO LIGHTBOX -->
 <div id="photoModal" style="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:none;align-items:center;justify-content:center" onclick="if(event.target===this)closePhotoModal()">
   <img id="photoModalImg" src="" style="max-width:90vw;max-height:88vh;border-radius:12px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.6)">
@@ -2252,7 +2294,7 @@ const LANG = {
     dashboard:'หน้าหลัก', customers:'ลูกค้า', alerts:'การแจ้งเตือน',
     employers:'นายจ้าง / บริษัท', groups:'จัดการกลุ่ม', import:'เอกสาร',
     settings:'ตั้งค่าแจ้งเตือน', users:'จัดการผู้ใช้',
-    addCustomer:'+ เพิ่มลูกค้า', importExcel:'นำเข้า Excel',
+    addCustomer:'+ เพิ่มลูกค้า', importExcel:'นำเข้าไฟล์',
     search:'ค้นหา ชื่อ / พาสปอร์ต / เลขต่างด้าว / เบอร์ / นายจ้าง...',
     allNat:'สัญชาติทั้งหมด', allType:'ประเภททั้งหมด', allStatus:'สถานะทั้งหมด',
     allGroup:'กลุ่มทั้งหมด', allBranch:'สาขาทั้งหมด',
@@ -2455,7 +2497,7 @@ const LANG = {
     dashboard:'ပင်မ', customers:'ဖောက်သည်', alerts:'သတိပေးချက်',
     employers:'အလုပ်ရှင် / ကုမ္ပဏီ', groups:'အုပ်စုစီမံခန့်ခွဲ', import:'စာရွက်စာတမ်း',
     settings:'သတိပေးချက်ပြင်ဆင်', users:'အသုံးပြုသူစီမံ',
-    addCustomer:'+ ဖောက်သည်ထည့်', importExcel:'Excel တင်သွင်း',
+    addCustomer:'+ ဖောက်သည်ထည့်', importExcel:'ဖိုင်တင်သွင်း',
     search:'ရှာဖွေ ชื่อ / နိုင်ငံကူး / ID / ဖုန်း / အလုပ်ရှင်...',
     allNat:'အမျိုးသားရေး အားလုံး', allType:'အမျိုးအစား အားလုံး', allStatus:'အခြေအနေ အားလုံး',
     allGroup:'အုပ်စု အားလုံး', allBranch:'ဌာနခွဲ အားလုံး',
@@ -4880,15 +4922,27 @@ async function delGrp(id){if(!confirm('ลบกลุ่มนี้?'))return;
 
 function renderImport(){
   document.getElementById('importContent').innerHTML=`<div style="max-width:800px">
-    <div style="font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px"><svg class="ui-ic" style="width:17px;height:17px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้าข้อมูล Excel / CSV</div>
-    <div style="font-size:13px;color:var(--g5);margin-bottom:16px">รองรับ .xlsx, .xls, .csv — ตรวจสอบข้อมูลซ้ำอัตโนมัติ</div>
-    <div id="impDrop" style="border:2px dashed var(--g3);border-radius:var(--rx);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g3)'" onclick="document.getElementById('impFile').click()" ondragenter="impDragOver(event)" ondragover="impDragOver(event)" ondragleave="impDragLeave(event)" ondrop="impDrop(event)">
-      <div style="font-size:40px;margin-bottom:10px">📂</div>
-      <div style="font-weight:700;color:var(--g7)">คลิกหรือลากไฟล์มาวางที่นี่</div>
-      <div style="font-size:12px;color:var(--g5);margin-top:4px">.xlsx, .xls, .csv</div>
-      <input type="file" id="impFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImpFile(event)">
+    <div style="margin-bottom:24px">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px"><svg class="ui-ic" style="width:17px;height:17px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 21h14"/></svg>นำเข้าข้อมูลลูกค้า Excel / CSV</div>
+      <div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:6px 11px;margin-bottom:14px">ใช้สำหรับนำเข้ารายชื่อลูกค้าเท่านั้น · รองรับ .xlsx .xls .csv — ตรวจสอบข้อมูลซ้ำอัตโนมัติ</div>
+      <div id="impDrop" style="border:2px dashed var(--g3);border-radius:var(--rx);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g3)'" onclick="document.getElementById('impFile').click()" ondragenter="impDragOver(event)" ondragover="impDragOver(event)" ondragleave="impDragLeave(event)" ondrop="impDrop(event)">
+        <div style="font-size:40px;margin-bottom:10px">📂</div>
+        <div style="font-weight:700;color:var(--g7)">คลิกหรือลากไฟล์มาวางที่นี่</div>
+        <div style="font-size:12px;color:var(--g5);margin-top:4px">.xlsx, .xls, .csv</div>
+        <input type="file" id="impFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImpFile(event)">
+      </div>
+      <div id="impPreview" style="margin-top:16px"></div>
     </div>
-    <div id="impPreview" style="margin-top:16px"></div></div>`;
+    <div style="border-top:2px solid var(--g2);padding-top:22px">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px"><svg class="ui-ic" style="width:17px;height:17px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>อัปโหลดเอกสาร PDF / รูปภาพ</div>
+      <div style="font-size:12px;color:var(--g5);margin-bottom:14px">เลือกไฟล์แล้วผูกกับลูกค้าในระบบ · PDF ≤10MB · รูปภาพจะถูกย่ออัตโนมัติ</div>
+      <div style="border:2px dashed var(--g3);border-radius:var(--rx);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fff" onclick="openDocUploadModal()" onmouseover="this.style.borderColor='var(--p)';this.style.background='var(--pp)'" onmouseout="this.style.borderColor='var(--g3)';this.style.background='#fff'">
+        <div style="font-size:40px;margin-bottom:10px">📎</div>
+        <div style="font-weight:700;color:var(--g7)">คลิกเพื่ออัปโหลดเอกสาร</div>
+        <div style="font-size:12px;color:var(--g5);margin-top:4px">PDF · JPEG · PNG · เลือกลูกค้าแล้วบันทึก</div>
+      </div>
+    </div>
+  </div>`;
 }
 // drag & drop ไฟล์ Excel/CSV → ใช้ path เดิม handleImpFile (รับ event แบบเดียวกับกดเลือกไฟล์)
 function impDragOver(e){e.preventDefault();e.stopPropagation();const d=document.getElementById('impDrop');if(d){d.style.borderColor='var(--p)';d.style.background='#FFF7EF';}}
@@ -4900,6 +4954,104 @@ function impDrop(e){
   if(!f)return;
   if(!/\.(xlsx|xls|csv)$/i.test(f.name)){toast('รองรับเฉพาะไฟล์ .xlsx .xls .csv','err');return;}
   handleImpFile({target:{files:[f]}});
+}
+
+// ===== DOCUMENT UPLOAD FROM DOCUMENTS PAGE =====
+let _docUpSelCust=null; // selected customer object {id,name,passport_no,alien_id}
+let _docUpFile=null;    // {data:dataUrl,fileType,name,isPdf}
+
+function openDocUploadModal(){
+  _docUpSelCust=null;_docUpFile=null;
+  const m=document.getElementById('docUploadModal');if(!m)return;
+  const s=document.getElementById('docUpCustSearch');if(s)s.value='';
+  const res=document.getElementById('docUpCustResults');if(res){res.style.display='none';res.innerHTML='';}
+  const chip=document.getElementById('docUpCustChip');if(chip)chip.style.display='none';
+  const dt=document.getElementById('docUpDocType');if(dt)dt.value='passport_photo';
+  const dl=document.getElementById('docUpDocLabel');if(dl)dl.value='';
+  const prev=document.getElementById('docUpPreview');if(prev){prev.style.display='none';prev.innerHTML='';}
+  const fi=document.getElementById('docUpFileInput');if(fi)fi.value='';
+  const dz=document.getElementById('docUpDropZone');if(dz){dz.style.borderColor='var(--g3)';dz.style.background='#fff';}
+  m.style.display='flex';
+}
+function closeDocUploadModal(){
+  const m=document.getElementById('docUploadModal');if(m)m.style.display='none';
+  _docUpSelCust=null;_docUpFile=null;
+}
+function filterDocUpCust(){
+  const q=(document.getElementById('docUpCustSearch').value||'').trim().toLowerCase();
+  const res=document.getElementById('docUpCustResults');if(!res)return;
+  if(q.length<2){res.style.display='none';res.innerHTML='';return;}
+  const matches=(typeof customers!=='undefined'?customers:[]).filter(c=>{
+    return(c.name&&c.name.toLowerCase().includes(q))||(c.passport_no&&c.passport_no.toLowerCase().includes(q))||(c.alien_id&&c.alien_id.toLowerCase().includes(q));
+  }).slice(0,8);
+  if(!matches.length){res.innerHTML='<div style="padding:10px 12px;font-size:12px;color:var(--g5)">ไม่พบลูกค้า</div>';res.style.display='block';return;}
+  res.innerHTML=matches.map(c=>`<div style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--g1)" onmousedown="event.preventDefault();selectDocUpCust(${c.id})" onmouseover="this.style.background='var(--pp)'" onmouseout="this.style.background=''"><div style="font-weight:600">${esc(c.name)}</div><div style="font-size:11px;color:var(--g5)">${[c.passport_no,c.alien_id].filter(Boolean).join(' · ')||'—'}</div></div>`).join('');
+  res.style.display='block';
+}
+function selectDocUpCust(id){
+  const c=(typeof customers!=='undefined'?customers:[]).find(x=>x.id===id);if(!c)return;
+  _docUpSelCust=c;
+  const s=document.getElementById('docUpCustSearch');if(s)s.value='';
+  const res=document.getElementById('docUpCustResults');if(res){res.style.display='none';res.innerHTML='';}
+  const chip=document.getElementById('docUpCustChip');
+  const chipName=document.getElementById('docUpCustChipName');
+  if(chip&&chipName){
+    const sub=[c.passport_no,c.alien_id].filter(Boolean)[0];
+    chipName.textContent=c.name+(sub?' · '+sub:'');
+    chip.style.display='flex';
+  }
+}
+function clearDocUpCustSel(){
+  _docUpSelCust=null;
+  const chip=document.getElementById('docUpCustChip');if(chip)chip.style.display='none';
+  const s=document.getElementById('docUpCustSearch');if(s){s.value='';s.focus();}
+}
+async function handleDocUpFile(e){
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  const prev=document.getElementById('docUpPreview');
+  const dz=document.getElementById('docUpDropZone');
+  try{
+    let dataUrl,ftype;
+    const _isPdf=file.type==='application/pdf';
+    if(file.type&&file.type.startsWith('image/')){
+      dataUrl=await compressImage(file,1600,0.72);ftype='image/jpeg';
+    }else{
+      const _rawLim=_isPdf?10*1024*1024:5*1024*1024;
+      if(file.size>_rawLim){toast((_isPdf?'PDF':'ไฟล์')+' '+file.name+' ใหญ่เกิน '+(_isPdf?'10':'5')+'MB','err');e.target.value='';return;}
+      dataUrl=await readAsDataURL(file);ftype=file.type||'application/octet-stream';
+    }
+    if(!dataUrl){toast('อ่านไฟล์ไม่ได้','err');e.target.value='';return;}
+    const bytes=approxBytesFromDataURL(dataUrl);
+    const _byteLim=_isPdf?Math.round(10*1024*1024*1.34):DOC_MAX_BYTES;
+    if(bytes>_byteLim){toast(_isPdf?'PDF '+file.name+' ใหญ่เกิน 10MB กรุณาลดขนาดไฟล์':'ไฟล์ '+file.name+' ใหญ่เกิน 1.5MB หลังย่อ ลองถ่าย/สแกนใหม่','err');e.target.value='';return;}
+    _docUpFile={data:dataUrl,fileType:ftype,name:file.name,isPdf:_isPdf};
+    if(dz)dz.style.borderColor='var(--p)';
+    const sizeKB=Math.round(bytes/1024);
+    if(prev){
+      prev.style.display='block';
+      prev.innerHTML=_isPdf
+        ?`<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#fff5f5;border:1px solid #fecaca;border-radius:var(--r)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><div style="font-size:12px;font-weight:700;color:#dc2626">PDF — ${sizeKB} KB</div><div style="font-size:11px;color:var(--g6)">${esc(file.name)}</div></div></div>`
+        :`<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--r)"><img src="${esc(dataUrl)}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--g2)"><div><div style="font-size:12px;font-weight:700;color:#15803d">รูปภาพ — ${sizeKB} KB</div><div style="font-size:11px;color:var(--g6)">${esc(file.name)}</div></div></div>`;
+    }
+  }catch(err){console.error('[docUpload] file read failed',err);toast('เพิ่มไฟล์ไม่สำเร็จ','err');e.target.value='';}
+}
+async function saveDocUpload(){
+  if(!(await guardSession()))return;
+  if(!_docUpSelCust){toast('กรุณาเลือกลูกค้าก่อนอัปโหลดเอกสาร','err');return;}
+  if(!_docUpFile){toast('กรุณาเลือกไฟล์ก่อนบันทึก','err');return;}
+  const dtype=document.getElementById('docUpDocType').value||'other';
+  const dlabel=(document.getElementById('docUpDocLabel').value||'').trim();
+  const dname=dlabel||docTypeLabel(dtype);
+  const btn=document.getElementById('docUpSaveBtn');if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก...';}
+  try{
+    await dbPost('documents',{customer_id:_docUpSelCust.id,doc_type:dtype,doc_name:dname,file_data:_docUpFile.data,file_type:_docUpFile.fileType||'image/jpeg',uploaded_by:(curUser&&curUser.full_name)||null});
+    try{
+      logAudit('document.upload','document',_docUpSelCust.id,{customer_id:_docUpSelCust.id,customer_name:_docUpSelCust.name,count:1,doc_type:dtype,doc_name:dname,file_type:_docUpFile.fileType||'image/jpeg',uploaded_by:(curUser&&curUser.full_name)||null,source:'docUploadPage'});
+    }catch(_e){console.warn('[AUDIT] docUpload log skipped:',_e&&_e.message);}
+    toast('อัปโหลดเอกสารสำเร็จ — '+esc(_docUpSelCust.name));
+    closeDocUploadModal();
+  }catch(e){toast('บันทึกไม่สำเร็จ: '+(e&&e.message?e.message:String(e)),'err');}
+  finally{if(btn){btn.disabled=false;btn.textContent='บันทึก';}}
 }
 
 // Round D: เพิ่ม aliases รองรับหัวคอลัมน์ไทยตาม Excel template (จับคู่กับ field ที่มี DB เท่านั้น)
