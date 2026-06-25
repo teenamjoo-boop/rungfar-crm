@@ -4421,6 +4421,7 @@ function setQuickView(v){
   });
   doFilter();
 }
+function hasCustomerPhoto(c){return !!(c&&c.photo);}
 function doFilter(){
   const q=(document.getElementById('qs')?.value||'').toLowerCase();
   const nat=document.getElementById('qnat')?.value||'';const ct=document.getElementById('qct')?.value||'';
@@ -4432,8 +4433,10 @@ function doFilter(){
     const mqv=customerQuickView==='pending'?pendingWS.has(c.work_status):customerQuickView==='submitted'?c.work_status===WS[3]:customerQuickView==='unpaid'?(c.pay_status==='partial'||c.pay_status==='unpaid'||(!c.pay_status&&Number(c.fee_due)>0)):true;
     return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br))&&(!asg||String(c.assignee_code||'')===String(asg))&&mqv;
   });
-  // Round F1B-2: เรียงใหม่สุดก่อนเสมอ — created_at DESC, fallback id DESC
+  // Stage 28C: photo customers first; within each group newest-first (created_at DESC, id DESC)
   filtered.sort((a,b)=>{
+    const ap=hasCustomerPhoto(a)?1:0,bp=hasCustomerPhoto(b)?1:0;
+    if(ap!==bp)return bp-ap;
     const ca=a.created_at,cb=b.created_at;
     if(ca&&cb&&ca!==cb)return ca<cb?1:-1;
     return (b.id||0)-(a.id||0);
