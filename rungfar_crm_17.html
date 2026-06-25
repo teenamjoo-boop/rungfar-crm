@@ -3082,6 +3082,7 @@ function renderMultiDocGrid(){
 }
 
 async function delMdoc(id){
+  if(!(await guardSession()))return; // STAGE 24: session guard (ลบ/ขอลบเอกสาร)
   const doc=multiDocs.find(d=>d.id===id);
   if(!doc)return;
   if(doc.dbId){
@@ -3331,6 +3332,7 @@ function normalizeRole(r){return r==='admin'?'admin':'staff';}
 
 // RLS-HARDEN-2D: เคลียร์ทุก state ที่เกี่ยวกับ user/session ในที่เดียว (ใช้ตอน logout + session invalid)
 function clearSessionState(){
+  if(typeof stopSessionWatch==='function')stopSessionWatch(); // STAGE 24: หยุด periodic check เมื่อออกจากระบบ
   localStorage.removeItem('crm_sess');
   curUser=null;
   curEmpInfo=null;          // BRANCH-LIGHT: ข้อมูลพนักงาน staff ต้องถูกล้างด้วย
@@ -3382,9 +3384,94 @@ async function validateSession(){
   }
 }
 
+// ===== STAGE 24: LIVE SESSION HARDENING (reuse app_verify_session — ไม่สร้าง login ใหม่) =====
+let _lastSessCheck=0;        // เวลาที่เช็ค session สำเร็จล่าสุด (throttle กัน spam)
+let _sessCheckInFlight=null; // dedupe การเช็คที่กำลังทำงาน
+let _sessKicked=false;       // กันเด้ง/toast ซ้ำเมื่อถูกปิดใช้งาน
+let _sessWatchTimer=null;    // ตัวจับเวลา periodic check
+const _SESS_THROTTLE_MS=15000;   // ภายใน 15 วิ ใช้ผลเดิม (สำหรับ trigger อัตโนมัติ)
+const _SESS_INTERVAL_MS=120000;  // เช็ครอบเวลา ทุก 2 นาที
+
+// เด้งผู้ใช้ที่ถูกปิดใช้งานออกไปหน้า login (ครั้งเดียว) + แจ้งข้อความไทย
+function kickDisabledSession(){
+  if(_sessKicked)return;            // กันเด้ง/toast ซ้ำ
+  _sessKicked=true;
+  stopSessionWatch();
+  clearSessionState();
+  const ls=document.getElementById('loginScreen'); if(ls)ls.style.display='flex';
+  const ap=document.getElementById('appScreen'); if(ap)ap.style.display='none';
+  try{if(typeof setLang==='function')setLang(curLang);}catch(_){}
+  const _le=document.getElementById('lerr');
+  if(_le)_le.textContent='บัญชีนี้ถูกปิดใช้งาน กรุณาเข้าสู่ระบบใหม่หรือติดต่อผู้ดูแลระบบ';
+  try{if(typeof toast==='function')toast('บัญชีนี้ถูกปิดใช้งาน กรุณาเข้าสู่ระบบใหม่หรือติดต่อผู้ดูแลระบบ','err');}catch(_){}
+}
+
+// ตรวจ session สด ๆ ด้วย app_verify_session
+//   คืน true  = ใช้งานได้ หรือ ไม่แน่ใจ (network/RPC error → fail-open คง session)
+//   คืน false = ถูกปิด/ลบ แน่นอน (เด้งออกแล้ว) หรือ ไม่ได้ login
+//   opts.force=true → ข้าม throttle (ใช้ก่อน critical action เพื่อความชัวร์)
+async function revalidateSessionLive(opts){
+  opts=opts||{};
+  if(!curUser)return false;
+  const now=Date.now();
+  if(!opts.force){
+    if(_sessCheckInFlight)return _sessCheckInFlight;      // มีการเช็คค้างอยู่ → ใช้อันเดียวกัน
+    if((now-_lastSessCheck)<_SESS_THROTTLE_MS)return true; // เพิ่งเช็คไป → ถือว่าผ่าน (กัน spam)
+  }
+  const run=(async()=>{
+    try{
+      const r=await sb('rpc/app_verify_session','POST',{p_user_id:String(curUser.id),p_username:curUser.username});
+      _lastSessCheck=Date.now();
+      if(r&&r.id!=null){
+        // ยังใช้ได้ → refresh ข้อมูลสด (role/ชื่อ/สาขา) คง exp เดิม
+        let exp=Date.now()+8*3600000;
+        try{const s=JSON.parse(localStorage.getItem('crm_sess')||'null');if(s&&s.exp)exp=s.exp;}catch(_){}
+        curUser={...r,role:normalizeRole(r.role)};
+        localStorage.setItem('crm_sess',JSON.stringify({user:curUser,exp}));
+        return true;
+      }
+      // คืน null/ว่าง = ถูกปิดใช้งาน/ลบ → เด้งออก
+      _sessionKickReason='disabled';
+      kickDisabledSession();
+      return false;
+    }catch(e){
+      // network/RPC error → fail-open: คง session (ไม่เด้งเพราะเน็ตหลุดครั้งเดียว) — ตรงกับ validateSession เดิม
+      _lastSessCheck=Date.now();
+      console.warn('[SEC] live revalidate skipped (network/unavailable):',e&&e.message);
+      return true;
+    }finally{
+      _sessCheckInFlight=null;
+    }
+  })();
+  if(!opts.force)_sessCheckInFlight=run;
+  return run;
+}
+
+// guard ก่อน critical action — บังคับเช็คสด; คืน true ถ้าทำต่อได้
+async function guardSession(){
+  if(!curUser){kickDisabledSession();return false;}
+  return await revalidateSessionLive({force:true});
+}
+
+// periodic watch — ทำงานเฉพาะตอน login อยู่; หยุดเมื่อ logout/kick
+function startSessionWatch(){
+  _sessKicked=false; // login ใหม่ → อนุญาตให้เด้งได้อีกครั้งในอนาคต
+  if(_sessWatchTimer)return;
+  _sessWatchTimer=setInterval(function(){ if(curUser)revalidateSessionLive(); else stopSessionWatch(); },_SESS_INTERVAL_MS);
+}
+function stopSessionWatch(){ if(_sessWatchTimer){clearInterval(_sessWatchTimer);_sessWatchTimer=null;} }
+
+// trigger: focus / กลับมาที่แท็บ → เช็ค session (throttle กัน spam)
+(function(){
+  function _t(){ if(curUser&&typeof revalidateSessionLive==='function')revalidateSessionLive(); }
+  window.addEventListener('focus',_t);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible')_t(); });
+})();
+
 async function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
+  if(typeof startSessionWatch==='function')startSessionWatch(); // STAGE 24: เริ่ม periodic session check + reset _sessKicked
   // RLS-HARDEN-2D: clear user cache จาก session ก่อน + บังคับ view = dash ป้องกัน staff ค้างหน้า users
   appUsers=[];
   curView='dash';
@@ -3614,6 +3701,8 @@ function mobZoomReset(){if(window.innerWidth>768)return;try{if(document.activeEl
 })();
 
 function gv(v,opts={}){
+  // STAGE 24: revalidate session ตอนเปลี่ยนหน้า (throttled, fire-and-forget) — ถ้าถูกปิดใช้งานจะถูกเด้งออกทันทีหลังเช็ค
+  if(curUser&&typeof revalidateSessionLive==='function')revalidateSessionLive();
   document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
   const el=document.getElementById('view-'+v);if(el)el.classList.add('on');
   curView=v;
@@ -4558,6 +4647,7 @@ async function handlePhoto(e){
 }
 
 async function saveCustomer(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (บันทึก/อัปโหลดเอกสารลูกค้า)
   // null-safe readers — กัน element ที่อาจถูกซ่อน/ย้าย DOM (Round C hotfix)
   const V=id=>{const el=document.getElementById(id);return el?el.value:'';};
   const VT=id=>V(id).trim();
@@ -4629,6 +4719,7 @@ async function saveCustomer(){
   }
 }
 async function delCust(id){
+  if(!(await guardSession()))return; // STAGE 24: session guard (ลบ/ขอลบลูกค้า)
   const _c=customers.find(c=>c.id===id)||{};
   const _delName=_c.name||'';
   // STAGE 22B: Staff ลบตรงไม่ได้ — ส่ง "คำขอลบ" ให้แอดมินอนุมัติแทน (การ์ดทั้ง UI + ฟังก์ชัน กันเรียกตรง)
@@ -5216,6 +5307,7 @@ function ufEmpPick(empId){
   const n=document.getElementById('uf_name');if(n&&!n.value.trim())n.value=e.full_name||'';
 }
 async function saveUser(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (จัดการผู้ใช้)
   const id=document.getElementById('uf_id').value;
   const username=document.getElementById('uf_user').value.trim();
   const full_name=document.getElementById('uf_name').value.trim();
@@ -5327,6 +5419,7 @@ function closeDelUserModal(){
 }
 async function confirmDelUser(){
   if(!_pendingDelUserId||curUser?.role!=='admin')return;
+  if(!(await guardSession()))return; // STAGE 24: session guard (ลบผู้ใช้)
   const pass=document.getElementById('dum_pass').value.trim();
   const errEl=document.getElementById('dum_err');
   if(!pass){errEl.textContent='กรุณากรอกรหัสผ่าน';return;}
@@ -5404,6 +5497,7 @@ function closeSetActiveModal(){
 }
 async function confirmSetActive(){
   if(!_pendingSetActive||curUser?.role!=='admin')return; // guard
+  if(!(await guardSession()))return; // STAGE 24: session guard (เปิด/ปิดใช้งานผู้ใช้)
   const {id,makeActive}=_pendingSetActive;
   if(id===curUser.id){document.getElementById('sam_err').textContent=T('usersErrSelf');return;} // double-guard
   const pass=document.getElementById('sam_pass').value.trim();
@@ -6080,6 +6174,7 @@ function openBulkSt(){
   document.getElementById('bulkStModal').style.display='flex';
 }
 async function doBulkGroup(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (เปลี่ยนกลุ่มหลายรายการ)
   const grpId=document.getElementById('bulkGrpSel').value;
   const ids=[...selectedIds];
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
@@ -6096,6 +6191,7 @@ async function doBulkGroup(){
 }
 async function doBulkAssign(){
   if(!(curUser&&curUser.role==='admin')){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;} // admin-only guard
+  if(!(await guardSession()))return; // STAGE 24: session guard (มอบหมายผู้อื่น)
   if(!selectedIds.size){toast('กรุณาเลือกรายการก่อน','err');return;}
   const sel=document.getElementById('bulkAsgSel');const code=sel?sel.value:'';
   const label=code?(assigneeLabel(code)||code):'ยังไม่ระบุ';
@@ -6114,6 +6210,7 @@ async function doBulkAssign(){
 }
 async function doBulkAssignSelf(){
   if(!(curUser&&curUser.username)){toast('ไม่พบผู้ใช้','err');return;}
+  if(!(await guardSession()))return; // STAGE 24: session guard (มอบหมายให้ตัวเอง)
   if(!selectedIds.size){toast('กรุณาเลือกรายการก่อน','err');return;}
   const me=curUser.username;const ids=[...selectedIds];
   if(!confirm(`มอบหมาย ${ids.length} รายการ ให้ตัวเอง ?`))return;
@@ -6129,6 +6226,7 @@ async function doBulkAssignSelf(){
   finally{hideLoading();}
 }
 async function doBulkStatus(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (เปลี่ยนสถานะหลายรายการ)
   const status=document.getElementById('bulkStSel').value;
   const ids=[...selectedIds];
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
@@ -6144,6 +6242,7 @@ async function doBulkStatus(){
   finally{hideLoading();}
 }
 async function doBulkDelete(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (ลบ/ขอลบหลายรายการ)
   const ids=[...selectedIds];
   if(!ids.length){toast('กรุณาเลือกรายการก่อน','err');return;}
   // STAGE 22B: Staff ลบหลายรายการตรงไม่ได้ — ส่ง "คำขอลบหลายรายการ" ให้แอดมินอนุมัติ
@@ -6246,6 +6345,7 @@ async function renderDelReq(){
 }
 async function approveDelReq(id){
   if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!(await guardSession()))return; // STAGE 24: session guard (อนุมัติคำขอลบ)
   const req=_delReqCache.find(r=>r.id===id);if(!req)return;
   if(!confirm(T('delreqConfirmApprove')))return;
   const note=prompt(T('delreqReviewNote'),'');
@@ -6274,6 +6374,7 @@ async function approveDelReq(id){
 }
 async function rejectDelReq(id){
   if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!(await guardSession()))return; // STAGE 24: session guard (ปฏิเสธคำขอลบ)
   const req=_delReqCache.find(r=>r.id===id);if(!req)return;
   if(!confirm(T('delreqConfirmReject')))return;
   const note=prompt(T('delreqReviewNote'),'');
@@ -6328,14 +6429,16 @@ function exportCustomersCSV(list,fname){
   const b=new Blob([String.fromCharCode(65279)+rows.join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
 }
-function doBulkExport(){
+async function doBulkExport(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (export ที่เลือก)
   const sel=filtered.filter(c=>selectedIds.has(c.id));
   if(!sel.length){toast('กรุณาเลือกรายการก่อน','err');return;}
   exportCustomersCSV(sel,`เลือก_${sel.length}_รายการ.csv`);
   logAudit('customer.export','customer',null,{format:'csv',scope:'selected',count:sel.length});
   toast(`Export ${sel.length} รายการแล้ว`);
 }
-function doExport(){
+async function doExport(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (export CSV)
   exportCustomersCSV(filtered,`Rungfar_CRM_${new Date().toLocaleDateString('th')}.csv`);
   logAudit('customer.export','customer',null,{format:'csv',scope:'filtered',count:filtered.length});
   toast('Export CSV แล้ว');
@@ -6348,7 +6451,8 @@ function forceExportTextCols(ws,cols){
     cols.forEach(C=>{const addr=XLSX.utils.encode_cell({r:R,c:C});const cell=ws[addr];if(cell&&cell.v!==undefined&&cell.v!==null&&cell.v!==''){cell.t='s';cell.v=String(cell.v);cell.z='@';}});
   }
 }
-function doExportXlsx(){
+async function doExportXlsx(){
+  if(!(await guardSession()))return; // STAGE 24: session guard (export Excel)
   try{
     if(typeof XLSX==='undefined'){toast('โหลดไลบรารี Excel ไม่สำเร็จ','err');return;}
     const aoa=[CUST_EXPORT_HEADERS,...filtered.map((c,i)=>custExportRow(c,i))];
