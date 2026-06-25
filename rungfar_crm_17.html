@@ -3610,7 +3610,7 @@ function mobNavSync(){
   const src=document.getElementById('nbAlert'), bd=document.getElementById('mobAlertBadge');
   if(src&&bd){const n=parseInt(src.textContent)||0;bd.textContent=n;bd.style.display=n>0?'flex':'none';}
 }
-function mobMoreOpen(){const s=document.getElementById('mobMore');if(s)s.classList.add('on');}
+function mobMoreOpen(){const s=document.getElementById('mobMore');if(!s)return;const _ia=!!(typeof curUser!=='undefined'&&curUser&&curUser.role==='admin');s.classList.toggle('staff',!_ia);s.classList.add('on');}
 function mobMoreClose(){const s=document.getElementById('mobMore');if(s)s.classList.remove('on');}
 // ===== STAGE 5: Mobile left drawer (hamburger) — UI only, ไม่แตะ auth/role logic =====
 function mobDrawerOpen(){mobDrawerSync();const d=document.getElementById('mobDrawer');if(d)d.classList.add('on');}
