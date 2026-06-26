@@ -1086,6 +1086,8 @@ textarea.fi2{resize:vertical;min-height:65px}
 .imp-ph-sub{font-size:11px;color:var(--g5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .imp-ph-b{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0}
 .imp-ph-b.ok{background:#dcfce7;color:#15803d}.imp-ph-b.warn{background:#fff3e0;color:#b45309}.imp-ph-b.no{background:#f3f4f6;color:#9ca3af}
+.imp-ph-chip{font-size:11px;font-weight:600;padding:4px 12px;border-radius:14px;border:1px solid var(--g2);background:var(--g0);color:var(--g6);cursor:pointer;white-space:nowrap}
+.imp-ph-chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
 /* zoom lock มือถือ (desktop ไม่กระทบ — pointer mouse ไม่ trigger touch/gesture) */
 html,body{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 /* iOS: กัน auto-zoom ตอน focus input — บังคับ font ≥16px เฉพาะมือถือ */
@@ -2230,6 +2232,8 @@ function closePhotoModal(){document.getElementById('photoModal').style.display='
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePhotoModal();});
 let impData=[],impCols=[],impMap={};
 let impPhotos={},impPhotoScan=false; // Phase A/B: รูปจาก Excel (preview only — ไม่บันทึก DB รอบนี้)
+let impPhotoFilter='all'; // Stage 28D: ตัวกรองพรีวิวรูป (all|ok|unsure|no) — มีผลกับการแสดงผลเท่านั้น
+let impSaveUnsure=false;  // Stage 28D: ติ๊ก = บันทึกรูป "ไม่มั่นใจ" ด้วย (ค่าเริ่มต้นไม่บันทึก)
 let curView='dash';
 let settings={passport:90,visa:30,wp:30,next90:14,mou:60};
 let selectedIds=new Set();
@@ -5193,7 +5197,7 @@ function handleImpFile(e){
   const reader=new FileReader();
   reader.onload=async ev=>{
     try{
-      impPhotos={};impPhotoScan=false;
+      impPhotos={};impPhotoScan=false;impPhotoFilter='all';impSaveUnsure=false;
       if(file.name.endsWith('.csv')){const text=new TextDecoder('utf-8').decode(ev.target.result);const lines=text.split('\n').filter(l=>l.trim());impCols=lines[0].split(',').map(c=>c.replace(/^"|"$/g,'').trim());impData=lines.slice(1).map(l=>l.split(',').map(c=>c.replace(/^"|"$/g,'').trim()));}
       else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});const _hdr=impDetectHeaderRow(arr);impCols=(arr[_hdr]||[]).map(String);const _raw=arr.slice(_hdr+1);impData=_raw.filter(r=>r.some(c=>c));
         try{const _ph=await impExtractXlsxPhotos(ev.target.result);impPhotoScan=true;const _rm={};let _fi=0;_raw.forEach((r,_j)=>{if(r.some(c=>c)){const _pk=_hdr+_j;if(_ph.photos[_pk])_rm[_fi]=_ph.photos[_pk];_fi++;}});impPhotos=_rm;}catch(_){impPhotos={};impPhotoScan=true;}
@@ -5228,16 +5232,28 @@ function renderImpPreview(){
   if(impPhotoScan){
     const _keys=Object.keys(impPhotos);let _nF=0,_nU=0;_keys.forEach(k=>{impPhotos[k].unsure?_nU++:_nF++;});
     const _nNo=impData.length-_keys.length;const _cap=300;
-    const _rows=impData.slice(0,_cap).map((r,i)=>{
+    // Stage 28D: หมวดของแต่ละแถว (ok|unsure|no) ใช้ทั้งตัวกรองและป้ายสถานะ — มีผลกับพรีวิวเท่านั้น
+    const _catOf=p=>!p?'no':(p.unsure?'unsure':'ok');
+    const _all=impData.map((r,i)=>({r,i,cat:_catOf(impPhotos[i])}));
+    const _filt=impPhotoFilter==='all'?_all:_all.filter(x=>x.cat===impPhotoFilter);
+    const _shown=_filt.slice(0,_cap);
+    const _rows=_shown.map(({r,i,cat})=>{
       const p=impPhotos[i];
       const nm=get(r,'name')||'—',emp=get(r,'employer_name')||'—',al=get(r,'alien_id')||'—',sd=impDate(get(r,'submit_date'))||'—';
       let thumb,badge;
-      if(p&&!p.unsure){thumb=`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`;badge='<span class="imp-ph-b ok">พบรูป</span>';}
-      else if(p&&p.unsure){thumb=p.url?`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`:'<div class="imp-ph-none">โชว์ไม่ได้</div>';badge='<span class="imp-ph-b warn">ไม่มั่นใจ</span>';}
+      if(cat==='ok'){thumb=`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`;badge='<span class="imp-ph-b ok">พบรูป</span>';}
+      else if(cat==='unsure'){thumb=p.url?`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`:'<div class="imp-ph-none">โชว์ไม่ได้</div>';badge='<span class="imp-ph-b warn">ไม่มั่นใจ</span>';}
       else{thumb='<div class="imp-ph-none">ไม่พบรูป</div>';badge='<span class="imp-ph-b no">ไม่พบรูป</span>';}
       return`<div class="imp-ph-row"><div class="imp-ph-rn">#${i+2}</div>${thumb}<div class="imp-ph-meta"><div class="imp-ph-nm">${esc(nm)}</div><div class="imp-ph-sub">${esc(emp)} · ${esc(al)}</div><div class="imp-ph-sub">วันที่ยื่น: ${esc(sd)}</div></div>${badge}</div>`;
     }).join('');
-    photoPanel=`<div class="twrap" style="margin-bottom:14px"><div class="tbar2" style="flex-wrap:wrap;gap:8px"><div style="font-size:13px;font-weight:700">จับคู่รูปถ่ายจาก Excel</div><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="eb eb-ok">พบ ${_nF}</span>${_nU?`<span class="eb eb-w">ไม่มั่นใจ ${_nU}</span>`:''}${_nNo>0?`<span class="eb eb-u">ไม่พบ ${_nNo}</span>`:''}</div></div><div style="padding:9px 12px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⚠️ <b>พรีวิวเท่านั้น</b> — รอบนี้ยังไม่บันทึกรูปลงระบบ · แตะรูปเพื่อดูใหญ่และตรวจให้ตรงคนก่อน (รูปอิงตำแหน่งในชีต อาจคลาดเคลื่อนถ้ามีแถวว่าง/merge cell)</div><div class="imp-ph-list">${_rows}${impData.length>_cap?`<div style="text-align:center;padding:10px;font-size:11px;color:var(--g5)">แสดง ${_cap} แถวแรก จาก ${impData.length}</div>`:''}</div></div>`;
+    // Stage 28D: filter chips — กรองพรีวิวเท่านั้น ไม่กระทบข้อมูลนำเข้า
+    const _chip=(k,lbl)=>`<button class="imp-ph-chip${impPhotoFilter===k?' on':''}" onclick="impPhotoFilter='${k}';renderImpPreview()">${lbl}</button>`;
+    const _chips=`<div style="display:flex;gap:6px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--g1)">${_chip('all','ทั้งหมด '+impData.length)}${_chip('ok','พบรูป '+_nF)}${_chip('unsure','ไม่มั่นใจ '+_nU)}${_chip('no','ไม่พบรูป '+_nNo)}</div>`;
+    const _empty=_shown.length?'':'<div style="text-align:center;padding:16px;font-size:12px;color:var(--g5)">ไม่มีแถวในหมวดนี้</div>';
+    const _capNote=_filt.length>_cap?`<div style="text-align:center;padding:10px;font-size:11px;color:var(--g5)">แสดงตัวอย่าง ${_cap} แถวแรกเท่านั้น แต่ระบบจะนำเข้ารายการที่ผ่านทั้งหมด</div>`:'';
+    // Stage 28D: ติ๊กบันทึกรูปไม่มั่นใจ — ค่าเริ่มต้นไม่ติ๊ก (พฤติกรรมเดิมคือไม่บันทึกรูปไม่มั่นใจ)
+    const _saveChk=_nU?`<label style="display:flex;align-items:center;gap:7px;padding:9px 12px;font-size:12px;color:var(--g7);background:#fffbeb;border-bottom:1px solid #fde68a;cursor:pointer"><input type="checkbox" ${impSaveUnsure?'checked':''} onchange="impSaveUnsure=this.checked"> บันทึกรูปที่ไม่มั่นใจด้วย <span style="color:var(--g5)">(${_nU} รูป — ตรวจให้ตรงคนก่อน)</span></label>`:'';
+    photoPanel=`<div class="twrap" style="margin-bottom:14px"><div class="tbar2" style="flex-wrap:wrap;gap:8px"><div style="font-size:13px;font-weight:700">จับคู่รูปถ่ายจาก Excel</div><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="eb eb-ok">พบ ${_nF}</span>${_nU?`<span class="eb eb-w">ไม่มั่นใจ ${_nU}</span>`:''}${_nNo>0?`<span class="eb eb-u">ไม่พบ ${_nNo}</span>`:''}</div></div><div style="padding:9px 12px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⚠️ <b>พรีวิวเท่านั้น</b> — แตะรูปเพื่อดูใหญ่และตรวจให้ตรงคนก่อน<br>ℹ️ <b>ไม่มั่นใจ</b> หมายถึงระบบเจอรูปแล้ว แต่ตำแหน่งใน Excel อาจคลาดเคลื่อนจากแถวว่าง/merge cell กรุณาตรวจรูปก่อนนำเข้า</div>${_chips}${_saveChk}<div class="imp-ph-list">${_rows}${_empty}${_capNote}</div></div>`;
   }
   // ขวดคอหลักคือการย่อรูป (Canvas, sequential) — text-only ชุด insert ได้เร็วมากแล้ว
   const _photoCount=impPhotoScan?Object.keys(impPhotos).length:0;
@@ -5283,7 +5299,8 @@ async function doImport(){
       const _exC=existingByKey.get(key);const _notes=[];
       // ลูกค้าเดิม + ยังไม่มีรูป + row import มีรูป → อัปเดตรูปให้ (ไม่สร้างลูกค้าซ้ำ)
       const _exPh=impPhotos[ri];
-      if(_exC&&!_exC.photo&&_exPh&&!_exPh.unsure){
+      // Stage 28D: อัปเดตรูปให้ลูกค้าเดิม "เฉพาะที่ยังไม่มีรูป" เท่านั้น (ไม่ทับรูปเดิม) — รูปไม่มั่นใจต้องติ๊กยืนยันก่อน
+      if(_exC&&!_exC.photo&&_exPh&&(!_exPh.unsure||impSaveUnsure)){
         try{const _img=await impCompressDataURL(_exPh.url,900,0.76);
           if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){await dbPatch('customers',_exC.id,{photo:_img});_exC.photo=_img;countPhotoUpd++;_notes.push('อัปเดตรูป');}
           else if(_img)countPhotoSkip++;
@@ -5331,7 +5348,8 @@ async function doImport(){
       data.assignee_code=_asgCode||null;
       // Excel embedded photo → ย่อ + บันทึกลง field photo เดิม (เหมือน manual upload)
       const _newPh=impPhotos[ri];
-      if(_newPh&&!_newPh.unsure){
+      // Stage 28D: รูปไม่มั่นใจจะบันทึกก็ต่อเมื่อผู้ใช้ติ๊ก "บันทึกรูปที่ไม่มั่นใจด้วย" (impSaveUnsure)
+      if(_newPh&&(!_newPh.unsure||impSaveUnsure)){
         try{const _img=await impCompressDataURL(_newPh.url,900,0.76);
           if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){data.photo=_img;countPhotoNew++;}
           else if(_img)countPhotoSkip++;
@@ -5359,7 +5377,7 @@ async function doImport(){
     }
   }
   hideLoading();
-  logAudit('customer.import','customer',null,{imported:countNew,dup_existing:countDupEx,dup_file:countDupFile,missing_name:countMissing,errors:countError,total:impData.length});
+  logAudit('customer.import','customer',null,{imported:countNew,dup_existing:countDupEx,dup_file:countDupFile,missing_name:countMissing,errors:countError,total:impData.length,photo_new:countPhotoNew,photo_upd:countPhotoUpd,save_unsure:impSaveUnsure});
   renderDash();renderSidebar();
   // Round D: รายงานคอลัมน์ที่ยังไม่รองรับ (ไม่ได้ map เข้า field ที่มี DB) — ไม่ทำให้ import พัง
   const _mappedIdx=new Set(Object.values(impMap).filter(v=>v!==undefined&&v>=0));
