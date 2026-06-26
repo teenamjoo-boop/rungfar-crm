@@ -5110,13 +5110,29 @@ function _impConvertBEDate(v){
 }
 function impDate(v){
   v=String(v==null?'':v).trim();if(!v)return null;
+  // Excel serial number (20000-80000 = dates ~1954-2119)
   const n=Number(v);
   if(Number.isFinite(n)&&n>=20000&&n<80000&&!v.includes('-')&&!v.includes('/')&&typeof XLSX!=='undefined'&&XLSX.SSF&&XLSX.SSF.parse_date_code){
-    const d=XLSX.SSF.parse_date_code(n); // Excel serial → date (Gregorian, ถูกต้องเสมอ)
-    if(d&&d.y)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    const d=XLSX.SSF.parse_date_code(n);
+    if(d&&d.y)return`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
   }
-  const _be=_impConvertBEDate(v);if(_be)return _be; // Thai Buddhist Era year → CE
-  return v; // สมมติเป็น ISO/string อยู่แล้ว
+  // Buddhist Era (year ≥2400): DD/MM/YYYY and YYYY-MM-DD handled by _impConvertBEDate
+  const _be=_impConvertBEDate(v);if(_be)return _be;
+  // Stage 28F: CE date formats not handled above
+  let _m;
+  // DD/MM/YYYY or DD-MM-YYYY with CE year 1900-2399
+  _m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(_m){const dy=parseInt(_m[1]),mo=parseInt(_m[2]),y=parseInt(_m[3]);if(y>=1900&&y<2400&&mo>=1&&mo<=12&&dy>=1&&dy<=31)return`${y}-${String(mo).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;}
+  // DD/MM/YY 2-digit year: ≥43 = Buddhist short (yy+1957=CE), <43 = CE 2000+yy
+  _m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+  if(_m){const dy=parseInt(_m[1]),mo=parseInt(_m[2]),yy=parseInt(_m[3]);if(mo>=1&&mo<=12&&dy>=1&&dy<=31){const y=yy>=43?yy+1957:2000+yy;return`${y}-${String(mo).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;}}
+  // YYYY-MM-DD CE (1900-2399) — validate before passing to DB
+  _m=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(_m){const y=parseInt(_m[1]),mo=parseInt(_m[2]),dy=parseInt(_m[3]);if(y>=1900&&y<2400&&mo>=1&&mo<=12&&dy>=1&&dy<=31)return`${y}-${String(mo).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;}
+  // Mixed text with embedded date ("ต่ออายุ31/03/69") — extract and retry
+  _m=v.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(_m){const p=impDate(_m[1]+'/'+_m[2]+'/'+_m[3]);if(p)return p;}
+  return null; // unrecognised — never send raw text to a DB date column
 }
 function makeImpKey(pp,al,name,nat,empName){const p=normImpStr(pp);if(p)return 'PP:'+p;const a=normImpStr(al);if(a)return 'AL:'+a;const n=normImpStr(name);if(n)return 'NM:'+n+'|'+normImpStr(nat)+'|'+normImpStr(empName);return null;}
 function buildExistingKeys(){const s=new Set();customers.forEach(c=>{const pp=normImpStr(c.passport_no);if(pp)s.add('PP:'+pp);const al=normImpStr(c.alien_id);if(al)s.add('AL:'+al);const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);s.add('NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:''));}});return s;}
@@ -5264,6 +5280,32 @@ function renderImpPreview(){
   ${impData.length>5?`<div style="padding:8px 15px;font-size:11px;color:var(--g5);border-top:1px solid var(--g1)">แสดง 5 แถวแรก จาก ${impData.length} แถวทั้งหมด</div>`:``}</div>`;
 }
 
+// Stage 28E: แปลง PostgREST error เป็นข้อความไทยสั้น ปลอดภัย (ไม่ส่ง base64/ข้อมูลดิบออก)
+function _impErrMsg(e){
+  try{
+    const raw=String(e&&e.message||'');
+    const j=raw.indexOf('{');
+    if(j>=0){
+      const pg=JSON.parse(raw.slice(j));
+      const code=String(pg.code||'');
+      const msg=String(pg.message||pg.msg||'').toLowerCase();
+      const det=String(pg.details||pg.detail||'').toLowerCase();
+      if(code==='23505'||msg.includes('duplicate key')){
+        const field=det.includes('alien_id')?'alien_id':det.includes('passport')?'passport_no':det.includes('phone')?'phone':'';
+        return'ข้อมูลซ้ำในฐานข้อมูล'+(field?' ('+field+')':'');
+      }
+      if(code==='23502'||msg.includes('null value')||msg.includes('not-null'))return'ข้อมูลบางช่องจำเป็นต้องกรอก';
+      if(code==='23503'||msg.includes('foreign key'))return'ข้อมูลอ้างอิงไม่ถูกต้อง';
+      if(code==='22007'||msg.includes('invalid input syntax for type date')||msg.includes('invalid date')){const _bv=(String(pg.message||'').match(/invalid input syntax for type date: "([^"]{0,30})"/))||[];return'วันที่รูปแบบไม่ถูกต้อง'+(_bv[1]?': "'+_bv[1]+'"':'');}
+      if(code==='22008'||msg.includes('datetime field value out of range'))return'วันที่อยู่นอกช่วง';
+      if(code==='22P02'||msg.includes('invalid input syntax'))return'ข้อมูลรูปแบบไม่ถูกต้อง';
+      if(code==='42501'||msg.includes('permission denied'))return'ไม่มีสิทธิ์บันทึก';
+      if(msg)return(msg.length>60?msg.slice(0,57)+'…':msg); // safe short fallback
+    }
+    if(raw.includes('Failed to fetch')||raw.includes('NetworkError'))return'เครือข่ายขัดข้อง';
+  }catch(_){}
+  return'บันทึกไม่สำเร็จ กรุณาตรวจข้อมูลแถวนี้ใน Excel';
+}
 async function doImport(){
   if(!impData.length){toast('ไม่มีข้อมูล','err');return;}
   showLoading(`กำลังนำเข้าข้อมูล ${impData.length} แถว...`);
@@ -5322,21 +5364,24 @@ async function doImport(){
     try{
       let empId=null;
       if(empName){const _en=normalizeEmployerName(empName);const ef=employers.find(x=>normalizeEmployerName(x.name)===_en);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
-      const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:get(row,'exp_visa')||null,exp_wp:get(row,'exp_wp')||null,next_90:get(row,'next_90')||null,work_status:get(row,'work_status')||'รับเรื่อง',note:get(row,'note')||null};
+      // Stage 28F: _ds() wraps impDate() — records field+value if unparseable (→ null), never sends raw text to DB date column
+      const _bdat=[];
+      const _ds=(key,raw)=>{const r=impDate(raw);const rv=String(raw||'').trim();if(rv&&!r)_bdat.push(key+(rv.length<=25?'='+rv:''));return r||null;};
+      const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:_ds('exp_visa',get(row,'exp_visa'))||null,exp_wp:_ds('exp_wp',get(row,'exp_wp'))||null,next_90:_ds('next_90',get(row,'next_90'))||null,work_status:get(row,'work_status')||'รับเรื่อง',note:get(row,'note')||null};
       const _svc=get(row,'services');if(_svc)data.services=_svc.split(/[;,]/).map(s=>s.trim()).filter(Boolean);
       // Round F1B-2: field ใหม่ตาม Excel
-      data.submit_date=impDate(get(row,'submit_date'));
+      data.submit_date=_ds('submit_date',get(row,'submit_date'));
       data.agent_name=get(row,'agent_name')||null;
       data.medical_cert=impBool(get(row,'medical_cert'));
       data.insurance=impBool(get(row,'insurance'));
       data.fee_100_paid=impBool(get(row,'fee_100_paid'));
       data.fee_900_paid=impBool(get(row,'fee_900_paid'));
       data.card_fee_paid=impBool(get(row,'card_fee_paid'));
-      data.appt_date=impDate(get(row,'appt_date'));
+      data.appt_date=_ds('appt_date',get(row,'appt_date'));
       data.appt_time=get(row,'appt_time')||null;
       data.appt_place=get(row,'appt_place')||null;
-      data.queue_date=impDate(get(row,'queue_date'));
-      data.receive_date=impDate(get(row,'receive_date'));
+      data.queue_date=_ds('queue_date',get(row,'queue_date'));
+      data.receive_date=_ds('receive_date',get(row,'receive_date'));
       const _bh=get(row,'booklet_has'),_bn=get(row,'booklet_none');
       data.booklet_status=_bh?'has':(_bn?'none':null); // ทั้งคู่มีค่า → has
       data.created_at=new Date(_impBase-ri*1000).toISOString(); // คงลำดับ Excel (บน→ล่าง)
@@ -5356,8 +5401,8 @@ async function doImport(){
         }catch(_){countPhotoSkip++;}
       }
       if(key)seenInFile.add(key); // ป้องกันแถวซ้ำในไฟล์เดียวกัน (ต้องเซตก่อนแถวถัดไป)
-      pendingInserts.push({ri,name,pp,al,data});
-    }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'เกิดข้อผิดพลาด'});}
+      pendingInserts.push({ri,name,pp,al,data,_bdat});
+    }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e)});}
   }
   // Phase 2: chunked insert — 25 แถวต่อ request (PostgREST array), fallback row-by-row ถ้า chunk fail
   const _CHUNK=25;
@@ -5372,7 +5417,7 @@ async function doImport(){
       // chunk fail → fallback row-by-row เฉพาะ chunk นี้ (แถวที่ดีในก้อนเดิมยังบันทึกได้)
       for(const r of chunk){
         try{const sr=await dbPost('customers',r.data);if(sr&&sr[0]){customers.unshift(sr[0]);countNew++;}}
-        catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:r.pp||r.al||'—',reason:'เกิดข้อผิดพลาด'});}
+        catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:r.pp||r.al||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e2)});}
       }
     }
   }
@@ -5384,8 +5429,11 @@ async function doImport(){
   const _unsup=impCols.map((c,i)=>({c,i})).filter(x=>x.c&&String(x.c).trim()&&!_mappedIdx.has(x.i)).map(x=>x.c);
   const unsupHTML=_unsup.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ คอลัมน์ที่ยังไม่รองรับ (ยังไม่บันทึกลงระบบ):</strong> ${_unsup.map(esc).join(', ')}<div style="font-size:11px;color:#b45309;margin-top:4px">คอลัมน์ที่ไม่ได้จับคู่กับฟิลด์ใดจะไม่ถูกนำเข้า (เช่น ลำดับ, รูปถ่าย) — หากต้องการนำเข้า ให้จับคู่คอลัมน์ในส่วน "จับคู่คอลัมน์" ด้านบน</div></div>`:'';
   const asgWarnHTML=countAsgUnresolved>0?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ ผู้รับผิดชอบที่จับคู่ไม่ได้:</strong> ${countAsgUnresolved} แถว — ปล่อยเป็น "ยังไม่ระบุ" (ตรวจชื่อ/รหัสพนักงานให้ตรงกับระบบ)</div>`:'';
-  const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${s.name}</td><td>${s.id}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${s.reason}</span></td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
+  // Stage 28F: rows that imported successfully but had date fields coerced to null
+  const _bwRows=pendingInserts.filter(r=>r._bdat&&r._bdat.length);
+  const dateWarnHTML=_bwRows.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ วันที่บางช่องแปลงไม่ได้ (ตั้งเป็นว่าง): ${_bwRows.length} แถว</strong><div style="font-size:11px;color:#b45309;margin-top:3px">แถวเหล่านี้นำเข้าสำเร็จ แต่ช่องวันที่ที่แปลงไม่ได้ถูกตั้งเป็นว่าง กรุณาแก้ไขใน Excel แล้ว import ซ้ำหรือแก้ในระบบโดยตรง</div><div style="overflow-x:auto;max-height:120px;margin-top:6px"><table class="imp-table"><thead><tr><th>แถว</th><th>ชื่อ</th><th>ช่องที่มีปัญหา</th></tr></thead><tbody>${_bwRows.slice(0,15).map(r=>`<tr><td>${r.ri+2}</td><td>${esc(r.name)}</td><td style="font-size:10px;color:#92400e">${r._bdat.map(esc).join(', ')}</td></tr>`).join('')}${_bwRows.length>15?`<tr><td colspan="3" style="text-align:center;color:var(--g5)">...และอีก ${_bwRows.length-15} แถว</td></tr>`:''}</tbody></table></div></div>`:'';
+  const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${esc(s.name)}</td><td>${esc(s.id)}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${esc(s.reason)}</span>${s.detail?`<div style="font-size:10px;color:#92400e;margin-top:2px">${esc(s.detail)}</div>`:''}</td></tr>`).join('')}</tbody></table></div></div>`:'';
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${dateWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
