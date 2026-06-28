@@ -6887,7 +6887,16 @@ function lineDocRenderList(){
     wrap.innerHTML=toolbar+`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ไม่มีรายการ</div>`;
     return;
   }
-  const cards=_lineDocCache.map(r=>{
+  // Stage 31A: client-side sort — เมื่อแสดงทุกสถานะ ให้ pending ขึ้นก่อน (newest-first ใน pending)
+  // แถว pending เก่าเกิน 7 วันแสดง label เตือน — ไม่แตะ server/DB/storage
+  const _LD_7D=7*24*3600*1000;
+  const _now=Date.now();
+  const _ldSorted=fl.status&&fl.status!=='all'?_lineDocCache:[..._lineDocCache].sort((a,b)=>{
+    const ap=a.status==='pending'?0:1, bp=b.status==='pending'?0:1;
+    if(ap!==bp)return ap-bp;
+    return new Date(b.created_at)-new Date(a.created_at);
+  });
+  const cards=_ldSorted.map(r=>{
     const src=_LD_SRC[r.source_type]||_LD_SRC.other;
     const ic=_LD_FILEICON[r.source_type]||_LD_FILEICON.other;
     const st=_LD_STATUS[r.status]||{l:r.status||'—',c:'#6b7280'};
@@ -6895,6 +6904,8 @@ function lineDocRenderList(){
     const fname=esc(r.file_name||'(ไม่มีชื่อไฟล์)');
     const linked=(r.linked_customer_id!=null)?`<div style="font-size:12px;color:var(--g7);margin-top:3px">ลูกค้า: <b>${esc(_ldCustName(r.linked_customer_id))}</b></div>`:'';
     const isPending=r.status==='pending';
+    // Stage 31A: เตือน pending ที่รอเกิน 7 วัน
+    const _isOldPending=isPending&&r.created_at&&(_now-new Date(r.created_at).getTime())>_LD_7D;
     const isImage=r.source_type==='image';
     const isPdf=r.source_type==='pdf';
     const isExcel=r.source_type==='excel';
@@ -6910,6 +6921,7 @@ function lineDocRenderList(){
           <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px">
             <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.l}</span>
             <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${st.c}1a;color:${st.c}">${st.l}</span>
+            ${_isOldPending?`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa">รอเกิน 7 วัน</span>`:''}
             <span style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-left:auto">${_ldDT(r.created_at)}</span>
           </div>
           <div style="font-size:13.5px;font-weight:700;color:var(--g9);word-break:break-all">${fname}</div>
