@@ -3549,8 +3549,7 @@ async function showApp(){
   // — จัดการกลุ่ม/นำเข้าข้อมูล "ไม่" อยู่ใน .admin-only → staff ยังเห็น/ใช้ได้
   const _sb=document.querySelector('.sidebar'); if(_sb)_sb.classList.toggle('staff',!isAdmin);
   showLoading('กำลังโหลดข้อมูล...',0);
-  await loadAll(true);
-  hideLoading();
+  try{ await loadAll(true); } finally { hideLoading(); } // Stage 30A: hideLoading เสมอแม้ loadAll พลาด → overlay ไม่ค้าง
   fillSelects();renderDash();renderDashHero();renderSidebar();renderSettings();
   if(typeof refreshDelReqBadge==='function')refreshDelReqBadge(); // Stage 22B: เติม badge คำขอลบ (admin เท่านั้น)
   // set initial nav active (dash) — ไม่ผ่าน gv() เพื่อไม่ re-render
@@ -6675,6 +6674,40 @@ let _lineDocSelCust=null;              // ลูกค้าที่เลื�
 let _lineDocApproveId=null;            // inbox id ที่กำลังอนุมัติ
 const _LD_SRC={image:{l:'รูปภาพ',i:'🖼️'},pdf:{l:'PDF',i:'📄'},excel:{l:'Excel',i:'📊'},other:{l:'อื่นๆ',i:'📎'}};
 const _LD_STATUS={pending:{l:'รอตรวจ',c:'#b45309'},approved:{l:'อนุมัติแล้ว',c:'#059669'},linked:{l:'แนบเข้าเอกสารแล้ว',c:'#059669'},rejected:{l:'ปฏิเสธ',c:'#dc2626'}};
+// Stage 30A: thumbnail สำหรับการ์ดรูปภาพ — sign แบบ lazy (เฉพาะแถวที่มองเห็น), cache signed URL ~25 นาที
+const _LD_FILEICON={image:{i:'🖼️',bg:'#eef2ff',fg:'#4f46e5'},pdf:{i:'📄',bg:'#fef2f2',fg:'#dc2626'},excel:{i:'📊',bg:'#ecfdf5',fg:'#059669'},other:{i:'📎',bg:'#f3f4f6',fg:'#6b7280'}};
+let _ldThumbCache={};          // inbox_id → { url, ts }
+const _LD_THUMB_TTL=25*60*1000; // 25 นาที (signed URL อายุ 30 นาที — เผื่อ margin)
+let _ldThumbObserver=null;
+// โหลด thumbnail ของการ์ดรูป (เรียกเมื่อ element เข้ามาในจอ) — fail soft, fallback ไอคอน
+async function _ldLoadThumb(el){
+  if(!el||el.dataset.ldLoaded)return;
+  const id=el.dataset.ldthumb;if(!id){return;}
+  el.dataset.ldLoaded='1';
+  const c=_ldThumbCache[id];
+  let url=(c&&(Date.now()-c.ts)<_LD_THUMB_TTL)?c.url:null;
+  if(!url){
+    const{status,data}=await _lineDocCall('sign',{inbox_id:id});
+    if(status===401||!data||!data.ok||!data.url){delete el.dataset.ldLoaded;return;} // ปล่อยไอคอนไว้, ให้ลองใหม่ได้
+    url=data.url;_ldThumbCache[id]={url,ts:Date.now()};
+  }
+  const img=new Image();
+  img.onload=()=>{el.innerHTML='';el.appendChild(img);};
+  img.onerror=()=>{}; // คงไอคอนเดิม
+  img.src=url;img.loading='lazy';img.alt='';
+  img.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+}
+// ผูก IntersectionObserver กับ thumbnail ทั้งหมดในลิสต์ (เรียกหลัง render)
+function _ldBindThumbs(){
+  const els=document.querySelectorAll('[data-ldthumb]');
+  if(!els.length)return;
+  if(!('IntersectionObserver' in window)){els.forEach(_ldLoadThumb);return;} // fallback: โหลดเลย (img loading=lazy ช่วยอีกชั้น)
+  if(_ldThumbObserver)_ldThumbObserver.disconnect();
+  _ldThumbObserver=new IntersectionObserver((ents,obs)=>{
+    ents.forEach(e=>{if(e.isIntersecting){obs.unobserve(e.target);_ldLoadThumb(e.target);}});
+  },{rootMargin:'120px'});
+  els.forEach(el=>_ldThumbObserver.observe(el));
+}
 function _ldSize(n){n=Number(n)||0;if(n<=0)return'—';if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(0)+' KB';return (n/1048576).toFixed(1)+' MB';}
 function _ldDT(s){if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
 function _ldCustName(id){if(id==null)return'';const c=customers.find(x=>x.id===id);return c?(c.name||('#'+id)):('#'+id);}
@@ -6764,21 +6797,29 @@ function lineDocRenderList(){
   }
   const cards=_lineDocCache.map(r=>{
     const src=_LD_SRC[r.source_type]||_LD_SRC.other;
+    const ic=_LD_FILEICON[r.source_type]||_LD_FILEICON.other;
     const st=_LD_STATUS[r.status]||{l:r.status||'—',c:'#6b7280'};
     const sender=esc(r.line_display_name||r.line_user_id||'—');
     const fname=esc(r.file_name||'(ไม่มีชื่อไฟล์)');
     const linked=(r.linked_customer_id!=null)?`<div style="font-size:12px;color:var(--g7);margin-top:3px">ลูกค้า: <b>${esc(_ldCustName(r.linked_customer_id))}</b></div>`:'';
     const isPending=r.status==='pending';
+    const isImage=r.source_type==='image';
+    // กล่อง thumbnail: รูป → lazy signed preview (data-ldthumb), ชนิดอื่น → ไอคอนสี (ไม่โหลดเครือข่าย)
+    const thumb=`<div ${isImage?`data-ldthumb="${r.id}" `:''}style="flex:0 0 auto;width:64px;height:64px;border-radius:10px;overflow:hidden;background:${ic.bg};color:${ic.fg};display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid var(--g2)">${ic.i}</div>`;
     return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:16px">${src.i}</span>
-        <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.l}</span>
-        <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${st.c}1a;color:${st.c}">${st.l}</span>
-        <span style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-left:auto">${_ldDT(r.created_at)}</span>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        ${thumb}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px">
+            <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.i} ${src.l}</span>
+            <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${st.c}1a;color:${st.c}">${st.l}</span>
+            <span style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-left:auto">${_ldDT(r.created_at)}</span>
+          </div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--g9);word-break:break-all">${fname}</div>
+          <div style="font-size:12px;color:var(--g6);margin-top:2px">ผู้ส่ง: ${sender} · ${_ldSize(r.file_size)}</div>
+          ${linked}
+        </div>
       </div>
-      <div style="font-size:13.5px;font-weight:700;color:var(--g9);word-break:break-all">${fname}</div>
-      <div style="font-size:12px;color:var(--g6);margin-top:2px">ผู้ส่ง: ${sender} · ${_ldSize(r.file_size)}</div>
-      ${linked}
       <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap">
         <button class="btn btn-g btn-sm" onclick="lineDocPreview('${r.id}')">เปิด/พรีวิว</button>
         ${isPending?`<button class="btn btn-p btn-sm" onclick="_ldOpenApprove('${r.id}')">เลือกลูกค้า & อนุมัติ</button>
@@ -6787,6 +6828,7 @@ function lineDocRenderList(){
     </div>`;
   }).join('');
   wrap.innerHTML=toolbar+cards;
+  _ldBindThumbs(); // Stage 30A: ผูก lazy thumbnail หลัง render
 }
 
 function _ldSetFilter(k,v){_lineDocFilters[k]=v;lineDocLoad();}
