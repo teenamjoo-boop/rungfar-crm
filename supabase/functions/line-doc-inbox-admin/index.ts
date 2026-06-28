@@ -1,14 +1,16 @@
 // =============================================================
-// LINE Document Inbox — review helper (Supabase Edge Function, Stage 29C → 29G)
+// LINE Document Inbox — review helper (Supabase Edge Function, Stage 29C → 29G → 33C)
 //
 // บทบาท: ฝั่ง "ผู้ใช้ CRM ที่ล็อกอินอยู่ (staff/admin)" เรียกใช้เพื่อ
 //   A) sign    → สร้าง signed URL อายุสั้นจาก private bucket line-doc-inbox (พรีวิว/เปิดไฟล์)
-//   B) approve → อ่าน bytes จาก storage (service role) → แปลง base64 →
-//                insert เข้า public.documents (เอกสารลูกค้าจริง) →
+//   B) approve → อ่าน bytes จาก line-doc-inbox (service role) →
+//                อัปโหลดไฟล์เข้า private bucket customer-documents (Stage 33C) →
+//                insert เข้า public.documents (storage_path มีค่า, file_data = null) →
 //                อัปเดต line_file_inbox = linked
+//                ❌ ไม่เก็บ base64 ใน documents.file_data อีกต่อไป (เดิม Stage 29G)
 //   C) reject  → อัปเดต line_file_inbox = rejected (❌ ไม่ลบไฟล์ใน storage)
 //
-// ความปลอดภัย (Stage 29G):
+// ความปลอดภัย (Stage 29G + 33C):
 //   * ทุก action ต้องส่ง { user_id, username } ของผู้ใช้ปัจจุบัน → ตรวจด้วย
 //     app_verify_session เดิม (โมเดลตัวตนเดียวกับ guardSession ทั้งระบบ:
 //     user_id+username ต้องตรงกับ app_users ที่ is_active=true, role ไม่ null)
@@ -16,12 +18,16 @@
 //   * ใช้ SUPABASE_SERVICE_ROLE_KEY ภายในฝั่ง server เท่านั้น — ❌ ไม่ส่งกลับ client
 //   * identity ผู้ทำรายการ (code/name) ดึงจาก app_verify_session ที่ผ่านการตรวจ
 //     ไม่เชื่อชื่อ/รหัสที่ client ส่งมาตรง ๆ
+//   * source path (line-doc-inbox) + destination path (customer-documents) คำนวณ
+//     ฝั่ง server ทั้งคู่ — ❌ ไม่รับ storage_path จาก client
+//   * destination path เป็น ASCII ล้วน (timestamp + random + ext) — ❌ ไม่ใช้ชื่อไฟล์เดิม
 //
 // ⚠️ ข้อจำกัด: custom session ของ CRM พิสูจน์ตัวตนด้วย (user_id, username)+is_active
 //    เท่านั้น ไม่มี secret token ฝั่ง client → ฟังก์ชันนี้เชื่อถือ "เท่ากับ" staff
 //    workflow อื่นทั้งหมด ไม่มากกว่า (สอดคล้องตามที่ผู้ใช้รับทราบ)
 //
 // ❌ ไม่แตะ line-webhook-router / line-doc-inbox (worker รับไฟล์) / line-ai-excel-*
+//    ❌ ไม่ลบไฟล์ต้นทางใน line-doc-inbox — เก็บไว้เป็นประวัติ
 // ❗ Deploy: verify_jwt ปล่อย default ได้ (เรียกด้วย anon apikey — เป็น JWT ที่ valid)
 //    ฟังก์ชันบังคับตรวจ session ในตัวเองเสมอ
 // =============================================================
@@ -32,13 +38,14 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const STORAGE_BUCKET = 'line-doc-inbox';
+const STORAGE_BUCKET = 'line-doc-inbox';        // ต้นทาง (ไฟล์จาก LINE)
+const CUST_DOC_BUCKET = 'customer-documents';   // ปลายทาง (เอกสารลูกค้าจริง — Stage 33C)
 const SIGN_EXPIRES_SEC = 1800;                 // 30 นาที — signed URL อายุสั้น
 const MAX_ATTACH_BYTES = 10 * 1024 * 1024;     // 10MB — เพดานเดิมของระบบเอกสาร (PDF/อื่นๆ)
 const IMG_MAX_BYTES = Math.round(1.5 * 1024 * 1024); // ~1.5MB — เพดานรูป (เท่า DOC_MAX_BYTES ฝั่ง CRM)
-//   หมายเหตุ: การอัปโหลดรูปผ่านหน้าลูกค้าจะ "บีบอัด" ก่อนเก็บ base64 แต่ inbox approve
-//   เป็น server-side ไม่บีบอัด → จึงจำกัดรูปดิบไว้ที่เพดานเดียวกับเอกสารรูปที่บีบแล้ว
-//   กัน documents.file_data (base64) บวมฐานข้อมูล
+//   หมายเหตุ: การอัปโหลดรูปผ่านหน้าลูกค้าจะ "บีบอัด" ก่อน แต่ inbox approve เป็น
+//   server-side ไม่บีบอัด → จึงจำกัดรูปดิบไว้ที่เพดานเดียวกับเอกสารรูปที่บีบแล้ว
+//   เพื่อความสม่ำเสมอกับ pipeline ฝั่ง CRM (Stage 33C: เก็บใน Storage ไม่ใช่ base64)
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -54,16 +61,6 @@ function svcHeaders(key: string, extra: Record<string, string> = {}): Record<str
     'Content-Type':  'application/json',
     ...extra,
   };
-}
-
-// chunked base64 — กัน stack overflow กับไฟล์ใหญ่
-function bytesToBase64(bytes: Uint8Array): string {
-  let bin = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(bin);
 }
 
 // ─── Session auth: app_verify_session (active staff/admin — เหมือน guardSession) ──
@@ -111,6 +108,50 @@ async function downloadObject(url: string, key: string, path: string): Promise<U
   });
   if (!res.ok) throw new Error(`download ${res.status}: ${await res.text()}`);
   return new Uint8Array(await res.arrayBuffer());
+}
+
+// ─── customer-documents helpers (Stage 33C) ─────────────────────────────────
+// upload bytes ไปยัง private bucket customer-documents (ปลายทางเอกสารลูกค้า)
+async function uploadCustomerDoc(
+  url: string, key: string, path: string, bytes: Uint8Array, contentType: string,
+): Promise<void> {
+  const res = await fetch(`${url}/storage/v1/object/${CUST_DOC_BUCKET}/${path}`, {
+    method: 'POST',
+    headers: {
+      'apikey':        key,
+      'Authorization': `Bearer ${key}`,
+      'Content-Type':  contentType,
+      'x-upsert':      'false',
+    },
+    body: bytes,
+  });
+  if (!res.ok) throw new Error(`cust-doc upload ${res.status}: ${await res.text()}`);
+}
+
+// cleanup: ลบ object ที่อัปโหลดแล้ว (best-effort — เรียกเมื่อ DB insert ล้ม)
+async function deleteCustomerDoc(url: string, key: string, path: string): Promise<void> {
+  await fetch(`${url}/storage/v1/object/${CUST_DOC_BUCKET}`, {
+    method: 'DELETE',
+    headers: svcHeaders(key),
+    body:    JSON.stringify({ prefixes: [path] }),
+  }).catch(() => { /* best-effort */ });
+}
+
+// ดึงนามสกุลไฟล์ ASCII จาก source path (worker ตั้ง ext ปลอดภัยไว้แล้ว เช่น jpg/pdf/xlsx)
+function extFromPath(path: string): string {
+  const m = /\.([a-zA-Z0-9]{1,8})$/.exec(path || '');
+  return m ? m[1].toLowerCase() : 'bin';
+}
+
+// สร้าง destination path ใน customer-documents (ASCII ล้วน — ❌ ไม่ใช้ชื่อไฟล์เดิม)
+function buildCustomerDocPath(customerId: number, ext: string): string {
+  const now  = new Date();
+  const yyyy = now.getUTCFullYear();
+  const mm   = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const ts   = Date.now();
+  const rand = Math.random().toString(36).slice(2, 8); // 6 random alphanumeric chars
+  const safeExt = /^[a-z0-9]{1,8}$/.test(ext) ? ext : 'bin';
+  return `customers/${customerId}/${yyyy}/${mm}/${ts}_${rand}.${safeExt}`;
 }
 
 // ─── Inbox row helpers ───────────────────────────────────────────────────────
@@ -200,18 +241,20 @@ Deno.serve(async (req: Request) => {
 
       if (!inboxId)    return json({ ok: false, error: 'bad_request' }, 400);
       if (customerId == null || customerId === '') return json({ ok: false, error: 'no_customer' }, 400);
+      const custId = Number(customerId);
+      if (!Number.isInteger(custId) || custId <= 0) return json({ ok: false, error: 'no_customer' }, 400);
 
       const row = await getInboxRow(url, key, inboxId);
       if (!row)                       return json({ ok: false, error: 'not_found' }, 404);
       if (row.status !== 'pending')   return json({ ok: false, error: 'not_pending' });
       if (!row.storage_path)          return json({ ok: false, error: 'no_file' });
 
-      // อ่าน bytes server-side
+      // อ่าน bytes จาก line-doc-inbox (ต้นทาง) — server-side
       const bytes = await downloadObject(url, key, row.storage_path);
       const mime    = row.mime_type || 'application/octet-stream';
       const isImage = row.source_type === 'image' || mime.startsWith('image/');
       // รูป: จำกัด ~1.5MB (ไม่บีบอัดฝั่ง server) · PDF/อื่นๆ: 10MB เดิม
-      // เกินเพดาน → ❌ ไม่แนบ, ❌ ไม่ลบไฟล์ใน storage, คง inbox = pending
+      // เกินเพดาน → ❌ ไม่อัปโหลด, ❌ ไม่ลบไฟล์ต้นทาง, คง inbox = pending
       if (isImage && bytes.length > IMG_MAX_BYTES) {
         return json({ ok: false, error: 'image_too_large', size: bytes.length });
       }
@@ -219,30 +262,46 @@ Deno.serve(async (req: Request) => {
         return json({ ok: false, error: 'too_large', size: bytes.length });
       }
 
-      const dataUrl = `data:${mime};base64,${bytesToBase64(bytes)}`;
       const finalName = docName || row.file_name || null;
 
-      // insert เอกสารลูกค้าจริง (service role) → ขอ id กลับ
-      const insRes = await fetch(`${url}/rest/v1/documents`, {
-        method: 'POST',
-        headers: svcHeaders(key, { 'Prefer': 'return=representation' }),
-        body: JSON.stringify({
-          customer_id: customerId,
-          doc_type:    docType,
-          doc_name:    finalName,
-          file_data:   dataUrl,
-          file_type:   mime,
-          uploaded_by: actor.name,
-        }),
-      });
-      if (!insRes.ok) throw new Error(`documents insert ${insRes.status}: ${await insRes.text()}`);
-      const insRows = await insRes.json();
-      const docId = Array.isArray(insRows) && insRows[0] ? insRows[0].id : null;
+      // ── Stage 33C: อัปโหลดเข้า customer-documents (ปลายทาง) แทนการเก็บ base64 ──
+      // destination path ASCII ล้วน · ext ดึงจาก source path ที่ worker ตั้งไว้แล้ว
+      const destPath = buildCustomerDocPath(custId, extFromPath(row.storage_path));
+      await uploadCustomerDoc(url, key, destPath, bytes, mime);
 
-      // อัปเดต inbox = linked
+      // insert เอกสารลูกค้าจริง (service role, file_data = null) → ขอ id กลับ
+      // ถ้า insert ล้ม → cleanup object ที่เพิ่งอัปโหลด (กัน orphan ใน storage)
+      let docId: unknown = null;
+      try {
+        const insRes = await fetch(`${url}/rest/v1/documents`, {
+          method: 'POST',
+          headers: svcHeaders(key, { 'Prefer': 'return=representation' }),
+          body: JSON.stringify({
+            customer_id:    custId,
+            doc_type:       docType,
+            doc_name:       finalName,
+            file_type:      mime,
+            mime_type:      mime,
+            file_size:      bytes.length,
+            storage_bucket: CUST_DOC_BUCKET,
+            storage_path:   destPath,
+            thumbnail_path: null,
+            uploaded_by:    actor.name,
+            file_data:      null,           // ❌ ไม่เก็บ base64 ใน DB อีกต่อไป
+          }),
+        });
+        if (!insRes.ok) throw new Error(`documents insert ${insRes.status}: ${await insRes.text()}`);
+        const insRows = await insRes.json();
+        docId = Array.isArray(insRows) && insRows[0] ? insRows[0].id : null;
+      } catch (e) {
+        await deleteCustomerDoc(url, key, destPath); // best-effort cleanup
+        throw e;
+      }
+
+      // อัปเดต inbox = linked (❌ ไม่ลบไฟล์ต้นทางใน line-doc-inbox)
       await patchInbox(url, key, inboxId, {
         status:             'linked',
-        linked_customer_id: customerId,
+        linked_customer_id: custId,
         linked_document_id: docId,
         doc_type:           docType,
         note:               note,
@@ -251,7 +310,7 @@ Deno.serve(async (req: Request) => {
         approved_at:        new Date().toISOString(),
       });
 
-      console.log(`[doc-inbox-admin] approve inbox=${inboxId} doc=${docId} cust=${customerId}`);
+      console.log(`[doc-inbox-admin] approve inbox=${inboxId} doc=${docId} cust=${custId} storage_path=${destPath}`);
       return json({
         ok: true, document_id: docId,
         file_name: finalName, source_type: row.source_type, customer_name: custName,
