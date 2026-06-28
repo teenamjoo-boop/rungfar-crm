@@ -2225,6 +2225,7 @@ let curUser=null,customers=[],groups=[],branches=[],employers=[],appUsers=[],emp
 let filtered=[],curPage=1;const PG=15;
 let customerQuickView=''; // '' | 'pending' | 'submitted' | 'unpaid'
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
+let _editPhotoReady=true; // Stage 30B: รู้ค่ารูปจริงของรายที่กำลังแก้หรือยัง — กันบันทึกทับรูปเดิมเป็นว่างเมื่อ lazy-load รูปไม่สำเร็จ
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
 let _pendingDelUserId=null; // RLS-HARDEN-2D: id ที่รอยืนยันลบ — cleared on cancel/logout
 let empQ=''; // employer search query
@@ -3569,18 +3570,76 @@ async function showApp(){
     }).catch(()=>{});
 }
 
+// ── Stage 30B: เร่ง login — โหลดลูกค้าครั้งแรกแบบ "ไม่รวม photo" (base64 ใหญ่ → "กำลังโหลดข้อมูล..." ช้า) ──
+// โหลด photo แบบ lazy เฉพาะแถวที่เห็น/รายที่เปิด แล้ว cache ไว้ใน _custPhotoCache
+// ⚠️ ถ้าเพิ่มคอลัมน์ใหม่ในตาราง customers ต้องเติมชื่อคอลัมน์ที่นี่ด้วย (ยกเว้น photo)
+const CUST_LIST_COLS='id,created_at,updated_at,updated_by_code,name,name_th,nationality,passport_no,alien_id,phone,employer_id,customer_type,group_id,branch_id,work_status,source,pay_channel,pay_status,wp_no,visa_no,license_no,note,staff_receiver,staff_document,staff_closer,exp_passport,exp_visa,exp_wp,next_90,exp_mou,last_renew,dob,fee_total,fee_paid,fee_due,pay_date,submit_date,agent_name,appt_date,appt_time,appt_place,queue_date,receive_date,medical_cert,insurance,fee_100_paid,fee_900_paid,card_fee_paid,booklet_status,assignee_code,services';
+let _custPhotoCache={};    // id → photo dataURL (string) | null (ยืนยันว่าไม่มีรูป)  | undefined = ยังไม่โหลด
+let _custPhotoInflight={}; // id → true ระหว่างดึง (กันยิงซ้ำ)
+let _custPhotoObserver=null;
+// แทน placeholder ที่มี data-custphoto ด้วย <img> เมื่อรูปพร้อมแล้ว (อ่านจาก _custPhotoCache)
+function _applyCustPhotos(){
+  document.querySelectorAll('[data-custphoto]').forEach(el=>{
+    const id=parseInt(el.getAttribute('data-custphoto'),10);
+    const ph=_custPhotoCache[id];
+    if(ph){ // มีรูปจริง → แทนตามชนิดกล่อง
+      el.removeAttribute('data-custphoto');
+      if(el.classList.contains('adot')){el.style.overflow='hidden';el.style.padding='0';el.innerHTML=`<img src="${esc(ph)}" alt="" style="width:100%;height:100%;object-fit:cover">`;}
+      else{const cls=el.classList.contains('cc-av')?'cc-av':'c-avatar';el.outerHTML=`<img src="${esc(ph)}" class="${cls}" title="คลิกดูรูปใหญ่" onclick="openPhotoModal(this.src);event.stopPropagation()">`;}
+    }else if(ph===null){el.removeAttribute('data-custphoto');} // ยืนยันไม่มีรูป → คงตัวอักษรย่อไว้
+  });
+}
+// ดึงรูปลูกค้าแบบกลุ่ม (id=in.(...)) → เก็บ cache + เซ็ต c.photo แล้ว apply ลง DOM; fail → ปล่อย placeholder ให้ลองใหม่ได้
+async function _fetchCustPhotos(ids){
+  ids=[...new Set(ids)].filter(id=>id&&_custPhotoCache[id]===undefined&&!_custPhotoInflight[id]);
+  if(!ids.length)return;
+  ids.forEach(id=>_custPhotoInflight[id]=true);
+  try{
+    const rows=await dbGet('customers','?id=in.('+ids.join(',')+')&select=id,photo');
+    const got={};(Array.isArray(rows)?rows:[]).forEach(r=>{got[r.id]=r.photo||null;});
+    ids.forEach(id=>{const ph=(id in got)?got[id]:null;_custPhotoCache[id]=ph;const c=customers.find(x=>x.id===id);if(c){c.photo=ph;if(ph)c._hasPhoto=true;}});
+    _applyCustPhotos();
+  }catch(e){/* network fail → ไม่ cache (undefined) เพื่อให้ลองใหม่ได้ */}
+  finally{ids.forEach(id=>delete _custPhotoInflight[id]);}
+}
+// ผูก lazy load หลัง render: โหลดแถวที่เห็นทันที + IntersectionObserver สำหรับแถวที่อยู่ไกล (มือถือ/scroll)
+function _bindCustPhotos(){
+  const els=Array.from(document.querySelectorAll('[data-custphoto]'));
+  if(!els.length)return;
+  const inView=el=>{const r=el.getBoundingClientRect();const vh=window.innerHeight||document.documentElement.clientHeight||0;return r.bottom>-200&&r.top<vh+200;};
+  const loadVisible=()=>{const ids=els.filter(el=>el.isConnected&&el.hasAttribute('data-custphoto')&&inView(el)).map(el=>parseInt(el.getAttribute('data-custphoto'),10));if(ids.length)_fetchCustPhotos(ids);};
+  loadVisible();
+  if('IntersectionObserver' in window){
+    if(_custPhotoObserver)_custPhotoObserver.disconnect();
+    _custPhotoObserver=new IntersectionObserver((ents,obs)=>{const ids=[];ents.forEach(e=>{if(e.isIntersecting){obs.unobserve(e.target);ids.push(parseInt(e.target.getAttribute('data-custphoto'),10));}});if(ids.length)_fetchCustPhotos(ids);},{rootMargin:'200px'});
+    els.forEach(el=>_custPhotoObserver.observe(el));
+  }else{window.addEventListener('scroll',loadVisible,{passive:true});}
+}
+// ดึงรูปของลูกค้ารายเดียวให้พร้อมก่อนเปิด detail/edit (ใช้ cache ถ้ามี)
+async function _ensureCustPhoto(c){
+  if(!c||c.photo)return;
+  if(_custPhotoCache[c.id]!==undefined){c.photo=_custPhotoCache[c.id]||c.photo;return;}
+  if(!c._hasPhoto)return;
+  try{const rows=await dbGet('customers','?id=eq.'+c.id+'&select=id,photo');const ph=(rows&&rows[0])?(rows[0].photo||null):null;_custPhotoCache[c.id]=ph;c.photo=ph;}catch(e){}
+}
+
 async function loadAll(silent=false){
   if(_loadAllInProgress)return;
   _loadAllInProgress=true;
   if(!silent)showLoading('กำลังโหลดข้อมูล...',300);
   try{
     // RLS-HARDEN-2D: appUsers ไม่โหลดที่นี่แล้ว — admin โหลดผ่าน adminLoadUsers() เมื่อเปิดหน้าจัดการผู้ใช้
-    [customers,groups,branches,employers]=await Promise.all([
-      dbGet('customers','?order=created_at.desc.nullslast,id.desc&limit=2000'),
+    // Stage 30B: ลูกค้าโหลดแบบไม่รวม photo (เร็วขึ้นมาก) + ดึงเฉพาะ id ที่มีรูป (payload เล็ก) เพื่อรู้ว่าควรโชว์รูป/lazy-load
+    let _photoIds=[];
+    [customers,groups,branches,employers,_photoIds]=await Promise.all([
+      dbGet('customers','?order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS),
       dbGet('groups','?order=name.asc'),
       dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required'),
       dbGet('employers','?order=name.asc'),
+      dbGet('customers','?photo=not.is.null&limit=2000&select=id'),
     ]);
+    const _phSet=new Set((Array.isArray(_photoIds)?_photoIds:[]).map(r=>r.id));
+    customers.forEach(c=>{c._hasPhoto=_phSet.has(c.id);const _cp=_custPhotoCache[c.id];if(_cp!=null)c.photo=_cp;}); // มาร์ก has-photo + คืนรูปที่ cache ไว้ (กรณี refresh)
     // Stage 2: โหลด attendance_employees เพื่อ map ผู้แก้ไขล่าสุด (ไม่กระทบโหลดหลักถ้าล้มเหลว)
     try{const _ep=await dbGet('attendance_employees','?select=employee_code,full_name,nickname,profile_image,status');buildEmpProfMap(Array.isArray(_ep)?_ep:[]);}catch(e){empProfMap={};}
     // Deduplicate customers by id (safety net)
@@ -3911,6 +3970,8 @@ function dashEmptyHTML(msg){
 function dashCustAvatar(c,dotCls){
   if(c&&c.photo)return `<div class="adot ${dotCls}" style="overflow:hidden;padding:0"><img src="${esc(c.photo)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`;
   const ini=esc((((c&&c.name)?String(c.name).trim().charAt(0):'')||'?').toUpperCase());
+  // Stage 30B: รูปยังไม่โหลด แต่มีรูป → placeholder ที่ lazy-load ได้ (data-custphoto)
+  if(c&&c._hasPhoto)return `<div class="adot ${dotCls}" data-custphoto="${c.id}" style="font-weight:700;color:var(--p)">${ini}</div>`;
   return `<div class="adot ${dotCls}" style="font-weight:700;color:var(--p)">${ini}</div>`;
 }
 // Round F1C: card "เอกสารค้าง" — แสดง chip ของที่ยังขาด
@@ -4257,6 +4318,7 @@ function renderDash(){
   else if(dashFilter==='noout')content=`<div id="dash_noout_content">${dashAbsentLoadingHTML()}</div>`;
   else content=summaryHTML;
   document.getElementById('dbContent').innerHTML=tabBar+content;
+  _bindCustPhotos(); // Stage 30B: lazy-load รูปลูกค้าบนการ์ดแดชบอร์ด
   if(dashFilter==='absent')dashRenderAbsentToday();
   else dashRefreshAbsentCount();
   if(dashFilter==='noout')dashRenderNooutToday();
@@ -4431,7 +4493,7 @@ function setQuickView(v){
   });
   doFilter();
 }
-function hasCustomerPhoto(c){return !!(c&&c.photo);}
+function hasCustomerPhoto(c){return !!(c&&(c.photo||c._hasPhoto));} // Stage 30B: photo อาจยัง lazy → ใช้ _hasPhoto ร่วมด้วย
 function doFilter(){
   const q=(document.getElementById('qs')?.value||'').toLowerCase();
   const nat=document.getElementById('qnat')?.value||'';const ct=document.getElementById('qct')?.value||'';
@@ -4465,7 +4527,7 @@ function renderCustomerCards(list){
     const dvw=Math.min(...[c.exp_visa,c.exp_wp].filter(Boolean).map(du).filter(d=>d!==null),Infinity);
     const dpp=du(c.exp_passport);
     const initials=c.name?c.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'?';
-    const avatar=c.photo?`<img src="${esc(c.photo)}" class="cc-av" onclick="openPhotoModal(this.src);event.stopPropagation()">`:`<div class="cc-av ph">${esc(initials)}</div>`;
+    const avatar=c.photo?`<img src="${esc(c.photo)}" class="cc-av" onclick="openPhotoModal(this.src);event.stopPropagation()">`:(c._hasPhoto?`<div class="cc-av ph" data-custphoto="${c.id}">${esc(initials)}</div>`:`<div class="cc-av ph">${esc(initials)}</div>`); // Stage 30B: lazy รูป
     const svcs=(c.services||[]).slice(0,3).map(x=>`<span class="xb ${SC[x]||'xb-ot'}">${x}</span>`).join('');
     const ex=(c.services||[]).length>3?`<span class="xb xb-ot">+${(c.services||[]).length-3}</span>`:'';
     const payBadge=payMap[c.pay_status]||'';
@@ -4565,7 +4627,7 @@ function renderTable(){
     const svcs=(c.services||[]).slice(0,2).map(x=>`<span class="xb ${SC[x]||'xb-ot'}">${x}</span>`).join('');
     const ex=(c.services||[]).length>2?`<span class="xb xb-ot">+${(c.services||[]).length-2}</span>`:'';
     const initials=c.name?c.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'?';
-    const avatarHtml=c.photo?`<img src="${esc(c.photo)}" class="c-avatar" title="คลิกดูรูปใหญ่" onclick="openPhotoModal(this.src);event.stopPropagation()">`:`<div class="c-avatar-placeholder">${esc(initials)}</div>`;
+    const avatarHtml=c.photo?`<img src="${esc(c.photo)}" class="c-avatar" title="คลิกดูรูปใหญ่" onclick="openPhotoModal(this.src);event.stopPropagation()">`:(c._hasPhoto?`<div class="c-avatar-placeholder" data-custphoto="${c.id}">${esc(initials)}</div>`:`<div class="c-avatar-placeholder">${esc(initials)}</div>`); // Stage 30B: lazy รูป
     // ── Round B: column order ตาม Excel งานจริง (display only — ใช้เฉพาะ field ที่มี DB) ──
     const mDash='<span style="color:var(--g4);font-size:11px">—</span>';
     const reqNo=c.wp_no||c.visa_no||'';
@@ -4600,6 +4662,7 @@ function renderTable(){
     </tr>`;
   }).join('');
   renderCustomerCards(filtered.slice(s,e));
+  _bindCustPhotos(); // Stage 30B: lazy-load รูปลูกค้าของหน้าปัจจุบัน (ตาราง + การ์ดมือถือ)
   const pages=Math.ceil(total/PG);const ss=(curPage-1)*PG+1,ee=Math.min(curPage*PG,total);
   document.getElementById('pag').innerHTML=`<span>${T('pagShow')} ${total?ss:0}–${ee} ${T('pagFrom')} ${total}</span><div class="pbtns"><button class="pb" onclick="goPage(${curPage-1})" ${curPage<=1?'disabled':''}>‹</button>${Array.from({length:Math.min(pages,5)},(_,i)=>{const p=Math.max(1,Math.min(curPage-2,pages-4))+i;return`<button class="pb ${p===curPage?'on':''}" onclick="goPage(${p})">${p}</button>`;}).join('')}<button class="pb" onclick="goPage(${curPage+1})" ${curPage>=pages?'disabled':''}>›</button></div>`;
   updateBulkBar();
@@ -4634,7 +4697,7 @@ function fillSelects(){
 function empSelected(){const id=document.getElementById('f_empId').value;if(id){const e=employers.find(x=>x.id===parseInt(id));if(e){document.getElementById('f_emp').value=e.name;document.getElementById('f_biz').value=e.business_type||'';document.getElementById('f_ephon').value=e.phone||'';document.getElementById('f_addr').value=e.address||'';}}}
 
 function openAdd(){
-  editId=null;photoB64=null;selSvcs=[];docFiles={};multiDocs=[];
+  editId=null;photoB64=null;_editPhotoReady=true;selSvcs=[];docFiles={};multiDocs=[];
   document.getElementById('cModalTitle').textContent=T('addNew');
   ['name','nameTh','pp','alien','phone','emp','biz','ephon','addr','wpn','visn','licn','note','sr','sd','sc','ftotal','fpaid','fdue'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   ['epp','evis','ewp','e90','emou','ren','dob','fpdate'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
@@ -4648,8 +4711,11 @@ function openAdd(){
   if(curUser&&curUser.role!=='admin'){const _fa=document.getElementById('f_assignee');if(_fa&&curUser.username)_fa.value=curUser.username;}
   renderSvcT();renderMultiDocGrid();applyMvpModal();swTab(0);document.getElementById('cModal').style.display='flex';
 }
-function openEdit(id){
+async function openEdit(id){
   const c=customers.find(x=>x.id===id);if(!c)return;
+  await _ensureCustPhoto(c); // Stage 30B: ดึงรูปจริงก่อนเปิดฟอร์มแก้ไข (กันบันทึกแล้วรูปหาย)
+  // รู้ค่ารูปจริงแล้วหรือยัง: ไม่มีรูป (ไม่ต้องโหลด) / โหลดสำเร็จ (cache มีค่า หรือ c.photo มา) → พร้อม; ถ้าโหลดไม่สำเร็จ → ไม่พร้อม (saveCustomer จะไม่ทับรูป)
+  _editPhotoReady=(!c._hasPhoto)||(_custPhotoCache[id]!==undefined)||(c.photo!=null);
   editId=id;photoB64=c.photo||null;selSvcs=[...(c.services||[])];docFiles={};
   document.getElementById('cModalTitle').textContent='แก้ไขข้อมูล';
   const sv=(f,v)=>{const el=document.getElementById('f_'+f);if(el)el.value=v||'';};
@@ -4704,7 +4770,7 @@ async function handlePhoto(e){
     const dataUrl=await compressImage(f,900,0.76); // รูปลูกค้า: max 900px, q0.76
     if(!dataUrl){toast('อ่านรูปไม่ได้','err');return;}
     if(approxBytesFromDataURL(dataUrl)>DOC_MAX_BYTES){toast('รูปใหญ่เกินไป ลองถ่ายใหม่','err');return;}
-    photoB64=dataUrl;
+    photoB64=dataUrl;_editPhotoReady=true; // Stage 30B: ผู้ใช้เลือกรูปใหม่เอง → พร้อมบันทึกแน่นอน
     document.getElementById('pprevImg').src=photoB64;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';
   }catch(err){console.error('[photo] failed',err);toast('อ่านรูปไม่ได้','err');}
   finally{e.target.value='';}
@@ -4733,10 +4799,14 @@ async function saveCustomer(){
       submit_date:V('f_submit')||null,agent_name:VT('f_agent')||null,medical_cert:VC('f_medical'),insurance:VC('f_insurance'),fee_100_paid:VC('f_fee100'),fee_900_paid:VC('f_fee900'),card_fee_paid:VC('f_cardfee'),booklet_status:V('f_booklet')||null,appt_date:V('f_apptdate')||null,appt_time:VT('f_appttime')||null,appt_place:VT('f_apptplace')||null,queue_date:V('f_queue')||null,receive_date:V('f_receive')||null,
       assignee_code:V('f_assignee')||null,
       updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})};
+    // Stage 30B: ถ้ากำลังแก้ไขและยังไม่รู้ค่ารูปจริง (lazy-load รูปไม่สำเร็จ) → ไม่ส่ง field photo เพื่อไม่ทับรูปเดิมให้หาย
+    if(editId&&!_editPhotoReady&&photoB64==null)delete data.photo;
     let savedId=editId;
     const _auditOld=editId?(customers.find(c=>c.id===editId)||null):null;
     if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
     else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}toast('เพิ่มลูกค้าแล้ว');}
+    // Stage 30B: เมื่อรู้ค่ารูปแน่นอน (มี photo ใน data) → sync cache + _hasPhoto ให้ตาราง/sort ถูกต้องทันที (ถ้าไม่รู้ค่า เราลบ photo ออกแล้ว จึงไม่แตะ _hasPhoto)
+    if('photo' in data){const _sc=customers.find(c=>c.id===savedId);if(_sc){_sc.photo=data.photo||null;_sc._hasPhoto=!!data.photo;}_custPhotoCache[savedId]=data.photo||null;}
     // Stage 2 audit (best-effort): customer.create / customer.update — ไม่ log รูป/ไฟล์ base64
     try{
       const _ppid=data.passport_no||data.alien_id||null;
@@ -4817,6 +4887,7 @@ async function delCust(id){
 
 async function openDetail(id){
   detId=id;const c=customers.find(x=>x.id===id);if(!c)return;
+  await _ensureCustPhoto(c); // Stage 30B: ดึงรูปจริงก่อนแสดง detail (ถ้ายัง lazy)
   document.getElementById('dTitle').textContent=c.name;
   let docs=[],tl=[],clogs=[];
   // Round C follow-up: fetch timeline + contact-log เสมอ (ใช้แสดงประวัติสถานะ/ประวัติติดต่อ)
@@ -5348,9 +5419,9 @@ async function doImport(){
       // ลูกค้าเดิม + ยังไม่มีรูป + row import มีรูป → อัปเดตรูปให้ (ไม่สร้างลูกค้าซ้ำ)
       const _exPh=impPhotos[ri];
       // Stage 28D: อัปเดตรูปให้ลูกค้าเดิม "เฉพาะที่ยังไม่มีรูป" เท่านั้น (ไม่ทับรูปเดิม) — รูปไม่มั่นใจต้องติ๊กยืนยันก่อน
-      if(_exC&&!_exC.photo&&_exPh&&(!_exPh.unsure||impSaveUnsure)){
+      if(_exC&&!_exC.photo&&!_exC._hasPhoto&&_exPh&&(!_exPh.unsure||impSaveUnsure)){ // Stage 30B: เช็ค _hasPhoto ด้วย (รูปอาจยัง lazy) — กันทับรูปเดิม
         try{const _img=await impCompressDataURL(_exPh.url,900,0.76);
-          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){await dbPatch('customers',_exC.id,{photo:_img});_exC.photo=_img;countPhotoUpd++;_notes.push('อัปเดตรูป');}
+          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){await dbPatch('customers',_exC.id,{photo:_img});_exC.photo=_img;_exC._hasPhoto=true;_custPhotoCache[_exC.id]=_img;countPhotoUpd++;_notes.push('อัปเดตรูป');}
           else if(_img)countPhotoSkip++;
         }catch(_){countPhotoSkip++;}
       }
@@ -6992,7 +7063,7 @@ function custExportRow(c,idx){
   return [
     idx+1,                                  // ลำดับ
     c.submit_date||'',                      // วันที่ยื่น
-    c.photo?'มีรูป':'',                      // รูปถ่าย (ฝังภาพในไฟล์ไม่ได้ — แสดงตัวบ่งชี้)
+    hasCustomerPhoto(c)?'มีรูป':'',          // รูปถ่าย (ฝังภาพในไฟล์ไม่ได้ — แสดงตัวบ่งชี้; Stage 30B: ใช้ flag เพราะ photo อาจยัง lazy)
     c.employer_id?empN(c.employer_id):'',    // นายจ้าง
     c.name||'',                             // รายชื่อ
     c.alien_id||'',                         // เลขประจำตัวต่างด้าว
