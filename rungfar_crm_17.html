@@ -2216,6 +2216,8 @@ const SB_URL='https://magwqolbjmwymqxelizl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZ3dxb2xiam13eW1xeGVsaXpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjUyOTgsImV4cCI6MjA5NDMwMTI5OH0.DdhbYxqO208fUDqQtV06rbfz2GRPWKsjSPOdZehi58U';
 const CUST_DOC_SIGN_URL=`${SB_URL}/functions/v1/customer-doc-sign`; // Stage 33A: signed URL for customer-documents Storage
 const CUST_DOC_UPLOAD_URL=`${SB_URL}/functions/v1/customer-doc-upload`; // Stage 33B: upload document to Storage (server-side)
+const CUST_PHOTO_SIGN_URL=`${SB_URL}/functions/v1/customer-photo-sign`;   // Stage 36A: signed URL for customer-photos Storage
+const CUST_PHOTO_UPLOAD_URL=`${SB_URL}/functions/v1/customer-photo-upload`;// Stage 36A: upload customer profile photo to Storage (server-side)
 const SVCS=['PASSPORT','VISA','WORK PERMIT','MOU','เปลี่ยนนายจ้าง','แจ้งเข้า-ออก','รายงาน 90 วัน','แจ้งที่พัก','เอกสารอื่นๆ'];
 const SC={'PASSPORT':'xb-pp','VISA':'xb-vi','WORK PERMIT':'xb-wp','MOU':'xb-mu','เปลี่ยนนายจ้าง':'xb-ch','รายงาน 90 วัน':'xb-90','แจ้งที่พัก':'xb-ad','แจ้งเข้า-ออก':'xb-ch','เอกสารอื่นๆ':'xb-ot'};
 const NF={'เมียนมา':'🇲🇲','กัมพูชา':'🇰🇭','ลาว':'🇱🇦','เวียดนาม':'🇻🇳'};
@@ -2228,6 +2230,7 @@ let filtered=[],curPage=1;const PG=15;
 let customerQuickView=''; // '' | 'pending' | 'submitted' | 'unpaid'
 let editId=null,detId=null,curTab=0,selSvcs=[],photoB64=null,docFiles={};
 let _editPhotoReady=true; // Stage 30B: รู้ค่ารูปจริงของรายที่กำลังแก้หรือยัง — กันบันทึกทับรูปเดิมเป็นว่างเมื่อ lazy-load รูปไม่สำเร็จ
+let _photoIsNew=false;    // Stage 36A: true เฉพาะเมื่อผู้ใช้เพิ่งเลือกรูปใหม่เอง → ต้อง upload เข้า Storage (ไม่ใช่รูปเดิมที่โหลดมาแสดง)
 let editGid=null,editEid=null,clogCid=null,tlCid=null;
 let _pendingDelUserId=null; // RLS-HARDEN-2D: id ที่รอยืนยันลบ — cleared on cancel/logout
 let empQ=''; // employer search query
@@ -3652,7 +3655,8 @@ async function showApp(){
 // ── Stage 30B: เร่ง login — โหลดลูกค้าครั้งแรกแบบ "ไม่รวม photo" (base64 ใหญ่ → "กำลังโหลดข้อมูล..." ช้า) ──
 // โหลด photo แบบ lazy เฉพาะแถวที่เห็น/รายที่เปิด แล้ว cache ไว้ใน _custPhotoCache
 // ⚠️ ถ้าเพิ่มคอลัมน์ใหม่ในตาราง customers ต้องเติมชื่อคอลัมน์ที่นี่ด้วย (ยกเว้น photo)
-const CUST_LIST_COLS='id,created_at,updated_at,updated_by_code,name,name_th,nationality,passport_no,alien_id,phone,employer_id,customer_type,group_id,branch_id,work_status,source,pay_channel,pay_status,wp_no,visa_no,license_no,note,staff_receiver,staff_document,staff_closer,exp_passport,exp_visa,exp_wp,next_90,exp_mou,last_renew,dob,fee_total,fee_paid,fee_due,pay_date,submit_date,agent_name,appt_date,appt_time,appt_place,queue_date,receive_date,medical_cert,insurance,fee_100_paid,fee_900_paid,card_fee_paid,booklet_status,assignee_code,services';
+const CUST_LIST_COLS='id,created_at,updated_at,updated_by_code,name,name_th,nationality,passport_no,alien_id,phone,employer_id,customer_type,group_id,branch_id,work_status,source,pay_channel,pay_status,wp_no,visa_no,license_no,note,staff_receiver,staff_document,staff_closer,exp_passport,exp_visa,exp_wp,next_90,exp_mou,last_renew,dob,fee_total,fee_paid,fee_due,pay_date,submit_date,agent_name,appt_date,appt_time,appt_place,queue_date,receive_date,medical_cert,insurance,fee_100_paid,fee_900_paid,card_fee_paid,booklet_status,assignee_code,services,photo_storage_path';
+// ↑ Stage 36A: photo_storage_path = cheap flag (path string, ไม่มี bytes) — ให้ list รู้ว่ามีรูปใน Storage โดยไม่ต้องโหลด photo base64
 let _custPhotoCache={};    // id → photo dataURL (string) | null (ยืนยันว่าไม่มีรูป)  | undefined = ยังไม่โหลด
 let _custPhotoInflight={}; // id → true ระหว่างดึง (กันยิงซ้ำ)
 let _custPhotoObserver=null;
@@ -3668,15 +3672,38 @@ function _applyCustPhotos(){
     }else if(ph===null){el.removeAttribute('data-custphoto');} // ยืนยันไม่มีรูป → คงตัวอักษรย่อไว้
   });
 }
-// ดึงรูปลูกค้าแบบกลุ่ม (id=in.(...)) → เก็บ cache + เซ็ต c.photo แล้ว apply ลง DOM; fail → ปล่อย placeholder ให้ลองใหม่ได้
+// Stage 36A: ขอ signed URL สำหรับรูปโปรไฟล์ลูกค้าใน Storage (มิเรอร์ _openDocByStorage)
+//   ❌ ไม่ส่ง storage_path จาก frontend — Edge Function ดึง path จาก DB เอง
+async function _signCustPhoto(custId){
+  try{
+    const res=await fetch(CUST_PHOTO_SIGN_URL,{method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+      body:JSON.stringify({customer_id:custId,user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||''})});
+    const data=await res.json();
+    return (data&&data.ok&&data.url)?data.url:null;
+  }catch(e){console.warn('[cust photo] sign failed:',e&&e.message);return null;}
+}
+// Stage 36A: URL รูปลูกค้าที่พร้อมแสดง (sync) — legacy base64 (c.photo) หรือ signed URL ที่ resolve ไว้ใน cache
+function custPhotoDisplay(c){if(!c)return null;return c.photo||_custPhotoCache[c.id]||null;}
+// ดึงรูปลูกค้าแบบกลุ่ม (id=in.(...)) → เก็บ cache แล้ว apply ลง DOM; fail → ปล่อย placeholder ให้ลองใหม่ได้
+// Stage 36A: dual-mode — photo (base64 เดิม) ใช้ตรง ๆ / photo_storage_path → ขอ signed URL
 async function _fetchCustPhotos(ids){
   ids=[...new Set(ids)].filter(id=>id&&_custPhotoCache[id]===undefined&&!_custPhotoInflight[id]);
-  if(!ids.length)return;
+  if(!ids.length){_applyCustPhotos();return;} // Stage 36A-Fix: cache มีค่าแล้วแต่ DOM ยังเป็น placeholder → apply ทันที
   ids.forEach(id=>_custPhotoInflight[id]=true);
   try{
-    const rows=await dbGet('customers','?id=in.('+ids.join(',')+')&select=id,photo');
-    const got={};(Array.isArray(rows)?rows:[]).forEach(r=>{got[r.id]=r.photo||null;});
-    ids.forEach(id=>{const ph=(id in got)?got[id]:null;_custPhotoCache[id]=ph;const c=customers.find(x=>x.id===id);if(c){c.photo=ph;if(ph)c._hasPhoto=true;}});
+    const rows=await dbGet('customers','?id=in.('+ids.join(',')+')&select=id,photo,photo_storage_path');
+    const got={};(Array.isArray(rows)?rows:[]).forEach(r=>{got[r.id]=r;});
+    await Promise.all(ids.map(async id=>{
+      const r=got[id];let val=null;
+      if(r){
+        if(r.photo)val=r.photo;                                    // legacy base64
+        else if(r.photo_storage_path)val=await _signCustPhoto(id); // Storage → signed URL
+      }
+      _custPhotoCache[id]=val;
+      const c=customers.find(x=>x.id===id);
+      if(c){if(r&&r.photo)c.photo=r.photo; if(r&&r.photo_storage_path)c.photo_storage_path=r.photo_storage_path; if(val)c._hasPhoto=true;}
+    }));
     _applyCustPhotos();
   }catch(e){/* network fail → ไม่ cache (undefined) เพื่อให้ลองใหม่ได้ */}
   finally{ids.forEach(id=>delete _custPhotoInflight[id]);}
@@ -3695,11 +3722,20 @@ function _bindCustPhotos(){
   }else{window.addEventListener('scroll',loadVisible,{passive:true});}
 }
 // ดึงรูปของลูกค้ารายเดียวให้พร้อมก่อนเปิด detail/edit (ใช้ cache ถ้ามี)
+// Stage 36A: dual-mode — legacy base64 → c.photo / Storage → signed URL ใน cache (custPhotoDisplay อ่านได้)
 async function _ensureCustPhoto(c){
-  if(!c||c.photo)return;
-  if(_custPhotoCache[c.id]!==undefined){c.photo=_custPhotoCache[c.id]||c.photo;return;}
-  if(!c._hasPhoto)return;
-  try{const rows=await dbGet('customers','?id=eq.'+c.id+'&select=id,photo');const ph=(rows&&rows[0])?(rows[0].photo||null):null;_custPhotoCache[c.id]=ph;c.photo=ph;}catch(e){}
+  if(!c||c.photo)return;                          // legacy base64 พร้อมแล้ว
+  if(_custPhotoCache[c.id]!==undefined)return;    // resolve แล้ว (อาจเป็น signed URL หรือ null)
+  if(!c._hasPhoto&&!c.photo_storage_path)return;  // ไม่มีรูปจริง
+  try{
+    const rows=await dbGet('customers','?id=eq.'+c.id+'&select=id,photo,photo_storage_path');
+    const r=rows&&rows[0];let val=null;
+    if(r){
+      if(r.photo){val=r.photo;c.photo=r.photo;}                                       // legacy base64
+      else if(r.photo_storage_path){c.photo_storage_path=r.photo_storage_path;val=await _signCustPhoto(c.id);} // Storage
+    }
+    _custPhotoCache[c.id]=val;
+  }catch(e){}
 }
 
 async function loadAll(silent=false){
@@ -3718,7 +3754,8 @@ async function loadAll(silent=false){
       dbGet('customers','?photo=not.is.null&limit=2000&select=id'),
     ]);
     const _phSet=new Set((Array.isArray(_photoIds)?_photoIds:[]).map(r=>r.id));
-    customers.forEach(c=>{c._hasPhoto=_phSet.has(c.id);const _cp=_custPhotoCache[c.id];if(_cp!=null)c.photo=_cp;}); // มาร์ก has-photo + คืนรูปที่ cache ไว้ (กรณี refresh)
+    // Stage 36A: มี "รูป" ถ้ามี base64 เดิม (_phSet) หรือมีรูปใน Storage (photo_storage_path จาก list cols)
+    customers.forEach(c=>{c._hasPhoto=_phSet.has(c.id)||!!c.photo_storage_path;const _cp=_custPhotoCache[c.id];if(_cp!=null&&!c.photo_storage_path)c.photo=_cp;}); // มาร์ก has-photo + คืนรูป base64 ที่ cache ไว้ (กรณี refresh; ไม่ทับ Storage photo ด้วย base64)
     // Stage 2: โหลด attendance_employees เพื่อ map ผู้แก้ไขล่าสุด (ไม่กระทบโหลดหลักถ้าล้มเหลว)
     try{const _ep=await dbGet('attendance_employees','?select=employee_code,full_name,nickname,profile_image,status');buildEmpProfMap(Array.isArray(_ep)?_ep:[]);}catch(e){empProfMap={};}
     // Deduplicate customers by id (safety net)
@@ -4572,7 +4609,7 @@ function setQuickView(v){
   });
   doFilter();
 }
-function hasCustomerPhoto(c){return !!(c&&(c.photo||c._hasPhoto));} // Stage 30B: photo อาจยัง lazy → ใช้ _hasPhoto ร่วมด้วย
+function hasCustomerPhoto(c){return !!(c&&(c.photo||c._hasPhoto||c.photo_storage_path));} // Stage 30B/36A: photo อาจยัง lazy → ใช้ _hasPhoto / photo_storage_path ร่วมด้วย
 function doFilter(){
   const q=(document.getElementById('qs')?.value||'').toLowerCase();
   const nat=document.getElementById('qnat')?.value||'';const ct=document.getElementById('qct')?.value||'';
@@ -4776,7 +4813,7 @@ function fillSelects(){
 function empSelected(){const id=document.getElementById('f_empId').value;if(id){const e=employers.find(x=>x.id===parseInt(id));if(e){document.getElementById('f_emp').value=e.name;document.getElementById('f_biz').value=e.business_type||'';document.getElementById('f_ephon').value=e.phone||'';document.getElementById('f_addr').value=e.address||'';}}}
 
 function openAdd(){
-  editId=null;photoB64=null;_editPhotoReady=true;selSvcs=[];docFiles={};multiDocs=[];
+  editId=null;photoB64=null;_editPhotoReady=true;_photoIsNew=false;selSvcs=[];docFiles={};multiDocs=[];
   document.getElementById('cModalTitle').textContent=T('addNew');
   ['name','nameTh','pp','alien','phone','emp','biz','ephon','addr','wpn','visn','licn','note','sr','sd','sc','ftotal','fpaid','fdue'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   ['epp','evis','ewp','e90','emou','ren','dob','fpdate'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
@@ -4795,7 +4832,7 @@ async function openEdit(id){
   await _ensureCustPhoto(c); // Stage 30B: ดึงรูปจริงก่อนเปิดฟอร์มแก้ไข (กันบันทึกแล้วรูปหาย)
   // รู้ค่ารูปจริงแล้วหรือยัง: ไม่มีรูป (ไม่ต้องโหลด) / โหลดสำเร็จ (cache มีค่า หรือ c.photo มา) → พร้อม; ถ้าโหลดไม่สำเร็จ → ไม่พร้อม (saveCustomer จะไม่ทับรูป)
   _editPhotoReady=(!c._hasPhoto)||(_custPhotoCache[id]!==undefined)||(c.photo!=null);
-  editId=id;photoB64=c.photo||null;selSvcs=[...(c.services||[])];docFiles={};
+  editId=id;photoB64=null;_photoIsNew=false;selSvcs=[...(c.services||[])];docFiles={}; // Stage 36A: photoB64 = เฉพาะรูปใหม่ที่จะ upload (รูปเดิมแสดงผ่าน custPhotoDisplay)
   document.getElementById('cModalTitle').textContent='แก้ไขข้อมูล';
   const sv=(f,v)=>{const el=document.getElementById('f_'+f);if(el)el.value=v||'';};
   sv('name',c.name);sv('nameTh',c.name_th);sv('pp',c.passport_no);sv('alien',c.alien_id);sv('phone',c.phone);
@@ -4812,7 +4849,8 @@ async function openEdit(id){
   fillSelects();document.getElementById('f_ws').value=c.work_status||'รับเรื่อง';document.getElementById('f_src').value=c.source||'';document.getElementById('f_fpay').value=c.pay_channel||'';document.getElementById('f_fst').value=c.pay_status||'';document.getElementById('f_grp').value=c.group_id||'';document.getElementById('f_branch').value=c.branch_id||'';const _fa=document.getElementById('f_assignee');if(_fa)_fa.value=c.assignee_code||'';
   if(c.customer_type==='company'){document.getElementById('r_comp').checked=true;document.getElementById('f_empId').value=c.employer_id||'';}else document.getElementById('r_free').checked=true;
   ctChange();
-  if(c.photo){document.getElementById('pprevImg').src=c.photo;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';}else{document.getElementById('pprev').style.display='none';document.getElementById('pphold').style.display='block';}
+  const _edPhotoUrl=custPhotoDisplay(c); // Stage 36A: รูปเดิม (base64 หรือ signed Storage URL)
+  if(_edPhotoUrl){document.getElementById('pprevImg').src=_edPhotoUrl;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';}else{document.getElementById('pprev').style.display='none';document.getElementById('pphold').style.display='block';}
   document.getElementById('dupWarn').style.display='none';renderSvcT();
   // Load existing docs for this customer
   multiDocs=[];
@@ -4849,10 +4887,39 @@ async function handlePhoto(e){
     const dataUrl=await compressImage(f,900,0.76); // รูปลูกค้า: max 900px, q0.76
     if(!dataUrl){toast('อ่านรูปไม่ได้','err');return;}
     if(approxBytesFromDataURL(dataUrl)>DOC_MAX_BYTES){toast('รูปใหญ่เกินไป ลองถ่ายใหม่','err');return;}
-    photoB64=dataUrl;_editPhotoReady=true; // Stage 30B: ผู้ใช้เลือกรูปใหม่เอง → พร้อมบันทึกแน่นอน
+    photoB64=dataUrl;_editPhotoReady=true;_photoIsNew=true; // Stage 30B/36A: ผู้ใช้เลือกรูปใหม่เอง → พร้อมบันทึก + ต้อง upload เข้า Storage
     document.getElementById('pprevImg').src=photoB64;document.getElementById('pprev').style.display='block';document.getElementById('pphold').style.display='none';
   }catch(err){console.error('[photo] failed',err);toast('อ่านรูปไม่ได้','err');}
   finally{e.target.value='';}
+}
+
+// Stage 36A: upload รูปโปรไฟล์ลูกค้าใหม่เข้า Storage (customer-photos) ผ่าน Edge Function
+//   สำเร็จ → customers.photo ถูกตั้งเป็น null ฝั่ง server, sync local state เป็น Storage-backed
+//   ล้มเหลว → fallback (dual-write) เขียน base64 ลง customers.photo เพื่อ "ไม่ให้รูปหาย"
+async function _uploadCustomerPhoto(custId,dataUrl){
+  try{
+    const _lt=document.getElementById('loadingText');if(_lt)_lt.textContent='กำลังอัปโหลดรูปลูกค้า...';
+    const mime=(String(dataUrl).match(/^data:([^;]+);/)||[])[1]||'image/jpeg';
+    const res=await fetch(CUST_PHOTO_UPLOAD_URL,{method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||'',customer_id:custId,file_name:'photo',file_type:mime,data_url:dataUrl})});
+    const out=await res.json();
+    if(!out||!out.ok)throw new Error(out&&out.error||'upload_failed');
+    // sync local state → Storage-backed (photo=null), แสดงรูปทันทีจาก dataURL ที่เพิ่งเลือก
+    const _sc=customers.find(c=>c.id===custId);
+    if(_sc){_sc.photo=null;_sc._hasPhoto=true;_sc.photo_storage_bucket=out.photo_storage_bucket||'customer-photos';_sc.photo_storage_path=out.photo_storage_path||'set';}
+    _custPhotoCache[custId]=dataUrl; // แสดงทันทีในเซสชันนี้ (โหลดรอบหน้าจะ sign ใหม่)
+    return true;
+  }catch(err){
+    console.error('[customer photo] storage upload failed → fallback base64',err);
+    try{ // dual-write safety: รูปต้องไม่หาย → เก็บ base64 แบบเดิม
+      await dbPatch('customers',custId,{photo:dataUrl});
+      const _sc=customers.find(c=>c.id===custId);if(_sc){_sc.photo=dataUrl;_sc._hasPhoto=true;}
+      _custPhotoCache[custId]=dataUrl;
+      toast('บันทึกรูปแบบเดิม (อัปโหลด Storage ไม่สำเร็จ)','err');
+    }catch(e2){console.error('[customer photo] base64 fallback failed',e2);toast('บันทึกรูปไม่สำเร็จ','err');}
+    return false;
+  }
 }
 
 async function saveCustomer(){
@@ -4874,18 +4941,17 @@ async function saveCustomer(){
       else{const en=VT('f_emp');if(en){try{const r=await dbPost('employers',{name:en,business_type:VT('f_biz'),phone:VT('f_ephon'),address:VT('f_addr')});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;fillSelects();}}catch(e){console.error('[customer save] employer create failed',e);}}}
     }
     const total=parseFloat(V('f_ftotal'))||0;const paid=parseFloat(V('f_fpaid'))||0;
-    const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),photo:photoB64,
+    const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),
       submit_date:V('f_submit')||null,agent_name:VT('f_agent')||null,medical_cert:VC('f_medical'),insurance:VC('f_insurance'),fee_100_paid:VC('f_fee100'),fee_900_paid:VC('f_fee900'),card_fee_paid:VC('f_cardfee'),booklet_status:V('f_booklet')||null,appt_date:V('f_apptdate')||null,appt_time:VT('f_appttime')||null,appt_place:VT('f_apptplace')||null,queue_date:V('f_queue')||null,receive_date:V('f_receive')||null,
       assignee_code:V('f_assignee')||null,
       updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})};
-    // Stage 30B: ถ้ากำลังแก้ไขและยังไม่รู้ค่ารูปจริง (lazy-load รูปไม่สำเร็จ) → ไม่ส่ง field photo เพื่อไม่ทับรูปเดิมให้หาย
-    if(editId&&!_editPhotoReady&&photoB64==null)delete data.photo;
+    // Stage 36A: ไม่ใส่ field photo ใน data อีกต่อไป → รูปใหม่ upload เข้า Storage หลังบันทึก; รูปเดิม (base64/Storage) ไม่ถูกแตะ
     let savedId=editId;
     const _auditOld=editId?(customers.find(c=>c.id===editId)||null):null;
     if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
     else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}toast('เพิ่มลูกค้าแล้ว');}
-    // Stage 30B: เมื่อรู้ค่ารูปแน่นอน (มี photo ใน data) → sync cache + _hasPhoto ให้ตาราง/sort ถูกต้องทันที (ถ้าไม่รู้ค่า เราลบ photo ออกแล้ว จึงไม่แตะ _hasPhoto)
-    if('photo' in data){const _sc=customers.find(c=>c.id===savedId);if(_sc){_sc.photo=data.photo||null;_sc._hasPhoto=!!data.photo;}_custPhotoCache[savedId]=data.photo||null;}
+    // Stage 36A: รูปใหม่ที่ผู้ใช้เลือก → upload เข้า Storage (customer-photos) ไม่เก็บ base64 ใน customers.photo
+    if(_photoIsNew&&photoB64&&savedId){await _uploadCustomerPhoto(savedId,photoB64);}
     // Stage 2 audit (best-effort): customer.create / customer.update — ไม่ log รูป/ไฟล์ base64
     try{
       const _ppid=data.passport_no||data.alien_id||null;
@@ -4972,6 +5038,7 @@ async function delCust(id){
 async function openDetail(id){
   detId=id;const c=customers.find(x=>x.id===id);if(!c)return;
   await _ensureCustPhoto(c); // Stage 30B: ดึงรูปจริงก่อนแสดง detail (ถ้ายัง lazy)
+  let _detPhotoUrl=null; // Stage 36A: URL รูปที่พร้อมแสดง (base64 หรือ signed) — set ใน template ด้านล่าง
   document.getElementById('dTitle').textContent=c.name;
   let docs=[],tl=[],clogs=[];
   // Round C follow-up: fetch timeline + contact-log เสมอ (ใช้แสดงประวัติสถานะ/ประวัติติดต่อ)
@@ -5005,7 +5072,7 @@ async function openDetail(id){
   const _xlSec=_xlRows.length?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('xlSection')}</div><div class="dg4">${_xlRows.join('')}</div></div>`:'';
   document.getElementById('dBody').innerHTML=`
   <div class="dh">
-    <div class="dav">${c.photo?`<img src="${esc(c.photo)}">`:(NF[c.nationality]||'👤')}</div>
+    <div class="dav">${(_detPhotoUrl=custPhotoDisplay(c))?`<img src="${esc(_detPhotoUrl)}" onclick="openPhotoModal(this.src)" style="cursor:pointer">`:(NF[c.nationality]||'👤')}</div>
     <div style="flex:1">
       <div style="font-size:19px;font-weight:800">${esc(c.name)}</div>
       ${c.name_th?`<div style="font-size:13px;color:var(--g5);margin-top:2px">${esc(c.name_th)}</div>`:''}
