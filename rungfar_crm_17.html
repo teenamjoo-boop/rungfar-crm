@@ -6812,7 +6812,7 @@ function _ldSetFilter(k,v){_lineDocFilters[k]=v;lineDocLoad();}
 async function lineDocPreview(id){
   const it=_lineDocCache.find(r=>r.id===id);if(!it)return;
   const w=window.open('','_blank');   // เปิดล่วงหน้า กัน popup blocker
-  const {status,data}=await _lineDocCall('sign',{storage_path:it.storage_path});
+  const {status,data}=await _lineDocCall('sign',{inbox_id:id});
   if(status===401){if(w)w.close();_lineDocPass=null;toast('รหัสผ่านไม่ถูกต้อง','err');renderLineDoc();return;}
   if(!data.ok||!data.url){if(w)w.close();toast('เปิดไฟล์ไม่ได้','err');return;}
   if(w)w.location.href=data.url;else window.location.href=data.url;

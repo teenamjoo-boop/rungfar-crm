@@ -179,9 +179,12 @@ Deno.serve(async (req: Request) => {
   try {
     // ── A) sign ──────────────────────────────────────────────────────────
     if (action === 'sign') {
-      const path = String(body.storage_path || '');
-      if (!path || path.includes('..')) return json({ ok: false, error: 'bad_path' }, 400);
-      const signed = await createSignedUrl(url, key, path);
+      const inboxId = String(body.inbox_id || '');
+      if (!inboxId) return json({ ok: false, error: 'bad_request' }, 400);
+      const signRow = await getInboxRow(url, key, inboxId);
+      if (!signRow) return json({ ok: false, error: 'not_found' }, 404);
+      if (!signRow.storage_path) return json({ ok: false, error: 'no_file' });
+      const signed = await createSignedUrl(url, key, signRow.storage_path);
       return json({ ok: true, url: signed, expires_in: SIGN_EXPIRES_SEC });
     }
 
