@@ -2214,6 +2214,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 <script>
 const SB_URL='https://magwqolbjmwymqxelizl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZ3dxb2xiam13eW1xeGVsaXpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjUyOTgsImV4cCI6MjA5NDMwMTI5OH0.DdhbYxqO208fUDqQtV06rbfz2GRPWKsjSPOdZehi58U';
+const CUST_DOC_SIGN_URL=`${SB_URL}/functions/v1/customer-doc-sign`; // Stage 33A: signed URL for customer-documents Storage
 const SVCS=['PASSPORT','VISA','WORK PERMIT','MOU','เปลี่ยนนายจ้าง','แจ้งเข้า-ออก','รายงาน 90 วัน','แจ้งที่พัก','เอกสารอื่นๆ'];
 const SC={'PASSPORT':'xb-pp','VISA':'xb-vi','WORK PERMIT':'xb-wp','MOU':'xb-mu','เปลี่ยนนายจ้าง':'xb-ch','รายงาน 90 วัน':'xb-90','แจ้งที่พัก':'xb-ad','แจ้งเข้า-ออก':'xb-ch','เอกสารอื่นๆ':'xb-ot'};
 const NF={'เมียนมา':'🇲🇲','กัมพูชา':'🇰🇭','ลาว':'🇱🇦','เวียดนาม':'🇻🇳'};
@@ -3009,6 +3010,19 @@ function applyLang(){
 let multiDocs = []; // [{id, type, label, data, fileType}]
 let multiDocEditingId = null; // customer id when editing
 let _detailDocCache = []; // docs fetched for detail modal — avoid embedding base64 in onclick HTML
+let _docFileDataCache = {}; // Stage 32B-Lite: docId → file_data (lazy, fetched on first preview click)
+async function ensureDocFileData(doc){
+  // doc.dbId = numeric DB id (multiDocs); doc.id = numeric DB id (detailDocCache)
+  const numId=doc.dbId||(typeof doc.id==='number'?doc.id:null);
+  if(doc.file_data)return doc.file_data;
+  if(numId!=null&&_docFileDataCache[numId]!=null){doc.file_data=_docFileDataCache[numId];if('data' in doc)doc.data=doc.file_data;return doc.file_data;}
+  if(!numId)return null; // newly-uploaded doc without dbId — caller uses doc.data directly
+  try{
+    const rows=await dbGet('documents',`?id=eq.${numId}&select=id,file_data,file_type`);
+    const fd=rows&&rows[0]?rows[0].file_data:null;
+    _docFileDataCache[numId]=fd;doc.file_data=fd;if('data' in doc)doc.data=fd;return fd;
+  }catch(e){return null;}
+}
 
 const _DOC_TYPE_LABELS={passport_photo:'รูปพาสปอร์ต',visa:'VISA',wp:'Work Permit',employer_card:'บัตรนายจ้าง',receipt:'ใบเสร็จ',photo:'รูปถ่าย',pow:'หนังสือมอบอำนาจ',other:'อื่นๆ'};
 function docTypeLabel(t){return _DOC_TYPE_LABELS[t]||'อื่นๆ';}
@@ -3029,7 +3043,7 @@ function renderDetailDocSection(docs){
     const meta=[dateStr,d.uploaded_by?esc(d.uploaded_by):''].filter(Boolean).join(' · ');
     const thumb=isPdf
       ?`<div class="mdoc-thumb-pdf" onclick="viewMdocFromDetailCache(${idx})"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
-      :`<img class="mdoc-thumb" src="${esc(d.file_data)}" onclick="viewMdocFromDetailCache(${idx})" alt="${safeLabel}">`;
+      :`<div class="mdoc-thumb-pdf" style="background:var(--g1)" onclick="viewMdocFromDetailCache(${idx})"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--g5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
     return`<div class="mdoc-item">${thumb}<div class="mdoc-info"><div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-bottom:2px"><span class="mdoc-badge mdoc-badge-type">${docTypeLabel(d.doc_type||'other')}</span>${ftypeBadge(d.file_type)}</div><div class="mdoc-label">${safeLabel}</div>${meta?`<div class="mdoc-meta">${meta}</div>`:''}</div></div>`;
   }).join('');
   return`<div style="margin-bottom:12px">
@@ -3125,7 +3139,9 @@ function renderMultiDocGrid(){
     const meta=[dateStr,doc.uploadedBy||''].filter(Boolean).join(' · ');
     const thumb=isPdf
       ?`<div class="mdoc-thumb-pdf" onclick="viewMdoc('${doc.id}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
-      :`<img class="mdoc-thumb" src="${doc.data}" onclick="viewMdoc('${doc.id}')" alt="${safeLabel}">`;
+      :doc.data
+        ?`<img class="mdoc-thumb" src="${doc.data}" onclick="viewMdoc('${doc.id}')" alt="${safeLabel}">`
+        :`<div class="mdoc-thumb-pdf" style="background:var(--g1)" onclick="viewMdoc('${doc.id}')"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--g5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
     return`<div class="mdoc-item" id="mdoc-${doc.id}">
       ${thumb}
       <div class="mdoc-info">
@@ -3220,19 +3236,71 @@ function _openDocViewer(data,label,fileType,fileName){
   document.getElementById('mdocViewer').classList.add('show');
 }
 
-function viewMdoc(id){
+// ── Stage 33A: viewer for direct HTTPS URLs (Storage signed URL path) ────────
+// ใช้เมื่อมี storage_path — ไม่ต้องแปลง base64 → blob
+function _openDocViewerUrl(url,label,fileType,fileName){
+  cleanupDocBlobUrl();
+  const img=document.getElementById('mdocViewerImg');
+  const pdfBox=document.getElementById('mdocViewerPdfBox');
+  const pdf=document.getElementById('mdocViewerPdf');
+  const fb=document.getElementById('mdocViewerPdfFallback');
+  const dl=document.getElementById('mdocViewerDl');
+  document.getElementById('mdocViewerCaption').textContent=label||'เอกสาร';
+  if(fileType==='application/pdf'){
+    if(img){img.style.display='none';img.src='';}
+    if(pdfBox)pdfBox.style.display='flex';
+    if(pdf)pdf.src=url;
+    if(fb)fb.style.display='none';
+    if(dl){dl.href=url;dl.removeAttribute('download');dl.style.display='inline-flex';}
+  }else{
+    if(pdfBox)pdfBox.style.display='none';
+    if(pdf)pdf.src='about:blank';
+    if(dl)dl.style.display='none';
+    if(img){img.style.display='';img.src=url;}
+  }
+  document.getElementById('mdocViewer').classList.add('show');
+}
+
+// ── Stage 33A: fetch signed URL from Edge Function then open viewer ───────
+async function _openDocByStorage(doc){
+  const numId=doc.dbId||(typeof doc.id==='number'?doc.id:null);
+  if(!numId){toast('โหลดไฟล์ไม่สำเร็จ','err');return;}
+  const label=(doc.doc_name||doc.label||'เอกสาร')+(doc.name&&doc.name!==doc.label?' — '+doc.name:'');
+  const fileType=doc.file_type||doc.fileType||'';
+  const fileName=doc.doc_name||doc.name||doc.label||'';
+  try{
+    const res=await fetch(CUST_DOC_SIGN_URL,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+      body:JSON.stringify({document_id:numId,user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||''})
+    });
+    const data=await res.json();
+    if(!data.ok||!data.url){toast('โหลดไฟล์ไม่สำเร็จ','err');return;}
+    // ใช้ file_type จาก Edge Function ถ้า frontend ไม่มี (signed path เดิม)
+    _openDocViewerUrl(data.url,label||'เอกสาร',fileType||data.file_type||'',fileName);
+  }catch(e){console.warn('[doc] storage sign failed:',e&&e.message);toast('โหลดไฟล์ไม่สำเร็จ','err');}
+}
+
+async function viewMdoc(id){
   const doc=multiDocs.find(d=>d.id===id);
   if(!doc)return;
+  if(doc.storage_path){await _openDocByStorage(doc);return;} // Stage 33A: Storage path
+  const fd=await ensureDocFileData(doc); // no-op for new uploads (no dbId), fetches from DB for existing
+  const data=fd||doc.data;
+  if(!data){toast('โหลดไฟล์ไม่สำเร็จ','err');return;}
   const label=doc.label+(doc.name?' — '+doc.name:'');
-  _openDocViewer(doc.data,label,doc.fileType,doc.name||doc.label);
+  _openDocViewer(data,label,doc.fileType,doc.name||doc.label);
 }
 
 function viewMdocFromDb(data,label,fileType){
   _openDocViewer(data,label||'เอกสาร',fileType,label);
 }
-function viewMdocFromDetailCache(i){
+async function viewMdocFromDetailCache(i){
   const d=_detailDocCache[i];if(!d)return;
-  _openDocViewer(d.file_data,d.doc_name||docTypeLabel(d.doc_type||'other'),d.file_type,d.doc_name);
+  if(d.storage_path){await _openDocByStorage(d);return;} // Stage 33A: Storage path
+  const fd=await ensureDocFileData(d);
+  if(!fd){toast('โหลดไฟล์ไม่สำเร็จ','err');return;}
+  _openDocViewer(fd,d.doc_name||docTypeLabel(d.doc_type||'other'),d.file_type,d.doc_name);
 }
 
 function closeMdocViewer(){
@@ -4738,9 +4806,9 @@ async function openEdit(id){
   // Load existing docs for this customer
   multiDocs=[];
   document.getElementById('cModalTitle').textContent=T('editInfo');
-  dbGet('documents',`?customer_id=eq.${id}&order=created_at.asc`).then(docs=>{
+  dbGet('documents',`?customer_id=eq.${id}&order=created_at.asc&select=id,customer_id,doc_type,doc_name,file_type,uploaded_by,created_at,storage_path`).then(docs=>{
     if(docs&&docs.length){
-      multiDocs=docs.map(d=>({id:'db_'+d.id,dbId:d.id,type:d.doc_type,label:d.doc_name,data:d.file_data,fileType:d.file_type,name:d.doc_name,createdAt:d.created_at,uploadedBy:d.uploaded_by}));
+      multiDocs=docs.map(d=>({id:'db_'+d.id,dbId:d.id,type:d.doc_type,label:d.doc_name,data:null,fileType:d.file_type,name:d.doc_name,createdAt:d.created_at,uploadedBy:d.uploaded_by,storage_path:d.storage_path||null}));
     }
     renderMultiDocGrid();
   }).catch(()=>{});
@@ -4891,7 +4959,7 @@ async function openDetail(id){
   document.getElementById('dTitle').textContent=c.name;
   let docs=[],tl=[],clogs=[];
   // Round C follow-up: fetch timeline + contact-log เสมอ (ใช้แสดงประวัติสถานะ/ประวัติติดต่อ)
-  try{[docs,tl,clogs]=await Promise.all([dbGet('documents',`?customer_id=eq.${id}&order=created_at.desc`),dbGet('work_timeline',`?customer_id=eq.${id}&order=created_at.asc`),dbGet('contact_logs',`?customer_id=eq.${id}&order=created_at.desc`)]);}catch(e){}
+  try{[docs,tl,clogs]=await Promise.all([dbGet('documents',`?customer_id=eq.${id}&order=created_at.desc&select=id,customer_id,doc_type,doc_name,file_type,uploaded_by,created_at,storage_path`),dbGet('work_timeline',`?customer_id=eq.${id}&order=created_at.asc`),dbGet('contact_logs',`?customer_id=eq.${id}&order=created_at.desc`)]);}catch(e){}
   const exps=getExps(c);const curWi=wsIdx(c.work_status||'รับเรื่อง');
   // ── pre-compute sections ที่ซ่อนด้วย SIMPLE_CUSTOMER_DETAIL ──
   // เปลี่ยน SIMPLE_CUSTOMER_DETAIL=false เพื่อเปิด timeline/finance/staff/contact-log/history กลับมา
