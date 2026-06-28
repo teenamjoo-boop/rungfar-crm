@@ -6676,10 +6676,12 @@ const _LD_SRC={image:{l:'รูปภาพ',i:'🖼️'},pdf:{l:'PDF',i:'📄'}
 const _LD_STATUS={pending:{l:'รอตรวจ',c:'#b45309'},approved:{l:'อนุมัติแล้ว',c:'#059669'},linked:{l:'แนบเข้าเอกสารแล้ว',c:'#059669'},rejected:{l:'ปฏิเสธ',c:'#dc2626'}};
 // Stage 30A: thumbnail สำหรับการ์ดรูปภาพ — sign แบบ lazy (เฉพาะแถวที่มองเห็น), cache signed URL ~25 นาที
 const _LD_FILEICON={image:{i:'🖼️',bg:'#eef2ff',fg:'#4f46e5'},pdf:{i:'📄',bg:'#fef2f2',fg:'#dc2626'},excel:{i:'📊',bg:'#ecfdf5',fg:'#059669'},other:{i:'📎',bg:'#f3f4f6',fg:'#6b7280'}};
+const LINE_DOC_PDF_ICON_URL='https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2002_52_40%20PM.png';
+const LINE_DOC_EXCEL_ICON_URL='https://magwqolbjmwymqxelizl.supabase.co/storage/v1/object/public/line-assets/ChatGPT%20Image%20Jun%203,%202026,%2009_14_20%20PM.png';
 let _ldThumbCache={};          // inbox_id → { url, ts }
 const _LD_THUMB_TTL=25*60*1000; // 25 นาที (signed URL อายุ 30 นาที — เผื่อ margin)
 let _ldThumbObserver=null;
-// โหลด thumbnail ของการ์ดรูป (เรียกเมื่อ element เข้ามาในจอ) — fail soft, fallback ไอคอน
+// โหลด thumbnail ของการ์ดรูป — sign (inbox_id) → ใส่ <img> จริงลงกล่อง; fail soft กลับเป็นไอคอน
 async function _ldLoadThumb(el){
   if(!el||el.dataset.ldLoaded)return;
   const id=el.dataset.ldthumb;if(!id){return;}
@@ -6688,25 +6690,44 @@ async function _ldLoadThumb(el){
   let url=(c&&(Date.now()-c.ts)<_LD_THUMB_TTL)?c.url:null;
   if(!url){
     const{status,data}=await _lineDocCall('sign',{inbox_id:id});
-    if(status===401||!data||!data.ok||!data.url){delete el.dataset.ldLoaded;return;} // ปล่อยไอคอนไว้, ให้ลองใหม่ได้
+    if(status===401||!data||!data.ok||!data.url){
+      console.warn('[lineDocThumb] sign failed id='+id+' status='+status+' err='+((data&&data.error)||'?'));
+      delete el.dataset.ldLoaded;return; // ปล่อยไอคอนไว้, ให้ลองใหม่ได้
+    }
     url=data.url;_ldThumbCache[id]={url,ts:Date.now()};
   }
+  // ❗ ห้ามใส่ loading='lazy' บน Image ที่ยังไม่อยู่ใน DOM — เบราว์เซอร์จะ "เลื่อนการโหลด" จน element
+  //    ถูกแทรกเข้า DOM แต่เราแทรกตอน onload เท่านั้น → onload ไม่ยิง → ค้างไอคอน (เฉพาะ network URL)
+  //    การ lazy ทำเองอยู่แล้วผ่าน IntersectionObserver/_ldThumbInView
   const img=new Image();
-  img.onload=()=>{el.innerHTML='';el.appendChild(img);};
-  img.onerror=()=>{}; // คงไอคอนเดิม
-  img.src=url;img.loading='lazy';img.alt='';
+  img.alt='';
   img.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+  img.onload=()=>{el.textContent='';el.appendChild(img);}; // แทนที่ไอคอนด้วยรูปจริงเมื่อโหลดเสร็จ
+  img.onerror=()=>{console.warn('[lineDocThumb] image load failed id='+id);delete el.dataset.ldLoaded;}; // คงไอคอน, ให้ลองใหม่ได้
+  img.src=url;
 }
-// ผูก IntersectionObserver กับ thumbnail ทั้งหมดในลิสต์ (เรียกหลัง render)
+// thumbnail อยู่ใกล้/ในจอหรือไม่ (เผื่อ margin 250px)
+function _ldThumbInView(el){
+  const r=el.getBoundingClientRect();
+  const vh=window.innerHeight||document.documentElement.clientHeight||0;
+  return r.bottom>-250 && r.top<vh+250;
+}
+// ผูก lazy thumbnail หลัง render: โหลดแถวที่มองเห็น "ทันที" (ไม่พึ่ง IO ที่อาจไม่ยิงกับ element ที่เห็นอยู่แล้ว)
+// + IntersectionObserver สำหรับแถวที่อยู่ไกลลงไป
 function _ldBindThumbs(){
-  const els=document.querySelectorAll('[data-ldthumb]');
+  const els=Array.from(document.querySelectorAll('[data-ldthumb]'));
   if(!els.length)return;
-  if(!('IntersectionObserver' in window)){els.forEach(_ldLoadThumb);return;} // fallback: โหลดเลย (img loading=lazy ช่วยอีกชั้น)
-  if(_ldThumbObserver)_ldThumbObserver.disconnect();
-  _ldThumbObserver=new IntersectionObserver((ents,obs)=>{
-    ents.forEach(e=>{if(e.isIntersecting){obs.unobserve(e.target);_ldLoadThumb(e.target);}});
-  },{rootMargin:'120px'});
-  els.forEach(el=>_ldThumbObserver.observe(el));
+  const loadVisible=()=>els.forEach(el=>{if(!el.dataset.ldLoaded&&_ldThumbInView(el))_ldLoadThumb(el);});
+  loadVisible(); // แถวที่เห็นอยู่ตอนนี้ → โหลดเลย
+  if('IntersectionObserver' in window){
+    if(_ldThumbObserver)_ldThumbObserver.disconnect();
+    _ldThumbObserver=new IntersectionObserver((ents,obs)=>{
+      ents.forEach(e=>{if(e.isIntersecting){obs.unobserve(e.target);_ldLoadThumb(e.target);}});
+    },{rootMargin:'250px'});
+    els.forEach(el=>{if(!el.dataset.ldLoaded)_ldThumbObserver.observe(el);});
+  }else{
+    window.addEventListener('scroll',loadVisible,{passive:true}); // fallback เบราว์เซอร์เก่า
+  }
 }
 function _ldSize(n){n=Number(n)||0;if(n<=0)return'—';if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(0)+' KB';return (n/1048576).toFixed(1)+' MB';}
 function _ldDT(s){if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
@@ -6804,14 +6825,19 @@ function lineDocRenderList(){
     const linked=(r.linked_customer_id!=null)?`<div style="font-size:12px;color:var(--g7);margin-top:3px">ลูกค้า: <b>${esc(_ldCustName(r.linked_customer_id))}</b></div>`:'';
     const isPending=r.status==='pending';
     const isImage=r.source_type==='image';
-    // กล่อง thumbnail: รูป → lazy signed preview (data-ldthumb), ชนิดอื่น → ไอคอนสี (ไม่โหลดเครือข่าย)
-    const thumb=`<div ${isImage?`data-ldthumb="${r.id}" `:''}style="flex:0 0 auto;width:64px;height:64px;border-radius:10px;overflow:hidden;background:${ic.bg};color:${ic.fg};display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid var(--g2)">${ic.i}</div>`;
+    const isPdf=r.source_type==='pdf';
+    const isExcel=r.source_type==='excel';
+    // กล่อง thumbnail: รูป → lazy signed preview, PDF/Excel → real icon image (fallback emoji), อื่นๆ → emoji
+    const _thumbInner=isPdf?`<img src="${LINE_DOC_PDF_ICON_URL}" alt="PDF" style="width:44px;height:44px;object-fit:contain" onerror="this.onerror=null;this.parentElement.innerHTML='📄'">`
+      :isExcel?`<img src="${LINE_DOC_EXCEL_ICON_URL}" alt="Excel" style="width:44px;height:44px;object-fit:contain" onerror="this.onerror=null;this.parentElement.innerHTML='📊'">`
+      :ic.i;
+    const thumb=`<div ${isImage?`data-ldthumb="${r.id}" `:''}style="flex:0 0 auto;width:64px;height:64px;border-radius:10px;overflow:hidden;background:${ic.bg};color:${ic.fg};display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid var(--g2)">${_thumbInner}</div>`;
     return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:12px 14px;margin-bottom:10px">
       <div style="display:flex;gap:12px;align-items:flex-start">
         ${thumb}
         <div style="flex:1;min-width:0">
           <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px">
-            <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.i} ${src.l}</span>
+            <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.l}</span>
             <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${st.c}1a;color:${st.c}">${st.l}</span>
             <span style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-left:auto">${_ldDT(r.created_at)}</span>
           </div>
