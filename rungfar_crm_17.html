@@ -2215,6 +2215,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 const SB_URL='https://magwqolbjmwymqxelizl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZ3dxb2xiam13eW1xeGVsaXpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjUyOTgsImV4cCI6MjA5NDMwMTI5OH0.DdhbYxqO208fUDqQtV06rbfz2GRPWKsjSPOdZehi58U';
 const CUST_DOC_SIGN_URL=`${SB_URL}/functions/v1/customer-doc-sign`; // Stage 33A: signed URL for customer-documents Storage
+const CUST_DOC_UPLOAD_URL=`${SB_URL}/functions/v1/customer-doc-upload`; // Stage 33B: upload document to Storage (server-side)
 const SVCS=['PASSPORT','VISA','WORK PERMIT','MOU','เปลี่ยนนายจ้าง','แจ้งเข้า-ออก','รายงาน 90 วัน','แจ้งที่พัก','เอกสารอื่นๆ'];
 const SC={'PASSPORT':'xb-pp','VISA':'xb-vi','WORK PERMIT':'xb-wp','MOU':'xb-mu','เปลี่ยนนายจ้าง':'xb-ch','รายงาน 90 วัน':'xb-90','แจ้งที่พัก':'xb-ad','แจ้งเข้า-ออก':'xb-ch','เอกสารอื่นๆ':'xb-ot'};
 const NF={'เมียนมา':'🇲🇲','กัมพูชา':'🇰🇭','ลาว':'🇱🇦','เวียดนาม':'🇻🇳'};
@@ -3279,6 +3280,16 @@ async function _openDocByStorage(doc){
     // ใช้ file_type จาก Edge Function ถ้า frontend ไม่มี (signed path เดิม)
     _openDocViewerUrl(data.url,label||'เอกสาร',fileType||data.file_type||'',fileName);
   }catch(e){console.warn('[doc] storage sign failed:',e&&e.message);toast('โหลดไฟล์ไม่สำเร็จ','err');}
+}
+
+// Stage 33B: ส่งไฟล์ไปยัง customer-doc-upload Edge Function — ❌ ไม่ insert file_data เข้า DB
+async function _callDocUpload({customer_id,doc_type,doc_name,file_name,file_type,data_url}){
+  const res=await fetch(CUST_DOC_UPLOAD_URL,{
+    method:'POST',mode:'cors',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+    body:JSON.stringify({user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||'',customer_id,doc_type,doc_name,file_name:file_name||doc_name,file_type,file_size:data_url?approxBytesFromDataURL(data_url):0,data_url})
+  });
+  return await res.json();
 }
 
 async function viewMdoc(id){
@@ -4898,8 +4909,13 @@ async function saveCustomer(){
     for(let di=0;di<newDocs.length&&savedId;di++){
       const doc=newDocs[di];
       const _lt=document.getElementById('loadingText');if(_lt)_lt.textContent=`กำลังอัปโหลดเอกสาร ${di+1}/${newDocs.length}...`;
-      try{await dbPost('documents',{customer_id:savedId,doc_type:doc.type,doc_name:doc.label,file_data:doc.data,file_type:doc.fileType||'image/jpeg',uploaded_by:curUser.full_name});_okDocs.push({doc_type:doc.type||null,doc_name:doc.label||null,file_type:doc.fileType||'image/jpeg'});}
-      catch(err){docFail++;console.error('[customer save] doc upload failed',doc.name,err);}
+      try{
+        const _ur=await _callDocUpload({customer_id:savedId,doc_type:doc.type,doc_name:doc.label,file_name:doc.name||doc.label,file_type:doc.fileType||'image/jpeg',data_url:doc.data});
+        if(!_ur||!_ur.ok)throw new Error(_ur&&_ur.error||'upload_failed');
+        const _rd=_ur.doc;const _idx=multiDocs.findIndex(d=>d.id===doc.id);
+        if(_idx>=0){multiDocs[_idx].dbId=_rd.id;multiDocs[_idx].storage_path=_rd.storage_path||null;}
+        _okDocs.push({doc_type:doc.type||null,doc_name:doc.label||null,file_type:doc.fileType||'image/jpeg'});
+      }catch(err){docFail++;console.error('[customer save] doc upload failed',doc.name,err);}
     }
     // Stage 4 audit (best-effort): document.upload — log เฉพาะไฟล์ใหม่ที่อัปโหลดสำเร็จ, ไม่ log base64/file_data
     if(_okDocs.length){try{
@@ -5196,9 +5212,10 @@ async function saveDocUpload(){
   const dname=dlabel||docTypeLabel(dtype);
   const btn=document.getElementById('docUpSaveBtn');if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก...';}
   try{
-    await dbPost('documents',{customer_id:_docUpSelCust.id,doc_type:dtype,doc_name:dname,file_data:_docUpFile.data,file_type:_docUpFile.fileType||'image/jpeg',uploaded_by:(curUser&&curUser.full_name)||null});
+    const _ur=await _callDocUpload({customer_id:_docUpSelCust.id,doc_type:dtype,doc_name:dname,file_name:_docUpFile.name||dname,file_type:_docUpFile.fileType||'image/jpeg',data_url:_docUpFile.data});
+    if(!_ur||!_ur.ok)throw new Error(_ur&&_ur.error||'upload_failed');
     try{
-      logAudit('document.upload','document',_docUpSelCust.id,{customer_id:_docUpSelCust.id,customer_name:_docUpSelCust.name,count:1,doc_type:dtype,doc_name:dname,file_type:_docUpFile.fileType||'image/jpeg',uploaded_by:(curUser&&curUser.full_name)||null,source:'docUploadPage'});
+      logAudit('document.upload.storage','document',_docUpSelCust.id,{customer_id:_docUpSelCust.id,customer_name:_docUpSelCust.name,count:1,doc_type:dtype,doc_name:dname,file_type:_docUpFile.fileType||'image/jpeg',storage_path:(_ur.doc&&_ur.doc.storage_path)||null,uploaded_by:(curUser&&curUser.full_name)||null,source:'docUploadPage'});
     }catch(_e){console.warn('[AUDIT] docUpload log skipped:',_e&&_e.message);}
     toast('อัปโหลดเอกสารสำเร็จ — '+esc(_docUpSelCust.name));
     closeDocUploadModal();
