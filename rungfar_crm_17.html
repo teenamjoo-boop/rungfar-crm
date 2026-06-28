@@ -5549,7 +5549,7 @@ async function doImport(){
   });
   const seenInFile=new Set();
   let countNew=0,countDupEx=0,countDupFile=0,countMissing=0,countError=0;
-  let countPhotoNew=0,countPhotoUpd=0,countPhotoSkip=0; // Excel embedded photo → customers.photo
+  let countPhotoNew=0,countPhotoUpd=0,countPhotoSkip=0,countPhotoStorageFail=0; // Stage 38B: Excel embedded photo → customer-photos Storage (countPhotoStorageFail = upload ไป Storage ไม่สำเร็จ)
   let countAsgUnresolved=0; // Stage 4: แถวที่มีค่าผู้รับผิดชอบแต่จับคู่ employee_code ไม่ได้
   let countAsgUpd=0; // Stage 4: ลูกค้าเดิมที่อัปเดต assignee_code จาก Excel
   const skippedRows=[];
@@ -5573,7 +5573,7 @@ async function doImport(){
       // Stage 28D: อัปเดตรูปให้ลูกค้าเดิม "เฉพาะที่ยังไม่มีรูป" เท่านั้น (ไม่ทับรูปเดิม) — รูปไม่มั่นใจต้องติ๊กยืนยันก่อน
       if(_exC&&!_exC.photo&&!_exC._hasPhoto&&_exPh&&(!_exPh.unsure||impSaveUnsure)){ // Stage 30B: เช็ค _hasPhoto ด้วย (รูปอาจยัง lazy) — กันทับรูปเดิม
         try{const _img=await impCompressDataURL(_exPh.url,900,0.76);
-          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){await dbPatch('customers',_exC.id,{photo:_img});_exC.photo=_img;_exC._hasPhoto=true;_custPhotoCache[_exC.id]=_img;countPhotoUpd++;_notes.push('อัปเดตรูป');}
+          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){const _ok=await _uploadCustomerPhoto(_exC.id,_img);if(_ok===false)countPhotoStorageFail++;countPhotoUpd++;_notes.push('อัปเดตรูป');} // Stage 38B: → customer-photos Storage (helper sync _exC/cache/_hasPhoto + fallback base64 ถ้า Storage ล้ม)
           else if(_img)countPhotoSkip++;
         }catch(_){countPhotoSkip++;}
       }
@@ -5620,25 +5620,32 @@ async function doImport(){
       if(_asgRaw&&!_asgCode)countAsgUnresolved++;
       if(!_asgRaw&&curUser&&curUser.role!=='admin'&&curUser.username)_asgCode=curUser.username;
       data.assignee_code=_asgCode||null;
-      // Excel embedded photo → ย่อ + บันทึกลง field photo เดิม (เหมือน manual upload)
+      // Stage 38B: Excel embedded photo → ย่อ + เก็บ dataURL ไว้ชั่วคราว (อัปโหลดเข้า Storage หลัง insert ได้ id) — ❌ ไม่เขียน base64 ลง customers.photo
       const _newPh=impPhotos[ri];
+      let _photoDataUrl=null;
       // Stage 28D: รูปไม่มั่นใจจะบันทึกก็ต่อเมื่อผู้ใช้ติ๊ก "บันทึกรูปที่ไม่มั่นใจด้วย" (impSaveUnsure)
       if(_newPh&&(!_newPh.unsure||impSaveUnsure)){
         try{const _img=await impCompressDataURL(_newPh.url,900,0.76);
-          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){data.photo=_img;countPhotoNew++;}
+          if(_img&&approxBytesFromDataURL(_img)<=DOC_MAX_BYTES){_photoDataUrl=_img;countPhotoNew++;}
           else if(_img)countPhotoSkip++;
         }catch(_){countPhotoSkip++;}
       }
       if(key)seenInFile.add(key); // ป้องกันแถวซ้ำในไฟล์เดียวกัน (ต้องเซตก่อนแถวถัดไป)
-      pendingInserts.push({ri,name,pp,al,data,_bdat});
+      pendingInserts.push({ri,name,pp,al,data,_bdat,_photoDataUrl});
     }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e)});}
   }
-  // Phase 2: chunked insert — 25 แถวต่อ request (PostgREST array), fallback row-by-row ถ้า chunk fail
+  // Phase 2: insert ลูกค้าใหม่
+  //   Stage 38B: แยกแถว — แถว "ไม่มีรูป" ใช้ chunked bulk insert เร็วเหมือนเดิม;
+  //   แถว "มีรูป" ต้อง insert ทีละแถวเพื่อให้ได้ id แน่นอน แล้วอัปโหลดรูปเข้า customer-photos Storage
+  //   (❌ ไม่พึ่ง bulk insert return order — ป้องกัน id ไม่ตรงรูป)
   const _CHUNK=25;
-  for(let ci=0;ci<pendingInserts.length;ci+=_CHUNK){
-    const chunk=pendingInserts.slice(ci,ci+_CHUNK);
+  const _plainRows=pendingInserts.filter(r=>!r._photoDataUrl);
+  const _photoRows=pendingInserts.filter(r=>r._photoDataUrl);
+  // 2a) แถวไม่มีรูป → chunked bulk insert (fallback row-by-row ถ้า chunk fail)
+  for(let ci=0;ci<_plainRows.length;ci+=_CHUNK){
+    const chunk=_plainRows.slice(ci,ci+_CHUNK);
     const _p2=document.getElementById('loadingText');
-    if(_p2)_p2.textContent=`กำลังบันทึก (${Math.min(ci+_CHUNK,pendingInserts.length)}/${pendingInserts.length})...`;
+    if(_p2)_p2.textContent=`กำลังบันทึก (${Math.min(ci+_CHUNK,_plainRows.length)}/${pendingInserts.length})...`;
     try{
       const rows=await dbPost('customers',chunk.map(r=>r.data));
       if(rows&&rows.length){rows.forEach(r=>customers.unshift(r));countNew+=rows.length;}
@@ -5650,8 +5657,19 @@ async function doImport(){
       }
     }
   }
+  // 2b) แถวมีรูป → insert ทีละแถว → อัปโหลดรูปเข้า Storage ตาม id ที่ได้กลับมา
+  //   ถ้า upload ล้มเหลว: ลูกค้ายังถูกบันทึกแล้ว (import ไม่ล้ม) — helper มี fallback base64 กันรูปหาย
+  for(let pj=0;pj<_photoRows.length;pj++){
+    const r=_photoRows[pj];
+    const _p3=document.getElementById('loadingText');
+    if(_p3)_p3.textContent=`กำลังบันทึกรูป (${pj+1}/${_photoRows.length})...`;
+    let _newId=null;
+    try{const sr=await dbPost('customers',r.data);if(sr&&sr[0]){customers.unshift(sr[0]);_newId=sr[0].id;countNew++;}}
+    catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:r.pp||r.al||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e2)});continue;}
+    if(_newId!=null){const _ok=await _uploadCustomerPhoto(_newId,r._photoDataUrl);if(_ok===false)countPhotoStorageFail++;}
+  }
   hideLoading();
-  logAudit('customer.import','customer',null,{imported:countNew,dup_existing:countDupEx,dup_file:countDupFile,missing_name:countMissing,errors:countError,total:impData.length,photo_new:countPhotoNew,photo_upd:countPhotoUpd,save_unsure:impSaveUnsure});
+  logAudit('customer.import','customer',null,{imported:countNew,dup_existing:countDupEx,dup_file:countDupFile,missing_name:countMissing,errors:countError,total:impData.length,photo_new:countPhotoNew,photo_upd:countPhotoUpd,photo_storage_fail:countPhotoStorageFail,save_unsure:impSaveUnsure});
   renderDash();renderSidebar();
   // Round D: รายงานคอลัมน์ที่ยังไม่รองรับ (ไม่ได้ map เข้า field ที่มี DB) — ไม่ทำให้ import พัง
   const _mappedIdx=new Set(Object.values(impMap).filter(v=>v!==undefined&&v>=0));
@@ -5662,7 +5680,7 @@ async function doImport(){
   const _bwRows=pendingInserts.filter(r=>r._bdat&&r._bdat.length);
   const dateWarnHTML=_bwRows.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ วันที่บางช่องแปลงไม่ได้ (ตั้งเป็นว่าง): ${_bwRows.length} แถว</strong><div style="font-size:11px;color:#b45309;margin-top:3px">แถวเหล่านี้นำเข้าสำเร็จ แต่ช่องวันที่ที่แปลงไม่ได้ถูกตั้งเป็นว่าง กรุณาแก้ไขใน Excel แล้ว import ซ้ำหรือแก้ในระบบโดยตรง</div><div style="overflow-x:auto;max-height:120px;margin-top:6px"><table class="imp-table"><thead><tr><th>แถว</th><th>ชื่อ</th><th>ช่องที่มีปัญหา</th></tr></thead><tbody>${_bwRows.slice(0,15).map(r=>`<tr><td>${r.ri+2}</td><td>${esc(r.name)}</td><td style="font-size:10px;color:#92400e">${r._bdat.map(esc).join(', ')}</td></tr>`).join('')}${_bwRows.length>15?`<tr><td colspan="3" style="text-align:center;color:var(--g5)">...และอีก ${_bwRows.length-15} แถว</td></tr>`:''}</tbody></table></div></div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${esc(s.name)}</td><td>${esc(s.id)}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${esc(s.reason)}</span>${s.detail?`<div style="font-size:10px;color:#92400e;margin-top:2px">${esc(s.detail)}</div>`:''}</td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${dateWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip+countPhotoStorageFail)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}${countPhotoStorageFail?` · อัปโหลด Storage ล้มเหลว ${countPhotoStorageFail} (เก็บแบบเดิมไว้ชั่วคราว)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${dateWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
