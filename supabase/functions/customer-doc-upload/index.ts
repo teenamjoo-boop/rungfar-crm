@@ -98,21 +98,19 @@ function dataUrlToBytes(dataUrl: string): Uint8Array | null {
   }
 }
 
-// ─── สร้าง storage path ที่ปลอดภัย ──────────────────────────────────────────
-function buildStoragePath(customerId: number, fileType: string, rawFileName: string): string {
+// ─── สร้าง storage path ที่ปลอดภัย (ASCII เท่านั้น) ─────────────────────────
+// ใช้ timestamp + random suffix เท่านั้น — ❌ ไม่ใช้ชื่อไฟล์เดิม (อาจมี Thai/space/emoji)
+// doc_name ใน documents table เก็บชื่อที่อ่านได้ตามปกติ
+function buildStoragePath(customerId: number, fileType: string): string {
   const now = new Date();
   const yyyy = now.getUTCFullYear();
   const mm   = String(now.getUTCMonth() + 1).padStart(2, '0');
   const ts   = Date.now();
+  const rand = Math.random().toString(36).slice(2, 8); // 6 random alphanumeric chars
   const ext  = fileType === 'application/pdf' ? 'pdf'
     : fileType === 'image/png'  ? 'png'
     : 'jpg';
-  // ลบ extension เดิม → แทนที่อักขระที่ไม่ปลอดภัย → ตัดความยาว
-  const baseName = (rawFileName || 'file')
-    .replace(/\.[^.]+$/, '')
-    .replace(/[^a-zA-Z0-9ก-๙._-]/g, '_')
-    .slice(0, 50) || 'file';
-  return `customers/${customerId}/${yyyy}/${mm}/${ts}_${baseName}.${ext}`;
+  return `customers/${customerId}/${yyyy}/${mm}/${ts}_${rand}.${ext}`;
 }
 
 // ─── Upload bytes ไปยัง Supabase Storage (service role) ─────────────────────
@@ -260,7 +258,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── สร้าง storage path ─────────────────────────────────────────────────────
-  const storagePath = buildStoragePath(customerId, fileType, fileName || docName);
+  const storagePath = buildStoragePath(customerId, fileType);
 
   // ── upload ไปยัง storage ───────────────────────────────────────────────────
   try {
