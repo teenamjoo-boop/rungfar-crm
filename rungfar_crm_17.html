@@ -1467,6 +1467,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="ni" id="niSecLog" onclick="gv('seclog')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>ประวัติการใช้งาน</div>
     <!-- Stage 22B: คำขอลบ (admin-only) — badge = จำนวนคำขอที่รอดำเนินการ -->
     <div class="ni" id="niDelReq" onclick="gv('delreq')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></span>คำขอลบ <span class="nbadge" id="nbDelReq" style="display:none">0</span></div>
+    <!-- Stage 29C: เอกสารจาก LINE (admin-only) — badge = จำนวนไฟล์ที่รอตรวจ (pending) -->
+    <div class="ni" id="niLineDoc" onclick="gv('linedoc')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>เอกสารจาก LINE <span class="nbadge" id="nbLineDoc" style="display:none">0</span></div>
     <div class="ni" id="niMetaAds" onclick="gv('metaads')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
     <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>ตั้งค่าแจ้งเตือน</div>
   </div>
@@ -1546,6 +1548,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="view" id="view-metaads"><div id="metaContent"></div></div>
     <div class="view" id="view-seclog"><div id="seclogContent"></div></div>
     <div class="view" id="view-delreq"><div style="max-width:680px" id="delreqContent"></div></div>
+    <div class="view" id="view-linedoc"><div style="max-width:1100px" id="lineDocContent"></div></div>
   </div>
 </div>
 </div>
@@ -1625,6 +1628,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
         <div class="di" data-view="seclog" onclick="mobNav('seclog');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>ประวัติการใช้งาน</span></div>
         <!-- Stage 22B: คำขอลบ (admin-only) — badge = จำนวนคำขอที่รอดำเนินการ -->
         <div class="di" data-view="delreq" onclick="mobNav('delreq');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg><span>คำขอลบ</span><span class="dbadge" id="drawerDelReqBadge" style="display:none">0</span></div>
+        <!-- Stage 29C: เอกสารจาก LINE (admin-only) -->
+        <div class="di" data-view="linedoc" onclick="mobNav('linedoc');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>เอกสารจาก LINE</span><span class="dbadge" id="drawerLineDocBadge" style="display:none">0</span></div>
         <div class="di" data-view="metaads" onclick="mobNav('metaads');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg><span>วิเคราะห์โฆษณา Meta</span></div>
         <div class="di" data-view="settings" onclick="mobNav('settings');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span>ตั้งค่า</span></div>
       </div>
@@ -3767,7 +3772,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
   if(niActive)niActive.classList.add('on');
-  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle')};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE'};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -3841,6 +3846,8 @@ function gv(v,opts={}){
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
   // STAGE 22B: คำขอลบ — admin-only route guard (เหมือน users/metaads/settings)
   if(v==='delreq'){if(curUser?.role!=='admin'){gv('dash');return;}renderDelReq();}
+  // STAGE 29C: เอกสารจาก LINE — admin-only route guard
+  if(v==='linedoc'){if(curUser?.role!=='admin'){gv('dash');return;}renderLineDoc();}
 }
 
 // Stage 21A: ยุบ/ขยายหัวข้อใน desktop sidebar (parity กับ drawerToggle ของ mobile) — วัด scrollHeight ตอนเปิดเพื่อ animate ลื่น
@@ -6653,6 +6660,279 @@ async function rejectDelReq(id){
   }catch(e){toast('ไม่สำเร็จ: '+e.message,'err');}
   finally{hideLoading();}
 }
+
+// =============================================================
+// STAGE 29C — เอกสารจาก LINE (LINE Document Inbox review, admin-only)
+//   * อ่านรายการผ่าน RPC app_admin_list_line_inbox (admin credential)
+//   * preview/approve/reject ผ่าน Edge Function line-doc-inbox-admin (service role ฝั่ง server)
+//   * รหัสผ่านแอดมิน cache ในหน่วยความจำหน้านี้เท่านั้น (_lineDocPass) — ไม่เก็บลง storage
+//   * ❌ ไม่ดึง file bytes มาที่ frontend (อ่าน metadata + signed URL เท่านั้น)
+// =============================================================
+const LINE_DOC_ADMIN_URL=`${SB_URL}/functions/v1/line-doc-inbox-admin`;
+let _lineDocPass=null;                 // admin password (in-memory only)
+let _lineDocCache=[];
+let _lineDocFilters={status:'pending',source:'',from:'',to:'',sender:'',q:''};
+let _lineDocSelCust=null;              // ลูกค้าที่เลือกใน modal อนุมัติ
+let _lineDocApproveId=null;            // inbox id ที่กำลังอนุมัติ
+const _LD_SRC={image:{l:'รูปภาพ',i:'🖼️'},pdf:{l:'PDF',i:'📄'},excel:{l:'Excel',i:'📊'},other:{l:'อื่นๆ',i:'📎'}};
+const _LD_STATUS={pending:{l:'รอตรวจ',c:'#b45309'},approved:{l:'อนุมัติแล้ว',c:'#059669'},linked:{l:'แนบเข้าเอกสารแล้ว',c:'#059669'},rejected:{l:'ปฏิเสธ',c:'#dc2626'}};
+function _ldSize(n){n=Number(n)||0;if(n<=0)return'—';if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(0)+' KB';return (n/1048576).toFixed(1)+' MB';}
+function _ldDT(s){if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
+function _ldCustName(id){if(id==null)return'';const c=customers.find(x=>x.id===id);return c?(c.name||('#'+id)):('#'+id);}
+
+// เรียก Edge Function admin (ส่ง credential ของผู้ใช้ปัจจุบัน + รหัสผ่านที่กรอก)
+async function _lineDocCall(action,args){
+  let res,data={};
+  try{
+    res=await fetch(LINE_DOC_ADMIN_URL,{method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+      body:JSON.stringify({action,username:(curUser&&curUser.username)||'',password:_lineDocPass||'',...args})});
+  }catch(e){return{status:0,data:{ok:false,error:'network'}};}
+  try{data=await res.json();}catch(_){data={};}
+  return{status:res.status,data};
+}
+
+async function renderLineDoc(){
+  const wrap=document.getElementById('lineDocContent');if(!wrap)return;
+  if(!_isAdminRole()){wrap.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">เฉพาะผู้ดูแลระบบเท่านั้น</div>`;return;}
+  _ldEnsureModal();
+  // โหลดรายชื่อลูกค้าไว้เบื้องหลัง (ใช้ตอนเลือกลูกค้าในขั้นอนุมัติ)
+  if(customers.length===0&&typeof loadAll==='function'&&!(typeof _loadAllInProgress!=='undefined'&&_loadAllInProgress)){loadAll(true).catch(()=>{});}
+  if(!_lineDocPass){
+    wrap.innerHTML=`<div style="max-width:420px;margin:40px auto;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:22px;text-align:center">
+      <div style="font-size:34px;margin-bottom:6px">🔒</div>
+      <div style="font-size:15px;font-weight:800;color:var(--g9);margin-bottom:4px">เอกสารจาก LINE</div>
+      <div style="font-size:12.5px;color:var(--g6);margin-bottom:14px">ยืนยันรหัสผ่านผู้ดูแลระบบเพื่อเปิดดูไฟล์ที่ส่งเข้ามาทาง LINE</div>
+      <input id="ldUnlockPass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')lineDocUnlock()" style="width:100%;padding:10px 12px;border:1px solid var(--g3);border-radius:9px;font-size:14px;margin-bottom:10px">
+      <button class="btn btn-p" style="width:100%" onclick="lineDocUnlock()">เปิดดู</button>
+    </div>`;
+    return;
+  }
+  lineDocLoad();
+}
+
+function lineDocUnlock(){
+  const f=document.getElementById('ldUnlockPass');
+  const p=f?f.value:'';
+  if(!p){toast('กรุณากรอกรหัสผ่าน','err');return;}
+  _lineDocPass=p;
+  lineDocLoad();
+}
+
+async function lineDocLoad(){
+  const wrap=document.getElementById('lineDocContent');if(!wrap)return;
+  wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
+  const fl=_lineDocFilters;
+  const body={
+    p_admin_username:(curUser&&curUser.username)||'',
+    p_admin_password:_lineDocPass||'',
+    p_status:(fl.status&&fl.status!=='all')?fl.status:null,
+    p_source_type:fl.source||null,
+    p_start_date:fl.from||null,
+    p_end_date:fl.to||null,
+    p_sender:fl.sender||null,
+    p_search:fl.q||null
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_list_line_inbox`,{method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body)});
+  }catch(e){wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">เชื่อมต่อไม่ได้</div>`;return;}
+  if(!res.ok){
+    let err={};try{err=await res.json();}catch(_){}
+    const code=err?.code||'';const msg=err?.message||'';
+    if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){
+      wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ยังไม่ได้ติดตั้งฟังก์ชัน — กรุณา apply migration ก่อน</div>`;return;}
+    if(msg==='unauthorized'){_lineDocPass=null;toast('รหัสผ่านไม่ถูกต้อง หรือไม่ใช่ผู้ดูแลระบบ','err');renderLineDoc();return;}
+    wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">อ่านข้อมูลไม่ได้</div>`;return;
+  }
+  let data=[];try{data=await res.json();}catch(_){data=[];}
+  _lineDocCache=Array.isArray(data)?data:[];
+  refreshLineDocBadge();
+  lineDocRenderList();
+}
+
+function lineDocRenderList(){
+  const wrap=document.getElementById('lineDocContent');if(!wrap)return;
+  const fl=_lineDocFilters;
+  const pendCnt=_lineDocCache.filter(r=>r.status==='pending').length;
+  const opt=(v,cur,lbl)=>`<option value="${v}" ${v===cur?'selected':''}>${lbl}</option>`;
+  const toolbar=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:800;color:var(--g9)">เอกสารจาก LINE</span>
+      <span style="background:${pendCnt>0?'var(--red)':'var(--g2)'};color:${pendCnt>0?'#fff':'var(--g6)'};border-radius:20px;padding:2px 11px;font-size:12px;font-weight:700;font-family:var(--mono)">รอตรวจ ${pendCnt}</span>
+      <span style="font-size:11.5px;color:var(--g5)">· แสดง ${_lineDocCache.length} รายการ</span>
+      <button class="btn btn-g btn-sm" style="margin-left:auto" onclick="lineDocLoad()">รีเฟรช</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:10px">
+      <select onchange="_ldSetFilter('status',this.value)" style="padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:12.5px">
+        ${opt('pending',fl.status,'รอตรวจ')}${opt('approved',fl.status,'อนุมัติแล้ว')}${opt('linked',fl.status,'แนบแล้ว')}${opt('rejected',fl.status,'ปฏิเสธ')}${opt('all',fl.status,'ทั้งหมด')}
+      </select>
+      <select onchange="_ldSetFilter('source',this.value)" style="padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:12.5px">
+        ${opt('',fl.source,'ทุกประเภท')}${opt('image',fl.source,'รูปภาพ')}${opt('pdf',fl.source,'PDF')}${opt('excel',fl.source,'Excel')}${opt('other',fl.source,'อื่นๆ')}
+      </select>
+      <input type="date" value="${fl.from||''}" onchange="_ldSetFilter('from',this.value)" style="padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:12.5px">
+      <input type="date" value="${fl.to||''}" onchange="_ldSetFilter('to',this.value)" style="padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:12.5px">
+      <input value="${esc(fl.sender||'')}" placeholder="ผู้ส่ง LINE" onchange="_ldSetFilter('sender',this.value.trim())" style="padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:12.5px">
+      <input value="${esc(fl.q||'')}" placeholder="ค้นหา ชื่อไฟล์ / หมายเหตุ" onchange="_ldSetFilter('q',this.value.trim())" style="padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:12.5px;flex:1;min-width:140px">
+    </div>`;
+  if(!_lineDocCache.length){
+    wrap.innerHTML=toolbar+`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ไม่มีรายการ</div>`;
+    return;
+  }
+  const cards=_lineDocCache.map(r=>{
+    const src=_LD_SRC[r.source_type]||_LD_SRC.other;
+    const st=_LD_STATUS[r.status]||{l:r.status||'—',c:'#6b7280'};
+    const sender=esc(r.line_display_name||r.line_user_id||'—');
+    const fname=esc(r.file_name||'(ไม่มีชื่อไฟล์)');
+    const linked=(r.linked_customer_id!=null)?`<div style="font-size:12px;color:var(--g7);margin-top:3px">ลูกค้า: <b>${esc(_ldCustName(r.linked_customer_id))}</b></div>`:'';
+    const isPending=r.status==='pending';
+    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:16px">${src.i}</span>
+        <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.l}</span>
+        <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${st.c}1a;color:${st.c}">${st.l}</span>
+        <span style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-left:auto">${_ldDT(r.created_at)}</span>
+      </div>
+      <div style="font-size:13.5px;font-weight:700;color:var(--g9);word-break:break-all">${fname}</div>
+      <div style="font-size:12px;color:var(--g6);margin-top:2px">ผู้ส่ง: ${sender} · ${_ldSize(r.file_size)}</div>
+      ${linked}
+      <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap">
+        <button class="btn btn-g btn-sm" onclick="lineDocPreview('${r.id}')">เปิด/พรีวิว</button>
+        ${isPending?`<button class="btn btn-p btn-sm" onclick="_ldOpenApprove('${r.id}')">เลือกลูกค้า & อนุมัติ</button>
+        <button class="btn btn-g btn-sm" onclick="lineDocReject('${r.id}')">ปฏิเสธ</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML=toolbar+cards;
+}
+
+function _ldSetFilter(k,v){_lineDocFilters[k]=v;lineDocLoad();}
+
+async function lineDocPreview(id){
+  const it=_lineDocCache.find(r=>r.id===id);if(!it)return;
+  const w=window.open('','_blank');   // เปิดล่วงหน้า กัน popup blocker
+  const {status,data}=await _lineDocCall('sign',{storage_path:it.storage_path});
+  if(status===401){if(w)w.close();_lineDocPass=null;toast('รหัสผ่านไม่ถูกต้อง','err');renderLineDoc();return;}
+  if(!data.ok||!data.url){if(w)w.close();toast('เปิดไฟล์ไม่ได้','err');return;}
+  if(w)w.location.href=data.url;else window.location.href=data.url;
+}
+
+async function lineDocReject(id){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(typeof guardSession==='function'&&!(await guardSession()))return;
+  const it=_lineDocCache.find(r=>r.id===id);if(!it)return;
+  const reason=prompt('เหตุผลในการปฏิเสธ (ไม่บังคับ)','');
+  if(reason===null)return;  // ยกเลิก
+  showLoading('กำลังบันทึก...');
+  const {status,data}=await _lineDocCall('reject',{inbox_id:id,reason:reason});
+  hideLoading();
+  if(status===401){_lineDocPass=null;toast('รหัสผ่านไม่ถูกต้อง','err');renderLineDoc();return;}
+  if(!data.ok){
+    if(data.error==='not_pending'){toast('รายการนี้ถูกดำเนินการไปแล้ว','err');lineDocLoad();return;}
+    toast('ปฏิเสธไม่สำเร็จ','err');return;
+  }
+  logAudit('line_inbox.reject','line_file_inbox',id,{file_name:it.file_name||null,source_type:it.source_type||null,reason:(reason&&reason.trim())||null});
+  toast('ปฏิเสธรายการแล้ว');
+  lineDocLoad();
+}
+
+// ── Approve modal ──
+function _ldEnsureModal(){
+  if(document.getElementById('lineDocModal'))return;
+  const d=document.createElement('div');
+  d.id='lineDocModal';
+  d.style.cssText='display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px';
+  d.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:15px;font-weight:800;color:var(--g9)">อนุมัติ & แนบเข้าลูกค้า</div>
+      <button onclick="_ldCloseApprove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--g6)">×</button>
+    </div>
+    <div id="ldmFile" style="font-size:12px;color:var(--g6);margin-bottom:12px"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:4px">เลือกลูกค้า</div>
+    <input id="ldmCustSearch" oninput="_ldCustSearch()" placeholder="ค้นหา ชื่อ / พาสปอร์ต / เลขต่างด้าว" style="width:100%;padding:9px 11px;border:1px solid var(--g3);border-radius:8px;font-size:13px;margin-bottom:6px">
+    <div id="ldmCustResults" style="max-height:170px;overflow:auto;margin-bottom:6px"></div>
+    <div id="ldmCustSel" style="font-size:12.5px;color:var(--g8);margin-bottom:12px"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:4px">ประเภทเอกสาร</div>
+    <select id="ldmDocType" style="width:100%;padding:9px 11px;border:1px solid var(--g3);border-radius:8px;font-size:13px;margin-bottom:10px">${DOCS.map(d=>`<option value="${d.k}">${d.i} ${d.l}</option>`).join('')}</select>
+    <input id="ldmDocName" placeholder="ชื่อเอกสาร (ไม่บังคับ)" style="width:100%;padding:9px 11px;border:1px solid var(--g3);border-radius:8px;font-size:13px;margin-bottom:8px">
+    <input id="ldmNote" placeholder="หมายเหตุ (ไม่บังคับ)" style="width:100%;padding:9px 11px;border:1px solid var(--g3);border-radius:8px;font-size:13px;margin-bottom:14px">
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-p" style="flex:1" onclick="_ldConfirmApprove()">อนุมัติ & แนบ</button>
+      <button class="btn btn-g" style="flex:1" onclick="_ldCloseApprove()">ยกเลิก</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+}
+function _ldOpenApprove(id){
+  const it=_lineDocCache.find(r=>r.id===id);if(!it)return;
+  _lineDocApproveId=id;_lineDocSelCust=null;
+  _ldEnsureModal();
+  const m=document.getElementById('lineDocModal');
+  document.getElementById('ldmFile').innerHTML=`ไฟล์: <b>${esc(it.file_name||'—')}</b> · ${(_LD_SRC[it.source_type]||_LD_SRC.other).l} · ${_ldSize(it.file_size)}`;
+  document.getElementById('ldmCustSearch').value='';
+  document.getElementById('ldmCustResults').innerHTML='';
+  document.getElementById('ldmCustSel').innerHTML='';
+  document.getElementById('ldmDocName').value='';
+  document.getElementById('ldmNote').value='';
+  // เดาประเภทเอกสารเริ่มต้นจาก source_type
+  const dt=document.getElementById('ldmDocType');
+  if(dt)dt.value=(it.source_type==='pdf'||it.source_type==='excel')?'other':'photo';
+  if(customers.length===0)document.getElementById('ldmCustResults').innerHTML='<div style="font-size:12px;color:var(--g5);padding:6px">กำลังโหลดรายชื่อลูกค้า...</div>';
+  m.style.display='flex';
+}
+function _ldCloseApprove(){const m=document.getElementById('lineDocModal');if(m)m.style.display='none';_lineDocApproveId=null;_lineDocSelCust=null;}
+function _ldCustSearch(){
+  const q=(document.getElementById('ldmCustSearch').value||'').trim().toLowerCase();
+  const box=document.getElementById('ldmCustResults');if(!box)return;
+  if(!q){box.innerHTML='';return;}
+  if(customers.length===0){box.innerHTML='<div style="font-size:12px;color:var(--g5);padding:6px">กำลังโหลดรายชื่อลูกค้า...</div>';return;}
+  const res=customers.filter(c=>[c.name,c.name_th,c.passport_no,c.alien_id].some(v=>v&&String(v).toLowerCase().includes(q))).slice(0,20);
+  box.innerHTML=res.length?res.map(c=>`<div onclick="_ldPickCust(${c.id})" style="padding:7px 9px;border:1px solid var(--g2);border-radius:7px;margin-bottom:4px;cursor:pointer;font-size:12.5px"><b>${esc(c.name||'—')}</b>${c.passport_no?' · '+esc(c.passport_no):''}${c.alien_id?' · '+esc(c.alien_id):''}</div>`).join(''):'<div style="font-size:12px;color:var(--g5);padding:6px">ไม่พบลูกค้า</div>';
+}
+function _ldPickCust(id){
+  _lineDocSelCust=customers.find(c=>c.id===id)||null;
+  document.getElementById('ldmCustResults').innerHTML='';
+  const sel=document.getElementById('ldmCustSel');
+  if(sel&&_lineDocSelCust)sel.innerHTML=`เลือก: <b>${esc(_lineDocSelCust.name||('#'+id))}</b>${_lineDocSelCust.passport_no?' · '+esc(_lineDocSelCust.passport_no):''}`;
+}
+async function _ldConfirmApprove(){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!_lineDocApproveId){return;}
+  if(!_lineDocSelCust){toast('กรุณาเลือกลูกค้า','err');return;}
+  if(typeof guardSession==='function'&&!(await guardSession()))return;
+  const docType=document.getElementById('ldmDocType').value||'other';
+  const docName=(document.getElementById('ldmDocName').value||'').trim();
+  const note=(document.getElementById('ldmNote').value||'').trim();
+  const it=_lineDocCache.find(r=>r.id===_lineDocApproveId);
+  showLoading('กำลังแนบเข้าเอกสารลูกค้า...');
+  const {status,data}=await _lineDocCall('approve',{
+    inbox_id:_lineDocApproveId,customer_id:_lineDocSelCust.id,customer_name:_lineDocSelCust.name||null,
+    doc_type:docType,doc_name:docName||null,note:note||null
+  });
+  hideLoading();
+  if(status===401){_lineDocPass=null;_ldCloseApprove();toast('รหัสผ่านไม่ถูกต้อง','err');renderLineDoc();return;}
+  if(!data.ok){
+    if(data.error==='image_too_large'){toast('รูปภาพใหญ่เกินไป กรุณาอัปโหลดผ่านหน้าลูกค้าเพื่อให้ระบบบีบอัดอัตโนมัติ','err');return;}
+    if(data.error==='too_large'){toast('ไฟล์ใหญ่เกินกว่าจะบันทึกเข้าเอกสารลูกค้าในระบบปัจจุบัน','err');return;}
+    if(data.error==='not_pending'){toast('รายการนี้ถูกดำเนินการไปแล้ว','err');_ldCloseApprove();lineDocLoad();return;}
+    if(data.error==='no_customer'){toast('กรุณาเลือกลูกค้า','err');return;}
+    toast('อนุมัติไม่สำเร็จ','err');return;
+  }
+  logAudit('line_inbox.approve','line_file_inbox',_lineDocApproveId,{
+    customer_id:_lineDocSelCust.id,customer_name:_lineDocSelCust.name||null,doc_type:docType,
+    file_name:(it&&it.file_name)||null,source_type:(it&&it.source_type)||null,document_id:data.document_id||null
+  });
+  toast('อนุมัติและแนบเข้าเอกสารลูกค้าแล้ว');
+  _ldCloseApprove();
+  lineDocLoad();
+}
+function refreshLineDocBadge(){
+  const n=_lineDocCache.filter(r=>r.status==='pending').length;
+  const el=document.getElementById('nbLineDoc');if(el){el.textContent=n;el.style.display=n>0?'':'none';}
+  const dd=document.getElementById('drawerLineDocBadge');if(dd){dd.textContent=n;dd.style.display=n>0?'':'none';}
+}
+
 // ── Export column order ตาม Excel template งานจริง (24 คอลัมน์) — Round F1B-2: เติม field ใหม่ครบ ──
 const CUST_EXPORT_HEADERS=['ลำดับ','วันที่ยื่น','รูปถ่าย','นายจ้าง','รายชื่อ','เลขประจำตัวต่างด้าว','สัญชาติ','เลขคำขอ','รายการ','สถานะ','ใบแพทย์','ประกัน','100','900','ตัวแทน','นัดหมาย','เวลา','สถานที่','มีเล่ม','ไม่มีเล่ม','ค่าบัตร','คิวว่าง','วันรับเล่ม','หมายเหตุ','ผู้รับผิดชอบ'];
 // คอลัมน์ที่เป็นเลข ID ยาว → บังคับเป็น "text" ทั้ง CSV/Excel กันแสดงผลเป็น scientific notation (6.68E+12): เลขประจำตัวต่างด้าว(5), เลขคำขอ(7), 100(12), 900(13)
