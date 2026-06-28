@@ -1,23 +1,29 @@
 // =============================================================
-// LINE Document Inbox — Admin helper (Supabase Edge Function, Stage 29C)
+// LINE Document Inbox — review helper (Supabase Edge Function, Stage 29C → 29G)
 //
-// บทบาท: ฝั่ง "แอดมิน CRM" เรียกใช้เพื่อ
+// บทบาท: ฝั่ง "ผู้ใช้ CRM ที่ล็อกอินอยู่ (staff/admin)" เรียกใช้เพื่อ
 //   A) sign    → สร้าง signed URL อายุสั้นจาก private bucket line-doc-inbox (พรีวิว/เปิดไฟล์)
 //   B) approve → อ่าน bytes จาก storage (service role) → แปลง base64 →
 //                insert เข้า public.documents (เอกสารลูกค้าจริง) →
 //                อัปเดต line_file_inbox = linked
 //   C) reject  → อัปเดต line_file_inbox = rejected (❌ ไม่ลบไฟล์ใน storage)
 //
-// ความปลอดภัย:
-//   * ทุก action ต้องส่ง { username, password } ของผู้ใช้ → ตรวจด้วย
-//     app_verify_login เดิม + ยืนยัน role=admin (เหมือน RPC แอดมินอื่น)
+// ความปลอดภัย (Stage 29G):
+//   * ทุก action ต้องส่ง { user_id, username } ของผู้ใช้ปัจจุบัน → ตรวจด้วย
+//     app_verify_session เดิม (โมเดลตัวตนเดียวกับ guardSession ทั้งระบบ:
+//     user_id+username ต้องตรงกับ app_users ที่ is_active=true, role ไม่ null)
+//     → staff หรือ admin ที่ active ใช้ได้ ไม่ต้องใส่รหัสผ่าน
 //   * ใช้ SUPABASE_SERVICE_ROLE_KEY ภายในฝั่ง server เท่านั้น — ❌ ไม่ส่งกลับ client
-//   * identity ของผู้อนุมัติ (code/name) ดึงจาก app_users ตาม credential ที่ผ่านการตรวจ
-//     ไม่เชื่อค่าที่ client ส่งมา
+//   * identity ผู้ทำรายการ (code/name) ดึงจาก app_verify_session ที่ผ่านการตรวจ
+//     ไม่เชื่อชื่อ/รหัสที่ client ส่งมาตรง ๆ
+//
+// ⚠️ ข้อจำกัด: custom session ของ CRM พิสูจน์ตัวตนด้วย (user_id, username)+is_active
+//    เท่านั้น ไม่มี secret token ฝั่ง client → ฟังก์ชันนี้เชื่อถือ "เท่ากับ" staff
+//    workflow อื่นทั้งหมด ไม่มากกว่า (สอดคล้องตามที่ผู้ใช้รับทราบ)
 //
 // ❌ ไม่แตะ line-webhook-router / line-doc-inbox (worker รับไฟล์) / line-ai-excel-*
 // ❗ Deploy: verify_jwt ปล่อย default ได้ (เรียกด้วย anon apikey — เป็น JWT ที่ valid)
-//    ฟังก์ชันบังคับตรวจ admin credential ในตัวเองเสมอ
+//    ฟังก์ชันบังคับตรวจ session ในตัวเองเสมอ
 // =============================================================
 
 const CORS_HEADERS = {
@@ -60,33 +66,26 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-// ─── Admin auth: app_verify_login + role=admin ───────────────────────────────
-async function verifyAdmin(
-  url: string, key: string, username: string, password: string,
+// ─── Session auth: app_verify_session (active staff/admin — เหมือน guardSession) ──
+//   พิสูจน์ตัวตนด้วย (user_id, username)+is_active เท่านั้น (custom session ของ CRM)
+//   identity (code/name) ดึงจากผลลัพธ์ DB ไม่เชื่อค่าที่ client ส่งมา
+async function verifyUser(
+  url: string, key: string, userId: string, username: string,
 ): Promise<{ ok: boolean; code: string | null; name: string | null }> {
-  if (!username || !password) return { ok: false, code: null, name: null };
-  // 1) ตรวจรหัสผ่านด้วย RPC login เดิม
-  const vr = await fetch(`${url}/rest/v1/rpc/app_verify_login`, {
+  if (!userId || !username) return { ok: false, code: null, name: null };
+  const vr = await fetch(`${url}/rest/v1/rpc/app_verify_session`, {
     method: 'POST',
     headers: svcHeaders(key),
-    body: JSON.stringify({ p_username: username, p_password: password }),
+    body: JSON.stringify({ p_user_id: userId, p_username: username }),
   });
   if (!vr.ok) return { ok: false, code: null, name: null };
-  let rows: unknown;
-  try { rows = await vr.json(); } catch { rows = null; }
-  if (!Array.isArray(rows) || rows.length < 1) return { ok: false, code: null, name: null };
-  // 2) ยืนยัน role=admin + ดึง identity จาก app_users (ไม่เชื่อค่าจาก client)
-  const ur = await fetch(
-    `${url}/rest/v1/app_users?username=eq.${encodeURIComponent(username)}&select=username,full_name,role&limit=1`,
-    { headers: svcHeaders(key) },
-  );
-  if (!ur.ok) return { ok: false, code: null, name: null };
-  let urows: Array<{ username?: string; full_name?: string; role?: string }> = [];
-  try { urows = await ur.json(); } catch { urows = []; }
-  const u = urows[0];
-  if (!u || String(u.role || '').toLowerCase() !== 'admin') {
-    return { ok: false, code: null, name: null };
-  }
+  let data: unknown;
+  try { data = await vr.json(); } catch { data = null; }
+  // app_verify_session คืน user object (jsonb) ถ้า active, มิฉะนั้น null
+  const u = (data && typeof data === 'object' && !Array.isArray(data))
+    ? data as { id?: unknown; username?: string; full_name?: string; role?: string }
+    : null;
+  if (!u || u.id == null) return { ok: false, code: null, name: null };
   return { ok: true, code: u.username || username, name: u.full_name || username };
 }
 
@@ -166,12 +165,12 @@ Deno.serve(async (req: Request) => {
   }
 
   const action   = String(body.action || '');
+  const userId   = String(body.user_id || '');
   const username = String(body.username || '');
-  const password = String(body.password || '');
 
-  // ── auth (admin) ──
-  const admin = await verifyAdmin(url, key, username, password);
-  if (!admin.ok) {
+  // ── auth (active staff/admin session) ──
+  const actor = await verifyUser(url, key, userId, username);
+  if (!actor.ok) {
     console.warn('[doc-inbox-admin] unauthorized');
     return json({ ok: false, error: 'unauthorized' }, 401);
   }
@@ -233,7 +232,7 @@ Deno.serve(async (req: Request) => {
           doc_name:    finalName,
           file_data:   dataUrl,
           file_type:   mime,
-          uploaded_by: admin.name,
+          uploaded_by: actor.name,
         }),
       });
       if (!insRes.ok) throw new Error(`documents insert ${insRes.status}: ${await insRes.text()}`);
@@ -247,8 +246,8 @@ Deno.serve(async (req: Request) => {
         linked_document_id: docId,
         doc_type:           docType,
         note:               note,
-        approved_by_code:   admin.code,
-        approved_by_name:   admin.name,
+        approved_by_code:   actor.code,
+        approved_by_name:   actor.name,
         approved_at:        new Date().toISOString(),
       });
 
@@ -273,8 +272,8 @@ Deno.serve(async (req: Request) => {
       // ❌ ไม่ลบไฟล์ใน storage — เก็บประวัติไว้
       await patchInbox(url, key, inboxId, {
         status:           'rejected',
-        rejected_by_code: admin.code,
-        rejected_by_name: admin.name,
+        rejected_by_code: actor.code,
+        rejected_by_name: actor.name,
         rejected_at:      new Date().toISOString(),
         reject_reason:    reason,
       });

@@ -1439,6 +1439,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="nsec" id="sideMain">
     <div class="ni" id="niDash" onclick="gv('dash')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span>หน้าหลัก <span class="nbadge" id="nbAlert">0</span></div>
     <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg></span>ตอกบัตร</div>
+    <!-- Stage 29G: เอกสารจาก LINE — เมนูหลักลำดับ 3 (staff+admin) — badge = ไฟล์ที่รอตรวจ (pending) -->
+    <div class="ni" id="niLineDoc" onclick="gv('linedoc')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>เอกสารจาก LINE <span class="nbadge" id="nbLineDoc" style="display:none">0</span></div>
     <!-- Stage 21A: ลูกค้า = หัวข้อยุบ/ขยาย (แตะแถว=ไปหน้าลูกค้า, แตะ chevron=ยุบ/ขยาย) → งานของฉัน -->
     <div class="ni ni-parent" id="niCustomers" data-acc="cust" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span><span class="ni-chev" onclick="event.stopPropagation();sideToggle('cust')" aria-label="ยุบ/ขยาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
     <div class="ni-acc" id="sacc-cust">
@@ -1467,8 +1469,6 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="ni" id="niSecLog" onclick="gv('seclog')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>ประวัติการใช้งาน</div>
     <!-- Stage 22B: คำขอลบ (admin-only) — badge = จำนวนคำขอที่รอดำเนินการ -->
     <div class="ni" id="niDelReq" onclick="gv('delreq')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></span>คำขอลบ <span class="nbadge" id="nbDelReq" style="display:none">0</span></div>
-    <!-- Stage 29C: เอกสารจาก LINE (admin-only) — badge = จำนวนไฟล์ที่รอตรวจ (pending) -->
-    <div class="ni" id="niLineDoc" onclick="gv('linedoc')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>เอกสารจาก LINE <span class="nbadge" id="nbLineDoc" style="display:none">0</span></div>
     <div class="ni" id="niMetaAds" onclick="gv('metaads')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
     <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>ตั้งค่าแจ้งเตือน</div>
   </div>
@@ -1603,6 +1603,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <!-- Stage 20: drawer parity กับ sidebar PC — โครงเมนูเต็ม + รายการกลุ่ม + แยกส่วน admin -->
       <div class="di" data-view="dash" onclick="mobNav('dash');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span>หน้าหลัก</span><span class="dbadge" id="drawerAlertBadge" style="display:none">0</span></div>
       <div class="di" data-view="attendance" onclick="mobNav('attendance');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>ตอกบัตร</span></div>
+      <!-- Stage 29G: เอกสารจาก LINE — เมนูหลักลำดับ 3 (staff+admin) -->
+      <div class="di" data-view="linedoc" onclick="mobNav('linedoc');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>เอกสารจาก LINE</span><span class="dbadge" id="drawerLineDocBadge" style="display:none">0</span></div>
       <!-- Stage 22A: ลูกค้า = แตะแถว/ไอคอน → ไปหน้าลูกค้า (parity desktop), แตะ chevron → ยุบ/ขยายเท่านั้น → งานของฉัน -->
       <div class="di di-parent" data-acc="cust" data-view="customers" onclick="mobNav('customers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span><span class="di-chev-tap" onclick="event.stopPropagation();drawerToggle('cust')" aria-label="ยุบ/ขยาย"><svg class="di-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
       <div class="di-acc" id="dacc-cust">
@@ -1628,8 +1630,6 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
         <div class="di" data-view="seclog" onclick="mobNav('seclog');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>ประวัติการใช้งาน</span></div>
         <!-- Stage 22B: คำขอลบ (admin-only) — badge = จำนวนคำขอที่รอดำเนินการ -->
         <div class="di" data-view="delreq" onclick="mobNav('delreq');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg><span>คำขอลบ</span><span class="dbadge" id="drawerDelReqBadge" style="display:none">0</span></div>
-        <!-- Stage 29C: เอกสารจาก LINE (admin-only) -->
-        <div class="di" data-view="linedoc" onclick="mobNav('linedoc');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>เอกสารจาก LINE</span><span class="dbadge" id="drawerLineDocBadge" style="display:none">0</span></div>
         <div class="di" data-view="metaads" onclick="mobNav('metaads');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg><span>วิเคราะห์โฆษณา Meta</span></div>
         <div class="di" data-view="settings" onclick="mobNav('settings');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span>ตั้งค่า</span></div>
       </div>
@@ -3846,8 +3846,8 @@ function gv(v,opts={}){
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
   // STAGE 22B: คำขอลบ — admin-only route guard (เหมือน users/metaads/settings)
   if(v==='delreq'){if(curUser?.role!=='admin'){gv('dash');return;}renderDelReq();}
-  // STAGE 29C: เอกสารจาก LINE — admin-only route guard
-  if(v==='linedoc'){if(curUser?.role!=='admin'){gv('dash');return;}renderLineDoc();}
+  // STAGE 29G: เอกสารจาก LINE — ใช้ได้ทั้ง staff/admin ที่ล็อกอินอยู่ (ไม่ใช่ admin-only แล้ว)
+  if(v==='linedoc')renderLineDoc();
 }
 
 // Stage 21A: ยุบ/ขยายหัวข้อใน desktop sidebar (parity กับ drawerToggle ของ mobile) — วัด scrollHeight ตอนเปิดเพื่อ animate ลื่น
@@ -6662,14 +6662,13 @@ async function rejectDelReq(id){
 }
 
 // =============================================================
-// STAGE 29C — เอกสารจาก LINE (LINE Document Inbox review, admin-only)
-//   * อ่านรายการผ่าน RPC app_admin_list_line_inbox (admin credential)
+// STAGE 29C → 29G — เอกสารจาก LINE (LINE Document Inbox review, staff + admin)
+//   * อ่านรายการผ่าน RPC app_list_line_inbox (ตัวตน = user_id+username, session เดียวกับทั้งระบบ)
 //   * preview/approve/reject ผ่าน Edge Function line-doc-inbox-admin (service role ฝั่ง server)
-//   * รหัสผ่านแอดมิน cache ในหน่วยความจำหน้านี้เท่านั้น (_lineDocPass) — ไม่เก็บลง storage
+//   * ไม่มีรหัสผ่านแยกของหน้านี้ — ใช้ session ปัจจุบัน (staff/admin ที่ active ใช้ได้)
 //   * ❌ ไม่ดึง file bytes มาที่ frontend (อ่าน metadata + signed URL เท่านั้น)
 // =============================================================
 const LINE_DOC_ADMIN_URL=`${SB_URL}/functions/v1/line-doc-inbox-admin`;
-let _lineDocPass=null;                 // admin password (in-memory only)
 let _lineDocCache=[];
 let _lineDocFilters={status:'pending',source:'',from:'',to:'',sender:'',q:''};
 let _lineDocSelCust=null;              // ลูกค้าที่เลือกใน modal อนุมัติ
@@ -6680,13 +6679,13 @@ function _ldSize(n){n=Number(n)||0;if(n<=0)return'—';if(n<1024)return n+' B';i
 function _ldDT(s){if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
 function _ldCustName(id){if(id==null)return'';const c=customers.find(x=>x.id===id);return c?(c.name||('#'+id)):('#'+id);}
 
-// เรียก Edge Function admin (ส่ง credential ของผู้ใช้ปัจจุบัน + รหัสผ่านที่กรอก)
+// เรียก Edge Function (ส่งตัวตน session ปัจจุบัน: user_id + username — ตรวจด้วย app_verify_session ฝั่ง server)
 async function _lineDocCall(action,args){
   let res,data={};
   try{
     res=await fetch(LINE_DOC_ADMIN_URL,{method:'POST',mode:'cors',
       headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
-      body:JSON.stringify({action,username:(curUser&&curUser.username)||'',password:_lineDocPass||'',...args})});
+      body:JSON.stringify({action,user_id:(curUser&&curUser.id!=null)?String(curUser.id):'',username:(curUser&&curUser.username)||'',...args})});
   }catch(e){return{status:0,data:{ok:false,error:'network'}};}
   try{data=await res.json();}catch(_){data={};}
   return{status:res.status,data};
@@ -6694,28 +6693,11 @@ async function _lineDocCall(action,args){
 
 async function renderLineDoc(){
   const wrap=document.getElementById('lineDocContent');if(!wrap)return;
-  if(!_isAdminRole()){wrap.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">เฉพาะผู้ดูแลระบบเท่านั้น</div>`;return;}
+  // Stage 29G: ใช้ได้ทั้ง staff/admin ที่ล็อกอินอยู่ — ไม่มี password prompt อีก
+  if(!curUser){wrap.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">กรุณาเข้าสู่ระบบ</div>`;return;}
   _ldEnsureModal();
   // โหลดรายชื่อลูกค้าไว้เบื้องหลัง (ใช้ตอนเลือกลูกค้าในขั้นอนุมัติ)
   if(customers.length===0&&typeof loadAll==='function'&&!(typeof _loadAllInProgress!=='undefined'&&_loadAllInProgress)){loadAll(true).catch(()=>{});}
-  if(!_lineDocPass){
-    wrap.innerHTML=`<div style="max-width:420px;margin:40px auto;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:22px;text-align:center">
-      <div style="font-size:34px;margin-bottom:6px">🔒</div>
-      <div style="font-size:15px;font-weight:800;color:var(--g9);margin-bottom:4px">เอกสารจาก LINE</div>
-      <div style="font-size:12.5px;color:var(--g6);margin-bottom:14px">ยืนยันรหัสผ่านผู้ดูแลระบบเพื่อเปิดดูไฟล์ที่ส่งเข้ามาทาง LINE</div>
-      <input id="ldUnlockPass" type="password" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')lineDocUnlock()" style="width:100%;padding:10px 12px;border:1px solid var(--g3);border-radius:9px;font-size:14px;margin-bottom:10px">
-      <button class="btn btn-p" style="width:100%" onclick="lineDocUnlock()">เปิดดู</button>
-    </div>`;
-    return;
-  }
-  lineDocLoad();
-}
-
-function lineDocUnlock(){
-  const f=document.getElementById('ldUnlockPass');
-  const p=f?f.value:'';
-  if(!p){toast('กรุณากรอกรหัสผ่าน','err');return;}
-  _lineDocPass=p;
   lineDocLoad();
 }
 
@@ -6724,8 +6706,8 @@ async function lineDocLoad(){
   wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
   const fl=_lineDocFilters;
   const body={
-    p_admin_username:(curUser&&curUser.username)||'',
-    p_admin_password:_lineDocPass||'',
+    p_user_id:(curUser&&curUser.id!=null)?String(curUser.id):'',
+    p_username:(curUser&&curUser.username)||'',
     p_status:(fl.status&&fl.status!=='all')?fl.status:null,
     p_source_type:fl.source||null,
     p_start_date:fl.from||null,
@@ -6735,7 +6717,7 @@ async function lineDocLoad(){
   };
   let res;
   try{
-    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_list_line_inbox`,{method:'POST',mode:'cors',
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_line_inbox`,{method:'POST',mode:'cors',
       headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify(body)});
   }catch(e){wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">เชื่อมต่อไม่ได้</div>`;return;}
@@ -6744,7 +6726,7 @@ async function lineDocLoad(){
     const code=err?.code||'';const msg=err?.message||'';
     if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){
       wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ยังไม่ได้ติดตั้งฟังก์ชัน — กรุณา apply migration ก่อน</div>`;return;}
-    if(msg==='unauthorized'){_lineDocPass=null;toast('รหัสผ่านไม่ถูกต้อง หรือไม่ใช่ผู้ดูแลระบบ','err');renderLineDoc();return;}
+    if(msg==='unauthorized'){wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์ใช้งาน หรือบัญชีถูกปิดใช้งาน</div>`;return;}
     wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">อ่านข้อมูลไม่ได้</div>`;return;
   }
   let data=[];try{data=await res.json();}catch(_){data=[];}
@@ -6813,13 +6795,13 @@ async function lineDocPreview(id){
   const it=_lineDocCache.find(r=>r.id===id);if(!it)return;
   const w=window.open('','_blank');   // เปิดล่วงหน้า กัน popup blocker
   const {status,data}=await _lineDocCall('sign',{inbox_id:id});
-  if(status===401){if(w)w.close();_lineDocPass=null;toast('รหัสผ่านไม่ถูกต้อง','err');renderLineDoc();return;}
+  if(status===401){if(w)w.close();toast('ไม่มีสิทธิ์ใช้งาน','err');return;}
   if(!data.ok||!data.url){if(w)w.close();toast('เปิดไฟล์ไม่ได้','err');return;}
   if(w)w.location.href=data.url;else window.location.href=data.url;
 }
 
 async function lineDocReject(id){
-  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!curUser){toast('กรุณาเข้าสู่ระบบ','err');return;} // Stage 29G: staff+admin ใช้ได้ (ยืนยัน session ต่อด้านล่าง)
   if(typeof guardSession==='function'&&!(await guardSession()))return;
   const it=_lineDocCache.find(r=>r.id===id);if(!it)return;
   const reason=prompt('เหตุผลในการปฏิเสธ (ไม่บังคับ)','');
@@ -6827,7 +6809,7 @@ async function lineDocReject(id){
   showLoading('กำลังบันทึก...');
   const {status,data}=await _lineDocCall('reject',{inbox_id:id,reason:reason});
   hideLoading();
-  if(status===401){_lineDocPass=null;toast('รหัสผ่านไม่ถูกต้อง','err');renderLineDoc();return;}
+  if(status===401){toast('ไม่มีสิทธิ์ใช้งาน','err');return;}
   if(!data.ok){
     if(data.error==='not_pending'){toast('รายการนี้ถูกดำเนินการไปแล้ว','err');lineDocLoad();return;}
     toast('ปฏิเสธไม่สำเร็จ','err');return;
@@ -6897,7 +6879,7 @@ function _ldPickCust(id){
   if(sel&&_lineDocSelCust)sel.innerHTML=`เลือก: <b>${esc(_lineDocSelCust.name||('#'+id))}</b>${_lineDocSelCust.passport_no?' · '+esc(_lineDocSelCust.passport_no):''}`;
 }
 async function _ldConfirmApprove(){
-  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!curUser){toast('กรุณาเข้าสู่ระบบ','err');return;} // Stage 29G: staff+admin ใช้ได้ (ยืนยัน session ต่อด้านล่าง)
   if(!_lineDocApproveId){return;}
   if(!_lineDocSelCust){toast('กรุณาเลือกลูกค้า','err');return;}
   if(typeof guardSession==='function'&&!(await guardSession()))return;
@@ -6911,7 +6893,7 @@ async function _ldConfirmApprove(){
     doc_type:docType,doc_name:docName||null,note:note||null
   });
   hideLoading();
-  if(status===401){_lineDocPass=null;_ldCloseApprove();toast('รหัสผ่านไม่ถูกต้อง','err');renderLineDoc();return;}
+  if(status===401){_ldCloseApprove();toast('ไม่มีสิทธิ์ใช้งาน','err');return;}
   if(!data.ok){
     if(data.error==='image_too_large'){toast('รูปภาพใหญ่เกินไป กรุณาอัปโหลดผ่านหน้าลูกค้าเพื่อให้ระบบบีบอัดอัตโนมัติ','err');return;}
     if(data.error==='too_large'){toast('ไฟล์ใหญ่เกินกว่าจะบันทึกเข้าเอกสารลูกค้าในระบบปัจจุบัน','err');return;}
