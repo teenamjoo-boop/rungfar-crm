@@ -408,6 +408,10 @@ input.si:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(31,59,92,.12)}
 input.si::placeholder{color:var(--g4)}
 select.fi{background:#fff;border:1.5px solid var(--g2);color:var(--g7);padding:8px 10px;border-radius:var(--r);font-family:var(--font);font-size:12px;outline:none;cursor:pointer;transition:border-color .2s}
 select.fi:focus{border-color:var(--p)}
+input.fi{background:#fff;border:1.5px solid var(--g2);color:var(--g9);padding:8px 10px;border-radius:var(--r);font-family:var(--font);font-size:12px;outline:none;transition:border-color .2s;box-sizing:border-box}
+input.fi:focus{border-color:var(--p)}
+input.fi[type="date"]{min-width:140px;cursor:pointer}
+input.fi::placeholder{color:var(--g4)}
 .nb{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 .nb-mm{background:#FFF7ED;color:#C2410C}.nb-kh{background:#EFF6FF;color:#1D4ED8}
 .nb-la{background:#F0FDF4;color:#15803D}.nb-vn{background:#FEF2F2;color:#DC2626}
@@ -719,6 +723,7 @@ textarea.fi2{resize:vertical;min-height:65px}
   .toolbar{gap:5px}
   .toolbar .srch{min-width:100%;order:-1}
   select.fi{font-size:11px;padding:6px 8px}
+  input.fi{font-size:11px;padding:6px 8px}
   table{font-size:11px}
   thead th{padding:7px 8px;font-size:10px}
   td{padding:8px}
@@ -1130,7 +1135,8 @@ html[data-theme="dark"] .mb,
 html[data-theme="dark"] .mh,
 html[data-theme="dark"] .btn-g,
 html[data-theme="dark"] input.si,
-html[data-theme="dark"] select.fi{background:var(--w)}
+html[data-theme="dark"] select.fi,
+html[data-theme="dark"] input.fi{background:var(--w)}
 html[data-theme="dark"] .fi2:focus,
 html[data-theme="dark"] input.si:focus{background:var(--g1)}
 /* DARK-FIX rd2: การ์ด/แผง/แถวที่ hardcode background:#fff ใน CSS-rule (ตกหล่นรอบแรก) → พื้นมืด
@@ -1441,6 +1447,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="ni" id="niAttendance" onclick="gv('attendance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg></span>ตอกบัตร</div>
     <!-- Stage 29G: เอกสารจาก LINE — เมนูหลักลำดับ 3 (staff+admin) — badge = ไฟล์ที่รอตรวจ (pending) -->
     <div class="ni" id="niLineDoc" onclick="gv('linedoc')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>เอกสารจาก LINE <span class="nbadge" id="nbLineDoc" style="display:none">0</span></div>
+    <!-- Stage 40D: ศูนย์เอกสาร — คลังเอกสารลูกค้ากลาง (staff+admin read-only) -->
+    <div class="ni" id="niDocCenter" onclick="gv('doccenter')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg></span>คลังเอกสาร</div>
     <!-- Stage 21A: ลูกค้า = หัวข้อยุบ/ขยาย (แตะแถว=ไปหน้าลูกค้า, แตะ chevron=ยุบ/ขยาย) → งานของฉัน -->
     <div class="ni ni-parent" id="niCustomers" data-acc="cust" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span><span class="ni-chev" onclick="event.stopPropagation();sideToggle('cust')" aria-label="ยุบ/ขยาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
     <div class="ni-acc" id="sacc-cust">
@@ -1452,7 +1460,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div class="ni ni-sub" id="niMyProfile" onclick="openMyProfile()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>โปรไฟล์ของฉัน</div>
     </div>
     <div class="ni" id="niEmployers" onclick="gv('employers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg></span>นายจ้าง / บริษัท</div>
-    <div class="ni" id="niImport" onclick="gv('import')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></span>เอกสาร</div>
+    <div class="ni" id="niImport" onclick="gv('import')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg></span>นำเข้า</div>
   </div>
   <!-- Stage 21A: กลุ่มงาน = หัวข้อยุบ/ขยาย (แตะแถวทั้งแถวเพื่อสลับ) → รายการกลุ่ม (#sideGroups เติมโดย renderSidebar) + จัดการกลุ่ม (ไม่ใช่ admin) -->
   <div class="nsec" id="sideGroupsSec">
@@ -1549,6 +1557,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="view" id="view-seclog"><div id="seclogContent"></div></div>
     <div class="view" id="view-delreq"><div style="max-width:680px" id="delreqContent"></div></div>
     <div class="view" id="view-linedoc"><div style="max-width:1100px" id="lineDocContent"></div></div>
+    <!-- Stage 40D: ศูนย์เอกสาร — read-only document vault -->
+    <div class="view" id="view-doccenter"><div style="max-width:1200px" id="docCenterContent"></div></div>
   </div>
 </div>
 </div>
@@ -1558,7 +1568,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <button class="mn-item" data-view="dash" onclick="mobNav('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span class="mn-lbl">หน้าหลัก</span><span class="mn-badge" id="mobAlertBadge" style="display:none">0</span></button>
     <button class="mn-item" data-view="attendance" onclick="mobNav('attendance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span class="mn-lbl">ตอกบัตร</span></button>
     <button class="mn-item" data-view="customers" onclick="mobNav('customers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span class="mn-lbl">ลูกค้า</span></button>
-    <button class="mn-item" data-view="import" onclick="mobNav('import')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span class="mn-lbl">เอกสาร</span></button>
+    <button class="mn-item" data-view="doccenter" onclick="mobNav('doccenter')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg><span class="mn-lbl">เอกสาร</span></button>
     <button class="mn-item" onclick="mobDrawerOpen()" aria-label="เมนู"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="mn-lbl">เมนู</span></button>
   </div>
 </nav>
@@ -1580,7 +1590,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="grab"></div>
     <div class="ms-item staff-only" onclick="mobNav('dash');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span>หน้าหลัก</span></div>
     <div class="ms-item staff-only" onclick="mobNav('customers');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span></div>
-    <div class="ms-item staff-only" onclick="mobNav('import');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span>เอกสาร</span></div>
+    <div class="ms-item staff-only" onclick="mobNav('doccenter');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg><span>คลังเอกสาร</span></div>
+    <div class="ms-item staff-only" onclick="mobNav('import');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span>นำเข้า</span></div>
     <div class="ms-item admin-only" onclick="mobNav('employers');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg><span>นายจ้าง / บริษัท</span></div>
     <div class="ms-item" onclick="mobNav('groups');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>จัดการกลุ่ม</span></div>
     <div class="ms-item admin-only" onclick="mobNav('settings');mobMoreClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span>ตั้งค่าแจ้งเตือน</span></div>
@@ -1605,6 +1616,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div class="di" data-view="attendance" onclick="mobNav('attendance');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h4"/></svg><span>ตอกบัตร</span></div>
       <!-- Stage 29G: เอกสารจาก LINE — เมนูหลักลำดับ 3 (staff+admin) -->
       <div class="di" data-view="linedoc" onclick="mobNav('linedoc');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>เอกสารจาก LINE</span><span class="dbadge" id="drawerLineDocBadge" style="display:none">0</span></div>
+      <!-- Stage 40D: ศูนย์เอกสาร -->
+      <div class="di" data-view="doccenter" onclick="mobNav('doccenter');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg><span>คลังเอกสาร</span></div>
       <!-- Stage 22A: ลูกค้า = แตะแถว/ไอคอน → ไปหน้าลูกค้า (parity desktop), แตะ chevron → ยุบ/ขยายเท่านั้น → งานของฉัน -->
       <div class="di di-parent" data-acc="cust" data-view="customers" onclick="mobNav('customers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span><span class="di-chev-tap" onclick="event.stopPropagation();drawerToggle('cust')" aria-label="ยุบ/ขยาย"><svg class="di-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
       <div class="di-acc" id="dacc-cust">
@@ -1616,7 +1629,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
         <div class="di di-sub" id="drawerMyProfile" onclick="openMyProfile();mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6"/></svg><span>โปรไฟล์ของฉัน</span></div>
       </div>
       <div class="di" data-view="employers" onclick="mobNav('employers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg><span>นายจ้าง / บริษัท</span></div>
-      <div class="di" data-view="import" onclick="mobNav('import');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span>เอกสาร</span></div>
+      <div class="di" data-view="import" onclick="mobNav('import');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg><span>นำเข้า</span></div>
       <!-- Stage 20B: กลุ่มงาน = หัวข้อยุบ/ขยาย → รายการกลุ่ม (เติมโดย mobDrawerSync, DRY กับ sideGroups) -->
       <div class="di di-parent" data-acc="grp" onclick="drawerToggle('grp')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>กลุ่มงาน</span><svg class="di-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
       <div class="di-acc" id="dacc-grp">
@@ -2307,7 +2320,7 @@ let curLang = localStorage.getItem('crm_lang') || 'th';
 const LANG = {
   th: {
     dashboard:'หน้าหลัก', customers:'ลูกค้า', alerts:'การแจ้งเตือน',
-    employers:'นายจ้าง / บริษัท', groups:'จัดการกลุ่ม', import:'เอกสาร',
+    employers:'นายจ้าง / บริษัท', groups:'จัดการกลุ่ม', import:'นำเข้า', doccenter:'คลังเอกสาร',
     settings:'ตั้งค่าแจ้งเตือน', users:'จัดการผู้ใช้',
     addCustomer:'+ เพิ่มลูกค้า', importExcel:'นำเข้าไฟล์',
     search:'ค้นหา ชื่อ / พาสปอร์ต / เลขต่างด้าว / เบอร์ / นายจ้าง...',
@@ -2510,7 +2523,7 @@ const LANG = {
   },
   my: {
     dashboard:'ပင်မ', customers:'ဖောက်သည်', alerts:'သတိပေးချက်',
-    employers:'အလုပ်ရှင် / ကုမ္ပဏီ', groups:'အုပ်စုစီမံခန့်ခွဲ', import:'စာရွက်စာတမ်း',
+    employers:'အလုပ်ရှင် / ကုမ္ပဏီ', groups:'အုပ်စုစီမံခန့်ခွဲ', import:'တင်သွင်းရန်', doccenter:'စာရွက်ဗဟို',
     settings:'သတိပေးချက်ပြင်ဆင်', users:'အသုံးပြုသူစီမံ',
     addCustomer:'+ ဖောက်သည်ထည့်', importExcel:'ဖိုင်တင်သွင်း',
     search:'ရှာဖွေ ชื่อ / နိုင်ငံကူး / ID / ဖုန်း / အလုပ်ရှင်...',
@@ -3946,7 +3959,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
   if(niActive)niActive.classList.add('on');
-  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE'};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE',doccenter:T('doccenter')};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -4022,6 +4035,8 @@ function gv(v,opts={}){
   if(v==='delreq'){if(curUser?.role!=='admin'){gv('dash');return;}renderDelReq();}
   // STAGE 29G: เอกสารจาก LINE — ใช้ได้ทั้ง staff/admin ที่ล็อกอินอยู่ (ไม่ใช่ admin-only แล้ว)
   if(v==='linedoc')renderLineDoc();
+  // STAGE 40D: ศูนย์เอกสาร — read-only vault, staff+admin
+  if(v==='doccenter')renderDocCenter();
 }
 
 // Stage 21A: ยุบ/ขยายหัวข้อใน desktop sidebar (parity กับ drawerToggle ของ mobile) — วัด scrollHeight ตอนเปิดเพื่อ animate ลื่น
@@ -7234,6 +7249,338 @@ function refreshLineDocBadge(){
   const n=_lineDocCache.filter(r=>r.status==='pending').length;
   const el=document.getElementById('nbLineDoc');if(el){el.textContent=n;el.style.display=n>0?'':'none';}
   const dd=document.getElementById('drawerLineDocBadge');if(dd){dd.textContent=n;dd.style.display=n>0?'':'none';}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STAGE 40D/40E — คลังเอกสาร / Document Center (read-only, staff+admin)
+// Rules:
+//   * เรียกเฉพาะ app_list_documents RPC — ❌ ไม่โหลด file_data/base64 ในรายการ
+//   * เปิดเอกสาร: has_storage=true → _openDocByStorage (document_id เท่านั้น)
+//                 has_storage=false → ensureDocFileData (legacy base64 fallback)
+//   * ❌ ไม่ส่ง storage_path ไปที่ใดทั้งสิ้น
+//   * ❌ ไม่แตะ line-doc, attendance, import, customer-upload/sign, login/session
+//
+// ─── Phase 2 case/process vocabulary (constants only — ยังไม่มี UI workflow) ──
+//   ประเภทเคส: MOU มาตรา 41 | MOU มาตรา 46 แบบ นจ.2 | ส่งมอบ MOU มาตรา 43 แบบ บต.13
+//     แจ้งเข้า แบบ บต.53 | แจ้งออก แบบ บต.53 | มาตรา 60 วรรคสอง แบบ บต.32
+//     CI | Visa | Work Permit | รายงานตัว 90 วัน | เปลี่ยนนายจ้าง | ต่ออายุ MOU / Return
+//     ขอเอกสารเพิ่ม | รอชำระเงิน | รอนัดหมาย | อนุมัติแล้ว | เสร็จแล้ว
+//     ไม่ผ่าน / ต้องแก้ไข | หมดอายุ | ใช้ยื่นแล้ว
+// ─── Phase 2 document groups (taxonomy only) ─────────────────────────────────
+//   เอกสารแรงงาน: passport | ci | work_permit | medical | insurance | profile_photo
+//   เอกสารนายจ้าง: employer_id_card | house_registration | employer_poa
+//   เอกสารบริษัท: company_certificate | pp20 | commercial_registration | workplace_photo | map
+//   เอกสารเฉพาะเคส: request_form | appointment_slip | payment_proof
+//                    eworkpermit_reply | requested_extra_doc
+// ════════════════════════════════════════════════════════════════════════════════
+
+// ─── Document type label map (Phase 1 + Phase 2 taxonomy) ────────────────────
+const _DC_DOC_TYPE_LABELS={
+  // Phase 1 — types already in use
+  passport_photo:'รูปพาสปอร์ต',visa:'VISA',wp:'Work Permit',
+  employer_card:'บัตรนายจ้าง',receipt:'ใบเสร็จ',photo:'รูปถ่าย',
+  pow:'หนังสือมอบอำนาจ',other:'อื่นๆ',
+  // Phase 2 — worker documents
+  passport:'Passport',ci:'CI',work_permit:'Work Permit',
+  medical:'ใบรับรองแพทย์',insurance:'ประกันสุขภาพ',profile_photo:'รูปถ่ายแรงงาน',
+  // Phase 2 — employer documents
+  employer_id_card:'บัตรประชาชนนายจ้าง',house_registration:'ทะเบียนบ้าน',
+  employer_poa:'หนังสือมอบอำนาจนายจ้าง',
+  // Phase 2 — company documents
+  company_certificate:'หนังสือรับรองบริษัท',pp20:'ภพ.20',
+  commercial_registration:'ใบทะเบียนพาณิชย์',workplace_photo:'รูปสถานประกอบการ',map:'แผนที่',
+  // Phase 2 — case-specific documents
+  request_form:'ใบรับคำขอ',appointment_slip:'ใบนัด',
+  payment_proof:'หลักฐานชำระเงิน',eworkpermit_reply:'เอกสารตอบกลับจาก e-Workpermit',
+  requested_extra_doc:'เอกสารที่เจ้าหน้าที่ขอเพิ่ม',
+};
+function _dcDocTypeLabel(t){return _DC_DOC_TYPE_LABELS[t]||docTypeLabel(t)||'อื่นๆ';}
+
+// ─── Source label helper ──────────────────────────────────────────────────────
+function _dcSourceLabel(src){
+  if(src==='line_inbox'||src==='line')return{label:'จาก LINE',bg:'#dcfce7',color:'#15803d'};
+  if(src==='excel_import'||src==='import')return{label:'นำเข้า',bg:'#eff6ff',color:'#1d4ed8'};
+  if(src==='manual')return{label:'อัปโหลดเอง',bg:'#f5f3ff',color:'#7c3aed'};
+  if(src)return{label:src,bg:'var(--g1)',color:'var(--g6)'};
+  return{label:'ไม่ระบุ',bg:'var(--g1)',color:'var(--g4)'};
+}
+function _dcSourceBadge(src){
+  const s=_dcSourceLabel(src);
+  return`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${s.bg};color:${s.color};font-weight:600;white-space:nowrap">${esc(s.label)}</span>`;
+}
+
+// ─── File-type icon (SVG, no raster images) ──────────────────────────────────
+function _dcFileIcon(ft){
+  if(!ft)return`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+  if(ft==='application/pdf')return`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>`;
+  if(ft.startsWith('image/'))return`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  if(ft.includes('sheet')||ft.includes('excel'))return`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8l6 8M15 8l-6 8"/></svg>`;
+  return`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g5)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function _dcFmtSize(bytes){
+  if(!bytes||bytes<=0)return'—';
+  if(bytes<1024)return bytes+' B';
+  if(bytes<1048576)return(bytes/1024).toFixed(1)+' KB';
+  return(bytes/1048576).toFixed(1)+' MB';
+}
+function _dcFmtDate(ts){
+  if(!ts)return'—';
+  try{return new Date(ts).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}
+  catch(_){return ts.slice(0,10);}
+}
+
+// ─── Phase 2 type options (displayed in filter; returns actual rows when DB has them) ──
+const _DC_TYPE_OPTS=`<option value="">ประเภทเอกสารทั้งหมด</option>
+  <optgroup label="── เอกสารหลัก ──">
+    <option value="passport_photo">รูปพาสปอร์ต</option>
+    <option value="visa">VISA</option>
+    <option value="wp">Work Permit</option>
+    <option value="employer_card">บัตรนายจ้าง</option>
+    <option value="receipt">ใบเสร็จ</option>
+    <option value="photo">รูปถ่าย</option>
+    <option value="pow">หนังสือมอบอำนาจ</option>
+    <option value="other">อื่นๆ</option>
+  </optgroup>
+  <optgroup label="── เอกสารแรงงาน ──">
+    <option value="passport">Passport</option>
+    <option value="ci">CI</option>
+    <option value="work_permit">Work Permit</option>
+    <option value="medical">ใบรับรองแพทย์</option>
+    <option value="insurance">ประกันสุขภาพ</option>
+    <option value="profile_photo">รูปถ่ายแรงงาน</option>
+  </optgroup>
+  <optgroup label="── เอกสารนายจ้าง ──">
+    <option value="employer_id_card">บัตรประชาชนนายจ้าง</option>
+    <option value="house_registration">ทะเบียนบ้าน</option>
+    <option value="employer_poa">หนังสือมอบอำนาจนายจ้าง</option>
+  </optgroup>
+  <optgroup label="── เอกสารบริษัท ──">
+    <option value="company_certificate">หนังสือรับรองบริษัท</option>
+    <option value="pp20">ภพ.20</option>
+    <option value="commercial_registration">ใบทะเบียนพาณิชย์</option>
+    <option value="workplace_photo">รูปสถานประกอบการ</option>
+    <option value="map">แผนที่</option>
+  </optgroup>
+  <optgroup label="── เอกสารเฉพาะเคส ──">
+    <option value="request_form">ใบรับคำขอ</option>
+    <option value="appointment_slip">ใบนัด</option>
+    <option value="payment_proof">หลักฐานชำระเงิน</option>
+    <option value="eworkpermit_reply">เอกสารตอบกลับจาก e-Workpermit</option>
+    <option value="requested_extra_doc">เอกสารที่เจ้าหน้าที่ขอเพิ่ม</option>
+  </optgroup>`;
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let _dcCache=[], _dcTotal=0, _dcLoading=false, _dcOffset=0;
+const _DC_LIMIT=25;
+let _dcFilters={q:'',doc_type:'',source:'',uploaded_by:'',customer_id:'',date_from:'',date_to:'',expiring:false};
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
+function renderDocCenter(){
+  const wrap=document.getElementById('docCenterContent');if(!wrap)return;
+  wrap.innerHTML=`
+<div style="padding:2px 0 14px">
+  <div style="font-size:18px;font-weight:800;color:var(--g9);margin-bottom:3px">คลังเอกสาร</div>
+  <div style="font-size:12px;color:var(--g5);margin-bottom:6px">ค้นหาเอกสารลูกค้า / แรงงาน / นายจ้าง จากคลังกลาง</div>
+  <div style="font-size:11px;color:var(--g5);background:var(--g0,#f9fafb);border:1px solid var(--g2);border-radius:6px;padding:5px 10px;display:inline-block">ℹ️ หน้านี้แสดงเฉพาะข้อมูลเอกสาร ไม่โหลดไฟล์จริงจนกว่าจะกดเปิด</div>
+</div>
+<div style="background:var(--w);border:1px solid var(--g2);border-radius:var(--rl);padding:12px 14px;margin-bottom:14px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div class="srch" style="flex:2 1 200px;min-width:0">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="si" id="dcQ" placeholder="ชื่อไฟล์ / ชื่อลูกค้า / พาสปอร์ต / เลขต่างด้าว" value="${esc(_dcFilters.q)}" oninput="_dcSetFilter('q',this.value)">
+    </div>
+    <select class="fi" id="dcDocType" onchange="_dcSetFilter('doc_type',this.value)" style="flex:1 1 150px">${_DC_TYPE_OPTS}</select>
+    <select class="fi" id="dcSource" onchange="_dcSetFilter('source',this.value)" style="flex:1 1 120px">
+      <option value="">แหล่งที่มาทั้งหมด</option>
+      <option value="manual">อัปโหลดเอง</option>
+      <option value="line_inbox">จาก LINE</option>
+      <option value="excel_import">นำเข้า</option>
+    </select>
+    <input class="fi" id="dcUploadedBy" type="text" placeholder="ผู้ที่อัปโหลด" value="${esc(_dcFilters.uploaded_by)}" oninput="_dcSetFilter('uploaded_by',this.value)" style="flex:1 1 130px">
+    <input class="fi" id="dcDateFrom" type="date" value="${_dcFilters.date_from}" onchange="_dcSetFilter('date_from',this.value)" title="จากวันที่" style="flex:0 0 140px">
+    <input class="fi" id="dcDateTo" type="date" value="${_dcFilters.date_to}" onchange="_dcSetFilter('date_to',this.value)" title="ถึงวันที่" style="flex:0 0 140px">
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;cursor:pointer">
+      <input type="checkbox" id="dcExpiring" ${_dcFilters.expiring?'checked':''} onchange="_dcSetFilter('expiring',this.checked)"> มีวันหมดอายุ
+    </label>
+  </div>
+  <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px">
+    <button class="btn btn-g btn-sm" onclick="dcLoad()" title="รีเฟรช"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>รีเฟรช</button>
+    <button class="btn btn-g btn-sm" onclick="dcExportCsv()" title="Export CSV"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export CSV</button>
+  </div>
+</div>
+<div id="dcListWrap"></div>`;
+  const dtEl=document.getElementById('dcDocType');if(dtEl)dtEl.value=_dcFilters.doc_type;
+  const srcEl=document.getElementById('dcSource');if(srcEl)srcEl.value=_dcFilters.source;
+  dcLoad();
+}
+
+let _dcSearchTimer=null;
+function _dcSetFilter(key,val){
+  _dcFilters[key]=typeof val==='boolean'?val:(val||'');
+  _dcOffset=0;
+  clearTimeout(_dcSearchTimer);
+  const delay=(key==='q'||key==='uploaded_by')?450:0;
+  _dcSearchTimer=setTimeout(()=>dcLoad(),delay);
+}
+
+async function dcLoad(){
+  if(_dcLoading)return;
+  _dcLoading=true;
+  const wrap=document.getElementById('dcListWrap');
+  if(wrap)wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">⏳ กำลังโหลด...</div>`;
+  const fl=_dcFilters;
+  const body={
+    p_user_id:curUser&&curUser.id!=null?String(curUser.id):'',
+    p_username:(curUser&&curUser.username)||'',
+    p_search:fl.q||null,
+    p_doc_type:fl.doc_type||null,
+    p_source:fl.source||null,
+    p_uploaded_by:fl.uploaded_by||null,
+    p_customer_id:fl.customer_id||null,
+    p_date_from:fl.date_from||null,
+    p_date_to:fl.date_to||null,
+    p_expiring:fl.expiring||null,
+    p_limit:_DC_LIMIT,
+    p_offset:_dcOffset
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_documents`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body)
+    });
+  }catch(e){
+    _dcLoading=false;
+    if(wrap)wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">เชื่อมต่อไม่ได้ กรุณาลองใหม่</div>`;
+    return;
+  }
+  if(!res.ok){
+    _dcLoading=false;
+    let err={};try{err=await res.json();}catch(_){}
+    const msg=err?.message||'';
+    if(res.status===404||err?.code==='PGRST202'||/Could not find the function/i.test(msg)){
+      if(wrap)wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5);background:var(--w);border:1px solid var(--g2);border-radius:var(--rl)">⚠️ ยังไม่ได้ติดตั้งฟังก์ชัน — กรุณา apply migration 20260704_app_list_documents.sql ก่อน</div>`;
+      return;
+    }
+    if(msg==='unauthorized'){
+      if(wrap)wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์ใช้งาน หรือบัญชีถูกปิดใช้งาน</div>`;
+      return;
+    }
+    if(wrap)wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">อ่านข้อมูลไม่ได้</div>`;
+    return;
+  }
+  let data=[];try{data=await res.json();}catch(_){data=[];}
+  _dcCache=Array.isArray(data)?data:[];
+  // total_count is on every row; on empty page-2+ keep last known total
+  _dcTotal=_dcCache.length>0?(Number(_dcCache[0].total_count)||0):(_dcOffset===0?0:_dcTotal);
+  _dcLoading=false;
+  dcRenderList();
+}
+
+function dcRenderList(){
+  const wrap=document.getElementById('dcListWrap');if(!wrap)return;
+  const total=_dcTotal,shown=_dcCache.length;
+  const hasPrev=_dcOffset>0;
+  const hasNext=(_dcOffset+_DC_LIMIT)<total;
+  // Count line always visible
+  const countLine=`<div style="font-size:12px;color:var(--g5);margin-bottom:8px">พบ <strong>${total}</strong> รายการ${shown>0?' · แสดง '+(_dcOffset+1)+'–'+Math.min(_dcOffset+shown,total):''}</div>`;
+  const pagNav=total>_DC_LIMIT?`<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px">
+    <button class="btn btn-g btn-sm" onclick="_dcPage(-1)" ${hasPrev?'':'disabled'}>◀ ก่อนหน้า</button>
+    <button class="btn btn-g btn-sm" onclick="_dcPage(1)" ${hasNext?'':'disabled'}>ถัดไป ▶</button>
+  </div>`:'';
+  if(!shown){
+    wrap.innerHTML=countLine+`<div style="padding:44px 20px;text-align:center;color:var(--g5);background:var(--w);border:1px solid var(--g2);border-radius:var(--rl)">
+      <div style="font-size:32px;opacity:.2;margin-bottom:10px">📂</div>
+      <div style="font-size:14px;font-weight:600;color:var(--g7);margin-bottom:6px">ยังไม่มีเอกสารในคลังกลาง</div>
+      <div style="font-size:12px;color:var(--g4)">เอกสารจะเข้ามาที่นี่หลังจากอัปโหลดจากลูกค้า หรืออนุมัติจาก LINE</div>
+    </div>`;
+    return;
+  }
+  // Desktop table (hidden on mobile via .desk-only)
+  const rows=_dcCache.map(r=>`<tr>
+    <td style="text-align:center;padding:8px 4px">${_dcFileIcon(r.file_type||r.mime_type)}</td>
+    <td><div style="font-size:12.5px;font-weight:600;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.doc_name||'')}">${esc(r.doc_name||'—')}</div></td>
+    <td style="font-size:11.5px;color:var(--g6)">${esc(_dcDocTypeLabel(r.doc_type||'other'))}</td>
+    <td><div style="font-size:12px;font-weight:600;white-space:nowrap">${esc(r.customer_name||'—')}</div>${r.passport_no?`<div style="font-size:10px;color:var(--g5);font-family:var(--mono)">${esc(r.passport_no)}</div>`:''}</td>
+    <td style="font-size:11.5px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.employer_name||'—')}</td>
+    <td>${_dcSourceBadge(r.source)}</td>
+    <td style="font-size:11.5px;color:var(--g6);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.uploaded_by||'—')}</td>
+    <td style="font-size:11px;color:var(--g5);white-space:nowrap">${_dcFmtDate(r.created_at)}</td>
+    <td style="font-size:11px;color:var(--g5);font-family:var(--mono);white-space:nowrap">${_dcFmtSize(r.file_size)}</td>
+    <td style="font-size:11px">${r.doc_expiry?`<span style="padding:1px 7px;border-radius:10px;background:#fff7ed;color:#c2410c;font-size:10.5px;white-space:nowrap">${r.doc_expiry}</span>`:'<span style="color:var(--g4)">—</span>'}</td>
+    <td style="text-align:center"><button class="btn btn-g btn-sm" onclick="dcOpenDoc('${esc(r.id)}',${!!r.has_storage},'${esc(r.doc_name||'')}','${esc(r.file_type||r.mime_type||'')}')" title="เปิดเอกสาร" style="white-space:nowrap"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>เปิด</button></td>
+  </tr>`).join('');
+  const table=`<div class="twrap desk-only"><div class="ctbl-scroll"><table>
+    <thead><tr>
+      <th style="width:34px"></th><th>ชื่อเอกสาร</th><th>ประเภท</th>
+      <th>ลูกค้า / เจ้าของ</th><th>นายจ้าง</th><th>แหล่งที่มา</th>
+      <th>ผู้อัปโหลด</th><th>วันที่อัปโหลด</th><th>ขนาด</th>
+      <th>วันหมดอายุ</th><th style="width:70px"></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div></div>`;
+  // Mobile cards
+  const cards=_dcCache.map(r=>`<div style="background:var(--w);border:1px solid var(--g2);border-radius:var(--rl);padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+    <div style="flex:none;margin-top:1px">${_dcFileIcon(r.file_type||r.mime_type)}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.doc_name||'—')}</div>
+      <div style="font-size:11.5px;color:var(--g6);margin-top:2px">${esc(_dcDocTypeLabel(r.doc_type||'other'))} · ${esc(r.customer_name||'—')}</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">${_dcSourceBadge(r.source)}<span style="font-size:11px;color:var(--g5)">${_dcFmtDate(r.created_at)}</span></div>
+      ${r.doc_expiry?`<div style="font-size:10.5px;color:#c2410c;margin-top:3px;font-weight:600">หมดอายุ ${r.doc_expiry}</div>`:''}
+    </div>
+    <button class="btn btn-g btn-sm" onclick="dcOpenDoc('${esc(r.id)}',${!!r.has_storage},'${esc(r.doc_name||'')}','${esc(r.file_type||r.mime_type||'')}')" style="flex:none;margin-top:1px" title="เปิดเอกสาร"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </div>`).join('');
+  const mobileCards=`<div class="mob-only" style="display:flex;flex-direction:column;gap:8px">${cards}</div>`;
+  wrap.innerHTML=countLine+table+mobileCards+pagNav;
+}
+
+function _dcPage(dir){
+  _dcOffset=Math.max(0,_dcOffset+dir*_DC_LIMIT);
+  dcLoad();
+}
+
+// Open document — ❌ ไม่ส่ง storage_path; ใช้ document_id เท่านั้น
+async function dcOpenDoc(idStr,hasStorage,docName,fileType){
+  const numId=parseInt(idStr,10);
+  if(!numId){toast('เปิดไฟล์ไม่สำเร็จ','err');return;}
+  const docObj={id:numId,doc_name:docName||'เอกสาร',file_type:fileType||''};
+  try{
+    if(hasStorage){
+      // customer-doc-sign รับ document_id เท่านั้น ❌ ไม่รับ/ไม่ส่ง storage_path
+      await _openDocByStorage(docObj);
+    }else{
+      const fd=await ensureDocFileData(docObj);
+      if(!fd){toast('เปิดไฟล์ไม่สำเร็จ','err');return;}
+      _openDocViewer(fd,docName||'เอกสาร',fileType||'',docName||'');
+    }
+  }catch(e){
+    console.warn('[dcOpenDoc]',e&&e.message);
+    toast('เปิดไฟล์ไม่สำเร็จ','err');
+  }
+}
+
+// CSV export — metadata only
+// ❌ ไม่ export: storage_path / file_data / base64 / signed URL
+function dcExportCsv(){
+  if(!_dcCache.length){toast('ไม่มีข้อมูลสำหรับ Export','err');return;}
+  const headers=['ชื่อเอกสาร','ประเภทเอกสาร','ชื่อลูกค้า','เลขพาสปอร์ต','เลขต่างด้าว','นายจ้าง','แหล่งที่มา','ผู้อัปโหลด','วันที่อัปโหลด','ขนาดไฟล์ (bytes)','วันหมดอายุ'];
+  const rows=_dcCache.map(r=>[
+    r.doc_name||'',_dcDocTypeLabel(r.doc_type||'other'),
+    r.customer_name||'',r.passport_no||'',r.alien_id||'',
+    r.employer_name||'',_dcSourceLabel(r.source).label,
+    r.uploaded_by||'',r.created_at?r.created_at.slice(0,19):'',
+    r.file_size!=null?r.file_size:'',r.doc_expiry||''
+  ]);
+  const csv=[headers,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`คลังเอกสาร_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
 }
 
 // ── Export column order ตาม Excel template งานจริง (24 คอลัมน์) — Round F1B-2: เติม field ใหม่ครบ ──
