@@ -2194,6 +2194,14 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('bulkStModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="doBulkStatus()">✅ บันทึก</button></div>
 </div></div>
 
+<!-- MODAL: DOCUMENT CENTER DETAIL (Stage 43A) -->
+<div class="mo" id="dcDetailModal" style="display:none" onclick="if(event.target===this)dcCloseDetail()">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="dcDetailTitle">รายละเอียดเอกสาร</div><button class="xbtn" onclick="dcCloseDetail()">×</button></div>
+  <div class="mbody" id="dcDetailBody"></div>
+  <div class="mfoo" id="dcDetailFooter"></div>
+</div></div>
+
 <!-- MODAL: DOCUMENT UPLOAD FROM DOCUMENTS PAGE -->
 <div class="mo" id="docUploadModal" style="display:none" onclick="if(event.target===this)closeDocUploadModal()">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
@@ -7560,14 +7568,14 @@ function dcRenderList(){
     <td style="font-size:11px;color:var(--g5);white-space:nowrap">${_dcFmtDate(r.created_at)}</td>
     <td style="font-size:11px;color:var(--g5);font-family:var(--mono);white-space:nowrap">${_dcFmtSize(r.file_size)}</td>
     <td style="font-size:11px">${r.doc_expiry?`<span style="padding:1px 7px;border-radius:10px;background:#fff7ed;color:#c2410c;font-size:10.5px;white-space:nowrap">${r.doc_expiry}</span>`:'<span style="color:var(--g4)">—</span>'}</td>
-    <td style="text-align:center"><button class="btn btn-g btn-sm" onclick="dcOpenDoc('${r.id}',${!!r.has_storage})" title="เปิดเอกสาร" style="white-space:nowrap"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>เปิด</button></td>
+    <td style="text-align:right;white-space:nowrap"><button class="btn btn-g btn-sm" onclick="dcShowDetail('${r.id}')" title="รายละเอียด"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12.01" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg></button> <button class="btn btn-g btn-sm" onclick="dcOpenDoc('${r.id}',${!!r.has_storage})" title="เปิดเอกสาร" style="white-space:nowrap"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>เปิด</button></td>
   </tr>`).join('');
   const table=`<div class="twrap desk-only"><div class="ctbl-scroll"><table>
     <thead><tr>
       <th style="width:34px"></th><th>ชื่อเอกสาร</th><th>ประเภท</th>
       <th>ลูกค้า / เจ้าของ</th><th>นายจ้าง</th><th>แหล่งที่มา</th>
       <th>ผู้อัปโหลด</th><th>วันที่อัปโหลด</th><th>ขนาด</th>
-      <th>วันหมดอายุ</th><th style="width:70px"></th>
+      <th>วันหมดอายุ</th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div></div>`;
@@ -7581,6 +7589,7 @@ function dcRenderList(){
       ${r.doc_expiry?`<div style="font-size:10.5px;color:#c2410c;margin-top:3px;font-weight:600">หมดอายุ ${r.doc_expiry}</div>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-top:1px">
+      <button class="btn btn-g btn-sm" onclick="dcShowDetail('${r.id}')" title="รายละเอียด"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12.01" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg></button>
       <button class="btn btn-g btn-sm" onclick="dcOpenDoc('${r.id}',${!!r.has_storage})" title="เปิดเอกสาร"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
       ${r.customer_id?`<button class="btn btn-g btn-sm" onclick="dcOpenCustomer('${r.customer_id}')" title="เปิดลูกค้า"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>`:''}
     </div>
@@ -7614,6 +7623,51 @@ async function dcOpenDoc(idStr,hasStorage){
     console.warn('[dcOpenDoc]',e&&e.message);
     toast('เปิดไฟล์ไม่สำเร็จ','err');
   }
+}
+
+// Document detail modal — read-only metadata view (Stage 43A)
+// ❌ ไม่แสดง storage_path / file_data / base64 / signed URL
+function dcShowDetail(idStr){
+  const numId=Number(idStr);
+  const r=_dcCache.find(row=>Number(row.id)===numId);
+  if(!r){toast('ไม่พบข้อมูลเอกสาร','err');return;}
+  const storageTag=r.has_storage
+    ?'<span style="font-size:11px;padding:1px 8px;border-radius:10px;background:#f0fdf4;color:#15803d;font-weight:600">เก็บใน Storage</span>'
+    :'<span style="font-size:11px;padding:1px 8px;border-radius:10px;background:var(--g1);color:var(--g6);font-weight:600">เอกสารเดิม</span>';
+  const fld=(label,val)=>val?`<div style="font-size:11px;font-weight:600;color:var(--g5);padding-top:1px">${label}</div><div style="font-size:12.5px;color:var(--g9)">${val}</div>`:'';
+  const custInfo=esc(r.customer_name||'—')
+    +(r.passport_no?` <span style="font-family:var(--mono);font-size:10.5px;color:var(--g5)">${esc(r.passport_no)}</span>`:'')
+    +(r.alien_id?` <span style="font-family:var(--mono);font-size:10.5px;color:var(--g5)">${esc(r.alien_id)}</span>`:'');
+  document.getElementById('dcDetailTitle').textContent=r.doc_name||'รายละเอียดเอกสาร';
+  document.getElementById('dcDetailBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--g2)">
+      <div style="flex:none">${_dcFileIcon(r.file_type||r.mime_type)}</div>
+      <div style="min-width:0"><div style="font-size:14px;font-weight:700;color:var(--g9);word-break:break-all">${esc(r.doc_name||'—')}</div>
+      <div style="font-size:12px;color:var(--g5);margin-top:2px">${esc(_dcDocTypeLabel(r.doc_type||'other'))}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:7px 14px;align-items:start">
+      ${fld('ลูกค้า / เจ้าของ',custInfo)}
+      ${fld('นายจ้าง',esc(r.employer_name||''))}
+      ${fld('แหล่งที่มา',_dcSourceBadge(r.source))}
+      ${fld('ผู้อัปโหลด',esc(r.uploaded_by||''))}
+      ${fld('วันที่อัปโหลด',_dcFmtDate(r.created_at))}
+      ${fld('ขนาดไฟล์',_dcFmtSize(r.file_size))}
+      ${r.doc_expiry?fld('วันหมดอายุ',`<span style="color:#c2410c;font-weight:600">${esc(r.doc_expiry)}</span>`):''}
+      ${fld('ที่เก็บ',storageTag)}
+    </div>`;
+  const hasCust=r.customer_id&&Number(r.customer_id)>0;
+  document.getElementById('dcDetailFooter').innerHTML=`
+    <button class="btn btn-g btn-sm" onclick="dcCloseDetail()">ปิด</button>
+    <button class="btn btn-g btn-sm" onclick="dcOpenCustomer('${r.customer_id||0}')" ${hasCust?'':'disabled'} title="${hasCust?'เปิดข้อมูลลูกค้า':'ไม่มีข้อมูลลูกค้า'}">เปิดลูกค้า</button>
+    <button class="btn btn-p btn-sm" onclick="dcCloseDetail();dcOpenDoc('${r.id}',${!!r.has_storage})">เปิดไฟล์</button>`;
+  const m=document.getElementById('dcDetailModal');
+  m.style.display='flex';
+  document.body.classList.add('modal-open');
+}
+function dcCloseDetail(){
+  const m=document.getElementById('dcDetailModal');
+  if(m)m.style.display='none';
+  document.body.classList.remove('modal-open');
 }
 
 // Open customer detail from Document Center — reuses global openDetail()
