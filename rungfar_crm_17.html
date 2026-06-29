@@ -7425,7 +7425,7 @@ const _DC_TYPE_OPTS=`<option value="">ประเภทเอกสารทั
 // ─── State ────────────────────────────────────────────────────────────────────
 let _dcCache=[], _dcTotal=0, _dcLoading=false, _dcOffset=0, _dcPageSize=25;
 const _DC_VALID_SIZES=[25,50,100];
-let _dcFilters={q:'',doc_type:'',source:'',uploaded_by:'',customer_id:'',date_from:'',date_to:'',expiring:false,doc_status:''};
+let _dcFilters={q:'',doc_type:'',source:'',uploaded_by:'',customer_id:'',date_from:'',date_to:'',expiring:false,doc_status:'',expiry_filter:''};
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 function renderDocCenter(){
@@ -7532,37 +7532,46 @@ function dcRenderSummary(s){
   }
   const reviewing=Number(s.status_reviewing)||0;
   const needsFix=Number(s.status_needs_fix)||0;
-  const expiring=Number(s.expiring_30_days_count)||0;
+  const expiring7=Number(s.expiring_7_days_count)||0;
+  const expiring30=Number(s.expiring_30_days_count)||0;
   const expired=Math.max(Number(s.expired_count)||0,Number(s.status_expired)||0);
   // chip: คลิกได้เมื่อมีตัวกรองที่ปลอดภัย; onclick=null → count-only (ไม่กรองรายการ)
   const chip=(label,val,style,onclick,active,title)=>`<button onclick="${onclick||''}" ${onclick?'':'disabled'} title="${esc(title||'')}" style="display:inline-flex;align-items:center;gap:6px;border:1px solid ${style.bd};background:${active?style.bd:style.bg};color:${style.color};border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;cursor:${onclick?'pointer':'default'};white-space:nowrap;font-family:var(--font)">${label} <span style="font-family:var(--mono);font-weight:700">${val}</span></button>`;
   const f_total={bd:'var(--g3)',bg:'var(--g0,#f9fafb)',color:'var(--g7)'};
   const f_rev={bd:'#fed7aa',bg:'#fff7ed',color:'#c2410c'};
   const f_fix={bd:'#fecaca',bg:'#fef2f2',color:'#dc2626'};
+  const f_exp7={bd:'#fdba74',bg:'#fff7ed',color:'#9a3412'};
   const f_exp30={bd:'#fde68a',bg:'#fffbeb',color:'#b45309'};
   const f_exp={bd:'#e5e7eb',bg:'#f3f4f6',color:'#6b7280'};
   const cur=_dcFilters.doc_status;
-  // "ใกล้หมดอายุ 30 วัน" = count-only ชั่วคราว (RPC list กรอง date บน created_at ไม่ใช่ doc_expiry)
+  const ef=_dcFilters.expiry_filter;
+  // Stage 45B: chip วันหมดอายุกรองรายการได้จริงผ่าน p_expiry_filter (ต้อง apply migration 20260708)
+  // "all" active เมื่อไม่มี doc_status / expiry_filter / legacy expiring
   box.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-    ${chip('เอกสารทั้งหมด',total,f_total,"dcSummaryFilter('all')",!cur&&!_dcFilters.expiring)}
+    ${chip('เอกสารทั้งหมด',total,f_total,"dcSummaryFilter('all')",!cur&&!ef&&!_dcFilters.expiring)}
     ${chip('รอตรวจ',reviewing,f_rev,"dcSummaryFilter('reviewing')",cur==='reviewing')}
     ${chip('ต้องแก้',needsFix,f_fix,"dcSummaryFilter('needs_fix')",cur==='needs_fix')}
-    ${chip('ใกล้หมดอายุ 30 วัน',expiring,f_exp30,null,false,'แสดงจำนวนจากระบบ ยังไม่กรองรายการอัตโนมัติ')}
-    ${chip('หมดอายุ',expired,f_exp,"dcSummaryFilter('expired')",cur==='expired')}
-  </div>
-  <div style="font-size:10.5px;color:var(--g4);margin-top:6px">* “ใกล้หมดอายุ 30 วัน” แสดงจำนวนจากระบบ ยังไม่กรองรายการอัตโนมัติ</div>`;
+    ${chip('ใกล้หมดอายุ 7 วัน',expiring7,f_exp7,"dcSummaryFilter('expiring_7')",ef==='expiring_7')}
+    ${chip('ใกล้หมดอายุ 30 วัน',expiring30,f_exp30,"dcSummaryFilter('expiring_30')",ef==='expiring_30')}
+    ${chip('หมดอายุ',expired,f_exp,"dcSummaryFilter('expired')",ef==='expired')}
+  </div>`;
 }
 // chip → ตั้งค่า filter แล้วโหลด list (ไม่ยุ่ง summary; summary นิ่งจนกด refresh/บันทึก)
 function dcSummaryFilter(kind){
   const setSel=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
   if(kind==='all'){
-    _dcFilters.doc_status='';_dcFilters.expiring=false;
+    // ล้างทุก chip state: doc_status + expiry_filter + legacy expiring
+    _dcFilters.doc_status='';_dcFilters.expiry_filter='';_dcFilters.expiring=false;
     setSel('dcStatus','');const ex=document.getElementById('dcExpiring');if(ex)ex.checked=false;
-  }else if(kind==='reviewing'||kind==='needs_fix'||kind==='expired'){
+  }else if(kind==='reviewing'||kind==='needs_fix'){
+    // chip สถานะ → ตั้ง doc_status, ล้าง expiry_filter
     _dcFilters.doc_status=kind;setSel('dcStatus',kind);
+    _dcFilters.expiry_filter='';
+  }else if(kind==='expired'||kind==='expiring_7'||kind==='expiring_30'){
+    // Stage 45B: chip วันหมดอายุ → ตั้ง expiry_filter, ล้าง doc_status (กันเงื่อนไขชนกัน)
+    _dcFilters.expiry_filter=kind;
+    _dcFilters.doc_status='';setSel('dcStatus','');
   }
-  // หมายเหตุ: "ใกล้หมดอายุ 30 วัน" เป็น count-only — ไม่มี drill-down ที่นี่
-  // (list RPC กรอง date บน created_at ไม่ใช่ doc_expiry จึงไม่กรองอัตโนมัติเพื่อกันผลผิด)
   _dcOffset=0;
   dcLoad();
 }
@@ -7606,6 +7615,8 @@ async function dcLoad(){
   // p_doc_status: ส่งเฉพาะเมื่อมีค่า — กัน list พังถ้ายังไม่ได้ apply migration 20260706
   // (PostgREST จับคู่ฟังก์ชันตามชื่อ param ที่ส่ง; ถ้าฟังก์ชันเก่ายังไม่มี param นี้และเราส่งไป จะ 404)
   if(fl.doc_status)body.p_doc_status=fl.doc_status;
+  // p_expiry_filter (Stage 45B): ส่งเฉพาะเมื่อมีค่า — กัน list พังถ้ายังไม่ได้ apply migration 20260708
+  if(fl.expiry_filter)body.p_expiry_filter=fl.expiry_filter;
   let res;
   try{
     res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_documents`,{
@@ -7623,7 +7634,22 @@ async function dcLoad(){
     let err={};try{err=await res.json();}catch(_){}
     const msg=err?.message||'';
     if(res.status===404||err?.code==='PGRST202'||/Could not find the function/i.test(msg)){
+      // Stage 45B: ถ้าเราส่ง p_expiry_filter ไปแต่ฟังก์ชันยังไม่มี signature ใหม่
+      // → แจ้งให้ apply migration 20260708 แล้ว fallback โหลดต่อโดยไม่กรองวันหมดอายุ (list เดิมยังใช้ได้)
+      if(body.p_expiry_filter){
+        toast('กรุณา apply migration 20260708','err');
+        _dcFilters.expiry_filter='';
+        dcLoad();           // _dcLoading ถูกเคลียร์แล้วด้านบน → เรียกซ้ำได้ (ไม่วน เพราะล้าง filter แล้ว)
+        return;
+      }
       if(wrap)wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5);background:var(--w);border:1px solid var(--g2);border-radius:var(--rl)">⚠️ ยังไม่ได้ติดตั้งฟังก์ชัน — กรุณา apply migration 20260704_app_list_documents.sql ก่อน</div>`;
+      return;
+    }
+    if(msg==='invalid_expiry_filter'){
+      // ค่าตัวกรองวันหมดอายุไม่ถูกต้อง (ไม่ควรเกิดจาก UI) → ล้างแล้วโหลดใหม่ กันค้าง
+      toast('ตัวกรองวันหมดอายุไม่ถูกต้อง','err');
+      _dcFilters.expiry_filter='';
+      dcLoad();
       return;
     }
     if(msg==='unauthorized'){
