@@ -846,6 +846,22 @@ textarea.fi2{resize:vertical;min-height:65px}
 /* ===== MOBILE APP SHELL (foundation) — desktop ไม่กระทบ (ของใหม่ซ่อนไว้) ===== */
 .mob-only{display:none}
 .desk-only{display:block}
+/* Stage 41A: LINE inbox compact card */
+.ld-card{display:flex;gap:10px;align-items:flex-start}
+.ld-meta{flex:1;min-width:0}
+.ld-right{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:5px;min-height:52px}
+.ld-date-dt{font-size:11px;color:var(--g5);font-family:var(--mono);white-space:nowrap}
+.ld-date-mb{display:none}
+.ld-btns{display:flex;gap:5px;flex-wrap:nowrap}
+@media(max-width:768px){
+  .ld-date-mb{display:inline-flex;font-size:11px;color:var(--g5);font-family:var(--mono);white-space:nowrap;margin-left:auto;flex-shrink:0}
+  .ld-date-dt{display:none}
+  .ld-card{flex-wrap:wrap}
+  .ld-right{flex:1 1 100%;flex-direction:row;justify-content:flex-end;min-height:0;margin-top:4px}
+  .ld-btns{justify-content:flex-end}
+  .ld-btns-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;width:100%;justify-content:unset}
+  .ld-btns .btn,.ld-btns-3 .btn{white-space:nowrap;font-size:11px!important;padding:6px 3px!important;text-align:center;justify-content:center;min-width:0}
+}
 #mobNav{display:none}
 #mobMore{display:none}
 .mob-iconbtn{background:var(--g1);border:1.5px solid var(--g2);color:var(--g6);width:34px;height:34px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
@@ -7100,26 +7116,29 @@ function lineDocRenderList(){
     const _thumbInner=isPdf?`<img src="${LINE_DOC_PDF_ICON_URL}" alt="PDF" style="width:44px;height:44px;object-fit:contain" onerror="this.onerror=null;this.parentElement.innerHTML='📄'">`
       :isExcel?`<img src="${LINE_DOC_EXCEL_ICON_URL}" alt="Excel" style="width:44px;height:44px;object-fit:contain" onerror="this.onerror=null;this.parentElement.innerHTML='📊'">`
       :ic.i;
-    const thumb=`<div ${isImage?`data-ldthumb="${r.id}" `:''}style="flex:0 0 auto;width:64px;height:64px;border-radius:10px;overflow:hidden;background:${ic.bg};color:${ic.fg};display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid var(--g2)">${_thumbInner}</div>`;
-    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;gap:12px;align-items:flex-start">
+    const thumb=`<div ${isImage?`data-ldthumb="${r.id}" `:''}style="flex:0 0 auto;width:56px;height:56px;border-radius:9px;overflow:hidden;background:${ic.bg};color:${ic.fg};display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--g2);align-self:flex-start">${_thumbInner}</div>`;
+    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:10px 12px;margin-bottom:8px">
+      <div class="ld-card">
         ${thumb}
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:5px">
-            <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.l}</span>
-            <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${st.c}1a;color:${st.c}">${st.l}</span>
-            ${_isOldPending?`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa">รอเกิน 7 วัน</span>`:''}
-            <span style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-left:auto">${_ldDT(r.created_at)}</span>
+        <div class="ld-meta">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-bottom:3px">
+            <span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g7)">${src.l}</span>
+            <span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${st.c}1a;color:${st.c}">${st.l}</span>
+            ${_isOldPending?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa">รอเกิน 7 วัน</span>`:''}
+            <span class="ld-date-mb">${_ldDT(r.created_at)}</span>
           </div>
-          <div style="font-size:13.5px;font-weight:700;color:var(--g9);word-break:break-all">${fname}</div>
-          <div style="font-size:12px;color:var(--g6);margin-top:2px">ผู้ส่ง: ${sender} · ${_ldSize(r.file_size)}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--g9);word-break:break-all">${fname}</div>
+          <div style="font-size:11.5px;color:var(--g6);margin-top:2px">ผู้ส่ง: ${sender} · ${_ldSize(r.file_size)}</div>
           ${linked}
         </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap">
-        <button class="btn btn-g btn-sm" onclick="lineDocPreview('${r.id}')">เปิด/พรีวิว</button>
-        ${isPending?`<button class="btn btn-p btn-sm" onclick="_ldOpenApprove('${r.id}')">เลือกลูกค้า & อนุมัติ</button>
-        <button class="btn btn-g btn-sm" onclick="lineDocReject('${r.id}')">ปฏิเสธ</button>`:''}
+        <div class="ld-right">
+          <span class="ld-date-dt">${_ldDT(r.created_at)}</span>
+          <div class="ld-btns${isPending?' ld-btns-3':''}">
+            <button class="btn btn-g btn-sm" onclick="lineDocPreview('${r.id}')">เปิด/พรีวิว</button>
+            ${isPending?`<button class="btn btn-p btn-sm" onclick="_ldOpenApprove('${r.id}')">เลือกลูกค้า & อนุมัติ</button>
+            <button class="btn btn-g btn-sm" onclick="lineDocReject('${r.id}')">ปฏิเสธ</button>`:''}
+          </div>
+        </div>
       </div>
     </div>`;
   }).join('');
