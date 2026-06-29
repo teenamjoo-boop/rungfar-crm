@@ -845,6 +845,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 }
 /* ===== MOBILE APP SHELL (foundation) — desktop ไม่กระทบ (ของใหม่ซ่อนไว้) ===== */
 .mob-only{display:none}
+.desk-only{display:block}
 #mobNav{display:none}
 #mobMore{display:none}
 .mob-iconbtn{background:var(--g1);border:1.5px solid var(--g2);color:var(--g6);width:34px;height:34px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
@@ -852,6 +853,7 @@ textarea.fi2{resize:vertical;min-height:65px}
 @media (max-width:768px){
   .sidebar{display:none!important}
   .mob-only{display:flex}
+  .desk-only{display:none!important}
   .topbar{position:sticky;top:0;z-index:60;padding:0 12px;height:52px;gap:8px}
   .topbar>.btn{display:none!important}
   .ttitle{font-size:15px}
@@ -7511,7 +7513,7 @@ function dcRenderList(){
     <td style="font-size:11px;color:var(--g5);white-space:nowrap">${_dcFmtDate(r.created_at)}</td>
     <td style="font-size:11px;color:var(--g5);font-family:var(--mono);white-space:nowrap">${_dcFmtSize(r.file_size)}</td>
     <td style="font-size:11px">${r.doc_expiry?`<span style="padding:1px 7px;border-radius:10px;background:#fff7ed;color:#c2410c;font-size:10.5px;white-space:nowrap">${r.doc_expiry}</span>`:'<span style="color:var(--g4)">—</span>'}</td>
-    <td style="text-align:center"><button class="btn btn-g btn-sm" onclick="dcOpenDoc('${esc(r.id)}',${!!r.has_storage},'${esc(r.doc_name||'')}','${esc(r.file_type||r.mime_type||'')}')" title="เปิดเอกสาร" style="white-space:nowrap"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>เปิด</button></td>
+    <td style="text-align:center"><button class="btn btn-g btn-sm" onclick="dcOpenDoc('${r.id}',${!!r.has_storage})" title="เปิดเอกสาร" style="white-space:nowrap"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>เปิด</button></td>
   </tr>`).join('');
   const table=`<div class="twrap desk-only"><div class="ctbl-scroll"><table>
     <thead><tr>
@@ -7531,9 +7533,9 @@ function dcRenderList(){
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">${_dcSourceBadge(r.source)}<span style="font-size:11px;color:var(--g5)">${_dcFmtDate(r.created_at)}</span></div>
       ${r.doc_expiry?`<div style="font-size:10.5px;color:#c2410c;margin-top:3px;font-weight:600">หมดอายุ ${r.doc_expiry}</div>`:''}
     </div>
-    <button class="btn btn-g btn-sm" onclick="dcOpenDoc('${esc(r.id)}',${!!r.has_storage},'${esc(r.doc_name||'')}','${esc(r.file_type||r.mime_type||'')}')" style="flex:none;margin-top:1px" title="เปิดเอกสาร"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button class="btn btn-g btn-sm" onclick="dcOpenDoc('${r.id}',${!!r.has_storage})" style="flex:none;margin-top:1px" title="เปิดเอกสาร"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
   </div>`).join('');
-  const mobileCards=`<div class="mob-only" style="display:flex;flex-direction:column;gap:8px">${cards}</div>`;
+  const mobileCards=`<div class="mob-only" style="flex-direction:column;gap:8px">${cards}</div>`;
   wrap.innerHTML=countLine+table+mobileCards+pagNav;
 }
 
@@ -7543,10 +7545,12 @@ function _dcPage(dir){
 }
 
 // Open document — ❌ ไม่ส่ง storage_path; ใช้ document_id เท่านั้น
-async function dcOpenDoc(idStr,hasStorage,docName,fileType){
+// ไม่รับ docName/fileType inline เพื่อหลีกเลี่ยง HTML-entity decode bug ใน onclick
+async function dcOpenDoc(idStr,hasStorage){
   const numId=parseInt(idStr,10);
   if(!numId){toast('เปิดไฟล์ไม่สำเร็จ','err');return;}
-  const docObj={id:numId,doc_name:docName||'เอกสาร',file_type:fileType||''};
+  const cached=_dcCache.find(r=>Number(r.id)===numId)||{};
+  const docObj={id:numId,doc_name:cached.doc_name||'เอกสาร',file_type:cached.file_type||cached.mime_type||''};
   try{
     if(hasStorage){
       // customer-doc-sign รับ document_id เท่านั้น ❌ ไม่รับ/ไม่ส่ง storage_path
@@ -7554,7 +7558,7 @@ async function dcOpenDoc(idStr,hasStorage,docName,fileType){
     }else{
       const fd=await ensureDocFileData(docObj);
       if(!fd){toast('เปิดไฟล์ไม่สำเร็จ','err');return;}
-      _openDocViewer(fd,docName||'เอกสาร',fileType||'',docName||'');
+      _openDocViewer(fd,docObj.doc_name,docObj.file_type,docObj.doc_name);
     }
   }catch(e){
     console.warn('[dcOpenDoc]',e&&e.message);
