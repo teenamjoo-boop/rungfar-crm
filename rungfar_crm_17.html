@@ -7338,6 +7338,28 @@ function _dcSourceBadge(src){
   return`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${s.bg};color:${s.color};font-weight:600;white-space:nowrap">${esc(s.label)}</span>`;
 }
 
+// ─── Document status helper (Stage 44A) ───────────────────────────────────────
+// ค่า: received/reviewing/approved/needs_fix/used/expired — null/blank = ไม่ระบุ
+const _DC_STATUS_LABELS={received:'ได้รับแล้ว',reviewing:'รอตรวจ',approved:'ผ่าน',needs_fix:'ต้องแก้',used:'ใช้ยื่นแล้ว',expired:'หมดอายุ'};
+function _dcStatusLabel(s){return _DC_STATUS_LABELS[s]||'ไม่ระบุ';}
+function _dcStatusStyle(s){
+  switch(s){
+    case 'received':  return{bg:'#eff6ff',color:'#1d4ed8'};
+    case 'reviewing': return{bg:'#fff7ed',color:'#c2410c'};
+    case 'approved':  return{bg:'#dcfce7',color:'#15803d'};
+    case 'needs_fix': return{bg:'#fef2f2',color:'#dc2626'};
+    case 'used':      return{bg:'#f5f3ff',color:'#7c3aed'};
+    case 'expired':   return{bg:'#f3f4f6',color:'#6b7280'};
+    default:          return{bg:'var(--g1)',color:'var(--g4)'};
+  }
+}
+function _dcStatusBadge(s){
+  const st=_dcStatusStyle(s);
+  return`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${st.bg};color:${st.color};font-weight:600;white-space:nowrap">${esc(_dcStatusLabel(s))}</span>`;
+}
+// edit/filter dropdown options (ไม่รวม "ทั้งหมด" — ใช้เฉพาะตอน edit)
+const _DC_STATUS_EDIT_OPTS=`<option value="">ไม่ระบุ</option><option value="received">ได้รับแล้ว</option><option value="reviewing">รอตรวจ</option><option value="approved">ผ่าน</option><option value="needs_fix">ต้องแก้</option><option value="used">ใช้ยื่นแล้ว</option><option value="expired">หมดอายุ</option>`;
+
 // ─── File-type icon (SVG, no raster images) ──────────────────────────────────
 function _dcFileIcon(ft){
   if(!ft)return`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
@@ -7403,7 +7425,7 @@ const _DC_TYPE_OPTS=`<option value="">ประเภทเอกสารทั
 // ─── State ────────────────────────────────────────────────────────────────────
 let _dcCache=[], _dcTotal=0, _dcLoading=false, _dcOffset=0, _dcPageSize=25;
 const _DC_VALID_SIZES=[25,50,100];
-let _dcFilters={q:'',doc_type:'',source:'',uploaded_by:'',customer_id:'',date_from:'',date_to:'',expiring:false};
+let _dcFilters={q:'',doc_type:'',source:'',uploaded_by:'',customer_id:'',date_from:'',date_to:'',expiring:false,doc_status:''};
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 function renderDocCenter(){
@@ -7426,6 +7448,16 @@ function renderDocCenter(){
       <option value="manual">อัปโหลดเอง</option>
       <option value="line_inbox">จาก LINE</option>
       <option value="excel_import">นำเข้า</option>
+    </select>
+    <select class="fi" id="dcStatus" onchange="_dcSetFilter('doc_status',this.value)" style="flex:1 1 130px">
+      <option value="">สถานะเอกสารทั้งหมด</option>
+      <option value="__unset__">ไม่ระบุ</option>
+      <option value="received">ได้รับแล้ว</option>
+      <option value="reviewing">รอตรวจ</option>
+      <option value="approved">ผ่าน</option>
+      <option value="needs_fix">ต้องแก้</option>
+      <option value="used">ใช้ยื่นแล้ว</option>
+      <option value="expired">หมดอายุ</option>
     </select>
     <input class="fi" id="dcUploadedBy" type="text" placeholder="ผู้ที่อัปโหลด" value="${esc(_dcFilters.uploaded_by)}" oninput="_dcSetFilter('uploaded_by',this.value)" style="flex:1 1 130px">
     <input class="fi" id="dcDateFrom" type="date" value="${_dcFilters.date_from}" onchange="_dcSetFilter('date_from',this.value)" title="จากวันที่" style="flex:0 0 140px">
@@ -7453,6 +7485,7 @@ function renderDocCenter(){
 <div id="dcListWrap"></div>`;
   const dtEl=document.getElementById('dcDocType');if(dtEl)dtEl.value=_dcFilters.doc_type;
   const srcEl=document.getElementById('dcSource');if(srcEl)srcEl.value=_dcFilters.source;
+  const stEl=document.getElementById('dcStatus');if(stEl)stEl.value=_dcFilters.doc_status;
   dcLoad();
 }
 
@@ -7492,6 +7525,9 @@ async function dcLoad(){
     p_limit:_dcPageSize,
     p_offset:_dcOffset
   };
+  // p_doc_status: ส่งเฉพาะเมื่อมีค่า — กัน list พังถ้ายังไม่ได้ apply migration 20260706
+  // (PostgREST จับคู่ฟังก์ชันตามชื่อ param ที่ส่ง; ถ้าฟังก์ชันเก่ายังไม่มี param นี้และเราส่งไป จะ 404)
+  if(fl.doc_status)body.p_doc_status=fl.doc_status;
   let res;
   try{
     res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_documents`,{
@@ -7568,6 +7604,7 @@ function dcRenderList(){
     <td style="font-size:11px;color:var(--g5);white-space:nowrap">${_dcFmtDate(r.created_at)}</td>
     <td style="font-size:11px;color:var(--g5);font-family:var(--mono);white-space:nowrap">${_dcFmtSize(r.file_size)}</td>
     <td style="font-size:11px">${r.doc_expiry?`<span style="padding:1px 7px;border-radius:10px;background:#fff7ed;color:#c2410c;font-size:10.5px;white-space:nowrap">${r.doc_expiry}</span>`:'<span style="color:var(--g4)">—</span>'}</td>
+    <td style="white-space:nowrap">${_dcStatusBadge(r.doc_status)}</td>
     <td style="text-align:right;white-space:nowrap"><button class="btn btn-g btn-sm" onclick="dcShowDetail('${r.id}')" title="รายละเอียด"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12.01" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg></button> <button class="btn btn-g btn-sm" onclick="dcOpenDoc('${r.id}',${!!r.has_storage})" title="เปิดเอกสาร" style="white-space:nowrap"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>เปิด</button></td>
   </tr>`).join('');
   const table=`<div class="twrap desk-only"><div class="ctbl-scroll"><table>
@@ -7575,7 +7612,7 @@ function dcRenderList(){
       <th style="width:34px"></th><th>ชื่อเอกสาร</th><th>ประเภท</th>
       <th>ลูกค้า / เจ้าของ</th><th>นายจ้าง</th><th>แหล่งที่มา</th>
       <th>ผู้อัปโหลด</th><th>วันที่อัปโหลด</th><th>ขนาด</th>
-      <th>วันหมดอายุ</th><th></th>
+      <th>วันหมดอายุ</th><th>สถานะ</th><th></th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div></div>`;
@@ -7585,7 +7622,7 @@ function dcRenderList(){
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.doc_name||'—')}</div>
       <div style="font-size:11.5px;color:var(--g6);margin-top:2px">${esc(_dcDocTypeLabel(r.doc_type||'other'))} · ${esc(r.customer_name||'—')}</div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">${_dcSourceBadge(r.source)}<span style="font-size:11px;color:var(--g5)">${_dcFmtDate(r.created_at)}</span></div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">${_dcSourceBadge(r.source)}${_dcStatusBadge(r.doc_status)}<span style="font-size:11px;color:var(--g5)">${_dcFmtDate(r.created_at)}</span></div>
       ${r.doc_expiry?`<div style="font-size:10.5px;color:#c2410c;margin-top:3px;font-weight:600">หมดอายุ ${r.doc_expiry}</div>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-top:1px">
@@ -7653,6 +7690,8 @@ function dcShowDetail(idStr){
       ${fld('วันที่อัปโหลด',_dcFmtDate(r.created_at))}
       ${fld('ขนาดไฟล์',_dcFmtSize(r.file_size))}
       ${r.doc_expiry?fld('วันหมดอายุ',`<span style="color:#c2410c;font-weight:600">${esc(r.doc_expiry)}</span>`):''}
+      ${fld('สถานะเอกสาร',_dcStatusBadge(r.doc_status))}
+      ${r.doc_note?fld('หมายเหตุ',`<span style="white-space:pre-wrap;word-break:break-word">${esc(r.doc_note)}</span>`):''}
       ${fld('ที่เก็บ',storageTag)}
     </div>`;
   const hasCust=r.customer_id&&Number(r.customer_id)>0;
@@ -7708,10 +7747,15 @@ function dcEditDetail(idStr){
         <select id="dcEditSource" style="${inp}">${_dcSourceEditOpts(r.source||'')}</select></div>
       <div><div style="${lbl}">วันหมดอายุ <span style="color:var(--g4);font-weight:400">(เว้นว่างได้)</span></div>
         <input id="dcEditExpiry" type="date" style="${inp}" value="${esc(r.doc_expiry||'')}"></div>
+      <div><div style="${lbl}">สถานะเอกสาร</div>
+        <select id="dcEditStatus" style="${inp}">${_DC_STATUS_EDIT_OPTS}</select></div>
+      <div><div style="${lbl}">หมายเหตุ <span style="color:var(--g4);font-weight:400">(เว้นว่างได้)</span></div>
+        <textarea id="dcEditNote" rows="3" maxlength="1000" style="${inp};resize:vertical;min-height:54px" placeholder="บันทึกหมายเหตุภายใน เช่น รอเอกสารเพิ่ม / ตรวจแล้ว">${esc(r.doc_note||'')}</textarea></div>
       <div style="font-size:11px;color:var(--g4)">* แก้ได้เฉพาะข้อมูลเอกสาร — ไม่กระทบไฟล์ต้นฉบับ / ลูกค้า / ผู้อัปโหลด</div>
     </div>`;
   const tEl=document.getElementById('dcEditType');if(tEl)tEl.value=r.doc_type||'';
   const sEl=document.getElementById('dcEditSource');if(sEl)sEl.value=r.source||'';
+  const stEl=document.getElementById('dcEditStatus');if(stEl)stEl.value=r.doc_status||'';
   document.getElementById('dcDetailFooter').innerHTML=`
     <button class="btn btn-g btn-sm" style="margin-right:auto" onclick="dcShowDetail('${r.id}')">ยกเลิก</button>
     <button class="btn btn-p btn-sm" id="dcEditSaveBtn" onclick="dcSaveDetail('${r.id}')">บันทึก</button>`;
@@ -7726,6 +7770,8 @@ async function dcSaveDetail(idStr){
   const docType=(document.getElementById('dcEditType')||{}).value||'';
   const source=(document.getElementById('dcEditSource')||{}).value||'';
   const expiry=(document.getElementById('dcEditExpiry')||{}).value||'';
+  const status=(document.getElementById('dcEditStatus')||{}).value||'';
+  const note=((document.getElementById('dcEditNote')||{}).value||'').slice(0,1000);
   const saveBtn=document.getElementById('dcEditSaveBtn');
   if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='กำลังบันทึก...';}
   const restore=()=>{if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='บันทึก';}};
@@ -7736,7 +7782,9 @@ async function dcSaveDetail(idStr){
     p_doc_name:name,
     p_doc_type:docType||null,
     p_source:source||null,
-    p_doc_expiry:expiry||null
+    p_doc_expiry:expiry||null,
+    p_doc_status:status,   // '' = ล้าง (ไม่ระบุ), ค่าอื่น = ตั้งค่า
+    p_doc_note:note        // '' = ล้าง
   };
   let res;
   try{
@@ -7751,11 +7799,12 @@ async function dcSaveDetail(idStr){
     let err={};try{err=await res.json();}catch(_){}
     const msg=(err&&err.message)||'';
     if(res.status===404||(err&&err.code)==='PGRST202'||/Could not find the function/i.test(msg)){
-      toast('ยังไม่ได้ติดตั้งฟังก์ชัน — apply migration 20260705','err');return;
+      toast('ยังไม่ได้ติดตั้งฟังก์ชัน — apply migration 20260706','err');return;
     }
     if(msg==='unauthorized'){toast('ไม่มีสิทธิ์ใช้งาน หรือบัญชีถูกปิดใช้งาน','err');return;}
-    if(/column|source|doc_expiry/i.test(msg)&&/exist|schema/i.test(msg)){
-      toast('คอลัมน์ source/doc_expiry ยังไม่พร้อมในฐานข้อมูล','err');return;
+    if(msg==='invalid_doc_status'){toast('สถานะเอกสารไม่ถูกต้อง','err');return;}
+    if(/column|source|doc_expiry|doc_status|doc_note/i.test(msg)&&/exist|schema/i.test(msg)){
+      toast('คอลัมน์ใหม่ยังไม่พร้อม — apply migration 20260706','err');return;
     }
     toast('บันทึกข้อมูลเอกสารไม่สำเร็จ','err');return;
   }
@@ -7766,7 +7815,7 @@ async function dcSaveDetail(idStr){
     if(idx>=0)_dcCache[idx]={..._dcCache[idx],...updated}; // merge: คง total_count/field อื่นไว้
   }
   // audit (best-effort, fire-and-forget) — ใช้ logAudit เดิมของระบบ
-  logAudit('document.update_metadata','documents',r.id,{doc_name:name,doc_type:docType||null,source:source||null,doc_expiry:expiry||null});
+  logAudit('document.update_metadata','documents',r.id,{doc_name:name,doc_type:docType||null,source:source||null,doc_expiry:expiry||null,doc_status:status||null,doc_note:note?note.slice(0,200):null});
   toast('บันทึกข้อมูลเอกสารแล้ว');
   dcRenderList();        // re-render list จาก _dcCache — คง filter/หน้าเดิม (ไม่ยิง RPC list ใหม่)
   dcShowDetail(idStr);   // กลับสู่มุมมอง read-only พร้อมข้อมูลใหม่
@@ -7787,13 +7836,13 @@ function dcOpenCustomer(custIdStr){
 // ❌ ไม่ export: storage_path / file_data / base64 / signed URL
 function dcExportCsv(){
   if(!_dcCache.length){toast('ไม่มีข้อมูลสำหรับ Export','err');return;}
-  const headers=['ชื่อเอกสาร','ประเภทเอกสาร','ชื่อลูกค้า','เลขพาสปอร์ต','เลขต่างด้าว','นายจ้าง','แหล่งที่มา','ผู้อัปโหลด','วันที่อัปโหลด','ขนาดไฟล์ (bytes)','วันหมดอายุ'];
+  const headers=['ชื่อเอกสาร','ประเภทเอกสาร','ชื่อลูกค้า','เลขพาสปอร์ต','เลขต่างด้าว','นายจ้าง','แหล่งที่มา','สถานะเอกสาร','ผู้อัปโหลด','วันที่อัปโหลด','ขนาดไฟล์ (bytes)','วันหมดอายุ','หมายเหตุ'];
   const rows=_dcCache.map(r=>[
     r.doc_name||'',_dcDocTypeLabel(r.doc_type||'other'),
     r.customer_name||'',r.passport_no||'',r.alien_id||'',
-    r.employer_name||'',_dcSourceLabel(r.source).label,
+    r.employer_name||'',_dcSourceLabel(r.source).label,_dcStatusLabel(r.doc_status),
     r.uploaded_by||'',r.created_at?r.created_at.slice(0,19):'',
-    r.file_size!=null?r.file_size:'',r.doc_expiry||''
+    r.file_size!=null?r.file_size:'',r.doc_expiry||'',r.doc_note||''
   ]);
   const csv=[headers,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
