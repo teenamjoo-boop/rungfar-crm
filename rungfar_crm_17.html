@@ -2538,7 +2538,8 @@ const LANG = {
     delreqRtCustomer:'ขอลบลูกค้า', delreqRtBulk:'ขอลบลูกค้าหลายรายการ', delreqRtDoc:'ขอลบเอกสาร',
     delreqStPending:'รอดำเนินการ', delreqStApproved:'อนุมัติแล้ว', delreqStRejected:'ปฏิเสธแล้ว', delreqStCancelled:'ยกเลิก',
     delreqAskReason:'เหตุผล (ไม่บังคับ):', delreqReviewNote:'หมายเหตุการตรวจ (ไม่บังคับ):',
-    delreqConfirmApprove:'อนุมัติคำขอลบนี้? ระบบจะลบรายการจริงและบันทึกประวัติ', delreqConfirmReject:'ปฏิเสธคำขอลบนี้?',
+    delreqConfirmApprove:'อนุมัติคำขอลบนี้? (โหมดปลอดภัย: ระบบจะเปลี่ยนสถานะเป็น “อนุมัติ” เท่านั้น ยังไม่ลบข้อมูลจริง)', delreqConfirmReject:'ปฏิเสธคำขอลบนี้?',
+    delreqSafeMode:'โหมดปลอดภัย: การอนุมัติคำขอลบในรอบนี้ยังไม่ลบข้อมูลจริง จนกว่าจะเปิดใช้ RPC ลบข้อมูลแบบปลอดภัย',
     delreqMigrationNeeded:'ยังไม่ได้ติดตั้งตารางคำขอลบ — กรุณา apply migration 20260625_delete_requests.sql ใน Supabase ก่อน',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
@@ -2741,7 +2742,8 @@ const LANG = {
     delreqRtCustomer:'ဖောက်သည်ဖျက်ရန်တောင်းဆို', delreqRtBulk:'ဖောက်သည်များဖျက်ရန်တောင်းဆို', delreqRtDoc:'စာရွက်ဖျက်ရန်တောင်းဆို',
     delreqStPending:'ဆောင်ရွက်ဆဲ', delreqStApproved:'အတည်ပြုပြီး', delreqStRejected:'ငြင်းပယ်ပြီး', delreqStCancelled:'ပယ်ဖျက်',
     delreqAskReason:'အကြောင်းပြချက် (မဖြစ်မနေမဟုတ်):', delreqReviewNote:'စစ်ဆေးမှတ်ချက် (မဖြစ်မနေမဟုတ်):',
-    delreqConfirmApprove:'ဤဖျက်တောင်းဆိုမှုကို အတည်ပြုမည်လား? အမှန်တကယ်ဖျက်ပြီး မှတ်တမ်းတင်ပါမည်', delreqConfirmReject:'ဤဖျက်တောင်းဆိုမှုကို ငြင်းပယ်မည်လား?',
+    delreqConfirmApprove:'ဤဖျက်တောင်းဆိုမှုကို အတည်ပြုမည်လား? (ဘေးကင်းမုဒ်: အခြေအနေကို “အတည်ပြုပြီး” သို့သာ ပြောင်းမည်၊ အမှန်တကယ် မဖျက်သေးပါ)', delreqConfirmReject:'ဤဖျက်တောင်းဆိုမှုကို ငြင်းပယ်မည်လား?',
+    delreqSafeMode:'ဘေးကင်းမုဒ်: ဤအကြိမ်တွင် ဖျက်တောင်းဆိုမှု အတည်ပြုခြင်းသည် ဘေးကင်းသော ဖျက်ရေး RPC ဖွင့်သည်အထိ အမှန်တကယ် မဖျက်သေးပါ',
     delreqMigrationNeeded:'ဖျက်တောင်းဆိုမှုဇယား မတပ်ဆင်ရသေးပါ — Supabase တွင် migration 20260625_delete_requests.sql ကို အရင် apply လုပ်ပါ',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
@@ -6874,7 +6876,9 @@ async function renderDelReq(){
   const rtLabel={customer_delete:T('delreqRtCustomer'),customer_bulk_delete:T('delreqRtBulk'),document_delete:T('delreqRtDoc')};
   const rtColor={customer_delete:'#dc2626',customer_bulk_delete:'#dc2626',document_delete:'#b45309'};
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
-  if(!_delReqCache.length){wrap.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="font-size:13px;font-weight:700;color:var(--g8)">${T('delreqPending')}</span><span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">0</span></div><div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('delreqNone')}</div>`;return;}
+  // STAGE 46A-2: แบนเนอร์เตือน "โหมดปลอดภัย" — อนุมัติยังไม่ลบข้อมูลจริง
+  const safeBanner=`<div style="display:flex;align-items:flex-start;gap:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.5"><span style="flex:none">🔒</span><span>${esc(T('delreqSafeMode'))}</span></div>`;
+  if(!_delReqCache.length){wrap.innerHTML=safeBanner+`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="font-size:13px;font-weight:700;color:var(--g8)">${T('delreqPending')}</span><span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">0</span></div><div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('delreqNone')}</div>`;return;}
   const cards=_delReqCache.map(r=>{
     const rc=rtColor[r.request_type]||'#6b7280';
     const lbl=esc(rtLabel[r.request_type]||r.request_type||'—');
@@ -6895,7 +6899,7 @@ async function renderDelReq(){
       </div>
     </div>`;
   }).join('');
-  wrap.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="font-size:13px;font-weight:700;color:var(--g8)">${T('delreqPending')}</span><span style="background:var(--red);color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">${_delReqCache.length}</span></div>${cards}`;
+  wrap.innerHTML=safeBanner+`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="font-size:13px;font-weight:700;color:var(--g8)">${T('delreqPending')}</span><span style="background:var(--red);color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">${_delReqCache.length}</span></div>${cards}`;
 }
 async function approveDelReq(id){
   if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
@@ -6903,26 +6907,15 @@ async function approveDelReq(id){
   const req=_delReqCache.find(r=>r.id===id);if(!req)return;
   if(!confirm(T('delreqConfirmApprove')))return;
   const note=prompt(T('delreqReviewNote'),'');
-  showLoading('กำลังอนุมัติและลบ...');
+  // STAGE 46A-2 — SAFE MODE: อนุมัติ = อัปเดตสถานะคำขอเท่านั้น ❌ ไม่ลบข้อมูลจริง
+  //   ยกเลิก dbDel('customers'/'documents') ทั้งหมด รอ SECURITY DEFINER delete RPC แบบปลอดภัยใน stage ถัดไป
+  //   (client direct DELETE ถูก revoke ที่ DB ด้วย migration 20260710_delete_safety_lock.sql แล้ว)
+  showLoading('กำลังบันทึกการอนุมัติ...');
   try{
-    if(req.request_type==='customer_delete'){
-      const cid=parseInt(req.entity_id);
-      if(!isNaN(cid)){await dbDel('customers',cid);logAudit('customer.delete','customer',cid,{name:req.entity_name||'',via:'delete_request',request_id:id});
-        customers=customers.filter(c=>c.id!==cid);filtered=filtered.filter(c=>c.id!==cid);selectedIds.delete(cid);}
-    }else if(req.request_type==='customer_bulk_delete'){
-      const ids=(req.detail&&Array.isArray(req.detail.ids))?req.detail.ids:[];
-      await Promise.all(ids.map(x=>dbDel('customers',x).catch(()=>{})));
-      logAudit('customer.bulk_delete','customer',ids.join(','),{count:ids.length,ids,via:'delete_request',request_id:id});
-      const s=new Set(ids);customers=customers.filter(c=>!s.has(c.id));filtered=filtered.filter(c=>!s.has(c.id));
-    }else if(req.request_type==='document_delete'){
-      const did=parseInt(req.entity_id);
-      if(!isNaN(did)){await dbDel('documents',did);logAudit('document.delete','document',did,{name:req.entity_name||'',via:'delete_request',request_id:id});}
-    }
     await dbPatch('delete_requests',id,{status:'approved',reviewed_by_code:(curUser&&curUser.username)||null,reviewed_by_name:(curUser&&curUser.full_name)||null,reviewed_at:new Date().toISOString(),review_note:(note&&note.trim())?note.trim():null});
-    logAudit('delete_request.approve',req.entity_type,req.entity_id,{request_type:req.request_type,entity_name:req.entity_name||null,request_id:id});
-    toast('อนุมัติคำขอและลบรายการแล้ว');
+    logAudit('delete_request.approve',req.entity_type,req.entity_id,{request_type:req.request_type,entity_name:req.entity_name||null,request_id:id,safe_mode:true});
+    toast('อนุมัติคำขอลบแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
     renderDelReq();refreshDelReqBadge();
-    if(typeof renderSidebar==='function')renderSidebar();if(typeof renderDash==='function')renderDash();if(typeof renderTable==='function')renderTable();
   }catch(e){toast('ดำเนินการไม่สำเร็จ: '+e.message,'err');}
   finally{hideLoading();}
 }
