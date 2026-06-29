@@ -2539,7 +2539,7 @@ const LANG = {
     delreqStPending:'รอดำเนินการ', delreqStApproved:'อนุมัติแล้ว', delreqStRejected:'ปฏิเสธแล้ว', delreqStCancelled:'ยกเลิก',
     delreqAskReason:'เหตุผล (ไม่บังคับ):', delreqReviewNote:'หมายเหตุการตรวจ (ไม่บังคับ):',
     delreqConfirmApprove:'อนุมัติคำขอลบนี้? (โหมดปลอดภัย: ระบบจะเปลี่ยนสถานะเป็น “อนุมัติ” เท่านั้น ยังไม่ลบข้อมูลจริง)', delreqConfirmReject:'ปฏิเสธคำขอลบนี้?',
-    delreqSafeMode:'โหมดปลอดภัย: การอนุมัติคำขอลบในรอบนี้ยังไม่ลบข้อมูลจริง จนกว่าจะเปิดใช้ RPC ลบข้อมูลแบบปลอดภัย',
+    delreqSafeMode:'โหมดปลอดภัย: การลบจะถูกบันทึกเป็นคำขอ และการอนุมัติยังไม่ลบข้อมูลจริง จนกว่าจะเปิดใช้ RPC ลบข้อมูลแบบปลอดภัย',
     delreqMigrationNeeded:'ยังไม่ได้ติดตั้งตารางคำขอลบ — กรุณา apply migration 20260625_delete_requests.sql ใน Supabase ก่อน',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'ระบบจัดการ', lgHeroSpan:'แรงงานต่างด้าว',
@@ -2743,7 +2743,7 @@ const LANG = {
     delreqStPending:'ဆောင်ရွက်ဆဲ', delreqStApproved:'အတည်ပြုပြီး', delreqStRejected:'ငြင်းပယ်ပြီး', delreqStCancelled:'ပယ်ဖျက်',
     delreqAskReason:'အကြောင်းပြချက် (မဖြစ်မနေမဟုတ်):', delreqReviewNote:'စစ်ဆေးမှတ်ချက် (မဖြစ်မနေမဟုတ်):',
     delreqConfirmApprove:'ဤဖျက်တောင်းဆိုမှုကို အတည်ပြုမည်လား? (ဘေးကင်းမုဒ်: အခြေအနေကို “အတည်ပြုပြီး” သို့သာ ပြောင်းမည်၊ အမှန်တကယ် မဖျက်သေးပါ)', delreqConfirmReject:'ဤဖျက်တောင်းဆိုမှုကို ငြင်းပယ်မည်လား?',
-    delreqSafeMode:'ဘေးကင်းမုဒ်: ဤအကြိမ်တွင် ဖျက်တောင်းဆိုမှု အတည်ပြုခြင်းသည် ဘေးကင်းသော ဖျက်ရေး RPC ဖွင့်သည်အထိ အမှန်တကယ် မဖျက်သေးပါ',
+    delreqSafeMode:'ဘေးကင်းမုဒ်: ဖျက်ခြင်းကို တောင်းဆိုမှုအဖြစ် မှတ်တမ်းတင်ပြီး အတည်ပြုခြင်းသည် ဘေးကင်းသော ဖျက်ရေး RPC ဖွင့်သည်အထိ အမှန်တကယ် မဖျက်သေးပါ',
     delreqMigrationNeeded:'ဖျက်တောင်းဆိုမှုဇယား မတပ်ဆင်ရသေးပါ — Supabase တွင် migration 20260625_delete_requests.sql ကို အရင် apply လုပ်ပါ',
     // ── LOGIN LEFT PANEL ──
     lgHeroTitle:'စီမံခန့်ခွဲမှုစနစ်', lgHeroSpan:'နိုင်ငံခြားလုပ်သားများ',
@@ -3204,29 +3204,18 @@ async function delMdoc(id){
   const doc=multiDocs.find(d=>d.id===id);
   if(!doc)return;
   if(doc.dbId){
-    // STAGE 22B: Staff ลบเอกสารตรงไม่ได้ — ส่ง "คำขอลบเอกสาร" ให้แอดมินอนุมัติ
-    if(_isStaffRole()){
-      const _cust=(typeof editId!=='undefined'&&editId!=null)?(customers.find(c=>c.id===editId)||{}):{};
-      const _dname=doc.label||doc.name||doc.type||'เอกสาร';
-      const reason=prompt('ขอลบเอกสาร: '+_dname+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบให้ผู้ดูแลระบบ',' ');
-      if(reason===null)return; // ยกเลิก = ไม่ส่งคำขอ และไม่ลบ
-      try{
-        await submitDeleteRequest({request_type:'document_delete',entity_type:'document',entity_id:doc.dbId,entity_name:_dname+(_cust.name?(' · ลูกค้า: '+_cust.name):''),reason:reason.trim(),detail:{doc_name:doc.label||doc.name||null,doc_type:doc.type||null,customer_id:(typeof editId!=='undefined'?editId:null),customer_name:_cust.name||null}});
-        toast('ส่งคำขอลบเอกสารให้ผู้ดูแลระบบแล้ว');
-        refreshDelReqBadge();
-      }catch(e){toast('ส่งคำขอไม่สำเร็จ','err');}
-      return;
-    }
-    if(!confirm('ต้องการลบเอกสารนี้?'))return;
+    // STAGE 46A-3: ทุก role (staff + admin) ลบเอกสารตรงไม่ได้ — สร้าง "คำขอลบเอกสาร" เสมอ
+    //   (โหมดปลอดภัย: การอนุมัติยังไม่ลบข้อมูลจริง; client direct DELETE ถูก revoke ที่ DB แล้ว — 46A-2)
+    const _cust=(typeof editId!=='undefined'&&editId!=null)?(customers.find(c=>c.id===editId)||{}):{};
+    const _dname=doc.label||doc.name||doc.type||'เอกสาร';
+    const reason=prompt('ขอลบเอกสาร: '+_dname+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)',' ');
+    if(reason===null)return; // ยกเลิก = ไม่ส่งคำขอ และไม่ลบ
     try{
-      await dbDel('documents',doc.dbId);
-      logAudit('document.delete','document',doc.dbId,{name:doc.label||doc.name||'',customer_id:(typeof editId!=='undefined'?editId:null)});
-      multiDocs=multiDocs.filter(d=>d.id!==id);
-      renderMultiDocGrid();
-      toast('ลบเอกสารแล้ว');
-    }catch(e){
-      toast('ลบเอกสารไม่สำเร็จ','err');
-    }
+      await submitDeleteRequest({request_type:'document_delete',entity_type:'document',entity_id:doc.dbId,entity_name:_dname+(_cust.name?(' · ลูกค้า: '+_cust.name):''),reason:reason.trim(),detail:{doc_name:doc.label||doc.name||null,doc_type:doc.type||null,customer_id:(typeof editId!=='undefined'?editId:null),customer_name:_cust.name||null}});
+      toast('ส่งคำขอลบเอกสารแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
+      refreshDelReqBadge();
+    }catch(e){toast('ส่งคำขอไม่สำเร็จ','err');}
+    return;
   }else{
     multiDocs=multiDocs.filter(d=>d.id!==id);
     renderMultiDocGrid();
@@ -5049,32 +5038,17 @@ async function delCust(id){
   if(!(await guardSession()))return; // STAGE 24: session guard (ลบ/ขอลบลูกค้า)
   const _c=customers.find(c=>c.id===id)||{};
   const _delName=_c.name||'';
-  // STAGE 22B: Staff ลบตรงไม่ได้ — ส่ง "คำขอลบ" ให้แอดมินอนุมัติแทน (การ์ดทั้ง UI + ฟังก์ชัน กันเรียกตรง)
-  if(_isStaffRole()){
-    const reason=prompt('ขอลบลูกค้า: '+(_delName||('#'+id))+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบให้ผู้ดูแลระบบ',' ');
-    if(reason===null)return; // กดยกเลิก = ไม่ส่งคำขอ และไม่ลบ
-    const ename=[_delName,(_c.passport_no||_c.alien_id||'')].filter(Boolean).join(' · ');
-    showLoading('กำลังส่งคำขอลบ...');
-    try{
-      await submitDeleteRequest({request_type:'customer_delete',entity_type:'customer',entity_id:id,entity_name:ename||('#'+id),reason:reason.trim(),detail:{name:_delName,passport_no:_c.passport_no||null,alien_id:_c.alien_id||null}});
-      toast('ส่งคำขอลบลูกค้าให้ผู้ดูแลระบบแล้ว');
-      refreshDelReqBadge();
-    }catch(e){toast('ส่งคำขอไม่สำเร็จ: '+e.message,'err');}
-    finally{hideLoading();}
-    return;
-  }
-  if(!confirm('ต้องการลบรายการนี้?'))return;
-  showLoading('กำลังลบข้อมูล...');
+  // STAGE 46A-3: ทุก role (staff + admin) ลบลูกค้าตรงไม่ได้ — สร้าง "คำขอลบ" เสมอ
+  //   (โหมดปลอดภัย: การอนุมัติยังไม่ลบข้อมูลจริง; client direct DELETE ถูก revoke ที่ DB แล้ว — 46A-2)
+  const reason=prompt('ขอลบลูกค้า: '+(_delName||('#'+id))+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)',' ');
+  if(reason===null)return; // กดยกเลิก = ไม่ส่งคำขอ และไม่ลบ
+  const ename=[_delName,(_c.passport_no||_c.alien_id||'')].filter(Boolean).join(' · ');
+  showLoading('กำลังส่งคำขอลบ...');
   try{
-    await dbDel('customers',id);
-    logAudit('customer.delete','customer',id,{name:_delName});
-    // Update local immediately - NO background reload
-    customers=customers.filter(c=>c.id!==id);
-    filtered=filtered.filter(c=>c.id!==id);
-    selectedIds.delete(id);
-    renderSidebar();renderDash();renderTable();
-    toast('ลบรายการแล้ว','err');
-  }catch(e){toast('ไม่สามารถลบได้: '+e.message,'err');}
+    await submitDeleteRequest({request_type:'customer_delete',entity_type:'customer',entity_id:id,entity_name:ename||('#'+id),reason:reason.trim(),detail:{name:_delName,passport_no:_c.passport_no||null,alien_id:_c.alien_id||null}});
+    toast('ส่งคำขอลบแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
+    refreshDelReqBadge();
+  }catch(e){toast('ส่งคำขอไม่สำเร็จ: '+e.message,'err');}
   finally{hideLoading();}
 }
 
@@ -6801,33 +6775,18 @@ async function doBulkDelete(){
   if(!(await guardSession()))return; // STAGE 24: session guard (ลบ/ขอลบหลายรายการ)
   const ids=[...selectedIds];
   if(!ids.length){toast('กรุณาเลือกรายการก่อน','err');return;}
-  // STAGE 22B: Staff ลบหลายรายการตรงไม่ได้ — ส่ง "คำขอลบหลายรายการ" ให้แอดมินอนุมัติ
-  if(_isStaffRole()){
-    const names=ids.map(id=>{const c=customers.find(x=>x.id===id)||{};return c.name||('#'+id);});
-    const reason=prompt('ขอลบลูกค้า '+ids.length+' รายการ\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบให้ผู้ดูแลระบบ',' ');
-    if(reason===null)return; // ยกเลิก = ไม่ส่งคำขอ และไม่ลบ
-    showLoading('กำลังส่งคำขอลบ...');
-    try{
-      await submitDeleteRequest({request_type:'customer_bulk_delete',entity_type:'customer',entity_id:null,entity_name:ids.length+' รายการ',reason:reason.trim(),detail:{count:ids.length,ids,names:names.slice(0,50)}});
-      clearSelection();
-      toast('ส่งคำขอลบลูกค้าหลายรายการให้ผู้ดูแลระบบแล้ว');
-      refreshDelReqBadge();
-    }catch(e){toast('ส่งคำขอไม่สำเร็จ: '+e.message,'err');}
-    finally{hideLoading();}
-    return;
-  }
-  if(!confirm(`ต้องการลบ ${ids.length} รายการที่เลือก? ไม่สามารถกู้คืนได้`))return;
-  showLoading(`กำลังลบ ${ids.length} รายการ...`);
+  // STAGE 46A-3: ทุก role (staff + admin) ลบหลายรายการตรงไม่ได้ — สร้าง "คำขอลบหลายรายการ" เสมอ
+  //   (โหมดปลอดภัย: การอนุมัติยังไม่ลบข้อมูลจริง; client direct DELETE ถูก revoke ที่ DB แล้ว — 46A-2)
+  const names=ids.map(id=>{const c=customers.find(x=>x.id===id)||{};return c.name||('#'+id);});
+  const reason=prompt('ขอลบลูกค้า '+ids.length+' รายการ\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)',' ');
+  if(reason===null)return; // ยกเลิก = ไม่ส่งคำขอ และไม่ลบ
+  showLoading('กำลังส่งคำขอลบ...');
   try{
-    await Promise.all(ids.map(id=>dbDel('customers',id)));
-    logAudit('customer.bulk_delete','customer',ids.join(','),{count:ids.length,ids});
-    // Update local immediately - NO background reload
-    const idsSet=new Set(ids);
-    customers=customers.filter(c=>!idsSet.has(c.id));
-    filtered=filtered.filter(c=>!idsSet.has(c.id));
-    clearSelection();renderSidebar();renderDash();renderTable();
-    toast(`ลบ ${ids.length} รายการแล้ว`,'err');
-  }catch(e){toast('เกิดข้อผิดพลาด: '+e.message,'err');}
+    await submitDeleteRequest({request_type:'customer_bulk_delete',entity_type:'customer',entity_id:null,entity_name:ids.length+' รายการ',reason:reason.trim(),detail:{count:ids.length,ids,names:names.slice(0,50)}});
+    clearSelection();
+    toast('ส่งคำขอลบหลายรายการแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
+    refreshDelReqBadge();
+  }catch(e){toast('ส่งคำขอไม่สำเร็จ: '+e.message,'err');}
   finally{hideLoading();}
 }
 
