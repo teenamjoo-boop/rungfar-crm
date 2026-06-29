@@ -7657,6 +7657,7 @@ function dcShowDetail(idStr){
     </div>`;
   const hasCust=r.customer_id&&Number(r.customer_id)>0;
   document.getElementById('dcDetailFooter').innerHTML=`
+    <button class="btn btn-g btn-sm" style="margin-right:auto" onclick="dcEditDetail('${r.id}')">แก้ไข</button>
     <button class="btn btn-g btn-sm" onclick="dcCloseDetail()">ปิด</button>
     <button class="btn btn-g btn-sm" onclick="dcOpenCustomer('${r.customer_id||0}')" ${hasCust?'':'disabled'} title="${hasCust?'เปิดข้อมูลลูกค้า':'ไม่มีข้อมูลลูกค้า'}">เปิดลูกค้า</button>
     <button class="btn btn-p btn-sm" onclick="dcCloseDetail();dcOpenDoc('${r.id}',${!!r.has_storage})">เปิดไฟล์</button>`;
@@ -7668,6 +7669,107 @@ function dcCloseDetail(){
   const m=document.getElementById('dcDetailModal');
   if(m)m.style.display='none';
   document.body.classList.remove('modal-open');
+}
+
+// ─── Document metadata EDIT (Stage 43B) ───────────────────────────────────────
+// แก้ได้เฉพาะ 4 ฟิลด์ปลอดภัย: doc_name, doc_type, source, doc_expiry
+// ❌ ไม่แตะ/ไม่ส่ง file_data / storage_path / storage_bucket / file_size / mime_type / customer_id
+// type options: ใช้ชุดเดียวกับ filter (_DC_TYPE_OPTS) — ตัด option "ทั้งหมด" ออก, คง type เดิมถ้าไม่อยู่ใน taxonomy
+function _dcTypeEditOpts(cur){
+  let opts=_DC_TYPE_OPTS.replace('<option value="">ประเภทเอกสารทั้งหมด</option>','');
+  if(cur&&opts.indexOf('value="'+cur+'"')<0){
+    opts=`<option value="${esc(cur)}">${esc(_dcDocTypeLabel(cur))} (เดิม)</option>`+opts;
+  }
+  return opts;
+}
+// source options: คง value เดิมเป๊ะ ถ้าไม่ใช่ค่ามาตรฐาน → preserve ไว้ (กันเปลี่ยนข้อมูลโดยไม่ตั้งใจ)
+function _dcSourceEditOpts(cur){
+  const known=['','manual','line_inbox','excel_import'];
+  let extra='';
+  if(cur&&known.indexOf(cur)<0){
+    extra=`<option value="${esc(cur)}">${esc(_dcSourceLabel(cur).label)} (เดิม)</option>`;
+  }
+  return `<option value="">ไม่ระบุ</option>${extra}<option value="manual">อัปโหลดเอง</option><option value="line_inbox">จาก LINE</option><option value="excel_import">นำเข้า</option>`;
+}
+function dcEditDetail(idStr){
+  const numId=Number(idStr);
+  const r=_dcCache.find(row=>Number(row.id)===numId);
+  if(!r){toast('ไม่พบข้อมูลเอกสาร','err');return;}
+  document.getElementById('dcDetailTitle').textContent='แก้ไขเอกสาร';
+  const lbl='font-size:11px;font-weight:600;color:var(--g7);margin-bottom:3px';
+  const inp='width:100%;padding:8px 10px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;font-family:var(--font);box-sizing:border-box;outline:none;background:#fff;color:var(--g9)';
+  document.getElementById('dcDetailBody').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div><div style="${lbl}">ชื่อเอกสาร</div>
+        <input id="dcEditName" type="text" style="${inp}" value="${esc(r.doc_name||'')}" maxlength="255"></div>
+      <div><div style="${lbl}">ประเภทเอกสาร</div>
+        <select id="dcEditType" style="${inp}">${_dcTypeEditOpts(r.doc_type||'')}</select></div>
+      <div><div style="${lbl}">แหล่งที่มา</div>
+        <select id="dcEditSource" style="${inp}">${_dcSourceEditOpts(r.source||'')}</select></div>
+      <div><div style="${lbl}">วันหมดอายุ <span style="color:var(--g4);font-weight:400">(เว้นว่างได้)</span></div>
+        <input id="dcEditExpiry" type="date" style="${inp}" value="${esc(r.doc_expiry||'')}"></div>
+      <div style="font-size:11px;color:var(--g4)">* แก้ได้เฉพาะข้อมูลเอกสาร — ไม่กระทบไฟล์ต้นฉบับ / ลูกค้า / ผู้อัปโหลด</div>
+    </div>`;
+  const tEl=document.getElementById('dcEditType');if(tEl)tEl.value=r.doc_type||'';
+  const sEl=document.getElementById('dcEditSource');if(sEl)sEl.value=r.source||'';
+  document.getElementById('dcDetailFooter').innerHTML=`
+    <button class="btn btn-g btn-sm" style="margin-right:auto" onclick="dcShowDetail('${r.id}')">ยกเลิก</button>
+    <button class="btn btn-p btn-sm" id="dcEditSaveBtn" onclick="dcSaveDetail('${r.id}')">บันทึก</button>`;
+}
+async function dcSaveDetail(idStr){
+  const numId=Number(idStr);
+  const r=_dcCache.find(row=>Number(row.id)===numId);
+  if(!r){toast('ไม่พบข้อมูลเอกสาร','err');return;}
+  const nameEl=document.getElementById('dcEditName');
+  const name=((nameEl&&nameEl.value)||'').trim();
+  if(!name){toast('กรุณากรอกชื่อเอกสาร','err');if(nameEl)nameEl.focus();return;}
+  const docType=(document.getElementById('dcEditType')||{}).value||'';
+  const source=(document.getElementById('dcEditSource')||{}).value||'';
+  const expiry=(document.getElementById('dcEditExpiry')||{}).value||'';
+  const saveBtn=document.getElementById('dcEditSaveBtn');
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='กำลังบันทึก...';}
+  const restore=()=>{if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='บันทึก';}};
+  const body={
+    p_user_id:curUser&&curUser.id!=null?String(curUser.id):'',
+    p_username:(curUser&&curUser.username)||'',
+    p_document_id:String(r.id),
+    p_doc_name:name,
+    p_doc_type:docType||null,
+    p_source:source||null,
+    p_doc_expiry:expiry||null
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_update_document_metadata`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body)
+    });
+  }catch(e){restore();toast('บันทึกข้อมูลเอกสารไม่สำเร็จ','err');return;}
+  if(!res.ok){
+    restore();
+    let err={};try{err=await res.json();}catch(_){}
+    const msg=(err&&err.message)||'';
+    if(res.status===404||(err&&err.code)==='PGRST202'||/Could not find the function/i.test(msg)){
+      toast('ยังไม่ได้ติดตั้งฟังก์ชัน — apply migration 20260705','err');return;
+    }
+    if(msg==='unauthorized'){toast('ไม่มีสิทธิ์ใช้งาน หรือบัญชีถูกปิดใช้งาน','err');return;}
+    if(/column|source|doc_expiry/i.test(msg)&&/exist|schema/i.test(msg)){
+      toast('คอลัมน์ source/doc_expiry ยังไม่พร้อมในฐานข้อมูล','err');return;
+    }
+    toast('บันทึกข้อมูลเอกสารไม่สำเร็จ','err');return;
+  }
+  let data=[];try{data=await res.json();}catch(_){data=[];}
+  const updated=Array.isArray(data)?data[0]:data;
+  if(updated){
+    const idx=_dcCache.findIndex(row=>Number(row.id)===numId);
+    if(idx>=0)_dcCache[idx]={..._dcCache[idx],...updated}; // merge: คง total_count/field อื่นไว้
+  }
+  // audit (best-effort, fire-and-forget) — ใช้ logAudit เดิมของระบบ
+  logAudit('document.update_metadata','documents',r.id,{doc_name:name,doc_type:docType||null,source:source||null,doc_expiry:expiry||null});
+  toast('บันทึกข้อมูลเอกสารแล้ว');
+  dcRenderList();        // re-render list จาก _dcCache — คง filter/หน้าเดิม (ไม่ยิง RPC list ใหม่)
+  dcShowDetail(idStr);   // กลับสู่มุมมอง read-only พร้อมข้อมูลใหม่
 }
 
 // Open customer detail from Document Center — reuses global openDetail()
