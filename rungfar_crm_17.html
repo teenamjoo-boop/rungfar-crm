@@ -7374,8 +7374,8 @@ const _DC_TYPE_OPTS=`<option value="">ประเภทเอกสารทั
   </optgroup>`;
 
 // ─── State ────────────────────────────────────────────────────────────────────
-let _dcCache=[], _dcTotal=0, _dcLoading=false, _dcOffset=0;
-const _DC_LIMIT=25;
+let _dcCache=[], _dcTotal=0, _dcLoading=false, _dcOffset=0, _dcPageSize=25;
+const _DC_VALID_SIZES=[25,50,100];
 let _dcFilters={q:'',doc_type:'',source:'',uploaded_by:'',customer_id:'',date_from:'',date_to:'',expiring:false};
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
@@ -7407,9 +7407,20 @@ function renderDocCenter(){
       <input type="checkbox" id="dcExpiring" ${_dcFilters.expiring?'checked':''} onchange="_dcSetFilter('expiring',this.checked)"> มีวันหมดอายุ
     </label>
   </div>
-  <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px">
-    <button class="btn btn-g btn-sm" onclick="dcLoad()" title="รีเฟรช"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>รีเฟรช</button>
-    <button class="btn btn-g btn-sm" onclick="dcExportCsv()" title="Export CSV"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export CSV</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:8px">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--g5);white-space:nowrap">
+      แสดงหน้าละ
+      <select class="fi" id="dcPageSize" onchange="_dcSetPageSize(this.value)" style="width:72px">
+        <option value="25" ${_dcPageSize===25?'selected':''}>25</option>
+        <option value="50" ${_dcPageSize===50?'selected':''}>50</option>
+        <option value="100" ${_dcPageSize===100?'selected':''}>100</option>
+      </select>
+      รายการ
+    </label>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-g btn-sm" onclick="dcLoad()" title="รีเฟรช"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>รีเฟรช</button>
+      <button class="btn btn-g btn-sm" onclick="dcExportCsv()" title="Export CSV (เฉพาะหน้านี้)"><svg class="ui-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>Export CSV</button>
+    </div>
   </div>
 </div>
 <div id="dcListWrap"></div>`;
@@ -7425,6 +7436,13 @@ function _dcSetFilter(key,val){
   clearTimeout(_dcSearchTimer);
   const delay=(key==='q'||key==='uploaded_by')?450:0;
   _dcSearchTimer=setTimeout(()=>dcLoad(),delay);
+}
+function _dcSetPageSize(size){
+  const n=Number(size);
+  if(!_DC_VALID_SIZES.includes(n))return;
+  _dcPageSize=n;
+  _dcOffset=0;
+  dcLoad();
 }
 
 async function dcLoad(){
@@ -7444,7 +7462,7 @@ async function dcLoad(){
     p_date_from:fl.date_from||null,
     p_date_to:fl.date_to||null,
     p_expiring:fl.expiring||null,
-    p_limit:_DC_LIMIT,
+    p_limit:_dcPageSize,
     p_offset:_dcOffset
   };
   let res;
@@ -7486,12 +7504,22 @@ function dcRenderList(){
   const wrap=document.getElementById('dcListWrap');if(!wrap)return;
   const total=_dcTotal,shown=_dcCache.length;
   const hasPrev=_dcOffset>0;
-  const hasNext=(_dcOffset+_DC_LIMIT)<total;
-  // Count line always visible
-  const countLine=`<div style="font-size:12px;color:var(--g5);margin-bottom:8px">พบ <strong>${total}</strong> รายการ${shown>0?' · แสดง '+(_dcOffset+1)+'–'+Math.min(_dcOffset+shown,total):''}</div>`;
-  const pagNav=total>_DC_LIMIT?`<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px">
-    <button class="btn btn-g btn-sm" onclick="_dcPage(-1)" ${hasPrev?'':'disabled'}>◀ ก่อนหน้า</button>
-    <button class="btn btn-g btn-sm" onclick="_dcPage(1)" ${hasNext?'':'disabled'}>ถัดไป ▶</button>
+  // graceful: if total_count missing/0 allow Next when page came back full
+  const hasNext=total>0?(_dcOffset+_dcPageSize)<total:shown===_dcPageSize;
+  const curPage=Math.floor(_dcOffset/_dcPageSize)+1;
+  const totalPages=total>0?Math.ceil(total/_dcPageSize):null;
+  // Count line — always visible
+  const countLabel=shown>0
+    ?`แสดง <strong>${_dcOffset+1}–${Math.min(_dcOffset+shown,total||(_dcOffset+shown))}</strong> จาก <strong>${total}</strong> รายการ`
+    :`พบ <strong>0</strong> รายการ`;
+  const countLine=`<div style="font-size:12px;color:var(--g5);margin-bottom:8px">${countLabel}</div>`;
+  const showPag=hasPrev||hasNext||(totalPages!=null&&totalPages>1);
+  const pagNav=showPag?`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:12px">
+    <span style="font-size:12px;color:var(--g5)">หน้า ${curPage}${totalPages?' จาก '+totalPages:''}</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-g btn-sm" onclick="_dcPage(-1)" ${hasPrev?'':'disabled'}>◀ ก่อนหน้า</button>
+      <button class="btn btn-g btn-sm" onclick="_dcPage(1)" ${hasNext?'':'disabled'}>ถัดไป ▶</button>
+    </div>
   </div>`:'';
   if(!shown){
     wrap.innerHTML=countLine+`<div style="padding:44px 20px;text-align:center;color:var(--g5);background:var(--w);border:1px solid var(--g2);border-radius:var(--rl)">
@@ -7540,7 +7568,7 @@ function dcRenderList(){
 }
 
 function _dcPage(dir){
-  _dcOffset=Math.max(0,_dcOffset+dir*_DC_LIMIT);
+  _dcOffset=Math.max(0,_dcOffset+dir*_dcPageSize);
   dcLoad();
 }
 
