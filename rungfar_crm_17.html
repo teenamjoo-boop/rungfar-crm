@@ -2480,15 +2480,17 @@ const LANG = {
     seclogAllPH:'ทั้งหมด', seclogSuspOnly:'น่าสงสัยเท่านั้น',
     seclogSearch:'ค้นหา', seclogClear:'ล้าง',
     seclogLoginToday:'Login วันนี้ทั้งหมด', seclogFailToday:'ล้มเหลววันนี้',
-    seclogNewDev:'อุปกรณ์ใหม่ (ช่วงเวลาที่เลือก)', seclogSuspCount:'น่าสงสัย (ช่วงเวลาที่เลือก)',
+    seclogNewDev:'อุปกรณ์ใหม่', seclogSuspCount:'น่าสงสัย',
+    seclogNewDevTip:'ยังไม่เคยใช้เครื่อง/เบราว์เซอร์นี้เข้าสู่ระบบมาก่อน',
+    seclogSuspTip:'มีพฤติกรรมที่ควรตรวจสอบ เช่น รหัสผิดหลายครั้ง หรืออุปกรณ์ใหม่',
     seclogAllLogs:'รายการ Login ทั้งหมด', seclogShowing:'แสดง', seclogItems:'รายการ',
-    seclogSuccess:'สำเร็จ', seclogFailed:'ล้มเหลว', seclogSuspYes:'ใช่',
+    seclogSuccess:'เข้าสู่ระบบสำเร็จ', seclogFailed:'เข้าสู่ระบบไม่สำเร็จ', seclogLogout:'ออกจากระบบ', seclogSuspYes:'ใช่',
     seclogDevDesktop:'คอมพิวเตอร์', seclogDevMobile:'มือถือ', seclogDevTablet:'แท็บเล็ต',
     seclogTblTime:'เวลา Login', seclogTblName:'ชื่อ-นามสกุล',
     seclogTblRole:'สิทธิ์', seclogTblFail:'เหตุที่ล้มเหลว',
-    seclogTblFP:'Fingerprint', seclogTblSusp:'น่าสงสัย',
-    seclogReasonWrong:'รหัสผ่านผิด', seclogReasonNoUser:'ไม่มีผู้ใช้',
-    seclogReasonNetwork:'ข้อผิดพลาดเครือข่าย', seclogReasonInactive:'บัญชีถูกระงับ',
+    seclogTblFP:'Fingerprint', seclogTblSusp:'น่าสงสัย', seclogTblRisk:'ความเสี่ยง',
+    seclogReasonWrong:'รหัสผ่านไม่ถูกต้อง', seclogReasonNoUser:'ไม่มีผู้ใช้',
+    seclogReasonNetwork:'ข้อผิดพลาดเครือข่าย', seclogReasonInactive:'บัญชีถูกปิดใช้งาน',
     seclogNoDataRange:'ไม่พบข้อมูลในช่วงเวลาที่เลือก',
     seclogUpgrading:'ฟีเจอร์นี้อยู่ระหว่างอัปเกรดความปลอดภัย',
     seclogUpgradeSub:'ระบบ Security Log กำลังอัปเกรดเป็น Supabase Auth<br>การบันทึก Login Activity ยังคงทำงานปกติ<br>เฉพาะหน้าแสดงผลรอการอัปเกรด',
@@ -2685,14 +2687,16 @@ const LANG = {
     seclogAllPH:'အားလုံး', seclogSuspOnly:'သံသယရှိသာ',
     seclogSearch:'ရှာဖွေ', seclogClear:'ရှင်းလင်း',
     seclogLoginToday:'ယနေ့ Login အားလုံး', seclogFailToday:'ယနေ့ မအောင်မြင်',
-    seclogNewDev:'ကိရိယာအသစ် (ရွေးချယ်ကာလ)', seclogSuspCount:'သံသယရှိ (ရွေးချယ်ကာလ)',
+    seclogNewDev:'ကိရိယာအသစ်', seclogSuspCount:'သံသယရှိ',
+    seclogNewDevTip:'ဤစက်/ဘရောက်ဇာဖြင့် ယခင်က အကောင့်ဝင်ဖူးခြင်းမရှိသေးပါ',
+    seclogSuspTip:'စစ်ဆေးသင့်သော အပြုအမူ — ဥပမာ စကားဝှက်အကြိမ်ကြိမ်မှား သို့မဟုတ် ကိရိယာအသစ်',
     seclogAllLogs:'Login မှတ်တမ်းအားလုံး', seclogShowing:'ပြသနေသည်', seclogItems:'မှတ်တမ်း',
-    seclogSuccess:'အောင်မြင်', seclogFailed:'မအောင်မြင်', seclogSuspYes:'ကြား',
+    seclogSuccess:'အကောင့်ဝင်အောင်မြင်', seclogFailed:'အကောင့်ဝင်မအောင်မြင်', seclogLogout:'ထွက်ပြီး', seclogSuspYes:'ကြား',
     seclogDevDesktop:'ကွန်ပြူတာ', seclogDevMobile:'မိုဘိုင်း', seclogDevTablet:'တက်ဘလက်',
     seclogTblTime:'Login အချိန်', seclogTblName:'အမည်-နာမဆိုင်ရာ',
     seclogTblRole:'သက်ဆိုင်ရာ', seclogTblFail:'မအောင်မြင်ရသောအကြောင်း',
-    seclogTblFP:'Fingerprint', seclogTblSusp:'သံသယရှိ',
-    seclogReasonWrong:'စကားဝှက်မှား', seclogReasonNoUser:'အသုံးပြုသူမရှိ',
+    seclogTblFP:'Fingerprint', seclogTblSusp:'သံသယရှိ', seclogTblRisk:'အန္တရာယ်',
+    seclogReasonWrong:'စကားဝှက်မမှန်ကန်', seclogReasonNoUser:'အသုံးပြုသူမရှိ',
     seclogReasonNetwork:'ကွန်ရက်အမှား', seclogReasonInactive:'အကောင့်ပိတ်ထား',
     seclogNoDataRange:'ရွေးချယ်သောကာလတွင် ဒေတာမတွေ့ပါ',
     seclogUpgrading:'ဤဖီချာကို လုံခြုံရေးဆိုင်ရာ အဆင့်မြှင့်နေသည်',
@@ -6442,16 +6446,34 @@ function auditExportXlsx(){
   try{if(_xlsxDownload(_auditExportAOA(),'การใช้งานลูกค้า',`audit_customer_logs_${_todayStrBkk()}.xlsx`))toast('Export Excel แล้ว');}
   catch(e){console.error('[audit export xlsx] failed',e);toast('Export Excel ไม่สำเร็จ','err');}
 }
-// ตาราง "เข้าสู่ระบบ": เวลา Login · Username · ชื่อ-นามสกุล · สิทธิ์ · สถานะ · เหตุที่ล้มเหลว · อุปกรณ์ · Browser · Fingerprint · น่าสงสัย
+// STAGE 47A-3: ป้ายไทยสำหรับ security log (ใช้ร่วมตาราง + export) — ไม่ให้คำฝั่ง backend หลุดออก UI
+function _secStatusLabel(s){return ({success:T('seclogSuccess'),failed:T('seclogFailed'),logout:T('seclogLogout')}[s])||s||'—';}
+function _secReasonLabel(r){
+  if(!r)return '-';   // unknown / null / empty → '-'
+  return ({
+    wrong_credentials:T('seclogReasonWrong'), account_disabled:T('seclogReasonInactive'),
+    network_error:T('seclogReasonNetwork'),
+    // backward-compat กับ key เก่า (เผื่อ row เดิมในตาราง)
+    wrong_password:T('seclogReasonWrong'), inactive_account:T('seclogReasonInactive'), user_not_found:T('seclogReasonNoUser')
+  }[r])||'-';
+}
+function _secRiskBadges(l){
+  const b=[];
+  if(l.is_new_device)b.push(`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:#dbeafe;color:#1d4ed8;white-space:nowrap">${T('seclogNewDev')}</span>`);
+  if(l.is_suspicious)b.push(`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;background:#fef3c7;color:#b45309;white-space:nowrap">${T('seclogTblSusp')}</span>`);
+  return b.length?b.join(' '):'<span style="color:var(--g3);font-size:11px">—</span>';
+}
+// ตาราง "เข้าสู่ระบบ": เวลา Login · Username · ชื่อ-นามสกุล · สิทธิ์ · สถานะ · เหตุที่ล้มเหลว · อุปกรณ์ · Browser · Fingerprint · อุปกรณ์ใหม่ · น่าสงสัย
 function _secExportAOA(){
-  const head=['เวลา Login','Username','ชื่อ-นามสกุล','สิทธิ์','สถานะ','เหตุที่ล้มเหลว','อุปกรณ์','Browser','Fingerprint','น่าสงสัย'];
+  const head=['เวลา Login','Username','ชื่อ-นามสกุล','สิทธิ์','สถานะ','เหตุที่ล้มเหลว','อุปกรณ์','Browser','Fingerprint',T('seclogNewDev'),T('seclogTblSusp')];
   const rows=_secLogsShown.map(l=>{
-    const st=l.login_status==='success'?T('seclogSuccess'):l.login_status==='failed'?T('seclogFailed'):(l.login_status||'');
-    const reason=({wrong_password:T('seclogReasonWrong'),user_not_found:T('seclogReasonNoUser'),network_error:T('seclogReasonNetwork'),inactive_account:T('seclogReasonInactive')}[l.fail_reason])||l.fail_reason||'';
+    const st=_secStatusLabel(l.login_status);
+    const reason=_secReasonLabel(l.fail_reason);
     const devType=({desktop:T('seclogDevDesktop'),mobile:T('seclogDevMobile'),tablet:T('seclogDevTablet')}[l.device_type])||l.device_type||'';
     const fp=l.device_fingerprint?l.device_fingerprint.slice(0,8)+'…':'';
+    const newDev=l.is_new_device?T('seclogSuspYes'):'';
     const susp=l.is_suspicious?T('seclogSuspYes'):'';
-    return [_expFmtDT(l.login_time),(l.username||''),(l.full_name||''),(l.role||''),st,reason,devType,(l.browser_name||''),fp,susp];
+    return [_expFmtDT(l.login_time),(l.username||''),(l.full_name||''),(l.role||''),st,reason,devType,(l.browser_name||''),fp,newDev,susp];
   });
   return [head,...rows];
 }
@@ -6538,8 +6560,8 @@ function secLogRender(logs){
   cards.innerHTML=
     `<div style="${cardStyle}"><div style="${numStyle}color:var(--g9)">${totalToday}</div><div style="${lblStyle}">${T('seclogLoginToday')}</div></div>`+
     `<div style="${cardStyle}"><div style="${numStyle}color:${failToday>0?'var(--red)':'var(--grn)'}">${failToday}</div><div style="${lblStyle}">${T('seclogFailToday')}</div></div>`+
-    `<div style="${cardStyle}"><div style="${numStyle}color:var(--blu)">${newDev}</div><div style="${lblStyle}">${T('seclogNewDev')}</div></div>`+
-    `<div style="${cardStyle}"><div style="${numStyle}color:${suspCount>0?'var(--amb)':'var(--grn)'}">${suspCount}</div><div style="${lblStyle}">${T('seclogSuspCount')}</div></div>`;
+    `<div style="${cardStyle}" title="${esc(T('seclogNewDevTip'))}"><div style="${numStyle}color:var(--blu)">${newDev}</div><div style="${lblStyle}">${T('seclogNewDev')}</div></div>`+
+    `<div style="${cardStyle}" title="${esc(T('seclogSuspTip'))}"><div style="${numStyle}color:${suspCount>0?'var(--amb)':'var(--grn)'}">${suspCount}</div><div style="${lblStyle}">${T('seclogSuspCount')}</div></div>`;
   // ─── Table ───
   if(!logs.length){
     wrap.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogNoDataRange')}</div>`;
@@ -6559,9 +6581,9 @@ function secLogRender(logs){
     const rowBg=isSusp?'background:#fffbeb;':'';
     const stBg=isSucc?'#dcfce7':isFail?'#fee2e2':'#f3f4f6';
     const stColor=isSucc?'#15803d':isFail?'#dc2626':'#6b7280';
-    const stTxt=isSucc?T('seclogSuccess'):isFail?T('seclogFailed'):l.login_status||'—';
+    const stTxt=_secStatusLabel(l.login_status);
     const fp=l.device_fingerprint?l.device_fingerprint.slice(0,8)+'…':'—';
-    const reason=({wrong_password:T('seclogReasonWrong'),user_not_found:T('seclogReasonNoUser'),network_error:T('seclogReasonNetwork'),inactive_account:T('seclogReasonInactive')}[l.fail_reason])||l.fail_reason||'—';
+    const reason=_secReasonLabel(l.fail_reason);
     const devType=({desktop:T('seclogDevDesktop'),mobile:T('seclogDevMobile'),tablet:T('seclogDevTablet')}[l.device_type])||l.device_type||'—';
     return`<tr style="border-bottom:1px solid var(--g2);${rowBg}">
       <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(l.login_time)}</td>
@@ -6573,7 +6595,7 @@ function secLogRender(logs){
       <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(devType)}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(l.browser_name||'—')}</td>
       <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g4)">${esc(fp)}</td>
-      <td style="padding:7px 10px;text-align:center">${isSusp?`<span style="font-size:11px;font-weight:700;color:var(--amb)">${T('seclogSuspYes')}</span>`:'<span style="color:var(--g3);font-size:11px">—</span>'}</td>
+      <td style="padding:7px 10px;text-align:center">${_secRiskBadges(l)}</td>
     </tr>`;
   }).join('');
   wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
@@ -6597,7 +6619,7 @@ function secLogRender(logs){
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogDevice')}</th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Browser</th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblFP')}</th>
-          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:center;border-bottom:1px solid var(--g2)">${T('seclogTblSusp')}</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:center;border-bottom:1px solid var(--g2)">${T('seclogTblRisk')}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
