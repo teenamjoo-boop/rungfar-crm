@@ -2524,11 +2524,13 @@ const LANG = {
     seclogTabLogin:'เข้าสู่ระบบ', seclogTabActivity:'การใช้งานลูกค้า',
     auditAction:'การกระทำ', auditDetail:'รายละเอียด', auditSearch:'ค้นหา', auditOpenCust:'เปิดข้อมูลลูกค้า', auditPerPage:'ต่อหน้า',
     audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายรายการ',
-    audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูล',
+    audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูลลูกค้า',
     audit_customer_assign:'มอบหมายผู้รับผิดชอบ',
     audit_customer_create:'เพิ่มลูกค้า', audit_customer_update:'แก้ไขลูกค้า',
-    audit_customer_status_change:'เปลี่ยนสถานะงาน',
-    audit_document_upload:'เพิ่มเอกสาร',
+    audit_customer_status_change:'เปลี่ยนสถานะลูกค้า', audit_customer_import:'นำเข้าลูกค้า',
+    audit_document_upload:'เพิ่มเอกสาร', audit_document_upload_storage:'เพิ่มเอกสาร', audit_document_update_metadata:'แก้ไขข้อมูลเอกสาร',
+    audit_line_inbox_approve:'อนุมัติเอกสารจาก LINE', audit_line_inbox_reject:'ปฏิเสธเอกสารจาก LINE',
+    audit_test_audit_privacy:'ทดสอบความปลอดภัย Audit',
     audit_customer_bulk_status_change:'เปลี่ยนสถานะหลายรายการ', audit_customer_bulk_group_change:'เปลี่ยนกลุ่มหลายรายการ',
     audit_group_create:'เพิ่มกลุ่ม', audit_group_update:'แก้ไขกลุ่ม', audit_group_delete:'ลบกลุ่ม',
     // ── STAGE 22B: คำขอลบ (delete approval) ──
@@ -2734,8 +2736,10 @@ const LANG = {
     audit_document_delete:'စာရွက်ဖျက်', audit_customer_export:'ဒေတာထုတ်ယူ',
     audit_customer_assign:'တာဝန်ပေးအပ်',
     audit_customer_create:'ဖောက်သည်ထည့်', audit_customer_update:'ဖောက်သည်ပြင်ဆင်',
-    audit_customer_status_change:'အလုပ်အခြေအနေပြောင်း',
-    audit_document_upload:'စာရွက်ထည့်',
+    audit_customer_status_change:'ဖောက်သည်အခြေအနေပြောင်း', audit_customer_import:'ဖောက်သည်တင်သွင်း',
+    audit_document_upload:'စာရွက်ထည့်', audit_document_upload_storage:'စာရွက်ထည့်', audit_document_update_metadata:'စာရွက်အချက်အလက်ပြင်ဆင်',
+    audit_line_inbox_approve:'LINE စာရွက် အတည်ပြု', audit_line_inbox_reject:'LINE စာရွက် ငြင်းပယ်',
+    audit_test_audit_privacy:'Audit လုံခြုံရေး စမ်းသပ်',
     audit_customer_bulk_status_change:'အများအလုပ်အခြေအနေပြောင်း', audit_customer_bulk_group_change:'အများအုပ်စုပြောင်း',
     audit_group_create:'အုပ်စုထည့်', audit_group_update:'အုပ်စုပြင်ဆင်', audit_group_delete:'အုပ်စုဖျက်',
     // ── STAGE 22B: ဖျက်ရန်တောင်းဆိုမှု (delete approval) ──
@@ -6188,7 +6192,15 @@ function secLogTab(which){
 }
 
 // ── Customer activity log (audit_logs) — admin-only, อ่านผ่าน RPC SECURITY DEFINER ──
-const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.delete','group.create','group.update','group.delete','delete_request.create','delete_request.approve','delete_request.reject','user.disable','user.enable'];
+const AUDIT_ACTIONS=['customer.create','customer.update','customer.status_change','customer.import','customer.delete','customer.export','customer.assign','customer.bulk_delete','customer.bulk_status_change','customer.bulk_group_change','document.upload','document.upload.storage','document.update_metadata','document.delete','group.create','group.update','group.delete','delete_request.create','delete_request.approve','delete_request.reject','user.disable','user.enable','line_inbox.approve','line_inbox.reject'];
+// Stage 48A-3: ป้ายไทยของ action — ใช้ร่วม table/export/filter/search; fallback อ่านง่าย ไม่โชว์ raw backend, ไม่ crash
+function _auditActionLabel(action){
+  const a=action||'';
+  const key='audit_'+a.replace(/\./g,'_');   // replace ทุก '.' (เดิม replace ตัวแรกตัวเดียว → multi-dot หลุด)
+  const t=T(key);
+  if(t&&t!==key)return t;                     // เจอใน i18n (รองรับสองภาษา)
+  return (a||key).replace(/^audit_/,'').replace(/[._]+/g,' ').trim()||'—';  // fallback: ทำความสะอาด
+}
 let _auditLogsCache=[]; // Stage 6: เก็บผล fetch ล่าสุดไว้กรองด้วยช่องค้นหา client-side
 let _auditLogsShown=[]; // Stage 7: แถวที่กำลังแสดง (หลัง filter/search) สำหรับ export
 let _auditDetailFn=null; // Stage 7: อ้างอิง detSummary ปัจจุบัน เพื่อ export ข้อความให้ตรงกับตาราง
@@ -6210,7 +6222,7 @@ function buildAuditPane(){
         <div><div style="${lblCss}">${T('auditAction')}</div>
           <select id="alAction" style="${inCss}">
             <option value="">${T('seclogAllPH')}</option>
-            ${AUDIT_ACTIONS.map(a=>`<option value="${a}">${T('audit_'+a.replace('.','_'))}</option>`).join('')}
+            ${AUDIT_ACTIONS.map(a=>`<option value="${a}">${esc(_auditActionLabel(a))}</option>`).join('')}
           </select>
         </div>
         <div><div style="${lblCss}">${T('auditSearch')}</div>
@@ -6321,7 +6333,7 @@ function auditLogApplySearch(){
   const q=(document.getElementById('alSearch')?.value||'').trim().toLowerCase();
   if(!q){auditLogRender(_auditLogsCache);return;}
   const filtered=_auditLogsCache.filter(l=>{
-    const lbl=T('audit_'+(l.action||'').replace('.','_'))||'';
+    const lbl=_auditActionLabel(l.action);
     let dj='';try{dj=JSON.stringify(l.detail||{});}catch(_){dj='';}
     const hay=[(l.actor_name||''),(l.actor_code||''),lbl,(l.action||''),dj].join(' ').toLowerCase();
     return hay.indexOf(q)!==-1;
@@ -6350,7 +6362,10 @@ function auditLogRender(logs){
       if(a==='customer.status_change'){const fr=d.from?esc(d.from):'—',to=d.to?esc(d.to):'—';return 'เปลี่ยนสถานะ: '+fr+' → '+to+(nm?' · '+nm:'');}
       if(a==='customer.delete'){return 'ลบลูกค้า'+(nm?': '+nm:'');}
       if(a==='customer.export'){const cnt=(d.count!=null?d.count:'?');const sc=[d.scope,d.format].filter(Boolean).map(x=>esc(String(x))).join(' · ');return 'ส่งออกข้อมูล: '+cnt+' รายการ'+(sc?' · '+sc:'');}
-      if(a==='document.upload'){const cnt=(d.count!=null?d.count:1);const cn=d.customer_name?esc(d.customer_name):'';const lbl=(cnt>1)?(cnt+' ไฟล์'):esc(d.doc_name||d.doc_type||'เอกสาร');return 'เพิ่มเอกสาร: '+lbl+(cn?' · ลูกค้า: '+cn:'');}
+      if(a==='document.upload'||a==='document.upload.storage'){const cnt=(d.count!=null?d.count:1);const cn=d.customer_name?esc(d.customer_name):'';const lbl=(cnt>1)?(cnt+' ไฟล์'):esc(d.doc_name||d.doc_type||'เอกสาร');return 'เพิ่มเอกสาร: '+lbl+(cn?' · ลูกค้า: '+cn:'');}
+      if(a==='document.update_metadata'){const dn=d.doc_name?esc(d.doc_name):'';return 'แก้ไขข้อมูลเอกสาร'+(dn?': '+dn:'');}
+      if(a==='customer.import'){const im=(d.imported!=null?d.imported:'?');return 'นำเข้าลูกค้า: '+im+' รายการ';}
+      if(a==='line_inbox.approve'||a==='line_inbox.reject'){const cn=d.customer_name?esc(d.customer_name):'';const fn=d.file_name?esc(d.file_name):'';const lbl=fn||cn;return (a==='line_inbox.approve'?'อนุมัติเอกสารจาก LINE':'ปฏิเสธเอกสารจาก LINE')+(lbl?': '+lbl:'');}
       if(a==='document.delete'){return 'ลบเอกสาร'+(nm?': '+nm:'');}
       if(a==='customer.assign'){const cnt=(d.count!=null?d.count:'?');const asg=d.assignee_label?esc(d.assignee_label):'';return 'มอบหมาย: '+cnt+' รายการ'+(asg?' → '+asg:'');}
       if(a==='customer.bulk_delete'){const cnt=(d.count!=null?d.count:'?');return 'ลบลูกค้าหลายรายการ: '+cnt+' รายการ';}
@@ -6399,7 +6414,7 @@ function auditLogRender(logs){
   const _pageLogs=logs.slice(_start,_start+_auditPageSize);
   const rows=_pageLogs.map(l=>{
     const ac=actColor[l.action]||'#6b7280';
-    const actTxt=T('audit_'+(l.action||'').replace('.','_'))||l.action||'—';
+    const actTxt=_auditActionLabel(l.action);
     const det=detSummary(l);
     const cid=_rowCustId(l);
     const detCell=(cid!=null)
@@ -6491,7 +6506,7 @@ function _auditExportAOA(){
     _expFmtDT(l.created_at),
     (l.actor_name||l.actor_code||''),
     (l.actor_role||''),
-    (T('audit_'+(l.action||'').replace('.','_'))||l.action||''),
+    _auditActionLabel(l.action),
     det(l)
   ]);
   return [head,...rows];
