@@ -3392,20 +3392,28 @@ function getDeviceFingerprint(){
     return(h>>>0).toString(16);
   }catch(e){return'unknown';}
 }
+// STAGE 47A-1: เขียน login/logout/failed log ผ่าน RPC app_log_login_event (SECURITY DEFINER)
+//   client เขียนตาราง security_login_logs ตรงไม่ได้แล้ว (revoke ใน migration 20260712)
+//   server เป็นคน stamp identity (success/logout) + IP — best-effort, ห้ามทำให้ login พัง
 async function logLoginActivity(payload){
   try{
-    await fetch(`${SB_URL}/rest/v1/security_login_logs`,{
-      method:'POST',
-      headers:{
-        'apikey':SB_KEY,
-        'Authorization':`Bearer ${SB_KEY}`,
-        'Content-Type':'application/json',
-        'Accept':'application/json',
-        'Prefer':'return=minimal'
-      },
-      mode:'cors',
-      body:JSON.stringify(payload)
+    const p=payload||{};
+    const body={
+      p_user_id:(p.user_id!=null?String(p.user_id):null),
+      p_username:p.username||null,
+      p_login_status:p.login_status||null,
+      p_fail_reason:p.fail_reason||null,
+      p_device_type:p.device_type||null,
+      p_browser_name:p.browser_name||null,
+      p_device_fingerprint:p.device_fingerprint||null,
+      p_user_agent:p.user_agent||null
+    };
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/app_log_login_event`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify(body)
     });
+    if(!res.ok&&res.status===404){console.warn('[SEC] login-log RPC ยังไม่ติดตั้ง — apply migration 20260712');}
   }catch(e){
     console.warn('[SEC] Login log failed (non-critical):',e.message);
   }
@@ -3414,22 +3422,25 @@ async function logLoginActivity(payload){
 // ===== AUDIT-LOG STAGE 1: บันทึกประวัติการใช้งานลูกค้า =====
 // best-effort เหมือน logLoginActivity — ห้ามทำให้ action หลักพัง (เรียกแบบ fire-and-forget)
 // ต้อง apply migration 20260623_audit_logs.sql ก่อน log จึงจะถูกเก็บจริง
+// STAGE 47A-1: เขียน audit log ผ่าน RPC app_log_audit_event (SECURITY DEFINER)
+//   client เขียนตาราง audit_logs ตรงไม่ได้แล้ว (revoke ใน migration 20260712)
+//   server เป็นคน stamp actor_code/name/role จาก app_users — ไม่เชื่อ identity จาก client
 function logAudit(action,entityType,entityId,detail){
   try{
-    const payload={
-      action,
-      entity_type:entityType||null,
-      entity_id:(entityId==null?null:String(entityId)),
-      detail:detail||null,
-      actor_code:(curUser&&curUser.username)||null,
-      actor_name:(curUser&&curUser.full_name)||null,
-      actor_role:(curUser&&curUser.role)||null
+    if(!curUser||curUser.id==null)return; // ไม่มี session → ข้าม (RPC ต้องการตัวตน active)
+    const body={
+      p_user_id:String(curUser.id),
+      p_username:curUser.username||'',
+      p_action:action,
+      p_entity_type:entityType||null,
+      p_entity_id:(entityId==null?null:String(entityId)),
+      p_detail:detail||{}
     };
-    fetch(`${SB_URL}/rest/v1/audit_logs`,{
+    fetch(`${SB_URL}/rest/v1/rpc/app_log_audit_event`,{
       method:'POST',
       headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json','Prefer':'return=minimal'},
       mode:'cors',
-      body:JSON.stringify(payload)
+      body:JSON.stringify(body)
     }).catch(e=>console.warn('[AUDIT] log failed (non-critical):',e.message));
   }catch(e){console.warn('[AUDIT] log build failed (non-critical):',e&&e.message);}
 }
@@ -3518,6 +3529,16 @@ function clearSessionState(){
   const dum=document.getElementById('delUserModal');if(dum)dum.style.display='none';
 }
 function doLogout(){
+  // STAGE 47A-1: บันทึก logout (best-effort) ก่อนล้าง session — อ่าน curUser ตอนนี้ก่อนถูกเคลียร์
+  try{
+    if(curUser&&curUser.id!=null){
+      logLoginActivity({
+        user_id:curUser.id,username:curUser.username,login_status:'logout',fail_reason:null,
+        user_agent:navigator.userAgent||null,device_type:getDeviceType(),
+        browser_name:getBrowserName(),device_fingerprint:getDeviceFingerprint()
+      });
+    }
+  }catch(_){/* logout ต้องทำงานต่อแม้ log ล้มเหลว */}
   clearSessionState();
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('appScreen').style.display='none';
