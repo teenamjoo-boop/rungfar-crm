@@ -5326,7 +5326,8 @@ async function saveDocUpload(){
     const _ur=await _callDocUpload({customer_id:_docUpSelCust.id,doc_type:dtype,doc_name:dname,file_name:_docUpFile.name||dname,file_type:_docUpFile.fileType||'image/jpeg',data_url:_docUpFile.data});
     if(!_ur||!_ur.ok)throw new Error(_ur&&_ur.error||'upload_failed');
     try{
-      logAudit('document.upload.storage','document',_docUpSelCust.id,{customer_id:_docUpSelCust.id,customer_name:_docUpSelCust.name,count:1,doc_type:dtype,doc_name:dname,file_type:_docUpFile.fileType||'image/jpeg',storage_path:(_ur.doc&&_ur.doc.storage_path)||null,uploaded_by:(curUser&&curUser.full_name)||null,source:'docUploadPage'});
+      // Stage 48A-1: ❌ ไม่เก็บ storage_path ใน audit detail — เก็บเฉพาะ metadata ปลอดภัย (document_id + has_storage boolean)
+      logAudit('document.upload.storage','document',_docUpSelCust.id,{document_id:(_ur.doc&&_ur.doc.id)||null,customer_id:_docUpSelCust.id,customer_name:_docUpSelCust.name,count:1,doc_type:dtype,doc_name:dname,file_type:_docUpFile.fileType||'image/jpeg',has_storage:!!(_ur.doc&&_ur.doc.storage_path),uploaded_by:(curUser&&curUser.full_name)||null,source:'docUploadPage'});
     }catch(_e){console.warn('[AUDIT] docUpload log skipped:',_e&&_e.message);}
     toast('อัปโหลดเอกสารสำเร็จ — '+esc(_docUpSelCust.name));
     closeDocUploadModal();
