@@ -6221,15 +6221,73 @@ function buildAuditPane(){
         <button onclick="auditLogClear()" class="btn btn-g btn-sm">${T('seclogClear')}</button>
       </div>
     </div>
+    <div id="al_summary" style="margin-bottom:14px"></div>
     <div id="al_table_wrap"></div>`;
+}
+// Stage 48A-2: แดชบอร์ดสรุปการกระทำ (read-only) — อ่านผ่าน app_admin_audit_action_summary
+//   ❌ ไม่คืน/ไม่แสดง detail JSON ดิบ, ❌ ไม่มี storage_path/file_data/base64/signed URL
+let _auditSumLoading=false;
+async function auditSummaryLoad(){
+  const box=document.getElementById('al_summary');if(!box)return;
+  if(curUser?.role!=='admin'){box.innerHTML='';return;}
+  const pass=(document.getElementById('alAdminPass')?.value||'').trim();
+  if(!pass){box.innerHTML='';return;}
+  if(_auditSumLoading)return;_auditSumLoading=true;
+  const body={
+    p_admin_username:curUser.username,
+    p_admin_password:pass,
+    p_start_date:(document.getElementById('alFrom')?.value||'')||null,
+    p_end_date:(document.getElementById('alTo')?.value||'')||null
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_audit_action_summary`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body)
+    });
+  }catch(e){_auditSumLoading=false;box.innerHTML='';return;}  // network → ซ่อนเงียบ (ตารางจัดการ error)
+  _auditSumLoading=false;
+  if(!res.ok){
+    let err={};try{err=await res.json();}catch(_){}
+    const code=err?.code||'';const msg=err?.message||'';
+    if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){
+      box.innerHTML=`<div style="font-size:11.5px;color:var(--g4);background:var(--g0,#f9fafb);border:1px solid var(--g2);border-radius:8px;padding:6px 10px;display:inline-block">กรุณา apply migration 20260715</div>`;
+      return;
+    }
+    box.innerHTML='';  // unauthorized/อื่น ๆ → ซ่อน (ตารางแสดงรหัสผิดอยู่แล้ว)
+    return;
+  }
+  let data=[];try{data=await res.json();}catch(_){data=[];}
+  auditSummaryRender(Array.isArray(data)?data:[]);
+}
+function auditSummaryRender(rows){
+  const box=document.getElementById('al_summary');if(!box)return;
+  if(!Array.isArray(rows)||!rows.length){box.innerHTML='';return;}
+  const bySort=(a,b)=>(Number(a.sort_order)||0)-(Number(b.sort_order)||0);
+  const head=rows.filter(r=>r.metric_group==='headline').sort(bySort);
+  const sec=rows.filter(r=>r.metric_group==='secondary').sort(bySort);
+  const act=rows.filter(r=>r.metric_group==='actor').sort(bySort);
+  const cardStyle='background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:12px 14px;';
+  const cards=head.map(r=>{
+    const v=Number(r.metric_value)||0;
+    const hi=(r.metric_key==='high_attention'&&v>0);
+    return `<div style="${cardStyle}"><div style="font-size:22px;font-weight:800;font-family:var(--mono);margin-bottom:2px;color:${hi?'var(--amb)':'var(--g9)'}">${v}</div><div style="font-size:11px;color:var(--g5)">${esc(r.metric_label||r.metric_key||'')}</div></div>`;
+  }).join('');
+  const secTxt=sec.map(r=>`${esc(r.metric_label||r.metric_key||'')}: <strong>${Number(r.metric_value)||0}</strong>`).join('  ·  ');
+  const actTxt=act.length?('ผู้ใช้งานสูงสุด: '+act.map(r=>`${esc(r.metric_label||'—')} (${Number(r.metric_value)||0})`).join('  ·  ')):'';
+  const subParts=[secTxt,actTxt].filter(Boolean);
+  const sub=subParts.length?`<div style="font-size:11.5px;color:var(--g6);margin-top:10px;line-height:1.7">${subParts.join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</div>`:'';
+  box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px">${cards}</div>${sub}`;
 }
 async function auditLogLoad(){
   const wrap=document.getElementById('al_table_wrap');if(!wrap)return;
   const box=(txt)=>`<div style="padding:44px 20px;text-align:center;color:var(--g6);background:#fff;border:1px solid var(--g2);border-radius:var(--rl);font-size:13px;line-height:1.8">${txt}</div>`;
   if(curUser?.role!=='admin'){wrap.innerHTML=box(T('seclogNoAccess'));return;}
   const pass=(document.getElementById('alAdminPass')?.value||'').trim();
-  if(!pass){wrap.innerHTML=box(T('seclogEnterPass'));return;}
+  if(!pass){wrap.innerHTML=box(T('seclogEnterPass'));const _s=document.getElementById('al_summary');if(_s)_s.innerHTML='';return;}
   wrap.innerHTML=box(T('seclogLoading'));
+  auditSummaryLoad();   // Stage 48A-2: โหลดการ์ดสรุป (read-only) คู่กับตาราง — ใช้รหัส/ช่วงวันเดียวกัน
   const body={
     p_admin_username:curUser.username,
     p_admin_password:pass,
