@@ -253,7 +253,7 @@ function buildAdminFlexBubble(
 ): FlexComponent {
   const isCheckin = type === 'checkin';
   const name      = (log.employee_name as string) || '—';
-  const code      = (log.employee_code as string) || '-'; // ไม่มีวงเล็บ — แสดงใน row แยก
+  // Stage 50A-11: ไม่แสดงรหัสพนักงาน (เช่น EMP003) บนการ์ดแล้ว — จึงไม่ต้องอ่าน employee_code
   const branch    = (log.branch_name as string) || '—';
   const logDate      = formatThaiFullDate(log.log_date as string);
   const gpsText      = gpsStatusTH(log.gps_status as string);
@@ -279,7 +279,6 @@ function buildAdminFlexBubble(
 
     bodyRows = [
       makeRow('พนักงาน',    name, true),
-      makeRow('รหัส',       code),
       makeRow('สาขา',       branch),
       makeRow('เวลาทำการ',  branchHours),
       makeSep(),
@@ -334,7 +333,6 @@ function buildAdminFlexBubble(
 
     bodyRows = [
       makeRow('พนักงาน',    name, true),
-      makeRow('รหัส',       code),
       makeRow('สาขา',       branch),
       makeRow('เวลาทำการ',  branchHours),
       makeSep(),
@@ -348,8 +346,22 @@ function buildAdminFlexBubble(
       makeRow('ระยะจากสาขา', distText),
       ...(wsSummaryRows.length > 0 ? [
         makeSep(),
-        { type: 'text', text: 'สรุปงานรายวัน', size: 'sm', weight: 'bold',
-          color: '#555555', margin: 'xs' } as FlexComponent,
+        // slim blue header bar (สีเดียวกับ header ออกงาน แต่บางกว่ามาก) — label กลาง ตัวอักษรขาว
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#1AACEE',
+          paddingTop: '4px',
+          paddingBottom: '4px',
+          paddingStart: '8px',
+          paddingEnd: '8px',
+          cornerRadius: '4px',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: 'สรุปงานรายวัน', size: 'xs', weight: 'bold',
+              color: '#FFFFFF', align: 'center' },
+          ],
+        } as FlexComponent,
         ...wsSummaryRows,
       ] : []),
     ];
@@ -423,7 +435,7 @@ function buildGroupAdminFlexMessage(
 function buildAdminTextFallback(log: Record<string, unknown>, type: string): string {
   const isCheckin    = type === 'checkin';
   const name      = (log.employee_name as string) || '—';
-  const code      = (log.employee_code as string) || '-'; // ไม่มีวงเล็บ
+  // Stage 50A-11: ไม่แสดงรหัสพนักงาน (เช่น EMP003) บนการ์ด/ข้อความ fallback แล้ว
   const branch    = (log.branch_name as string) || '—';
   const gpsText   = gpsStatusTH(log.gps_status as string);
   const isOutside = !!(log.is_out_of_area);
@@ -440,7 +452,7 @@ function buildAdminTextFallback(log: Record<string, unknown>, type: string): str
     else if (lateMin > 0) status = `สาย ${lateMin} นาที`;
     return [
       'เข้างาน',
-      `พนักงาน: ${name}`, `รหัส: ${code}`, `สาขา: ${branch}`,
+      `พนักงาน: ${name}`, `สาขา: ${branch}`,
       `วันที่: ${date}`, `เวลา: ${time}`, `สถานะ: ${status}`,
       `GPS: ${gpsText}`, `ระยะจากสาขา: ${distText}`,
       `รูปเข้างาน: ${hasSelfie}`,
@@ -477,7 +489,7 @@ function buildAdminTextFallback(log: Record<string, unknown>, type: string): str
     }
     return [
       'ออกงาน',
-      `พนักงาน: ${name}`, `รหัส: ${code}`, `สาขา: ${branch}`,
+      `พนักงาน: ${name}`, `สาขา: ${branch}`,
       `วันที่: ${date}`, `เวลาเข้า: ${timeIn}`, `เวลาออก: ${timeOut}`,
       `ชม.ทำงาน: ${workText}`, `OT: ${otText}`,
       `สถานะ: ${status}`, `GPS: ${gpsText}`,
