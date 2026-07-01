@@ -5086,7 +5086,14 @@ async function saveCustomer(){
       const _first=_okDocs[0];
       logAudit('document.upload','document',savedId,{customer_id:savedId,customer_name:data.name,count:_okDocs.length,doc_type:(_okDocs.length===1?_first.doc_type:null),doc_name:(_okDocs.length===1?_first.doc_name:null),file_type:(_okDocs.length===1?_first.file_type:null),names:_okDocs.slice(0,8).map(d=>d.doc_name||d.doc_type).filter(Boolean),uploaded_by:(curUser&&curUser.full_name)||null,source:'saveCustomer'});
     }catch(_e){console.warn('[AUDIT] document.upload log skipped:',_e&&_e.message);}}
-    if(savedId&&data.work_status)await dbPost('work_timeline',{customer_id:savedId,status:data.work_status,created_by:curUser.full_name}).catch(e=>console.error('[customer save] timeline insert failed',e));
+    if(savedId&&data.work_status){
+      // Stage 50A-3: timeline row ผ่าน RPC (server-stamp); fallback direct ถ้า missing/error — best-effort ไม่ให้ save หลักพัง
+      const _tlr=await _timelineRpc(savedId,data.work_status,null);
+      if(_tlr.status!=='ok'&&_tlr.status!=='unauthorized'){
+        if(_tlr.status==='missing')toast('กรุณา apply migration 20260717','err');
+        await dbPost('work_timeline',{customer_id:savedId,status:data.work_status,created_by:curUser.full_name}).catch(e=>console.error('[customer save] timeline insert failed',e));
+      }
+    }
     document.getElementById('cModal').style.display='none';
     renderSidebar();renderDash();
     if(curView==='customers')doFilter();
@@ -5209,19 +5216,76 @@ async function openDetail(id){
 function editFromDetail(){document.getElementById('dModal').style.display='none';openEdit(detId);}
 
 function openClog(cid){clogCid=cid;['clf_sum','clf_recv','clf_miss','clf_next'].forEach(f=>document.getElementById(f).value='');document.getElementById('clf_type').value='call';document.getElementById('clf_date').value=new Date().toISOString().split('T')[0];document.getElementById('clf_ndate').value='';document.getElementById('clogModal').style.display='flex';}
+// Stage 50A-3: เขียน contact_logs / work_timeline ผ่าน RPC (server-stamp created_by)
+//   คืน {status:'ok'|'missing'|'unauthorized'|'error'} — ❌ ไม่ส่ง created_by/file/path จาก client
+async function _contactLogRpc(cid,f){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_add_contact_log`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_user_id:uid,p_username:uname,p_customer_id:(cid!=null?cid:null),p_contact_type:f.contact_type||null,p_summary:f.summary||'',p_docs_received:f.docs_received||null,p_docs_missing:f.docs_missing||null,p_next_action:f.next_action||null,p_next_date:f.next_date||null})
+    });
+  }catch(e){return{status:'error'};}
+  if(res.ok)return{status:'ok'};
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error'};
+}
+async function _timelineRpc(cid,status,note){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_add_work_timeline`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_user_id:uid,p_username:uname,p_customer_id:(cid!=null?cid:null),p_status:status||'',p_note:(note||null)})
+    });
+  }catch(e){return{status:'error'};}
+  if(res.ok)return{status:'ok'};
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error'};
+}
 async function saveContactLog(){
   const sum=document.getElementById('clf_sum').value.trim();if(!sum){toast('กรุณากรอกสรุปการติดต่อ','err');return;}
-  try{await dbPost('contact_logs',{customer_id:clogCid,contact_type:document.getElementById('clf_type').value,summary:sum,docs_received:document.getElementById('clf_recv').value.trim(),docs_missing:document.getElementById('clf_miss').value.trim(),next_action:document.getElementById('clf_next').value.trim(),next_date:document.getElementById('clf_ndate').value||null,created_by:curUser.full_name});document.getElementById('clogModal').style.display='none';toast('บันทึกการติดต่อแล้ว');if(detId===clogCid)openDetail(detId);}catch(e){toast('เกิดข้อผิดพลาด','err');}
+  const _f={contact_type:document.getElementById('clf_type').value,summary:sum,docs_received:document.getElementById('clf_recv').value.trim(),docs_missing:document.getElementById('clf_miss').value.trim(),next_action:document.getElementById('clf_next').value.trim(),next_date:document.getElementById('clf_ndate').value||null};
+  try{
+    // Stage 50A-3: บันทึกผ่าน RPC ก่อน (server-stamp created_by); fallback direct ถ้า missing/error (ยังไม่ revoke)
+    const _r=await _contactLogRpc(clogCid,_f);
+    if(_r.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_r.status!=='ok'){
+      if(_r.status==='missing')toast('กรุณา apply migration 20260717','err');
+      await dbPost('contact_logs',{customer_id:clogCid,contact_type:_f.contact_type,summary:_f.summary,docs_received:_f.docs_received,docs_missing:_f.docs_missing,next_action:_f.next_action,next_date:_f.next_date,created_by:curUser.full_name});
+    }
+    document.getElementById('clogModal').style.display='none';
+    if(_r.status!=='missing')toast('บันทึกการติดต่อแล้ว');
+    if(detId===clogCid)openDetail(detId);
+  }catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
 
 function openTLModal(cid){tlCid=cid;const c=customers.find(x=>x.id===cid);fillSelects();if(c)document.getElementById('tlf_status').value=c.work_status||'รับเรื่อง';document.getElementById('tlf_note').value='';document.getElementById('tlModal').style.display='flex';}
 async function saveTL(){
   const status=document.getElementById('tlf_status').value;const note=document.getElementById('tlf_note').value.trim();
   const _tlOld=customers.find(c=>c.id===tlCid)||null;
-  try{await dbPatch('customers',tlCid,{work_status:status,updated_at:new Date().toISOString()});await dbPost('work_timeline',{customer_id:tlCid,status,note,created_by:curUser.full_name});
+  try{await dbPatch('customers',tlCid,{work_status:status,updated_at:new Date().toISOString()});
+    // Stage 50A-3: timeline row ผ่าน RPC (server-stamp created_by); fallback direct ถ้า missing/error
+    const _tr=await _timelineRpc(tlCid,status,note);
+    if(_tr.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_tr.status!=='ok'){
+      if(_tr.status==='missing')toast('กรุณา apply migration 20260717','err');
+      await dbPost('work_timeline',{customer_id:tlCid,status,note,created_by:curUser.full_name});
+    }
     // Stage 2 audit (best-effort): customer.status_change
     try{logAudit('customer.status_change','customer',tlCid,{name:(_tlOld&&_tlOld.name)||'',passport_no:(_tlOld&&(_tlOld.passport_no||_tlOld.alien_id))||null,from:(_tlOld&&_tlOld.work_status)||null,to:status,note:note||null,source:'saveTL'});}catch(_e){console.warn('[AUDIT] status_change log skipped:',_e&&_e.message);}
-    customers=customers.map(c=>c.id===tlCid?{...c,work_status:status}:c);document.getElementById('tlModal').style.display='none';toast('อัปเดตสถานะแล้ว');if(detId===tlCid)openDetail(tlCid);renderDash();if(curView==='customers')doFilter();}catch(e){toast('เกิดข้อผิดพลาด','err');}
+    customers=customers.map(c=>c.id===tlCid?{...c,work_status:status}:c);document.getElementById('tlModal').style.display='none';if(_tr.status!=='missing')toast('อัปเดตสถานะแล้ว');if(detId===tlCid)openDetail(tlCid);renderDash();if(curView==='customers')doFilter();}catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
 
 function renderGroups(){
