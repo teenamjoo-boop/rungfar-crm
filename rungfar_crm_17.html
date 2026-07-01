@@ -7331,11 +7331,42 @@ function _ldSetFilter(k,v){_lineDocFilters[k]=v;lineDocLoad();}
 
 async function lineDocPreview(id){
   const it=_lineDocCache.find(r=>r.id===id);if(!it)return;
-  const w=window.open('','_blank');   // เปิดล่วงหน้า กัน popup blocker
+  // Stage 49A-4: เปิดพรีวิวใน "โมดัลของ CRM" (ตัวเดียวกับคลังเอกสาร) แทน window.open('_blank')
+  //   → ทำงานบนมือถือ + LINE in-app browser (ไม่เปิดแท็บใหม่ → ไม่เจอหน้าขาว)
+  //   ❌ ไม่แสดง/ไม่ log signed URL, ❌ ไม่เก็บ bytes ใน state — ใช้ signed URL flow เดิม
+  const _st=(it.source_type||'').toLowerCase();
+  const previewable=(_st==='image'||_st==='pdf');   // excel/อื่นๆ พรีวิวในโมดัลไม่ได้
+  const label='พรีวิวเอกสารจาก LINE'+(it.file_name?(' — '+it.file_name):'');
+  showLoading('กำลังโหลดไฟล์...');
   const {status,data}=await _lineDocCall('sign',{inbox_id:id});
-  if(status===401){if(w)w.close();toast('ไม่มีสิทธิ์ใช้งาน','err');return;}
-  if(!data.ok||!data.url){if(w)w.close();toast('เปิดไฟล์ไม่ได้','err');return;}
-  if(w)w.location.href=data.url;else window.location.href=data.url;
+  hideLoading();
+  if(status===401){toast('ไม่มีสิทธิ์ใช้งาน','err');return;}
+  if(!data.ok||!data.url){toast('เปิดไฟล์ไม่ได้','err');return;}
+  if(!previewable){
+    // Stage 49A-4 follow-up: ไฟล์พรีวิวไม่ได้ (zip/word/excel/อื่นๆ) → ดาวน์โหลดตรงจาก signed URL
+    //   ❌ ไม่ window.open, ❌ ไม่ about:blank, ❌ ไม่แสดง/ไม่ log URL — ใช้ <a> ชั่วคราวคลิกดาวน์โหลด
+    toast('ไฟล์นี้พรีวิวไม่ได้ กำลังดาวน์โหลดไฟล์...');
+    try{
+      const a=document.createElement('a');
+      a.href=data.url;
+      if(it.file_name)a.download=it.file_name;   // ชื่อไฟล์ปลอดภัยถ้ามี (cross-origin storage อาจใช้ Content-Disposition แทน)
+      a.rel='noopener';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{try{a.remove();}catch(_){}},1000);
+    }catch(e){
+      console.warn('[lineDocPreview] download failed:',e&&e.message);   // ❌ ไม่ log url
+      toast('หากไฟล์ไม่ดาวน์โหลด กรุณากดเปิดด้วย Chrome/Safari','err');
+    }
+    return;
+  }
+  const ftype=(_st==='pdf')?'application/pdf':(data.file_type||'image/jpeg');
+  try{
+    _openDocViewerUrl(data.url,label,ftype,it.file_name||'');   // โมดัล .mdoc-viewer (fullscreen, ทับ bottom nav)
+  }catch(e){
+    console.warn('[lineDocPreview] viewer failed:',e&&e.message);   // ❌ ไม่ log url
+    toast('ไม่สามารถพรีวิวไฟล์นี้ได้ กรุณาดาวน์โหลดหรือเปิดด้วย Chrome/Safari','err');
+  }
 }
 
 async function lineDocReject(id){
