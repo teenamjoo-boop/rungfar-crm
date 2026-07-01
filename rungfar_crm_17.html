@@ -5029,6 +5029,30 @@ async function _bulkUpdateCustomersRpc(ids,patch){
   if(msg==='unauthorized')return{status:'unauthorized'};
   return{status:'error'};
 }
+// Stage 50A-7: นำเข้าลูกค้าหลายราย (Excel/CSV) ผ่าน RPC app_bulk_create_customers (server-stamp created_by/created_at)
+//   รับ array ของ data object → คืน {status:'ok'|'missing'|'unauthorized'|'error', ids} — ❌ ไม่ส่ง photo/path/file/created_at จาก client
+async function _bulkCreateCustomersRpc(rows){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_bulk_create_customers`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_user_id:uid,p_username:uname,p_rows:rows||[]})
+    });
+  }catch(e){return{status:'error'};}
+  if(res.ok){
+    let d=[];try{d=await res.json();}catch(_){d=[];}
+    const row=Array.isArray(d)?d[0]:d;
+    return{status:'ok',ids:(row&&Array.isArray(row.ids))?row.ids:[]};
+  }
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error'};
+}
 async function saveCustomer(){
   if(!(await guardSession()))return; // STAGE 24: session guard (บันทึก/อัปโหลดเอกสารลูกค้า)
   // null-safe readers — กัน element ที่อาจถูกซ่อน/ย้าย DOM (Round C hotfix)
@@ -5550,8 +5574,48 @@ function impDate(v){
   if(_m){const p=impDate(_m[1]+'/'+_m[2]+'/'+_m[3]);if(p)return p;}
   return null; // unrecognised — never send raw text to a DB date column
 }
-function makeImpKey(pp,al,name,nat,empName){const p=normImpStr(pp);if(p)return 'PP:'+p;const a=normImpStr(al);if(a)return 'AL:'+a;const n=normImpStr(name);if(n)return 'NM:'+n+'|'+normImpStr(nat)+'|'+normImpStr(empName);return null;}
-function buildExistingKeys(){const s=new Set();customers.forEach(c=>{const pp=normImpStr(c.passport_no);if(pp)s.add('PP:'+pp);const al=normImpStr(c.alien_id);if(al)s.add('AL:'+al);const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);s.add('NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:''));}});return s;}
+// Stage 50A-7 fix: ค่า placeholder/ว่าง — ห้ามใช้เป็น identity ตรวจซ้ำ (กัน false duplicate เช่น passport "-" หลายแถวชนกัน)
+function _impBlankId(s){
+  const v=normImpStr(s); // trim + upper + ตัดช่องว่างแล้ว
+  if(!v)return true;
+  return /^(?:-+|—+|–+|_+|\.+|\/+|NA|N\/A|N\.A\.?|NONE|NULL|NIL|UNDEFINED|ไม่มี|ไม่ระบุ|ไม่ทราบ)$/.test(v);
+}
+// normalize ค่า identity: คืน '' ถ้าเป็น blank-like → จะไม่ถูกใช้เป็นตัวตน
+function _impId(s){return _impBlankId(s)?'':normImpStr(s);}
+// Stage 50A-7 follow-up: sanitize ค่าที่จะ "บันทึกจริง" — placeholder ("-","N/A","ไม่มี" ฯลฯ) → null
+//   คงค่าจริงไว้ตามเดิม (ไม่ upper / ไม่ตัดช่องว่างภายใน) ต่างจาก _impId ที่ใช้ทำ key เท่านั้น
+//   แรงงานข้ามชาติจำนวนมากยังไม่มี passport/บัตร/เลขคำขอตอน import ครั้งแรก → ต้องเป็น null ไม่ใช่ "-"
+function _impClean(s){const v=String(s==null?'':s).trim();return _impBlankId(v)?null:v;}
+// สร้าง key ตรวจซ้ำ (strong-first): พาสปอร์ต → เลขบัตรต่างด้าว/ชมพู → เลขคำขอ(wp_no) →
+//   fallback ชื่อ+นายจ้าง+สัญชาติ เฉพาะเมื่อ "ชื่อจริง" (ไม่ว่าง/ไม่ placeholder)
+//   คืน {key,kind} หรือ null (null = ไม่มีตัวตนพอ → ไม่นับซ้ำ)
+function makeImpKeyEx(pp,al,req,name,nat,empName){
+  const p=_impId(pp);if(p)return{key:'PP:'+p,kind:'passport'};
+  const a=_impId(al);if(a)return{key:'AL:'+a,kind:'alien'};
+  const r=_impId(req);if(r)return{key:'REQ:'+r,kind:'request'};
+  const n=_impId(name);if(n)return{key:'NM:'+n+'|'+_impId(nat)+'|'+_impId(empName),kind:'name'};
+  return null;
+}
+// backward-compat: คืนเฉพาะ key string
+function makeImpKey(pp,al,name,nat,empName){const k=makeImpKeyEx(pp,al,null,name,nat,empName);return k?k.key:null;}
+// ข้อความเหตุผลซ้ำในไฟล์ — เจาะจงตามชนิด identity
+function _impDupReason(kind){
+  return kind==='passport'?'ซ้ำเลขพาสปอร์ตในไฟล์นำเข้า'
+       :kind==='alien'?'ซ้ำเลขบัตรต่างด้าว/ชมพูในไฟล์นำเข้า'
+       :kind==='request'?'ซ้ำเลขคำขอในไฟล์นำเข้า'
+       :kind==='name'?'ซ้ำชื่อ/นายจ้าง/สัญชาติในไฟล์นำเข้า'
+       :'ซ้ำในไฟล์นำเข้า';
+}
+// ทุก key ที่ record มี (strong หลายชั้น) — ใช้จับ "ซ้ำกับข้อมูลเดิม" ให้ครอบคลุม (เหมือนพฤติกรรมเดิมที่เก็บ PP/AL/NM ทุกตัว)
+function _impAllKeys(pp,al,req,name,nat,empName){
+  const out=[];
+  const p=_impId(pp);if(p)out.push('PP:'+p);
+  const a=_impId(al);if(a)out.push('AL:'+a);
+  const r=_impId(req);if(r)out.push('REQ:'+r);
+  const n=_impId(name);if(n)out.push('NM:'+n+'|'+_impId(nat)+'|'+_impId(empName));
+  return out;
+}
+function buildExistingKeys(){const s=new Set();customers.forEach(c=>{const emp=employers.find(e=>e.id===c.employer_id);_impAllKeys(c.passport_no,c.alien_id,c.wp_no,c.name,c.nationality,emp?emp.name:'').forEach(k=>s.add(k));});return s;}
 
 // Phase A/B: ดึงรูปฝังจาก .xlsx (zip) แล้ว map กับแถวข้อมูลด้วย drawing anchor (from-row)
 // read-only ทั้งหมด — ถ้าพังให้คืน {} เงียบ ๆ (import ปกติต้องไม่เสีย)
@@ -5654,7 +5718,8 @@ function renderImpPreview(){
   let cntDupEx=0,cntDupFile=0,cntMissing=0;
   const rowStatus=impData.map(r=>{
     const name=get(r,'name');if(!name){cntMissing++;return 'missing';}
-    const key=makeImpKey(get(r,'passport_no'),get(r,'alien_id'),name,get(r,'nationality'),get(r,'employer_name'));
+    const _k=makeImpKeyEx(get(r,'passport_no'),get(r,'alien_id'),get(r,'wp_no'),name,get(r,'nationality'),get(r,'employer_name'));
+    const key=_k?_k.key:null;
     if(key&&existingKeys.has(key)){cntDupEx++;return 'dup-existing';}
     if(key&&seenInFile.has(key)){cntDupFile++;return 'dup-file';}
     if(key)seenInFile.add(key);return 'new';
@@ -5730,9 +5795,9 @@ async function doImport(){
   // map key→ลูกค้าเดิม (key เดียวกับ buildExistingKeys) — ใช้หาเพื่ออัปเดตรูปให้คนเดิมที่ยังไม่มีรูป
   const existingByKey=new Map();
   customers.forEach(c=>{
-    const pp=normImpStr(c.passport_no);if(pp&&!existingByKey.has('PP:'+pp))existingByKey.set('PP:'+pp,c);
-    const al=normImpStr(c.alien_id);if(al&&!existingByKey.has('AL:'+al))existingByKey.set('AL:'+al,c);
-    const n=normImpStr(c.name);if(n){const emp=employers.find(e=>e.id===c.employer_id);const k='NM:'+n+'|'+normImpStr(c.nationality)+'|'+normImpStr(emp?emp.name:'');if(!existingByKey.has(k))existingByKey.set(k,c);}
+    // Stage 50A-7 fix: ใช้ตัว key เดียวกับ buildExistingKeys (strip placeholder + รวมเลขคำขอ) เพื่อจับคู่ลูกค้าเดิมให้ตรงกัน
+    const emp=employers.find(e=>e.id===c.employer_id);
+    _impAllKeys(c.passport_no,c.alien_id,c.wp_no,c.name,c.nationality,emp?emp.name:'').forEach(k=>{if(!existingByKey.has(k))existingByKey.set(k,c);});
   });
   const seenInFile=new Set();
   let countNew=0,countDupEx=0,countDupFile=0,countMissing=0,countError=0;
@@ -5742,6 +5807,9 @@ async function doImport(){
   const skippedRows=[];
   // เก็บลำดับไฟล์ Excel: แถวบนสุด (ri=0) ได้ created_at ใหม่สุด → ขึ้นบนตาม sort created_at DESC เดิม
   const _impBase=Date.now();
+  // Stage 50A-7: แจ้งเตือน "apply migration" ครั้งเดียวต่อการนำเข้า (กัน toast รัว) แล้ว fallback ไป direct write เดิม
+  let _impCreateMissing=false; // RPC app_bulk_create_customers (20260719) ยังไม่ติดตั้ง
+  let _impUpdateMissing=false;  // RPC app_bulk_update_customers (20260718) ยังไม่ติดตั้ง
   // Phase 1: ตรวจซ้ำ, สร้างนายจ้าง, ย่อรูป — sequential เพราะต้องการ dedup/employer/photo (ไม่ใช่ DB insert)
   const pendingInserts=[];
   for(let ri=0;ri<impData.length;ri++){
@@ -5751,7 +5819,9 @@ async function doImport(){
     if(!name){countMissing++;skippedRows.push({ri:ri+2,name:'—',id:'—',reason:'ไม่มีชื่อ'});continue;}
     const pp=get(row,'passport_no');const al=get(row,'alien_id');
     const nat=get(row,'nationality');const empName=get(row,'employer_name');
-    const key=makeImpKey(pp,al,name,nat,empName);
+    // Stage 50A-7 fix: strong-first key + strip placeholder + รวมเลขคำขอ(wp_no) → กัน false duplicate ในไฟล์
+    const _k=makeImpKeyEx(pp,al,get(row,'wp_no'),name,nat,empName);
+    const key=_k?_k.key:null;
     if(key&&existingKeys.has(key)){
       countDupEx++;
       const _exC=existingByKey.get(key);const _notes=[];
@@ -5770,32 +5840,40 @@ async function doImport(){
         const _dupCode=resolveAssigneeCode(_dupAsgRaw);
         if(_dupCode){
           if(_normCode(_exC.assignee_code||'')!==_normCode(_dupCode)){
-            try{await dbPatch('customers',_exC.id,{assignee_code:_dupCode});_exC.assignee_code=_dupCode;countAsgUpd++;_notes.push('อัปเดตผู้รับผิดชอบ');}catch(_){/* ไม่ทำให้ import พัง */}
+            // Stage 50A-7: อัปเดตผู้รับผิดชอบลูกค้าเดิมผ่าน RPC app_bulk_update_customers (server-stamp); fallback dbPatch ถ้า missing/error
+            const _ar=await _bulkUpdateCustomersRpc([_exC.id],{assignee_code:_dupCode});
+            if(_ar.status==='unauthorized'){hideLoading();toast('ไม่มีสิทธิ์นำเข้าข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+            if(_ar.status==='ok'){_exC.assignee_code=_dupCode;countAsgUpd++;_notes.push('อัปเดตผู้รับผิดชอบ');}
+            else{
+              if(_ar.status==='missing'&&!_impUpdateMissing){_impUpdateMissing=true;toast('กรุณา apply migration 20260718','err');}
+              try{await dbPatch('customers',_exC.id,{assignee_code:_dupCode});_exC.assignee_code=_dupCode;countAsgUpd++;_notes.push('อัปเดตผู้รับผิดชอบ');}catch(_){/* ไม่ทำให้ import พัง */}
+            }
           }
         }else{countAsgUnresolved++;}
       }
-      skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำกับข้อมูลเดิม'+(_notes.length?` (${_notes.join(', ')})`:'')});continue;
+      skippedRows.push({ri:ri+2,name,id:_impClean(pp)||_impClean(al)||'—',reason:'ซ้ำกับข้อมูลเดิม'+(_notes.length?` (${_notes.join(', ')})`:'')});continue;
     }
-    if(key&&seenInFile.has(key)){countDupFile++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'ซ้ำในไฟล์นำเข้า'});continue;}
+    if(key&&seenInFile.has(key)){countDupFile++;skippedRows.push({ri:ri+2,name,id:_impClean(pp)||_impClean(al)||'—',reason:_impDupReason(_k&&_k.kind)});continue;}
     try{
       let empId=null;
       if(empName){const _en=normalizeEmployerName(empName);const ef=employers.find(x=>normalizeEmployerName(x.name)===_en);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
       // Stage 28F: _ds() wraps impDate() — records field+value if unparseable (→ null), never sends raw text to DB date column
       const _bdat=[];
       const _ds=(key,raw)=>{const r=impDate(raw);const rv=String(raw||'').trim();if(rv&&!r)_bdat.push(key+(rv.length<=25?'='+rv:''));return r||null;};
-      const data={name,nationality:nat||'เมียนมา',passport_no:pp||null,alien_id:al||null,phone:get(row,'phone')||null,employer_id:empId,customer_type:empId?'company':'freelance',wp_no:get(row,'wp_no')||null,exp_visa:_ds('exp_visa',get(row,'exp_visa'))||null,exp_wp:_ds('exp_wp',get(row,'exp_wp'))||null,next_90:_ds('next_90',get(row,'next_90'))||null,work_status:get(row,'work_status')||'รับเรื่อง',note:get(row,'note')||null};
+      // Stage 50A-7 follow-up: _impClean() → placeholder ("-", "N/A", "ไม่มี" ฯลฯ) เป็น null ไม่ส่งเป็นเลขตัวตนจริง (กัน error unique/บันทึกค่าขยะ)
+      const data={name,nationality:_impClean(nat)||'เมียนมา',passport_no:_impClean(pp),alien_id:_impClean(al),phone:_impClean(get(row,'phone')),employer_id:empId,customer_type:empId?'company':'freelance',wp_no:_impClean(get(row,'wp_no')),exp_visa:_ds('exp_visa',get(row,'exp_visa'))||null,exp_wp:_ds('exp_wp',get(row,'exp_wp'))||null,next_90:_ds('next_90',get(row,'next_90'))||null,work_status:get(row,'work_status')||'รับเรื่อง',note:_impClean(get(row,'note'))};
       const _svc=get(row,'services');if(_svc)data.services=_svc.split(/[;,]/).map(s=>s.trim()).filter(Boolean);
       // Round F1B-2: field ใหม่ตาม Excel
       data.submit_date=_ds('submit_date',get(row,'submit_date'));
-      data.agent_name=get(row,'agent_name')||null;
+      data.agent_name=_impClean(get(row,'agent_name'));
       data.medical_cert=impBool(get(row,'medical_cert'));
       data.insurance=impBool(get(row,'insurance'));
       data.fee_100_paid=impBool(get(row,'fee_100_paid'));
       data.fee_900_paid=impBool(get(row,'fee_900_paid'));
       data.card_fee_paid=impBool(get(row,'card_fee_paid'));
       data.appt_date=_ds('appt_date',get(row,'appt_date'));
-      data.appt_time=get(row,'appt_time')||null;
-      data.appt_place=get(row,'appt_place')||null;
+      data.appt_time=_impClean(get(row,'appt_time'));
+      data.appt_place=_impClean(get(row,'appt_place'));
       data.queue_date=_ds('queue_date',get(row,'queue_date'));
       data.receive_date=_ds('receive_date',get(row,'receive_date'));
       const _bh=get(row,'booklet_has'),_bn=get(row,'booklet_none');
@@ -5819,7 +5897,7 @@ async function doImport(){
       }
       if(key)seenInFile.add(key); // ป้องกันแถวซ้ำในไฟล์เดียวกัน (ต้องเซตก่อนแถวถัดไป)
       pendingInserts.push({ri,name,pp,al,data,_bdat,_photoDataUrl});
-    }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:pp||al||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e)});}
+    }catch(e){countError++;skippedRows.push({ri:ri+2,name,id:_impClean(pp)||_impClean(al)||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e)});}
   }
   // Phase 2: insert ลูกค้าใหม่
   //   Stage 38B: แยกแถว — แถว "ไม่มีรูป" ใช้ chunked bulk insert เร็วเหมือนเดิม;
@@ -5833,6 +5911,16 @@ async function doImport(){
     const chunk=_plainRows.slice(ci,ci+_CHUNK);
     const _p2=document.getElementById('loadingText');
     if(_p2)_p2.textContent=`กำลังบันทึก (${Math.min(ci+_CHUNK,_plainRows.length)}/${pendingInserts.length})...`;
+    // Stage 50A-7: นำเข้าผ่าน RPC app_bulk_create_customers ก่อน (server-stamp created_by/created_at); fallback direct ถ้า missing/error
+    const _cr=await _bulkCreateCustomersRpc(chunk.map(r=>r.data));
+    if(_cr.status==='unauthorized'){hideLoading();toast('ไม่มีสิทธิ์นำเข้าข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_cr.status==='ok'){
+      const _ids=_cr.ids||[];
+      chunk.forEach((r,i)=>{const _id=_ids[i];if(_id!=null){customers.unshift({...r.data,id:_id});countNew++;}});
+      continue;
+    }
+    if(_cr.status==='missing'&&!_impCreateMissing){_impCreateMissing=true;toast('กรุณา apply migration 20260719','err');}
+    // fallback (missing/error): chunked bulk insert เดิม
     try{
       const rows=await dbPost('customers',chunk.map(r=>r.data));
       if(rows&&rows.length){rows.forEach(r=>customers.unshift(r));countNew+=rows.length;}
@@ -5840,7 +5928,7 @@ async function doImport(){
       // chunk fail → fallback row-by-row เฉพาะ chunk นี้ (แถวที่ดีในก้อนเดิมยังบันทึกได้)
       for(const r of chunk){
         try{const sr=await dbPost('customers',r.data);if(sr&&sr[0]){customers.unshift(sr[0]);countNew++;}}
-        catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:r.pp||r.al||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e2)});}
+        catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:_impClean(r.pp)||_impClean(r.al)||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e2)});}
       }
     }
   }
@@ -5851,8 +5939,15 @@ async function doImport(){
     const _p3=document.getElementById('loadingText');
     if(_p3)_p3.textContent=`กำลังบันทึกรูป (${pj+1}/${_photoRows.length})...`;
     let _newId=null;
-    try{const sr=await dbPost('customers',r.data);if(sr&&sr[0]){customers.unshift(sr[0]);_newId=sr[0].id;countNew++;}}
-    catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:r.pp||r.al||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e2)});continue;}
+    // Stage 50A-7: แถวมีรูป → insert ผ่าน RPC ก่อนเพื่อได้ id (server-stamp); fallback dbPost ถ้า missing/error แล้วค่อยอัปโหลดรูปตาม id
+    const _pcr=await _bulkCreateCustomersRpc([r.data]);
+    if(_pcr.status==='unauthorized'){hideLoading();toast('ไม่มีสิทธิ์นำเข้าข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_pcr.status==='ok'&&_pcr.ids&&_pcr.ids[0]!=null){_newId=_pcr.ids[0];customers.unshift({...r.data,id:_newId});countNew++;}
+    else{
+      if(_pcr.status==='missing'&&!_impCreateMissing){_impCreateMissing=true;toast('กรุณา apply migration 20260719','err');}
+      try{const sr=await dbPost('customers',r.data);if(sr&&sr[0]){customers.unshift(sr[0]);_newId=sr[0].id;countNew++;}}
+      catch(e2){countError++;skippedRows.push({ri:r.ri+2,name:r.name,id:_impClean(r.pp)||_impClean(r.al)||'—',reason:'บันทึกไม่สำเร็จ',detail:_impErrMsg(e2)});continue;}
+    }
     if(_newId!=null){const _ok=await _uploadCustomerPhoto(_newId,r._photoDataUrl);if(_ok===false)countPhotoStorageFail++;}
   }
   hideLoading();
@@ -5866,7 +5961,7 @@ async function doImport(){
   // Stage 28F: rows that imported successfully but had date fields coerced to null
   const _bwRows=pendingInserts.filter(r=>r._bdat&&r._bdat.length);
   const dateWarnHTML=_bwRows.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ วันที่บางช่องแปลงไม่ได้ (ตั้งเป็นว่าง): ${_bwRows.length} แถว</strong><div style="font-size:11px;color:#b45309;margin-top:3px">แถวเหล่านี้นำเข้าสำเร็จ แต่ช่องวันที่ที่แปลงไม่ได้ถูกตั้งเป็นว่าง กรุณาแก้ไขใน Excel แล้ว import ซ้ำหรือแก้ในระบบโดยตรง</div><div style="overflow-x:auto;max-height:120px;margin-top:6px"><table class="imp-table"><thead><tr><th>แถว</th><th>ชื่อ</th><th>ช่องที่มีปัญหา</th></tr></thead><tbody>${_bwRows.slice(0,15).map(r=>`<tr><td>${r.ri+2}</td><td>${esc(r.name)}</td><td style="font-size:10px;color:#92400e">${r._bdat.map(esc).join(', ')}</td></tr>`).join('')}${_bwRows.length>15?`<tr><td colspan="3" style="text-align:center;color:var(--g5)">...และอีก ${_bwRows.length-15} แถว</td></tr>`:''}</tbody></table></div></div>`:'';
-  const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${esc(s.name)}</td><td>${esc(s.id)}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#fef3c7':s.reason==='ซ้ำในไฟล์นำเข้า'?'#fff3e0':'#ffeaea'};color:${s.reason==='ซ้ำกับข้อมูลเดิม'?'#92400e':s.reason==='ซ้ำในไฟล์นำเข้า'?'#d97706':'#dc2626'}">${esc(s.reason)}</span>${s.detail?`<div style="font-size:10px;color:#92400e;margin-top:2px">${esc(s.detail)}</div>`:''}</td></tr>`).join('')}</tbody></table></div></div>`:'';
+  const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${esc(s.name)}</td><td>${esc(s.id)}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason.includes('ซ้ำกับข้อมูลเดิม')?'#fef3c7':s.reason.includes('ในไฟล์นำเข้า')?'#fff3e0':'#ffeaea'};color:${s.reason.includes('ซ้ำกับข้อมูลเดิม')?'#92400e':s.reason.includes('ในไฟล์นำเข้า')?'#d97706':'#dc2626'}">${esc(s.reason)}</span>${s.detail?`<div style="font-size:10px;color:#92400e;margin-top:2px">${esc(s.detail)}</div>`:''}</td></tr>`).join('')}</tbody></table></div></div>`:'';
   document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip+countPhotoStorageFail)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}${countPhotoStorageFail?` · อัปโหลด Storage ล้มเหลว ${countPhotoStorageFail} (เก็บแบบเดิมไว้ชั่วคราว)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${dateWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
 }
 
