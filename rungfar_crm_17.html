@@ -4985,6 +4985,30 @@ async function _uploadCustomerPhoto(custId,dataUrl){
   }
 }
 
+// Stage 50A-1: บันทึกลูกค้าผ่าน RPC app_save_customer (SECURITY DEFINER, server-stamp actor)
+//   คืน {status:'ok'|'missing'|'unauthorized'|'error', id} — ❌ ไม่ส่ง/ไม่รับ photo/path/file
+async function _customerSaveRpc(customerId,data){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_save_customer`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_user_id:uid,p_username:uname,p_customer_id:(customerId!=null?customerId:null),p_data:data||{}})
+    });
+  }catch(e){return{status:'error'};}
+  if(res.ok){
+    let d=[];try{d=await res.json();}catch(_){d=[];}
+    const row=Array.isArray(d)?d[0]:d;
+    return{status:'ok',id:(row&&row.id!=null)?row.id:customerId};
+  }
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error'};
+}
 async function saveCustomer(){
   if(!(await guardSession()))return; // STAGE 24: session guard (บันทึก/อัปโหลดเอกสารลูกค้า)
   // null-safe readers — กัน element ที่อาจถูกซ่อน/ย้าย DOM (Round C hotfix)
@@ -5011,8 +5035,19 @@ async function saveCustomer(){
     // Stage 36A: ไม่ใส่ field photo ใน data อีกต่อไป → รูปใหม่ upload เข้า Storage หลังบันทึก; รูปเดิม (base64/Storage) ไม่ถูกแตะ
     let savedId=editId;
     const _auditOld=editId?(customers.find(c=>c.id===editId)||null):null;
-    if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
-    else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}toast('เพิ่มลูกค้าแล้ว');}
+    // Stage 50A-1: บันทึกผ่าน RPC ก่อน; ถ้ายังไม่ได้ apply migration (missing) หรือ error → fallback direct write
+    //   (สเตจนี้ยังไม่ revoke สิทธิ์ direct เพื่อกัน regression) — unauthorized = หยุด แจ้งเข้าสู่ระบบใหม่
+    const _cwr=await _customerSaveRpc(editId||null,data);
+    if(_cwr.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_cwr.status==='ok'){
+      savedId=(_cwr.id!=null)?_cwr.id:editId;
+      if(editId){customers=customers.map(c=>c.id===editId?{...c,...data}:c);toast('บันทึกแล้ว');}
+      else{let _row=null;try{const _rr=await dbGet('customers','?id=eq.'+savedId+'&limit=1');_row=(_rr&&_rr[0])||null;}catch(_){}customers.unshift(_row||{...data,id:savedId});toast('เพิ่มลูกค้าแล้ว');}
+    }else{
+      if(_cwr.status==='missing')toast('กรุณา apply migration 20260716','err');
+      if(editId){await dbPatch('customers',editId,data);customers=customers.map(c=>c.id===editId?{...c,...data}:c);if(_cwr.status!=='missing')toast('บันทึกแล้ว');}
+      else{const r=await dbPost('customers',data);if(r&&r[0]){customers.unshift(r[0]);savedId=r[0].id;}if(_cwr.status!=='missing')toast('เพิ่มลูกค้าแล้ว');}
+    }
     // Stage 36A: รูปใหม่ที่ผู้ใช้เลือก → upload เข้า Storage (customer-photos) ไม่เก็บ base64 ใน customers.photo
     if(_photoIsNew&&photoB64&&savedId){await _uploadCustomerPhoto(savedId,photoB64);}
     // Stage 2 audit (best-effort): customer.create / customer.update — ไม่ log รูป/ไฟล์ base64
