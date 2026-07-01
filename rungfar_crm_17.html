@@ -5734,9 +5734,80 @@ async function doImport(){
 
 function renderSettings(){
   const items=[{k:'passport',l:T('expPassport')},{k:'visa',l:T('expVisa')},{k:'wp',l:T('expWP')},{k:'next90',l:T('exp90')},{k:'mou',l:T('expMOU')}];
-  document.getElementById('settingsContent').innerHTML=items.map(it=>`<div class="sr"><div><div style="font-size:13px;font-weight:700">${it.l}</div><div style="font-size:12px;color:var(--g5);margin-top:2px">${T('settingsNotifyBefore')}</div></div><div style="display:flex;align-items:center;gap:6px"><input class="si2" type="number" min="1" max="365" value="${settings[it.k]}" onchange="setSetting('${it.k}',this.value)"><span style="font-size:12px;color:var(--g5)">${T('settingsDays')}</span></div></div>`).join('');
+  const notifyHtml=items.map(it=>`<div class="sr"><div><div style="font-size:13px;font-weight:700">${it.l}</div><div style="font-size:12px;color:var(--g5);margin-top:2px">${T('settingsNotifyBefore')}</div></div><div style="display:flex;align-items:center;gap:6px"><input class="si2" type="number" min="1" max="365" value="${settings[it.k]}" onchange="setSetting('${it.k}',this.value)"><span style="font-size:12px;color:var(--g5)">${T('settingsDays')}</span></div></div>`).join('');
+  // Stage 49A-1: แผงตรวจความพร้อมก่อนทดสอบ (admin-only, อ่านอย่างเดียว — ไม่เขียน/ไม่ลบข้อมูล)
+  const readiness=`
+    <div style="margin-top:22px;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:16px 18px">
+      <div style="font-size:15px;font-weight:800;color:var(--g9);margin-bottom:3px">ตรวจความพร้อมก่อนทดสอบ</div>
+      <div style="font-size:12px;color:var(--g5);margin-bottom:12px">ตรวจว่า RPC/ฟีเจอร์หลักของ Phase 1 ถูกติดตั้ง (apply migration) แล้ว — อ่านอย่างเดียว ไม่บันทึก/ไม่ลบข้อมูล</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">
+        <input type="password" id="phchkPass" autocomplete="off" placeholder="รหัส ADMIN" onkeydown="if(event.key==='Enter')phase1Check()" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:8px 10px;font-size:13px;width:150px;outline:none;color:var(--g9);background:#fff">
+        <button onclick="phase1Check()" class="btn btn-p btn-sm">เริ่มตรวจระบบ</button>
+      </div>
+      <div id="phchkResults" style="font-size:12px;color:var(--g5)">กดปุ่ม “เริ่มตรวจระบบ” เพื่อตรวจสอบ (บาง รายการต้องใช้รหัส ADMIN)</div>
+    </div>`;
+  document.getElementById('settingsContent').innerHTML=notifyHtml+readiness;
 }
 function setSetting(k,v){settings[k]=parseInt(v)||30;localStorage.setItem('crm_settings',JSON.stringify(settings));toast('บันทึกการตั้งค่าแล้ว');}
+
+// Stage 49A-1: Pre-test verification — เรียก RPC อ่านอย่างเดียว, จับ 404/PGRST202/unauthorized
+//   ❌ ไม่เรียก write RPC ใด ๆ (log/create/review/update) — ไม่อ่าน body ผลลัพธ์ (แค่เช็ค res.ok)
+async function _phchkCall(name,body){
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/${name}`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body)
+    });
+  }catch(e){return{status:'network'};}
+  if(res.ok)return{status:'pass'};   // ✅ ไม่อ่าน rows (กันหยิบ business data มาแสดง)
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauth'};
+  return{status:'error'};
+}
+async function phase1Check(){
+  if(curUser?.role!=='admin'){const b=document.getElementById('phchkResults');if(b)b.textContent=T('seclogNoAccess')||'เฉพาะผู้ดูแลระบบ';return;}
+  const box=document.getElementById('phchkResults');if(!box)return;
+  const pass=(document.getElementById('phchkPass')?.value||'').trim();
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  box.innerHTML='<div style="padding:6px 0;color:var(--g5)">⏳ กำลังตรวจระบบ...</div>';
+  const defs=[
+    {label:'คลังเอกสาร',           admin:false,name:'app_list_documents',            body:{p_user_id:uid,p_username:uname,p_limit:1,p_offset:0}},
+    {label:'สรุปเอกสาร',           admin:false,name:'app_document_summary',           body:{p_user_id:uid,p_username:uname}},
+    {label:'Dashboard การใช้งาน',  admin:true, name:'app_admin_audit_action_summary', body:{p_admin_username:uname,p_admin_password:pass,p_start_date:null,p_end_date:null}},
+    {label:'ประวัติ Login/Security',admin:true, name:'app_admin_list_security_logs',    body:{p_admin_username:uname,p_admin_password:pass,p_start_date:null,p_end_date:null,p_username:null,p_status:null,p_device:null,p_suspicious_only:false}},
+    {label:'คำขอลบ',               admin:false,name:'app_list_delete_requests',        body:{p_user_id:uid,p_username:uname,p_status:'pending',p_limit:1,p_offset:0}}
+  ];
+  const results=[];
+  for(const c of defs){
+    if(c.admin&&!pass){results.push({label:c.label,admin:true,status:'needpass'});continue;}
+    const r=await _phchkCall(c.name,c.body);
+    results.push({label:c.label,admin:c.admin,status:r.status});
+  }
+  phase1Render(results);
+}
+function phase1Render(results){
+  const box=document.getElementById('phchkResults');if(!box)return;
+  const chip=(status,isAdmin)=>{
+    const css='display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap';
+    if(status==='pass')   return `<span style="${css};background:#dcfce7;color:#15803d">✓ ผ่าน</span>`;
+    if(status==='missing')return `<span style="${css};background:#fee2e2;color:#dc2626">✗ ยังไม่ได้ apply migration ที่เกี่ยวข้อง</span>`;
+    if(status==='unauth') return `<span style="${css};background:#fef3c7;color:#b45309">${isAdmin?'รหัส ADMIN ไม่ถูกต้อง':'ไม่มีสิทธิ์'}</span>`;
+    if(status==='needpass')return `<span style="${css};background:#f3f4f6;color:#6b7280">ต้องใช้รหัส ADMIN</span>`;
+    if(status==='network')return `<span style="${css};background:#f3f4f6;color:#6b7280">เชื่อมต่อไม่ได้</span>`;
+    return `<span style="${css};background:#f3f4f6;color:#6b7280">ตรวจไม่สำเร็จ</span>`;
+  };
+  const rows=results.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--g2)"><span style="font-size:13px;color:var(--g8);font-weight:600">${esc(r.label)}</span>${chip(r.status,r.admin)}</div>`).join('');
+  const allPass=results.length>0&&results.every(r=>r.status==='pass');
+  const banner=allPass
+    ?`<div style="margin-top:12px;background:#dcfce7;border:1px solid #86efac;color:#15803d;border-radius:var(--rl);padding:10px 12px;font-size:13px;font-weight:700">✅ ระบบหลักพร้อมสำหรับทดสอบ 2–3 คน</div>`
+    :`<div style="margin-top:12px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:10px 12px;font-size:12.5px">ยังมีบางรายการที่ต้องตรวจสอบ — ดูสถานะแต่ละรายการด้านบน</div>`;
+  box.innerHTML=rows+banner;
+}
 
 // RLS-HARDEN-2D: เปิด modal ยืนยัน admin password ก่อนโหลด user list
 function adminLoadUsers(){
