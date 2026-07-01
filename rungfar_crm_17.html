@@ -2489,6 +2489,7 @@ const LANG = {
     seclogTblTime:'เวลา Login', seclogTblName:'ชื่อ-นามสกุล',
     seclogTblRole:'สิทธิ์', seclogTblFail:'เหตุที่ล้มเหลว',
     seclogTblFP:'Fingerprint', seclogTblSusp:'น่าสงสัย', seclogTblRisk:'ความเสี่ยง',
+    seclogTblIp:'IP', seclogIpTip:'IP เป็นตำแหน่งเครือข่ายคร่าว ๆ ไม่ใช่ GPS ใช้ดูย้อนหลังเท่านั้น ไม่ได้ใช้บล็อกการเข้าใช้งาน',
     seclogReasonWrong:'รหัสผ่านไม่ถูกต้อง', seclogReasonNoUser:'ไม่มีผู้ใช้',
     seclogReasonNetwork:'ข้อผิดพลาดเครือข่าย', seclogReasonInactive:'บัญชีถูกปิดใช้งาน',
     seclogNoDataRange:'ไม่พบข้อมูลในช่วงเวลาที่เลือก',
@@ -2698,6 +2699,7 @@ const LANG = {
     seclogTblTime:'Login အချိန်', seclogTblName:'အမည်-နာမဆိုင်ရာ',
     seclogTblRole:'သက်ဆိုင်ရာ', seclogTblFail:'မအောင်မြင်ရသောအကြောင်း',
     seclogTblFP:'Fingerprint', seclogTblSusp:'သံသယရှိ', seclogTblRisk:'အန္တရာယ်',
+    seclogTblIp:'IP', seclogIpTip:'IP သည် ခန့်မှန်းကွန်ရက်တည်နေရာဖြစ်ပြီး GPS မဟုတ်ပါ — ပြန်ကြည့်ရန်သာသုံးသည်၊ ဝင်ရောက်မှုကို ပိတ်ဆို့ရန်မဟုတ်ပါ',
     seclogReasonWrong:'စကားဝှက်မမှန်ကန်', seclogReasonNoUser:'အသုံးပြုသူမရှိ',
     seclogReasonNetwork:'ကွန်ရက်အမှား', seclogReasonInactive:'အကောင့်ပိတ်ထား',
     seclogNoDataRange:'ရွေးချယ်သောကာလတွင် ဒေတာမတွေ့ပါ',
@@ -7003,6 +7005,7 @@ function secLogRender(logs){
       <td style="padding:7px 10px;font-size:11px;color:${isFail?'var(--red)':'var(--g5)'}">${esc(reason)}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(devType)}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--g6)">${esc(l.browser_name||'—')}</td>
+      <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g6);white-space:nowrap">${l.ip_address?esc(l.ip_address):'-'}</td>
       <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g4)">${esc(fp)}</td>
       <td style="padding:7px 10px;text-align:center">${_secRiskBadges(l)}</td>
     </tr>`;
@@ -7027,6 +7030,7 @@ function secLogRender(logs){
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblFail')}</th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogDevice')}</th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">Browser</th>
+          <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;white-space:nowrap;border-bottom:1px solid var(--g2)" title="${esc(T('seclogIpTip'))}">${T('seclogTblIp')} <span style="color:var(--g4);font-weight:400;cursor:help">ⓘ</span></th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;border-bottom:1px solid var(--g2)">${T('seclogTblFP')}</th>
           <th style="padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:center;border-bottom:1px solid var(--g2)">${T('seclogTblRisk')}</th>
         </tr></thead>
