@@ -5009,6 +5009,26 @@ async function _customerSaveRpc(customerId,data){
   if(msg==='unauthorized')return{status:'unauthorized'};
   return{status:'error'};
 }
+// Stage 50A-5: แก้ไขลูกค้าหลายรายการผ่าน RPC app_bulk_update_customers (server-stamp updated_by/updated_at)
+//   คืน {status:'ok'|'missing'|'unauthorized'|'error'} — ❌ ไม่ส่ง updated_by/file/path จาก client
+async function _bulkUpdateCustomersRpc(ids,patch){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_bulk_update_customers`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_user_id:uid,p_username:uname,p_ids:ids,p_patch:patch||{}})
+    });
+  }catch(e){return{status:'error'};}
+  if(res.ok)return{status:'ok'};
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error'};
+}
 async function saveCustomer(){
   if(!(await guardSession()))return; // STAGE 24: session guard (บันทึก/อัปโหลดเอกสารลูกค้า)
   // null-safe readers — กัน element ที่อาจถูกซ่อน/ย้าย DOM (Round C hotfix)
@@ -5275,7 +5295,14 @@ function openTLModal(cid){tlCid=cid;const c=customers.find(x=>x.id===cid);fillSe
 async function saveTL(){
   const status=document.getElementById('tlf_status').value;const note=document.getElementById('tlf_note').value.trim();
   const _tlOld=customers.find(c=>c.id===tlCid)||null;
-  try{await dbPatch('customers',tlCid,{work_status:status,updated_at:new Date().toISOString()});
+  try{
+    // Stage 50A-5: อัปเดตสถานะลูกค้าผ่าน RPC app_save_customer (server-stamp); fallback direct ถ้า missing/error
+    const _cr=await _customerSaveRpc(tlCid,{work_status:status});
+    if(_cr.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_cr.status!=='ok'){
+      if(_cr.status==='missing')toast('กรุณา apply migration 20260716','err');
+      await dbPatch('customers',tlCid,{work_status:status,updated_at:new Date().toISOString()});
+    }
     // Stage 50A-3: timeline row ผ่าน RPC (server-stamp created_by); fallback direct ถ้า missing/error
     const _tr=await _timelineRpc(tlCid,status,note);
     if(_tr.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
@@ -5285,7 +5312,7 @@ async function saveTL(){
     }
     // Stage 2 audit (best-effort): customer.status_change
     try{logAudit('customer.status_change','customer',tlCid,{name:(_tlOld&&_tlOld.name)||'',passport_no:(_tlOld&&(_tlOld.passport_no||_tlOld.alien_id))||null,from:(_tlOld&&_tlOld.work_status)||null,to:status,note:note||null,source:'saveTL'});}catch(_e){console.warn('[AUDIT] status_change log skipped:',_e&&_e.message);}
-    customers=customers.map(c=>c.id===tlCid?{...c,work_status:status}:c);document.getElementById('tlModal').style.display='none';if(_tr.status!=='missing')toast('อัปเดตสถานะแล้ว');if(detId===tlCid)openDetail(tlCid);renderDash();if(curView==='customers')doFilter();}catch(e){toast('เกิดข้อผิดพลาด','err');}
+    customers=customers.map(c=>c.id===tlCid?{...c,work_status:status}:c);document.getElementById('tlModal').style.display='none';if(_cr.status!=='missing'&&_tr.status!=='missing')toast('อัปเดตสถานะแล้ว');if(detId===tlCid)openDetail(tlCid);renderDash();if(curView==='customers')doFilter();}catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
 
 function renderGroups(){
@@ -7010,13 +7037,20 @@ async function doBulkGroup(){
   const ids=[...selectedIds];
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
   try{
-    await Promise.all(ids.map(id=>dbPatch('customers',id,{group_id:grpId?parseInt(grpId):null,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
+    const _grpVal=grpId?parseInt(grpId):null;
+    // Stage 50A-5: bulk group ผ่าน RPC (server-stamp); fallback direct ถ้า missing/error
+    const _br=await _bulkUpdateCustomersRpc(ids,{group_id:_grpVal});
+    if(_br.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_br.status!=='ok'){
+      if(_br.status==='missing')toast('กรุณา apply migration 20260718','err');
+      await Promise.all(ids.map(id=>dbPatch('customers',id,{group_id:_grpVal,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
+    }
     // Stage 5 audit (best-effort): customer.bulk_group_change
     try{const _gid=grpId?parseInt(grpId):null;const _gn=_gid?((groups.find(g=>g.id===_gid)||{}).name||null):'ไม่ระบุกลุ่ม';logAudit('customer.bulk_group_change','customer',ids.join(','),{count:ids.length,ids,group_id:_gid,group_name:_gn,source:'doBulkGroup'});}catch(_e){console.warn('[AUDIT] bulk_group_change log skipped:',_e&&_e.message);}
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,group_id:grpId?parseInt(grpId):null}:c);
     clearSelection();renderDash();renderSidebar();doFilter();
     document.getElementById('bulkGrpModal').style.display='none';
-    toast(`อัปเดต ${ids.length} รายการแล้ว`);
+    if(_br.status!=='missing')toast(`อัปเดต ${ids.length} รายการแล้ว`);
   }catch(e){toast('เกิดข้อผิดพลาด','err');}
   finally{hideLoading();}
 }
@@ -7030,12 +7064,17 @@ async function doBulkAssign(){
   if(!confirm(`มอบหมาย ${ids.length} รายการ ให้ "${label}" ?`))return;
   showLoading(`กำลังมอบหมาย ${ids.length} รายการ...`);
   try{
-    // อัปเดตเฉพาะ assignee_code เท่านั้น — ไม่แตะ field อื่น/updated_by_code
-    await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:code||null})));
+    // Stage 50A-5: bulk assign ผ่าน RPC (server-stamp); fallback direct ถ้า missing/error
+    const _br=await _bulkUpdateCustomersRpc(ids,{assignee_code:code||null});
+    if(_br.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_br.status!=='ok'){
+      if(_br.status==='missing')toast('กรุณา apply migration 20260718','err');
+      await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:code||null})));
+    }
     logAudit('customer.assign','customer',ids.join(','),{count:ids.length,ids,assignee_code:code||null,assignee_label:label,scope:'bulk'});
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,assignee_code:code||null}:c);
     clearSelection();renderDash();renderSidebar();doFilter();
-    toast(`มอบหมาย ${ids.length} รายการแล้ว`);
+    if(_br.status!=='missing')toast(`มอบหมาย ${ids.length} รายการแล้ว`);
   }catch(e){console.error('[bulk assign] failed',e);toast('เกิดข้อผิดพลาด ไม่ได้มอบหมาย','err');} // คงการเลือกไว้ ไม่ลบออกจาก UI
   finally{hideLoading();}
 }
@@ -7047,12 +7086,17 @@ async function doBulkAssignSelf(){
   if(!confirm(`มอบหมาย ${ids.length} รายการ ให้ตัวเอง ?`))return;
   showLoading(`กำลังมอบหมาย ${ids.length} รายการ...`);
   try{
-    // อัปเดตเฉพาะ assignee_code = ตัวเอง — ไม่แตะ field อื่น
-    await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:me})));
+    // Stage 50A-5: bulk assign ตัวเอง ผ่าน RPC (server-stamp); fallback direct ถ้า missing/error
+    const _br=await _bulkUpdateCustomersRpc(ids,{assignee_code:me});
+    if(_br.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_br.status!=='ok'){
+      if(_br.status==='missing')toast('กรุณา apply migration 20260718','err');
+      await Promise.all(ids.map(id=>dbPatch('customers',id,{assignee_code:me})));
+    }
     logAudit('customer.assign','customer',ids.join(','),{count:ids.length,ids,assignee_code:me,assignee_label:(curUser.full_name||me),scope:'self'});
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,assignee_code:me}:c);
     clearSelection();renderDash();renderSidebar();doFilter();
-    toast(`มอบหมาย ${ids.length} รายการแล้ว`);
+    if(_br.status!=='missing')toast(`มอบหมาย ${ids.length} รายการแล้ว`);
   }catch(e){console.error('[bulk self-assign] failed',e);toast('เกิดข้อผิดพลาด ไม่ได้มอบหมาย','err');} // คงการเลือกไว้ ไม่ลบออกจาก UI
   finally{hideLoading();}
 }
@@ -7062,13 +7106,19 @@ async function doBulkStatus(){
   const ids=[...selectedIds];
   showLoading(`กำลังอัปเดต ${ids.length} รายการ...`);
   try{
-    await Promise.all(ids.map(id=>dbPatch('customers',id,{work_status:status,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
+    // Stage 50A-5: bulk status ผ่าน RPC (server-stamp); fallback direct ถ้า missing/error
+    const _br=await _bulkUpdateCustomersRpc(ids,{work_status:status});
+    if(_br.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_br.status!=='ok'){
+      if(_br.status==='missing')toast('กรุณา apply migration 20260718','err');
+      await Promise.all(ids.map(id=>dbPatch('customers',id,{work_status:status,updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})})));
+    }
     // Stage 5 audit (best-effort): customer.bulk_status_change
     try{logAudit('customer.bulk_status_change','customer',ids.join(','),{count:ids.length,ids,to:status||null,source:'doBulkStatus'});}catch(_e){console.warn('[AUDIT] bulk_status_change log skipped:',_e&&_e.message);}
     customers=customers.map(c=>selectedIds.has(c.id)?{...c,work_status:status}:c);
     clearSelection();doFilter();
     document.getElementById('bulkStModal').style.display='none';
-    toast(`อัปเดตสถานะ ${ids.length} รายการแล้ว`);
+    if(_br.status!=='missing')toast(`อัปเดตสถานะ ${ids.length} รายการแล้ว`);
   }catch(e){toast('เกิดข้อผิดพลาด','err');}
   finally{hideLoading();}
 }
