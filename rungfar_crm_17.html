@@ -4956,9 +4956,30 @@ async function handlePhoto(e){
   finally{e.target.value='';}
 }
 
+// Stage 50A-9: บันทึกรูปสำรอง (base64/dataURL) ลง customers.photo ผ่าน RPC app_set_customer_photo_fallback
+//   (server-stamp updated_by/updated_at) — ใช้เมื่อ Storage upload ล้มเหลวเท่านั้น
+//   คืน {status:'ok'|'missing'|'unauthorized'|'error'} — ❌ ไม่ส่ง/ไม่รับ path/bucket/signed url
+async function _customerPhotoFallbackRpc(customerId,dataUrl){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_set_customer_photo_fallback`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_user_id:uid,p_username:uname,p_customer_id:(customerId!=null?customerId:null),p_photo:dataUrl})
+    });
+  }catch(e){return{status:'error'};}
+  if(res.ok)return{status:'ok'};
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error'};
+}
 // Stage 36A: upload รูปโปรไฟล์ลูกค้าใหม่เข้า Storage (customer-photos) ผ่าน Edge Function
 //   สำเร็จ → customers.photo ถูกตั้งเป็น null ฝั่ง server, sync local state เป็น Storage-backed
-//   ล้มเหลว → fallback (dual-write) เขียน base64 ลง customers.photo เพื่อ "ไม่ให้รูปหาย"
+//   ล้มเหลว → fallback รูปผ่าน RPC app_set_customer_photo_fallback (Stage 50A-9); ก่อน revoke ยัง fallback dbPatch ตรงได้
 async function _uploadCustomerPhoto(custId,dataUrl){
   try{
     const _lt=document.getElementById('loadingText');if(_lt)_lt.textContent='กำลังอัปโหลดรูปลูกค้า...';
@@ -4975,11 +4996,21 @@ async function _uploadCustomerPhoto(custId,dataUrl){
     return true;
   }catch(err){
     console.error('[customer photo] storage upload failed → fallback base64',err);
-    try{ // dual-write safety: รูปต้องไม่หาย → เก็บ base64 แบบเดิม
-      await dbPatch('customers',custId,{photo:dataUrl});
+    // Stage 50A-9: dual-write safety ผ่าน RPC ก่อน (เตรียมพร้อม revoke UPDATE ภายหลัง); fallback dbPatch ตรงเฉพาะตอน RPC ยังไม่ติดตั้ง
+    const _pfr=await _customerPhotoFallbackRpc(custId,dataUrl);
+    if(_pfr.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกรูป กรุณาเข้าสู่ระบบใหม่','err');return false;}
+    if(_pfr.status==='ok'){
       const _sc=customers.find(c=>c.id===custId);if(_sc){_sc.photo=dataUrl;_sc._hasPhoto=true;}
       _custPhotoCache[custId]=dataUrl;
       toast('บันทึกรูปแบบเดิม (อัปโหลด Storage ไม่สำเร็จ)','err');
+      return false;
+    }
+    if(_pfr.status==='missing')toast('กรุณา apply migration 20260720','err');
+    try{ // dual-write safety: รูปต้องไม่หาย → เก็บ base64 แบบเดิม (เฉพาะก่อน revoke; RPC missing/error)
+      await dbPatch('customers',custId,{photo:dataUrl});
+      const _sc=customers.find(c=>c.id===custId);if(_sc){_sc.photo=dataUrl;_sc._hasPhoto=true;}
+      _custPhotoCache[custId]=dataUrl;
+      if(_pfr.status!=='missing')toast('บันทึกรูปแบบเดิม (อัปโหลด Storage ไม่สำเร็จ)','err');
     }catch(e2){console.error('[customer photo] base64 fallback failed',e2);toast('บันทึกรูปไม่สำเร็จ','err');}
     return false;
   }
