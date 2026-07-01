@@ -5190,8 +5190,9 @@ async function saveTL(){
 }
 
 function renderGroups(){
+  const _ga=_isAdminRole();   // Stage 49A-2: ปุ่มลบกลุ่ม แสดงเฉพาะ admin
   document.getElementById('grpContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">${T('grpTitle')}</div><button class="btn btn-p btn-sm" onclick="openAddGrp()">${T('grpAdd')}</button></div>
-  ${groups.length?`<div style="display:flex;flex-direction:column;gap:8px">${groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div style="background:#fff;border:1.5px solid var(--g2);border-radius:var(--rl);padding:13px 16px;display:flex;align-items:center;gap:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><div style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0"></div><div style="flex:1;font-weight:600;font-size:14px">${esc(g.name)}</div>${g.description?`<div style="font-size:12px;color:var(--g5)">${esc(g.description)}</div>`:''}<div style="font-size:12px;font-family:var(--mono);color:var(--g5)">${cnt} ${T('grpPerson')}</div><button class="bic" onclick="openEditGrp(${g.id})" style="font-size:12px">✏️</button><button class="bic" onclick="delGrp(${g.id})" style="font-size:12px;color:var(--red)">🗑️</button></div>`;}).join('')}</div>`:`<div style="text-align:center;padding:30px;color:var(--g5);background:var(--g0);border-radius:var(--r)">${T('grpNone')}</div>`}
+  ${groups.length?`<div style="display:flex;flex-direction:column;gap:8px">${groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div style="background:#fff;border:1.5px solid var(--g2);border-radius:var(--rl);padding:13px 16px;display:flex;align-items:center;gap:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><div style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0"></div><div style="flex:1;font-weight:600;font-size:14px">${esc(g.name)}</div>${g.description?`<div style="font-size:12px;color:var(--g5)">${esc(g.description)}</div>`:''}<div style="font-size:12px;font-family:var(--mono);color:var(--g5)">${cnt} ${T('grpPerson')}</div><button class="bic" onclick="openEditGrp(${g.id})" style="font-size:12px">✏️</button>${_ga?`<button class="bic" onclick="delGrp(${g.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div>`;}).join('')}</div>`:`<div style="text-align:center;padding:30px;color:var(--g5);background:var(--g0);border-radius:var(--r)">${T('grpNone')}</div>`}
   <div style="margin-top:12px;padding:10px 13px;background:var(--pp);border-radius:var(--r);font-size:12px;color:var(--pd)">${T('grpTip')}</div>`;
 }
 function openAddGrp(){editGid=null;document.getElementById('gf_name').value='';document.getElementById('gf_desc').value='';document.getElementById('grpMT').textContent='เพิ่มกลุ่ม';document.getElementById('grpModal').style.display='flex';}
@@ -5201,7 +5202,18 @@ async function saveGroup(){
   const data={name,description:document.getElementById('gf_desc').value.trim()};
   try{if(editGid){await dbPatch('groups',editGid,data);groups=groups.map(g=>g.id===editGid?{...g,...data}:g);try{logAudit('group.update','group',editGid,{name:data.name});}catch(_){}toast('บันทึกแล้ว');}else{const r=await dbPost('groups',data);const _ng=(r&&r[0])||null;if(_ng)groups.push(_ng);try{logAudit('group.create','group',(_ng&&_ng.id)||null,{name:data.name});}catch(_){}toast('เพิ่มกลุ่มแล้ว');}document.getElementById('grpModal').style.display='none';renderGroups();renderSidebar();fillSelects();}catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
-async function delGrp(id){if(!confirm('ลบกลุ่มนี้?'))return;const _gn=(groups.find(g=>g.id===id)||{}).name||'';try{await dbDel('groups',id);try{logAudit('group.delete','group',id,{name:_gn});}catch(_){}groups=groups.filter(g=>g.id!==id);renderGroups();renderSidebar();fillSelects();toast('ลบแล้ว','err');}catch(e){toast('เกิดข้อผิดพลาด','err');}}
+async function delGrp(id){
+  // Stage 49A-2: ลบกลุ่ม = admin เท่านั้น + ยืนยันชัดเจนว่า "ลบเฉพาะกลุ่ม ไม่ลบลูกค้า"
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้นที่ลบกลุ่มได้','err');return;}
+  if(!confirm('ยืนยันลบกลุ่มนี้หรือไม่? ระบบจะลบเฉพาะชื่อกลุ่ม ไม่ลบข้อมูลลูกค้า'))return;
+  const _gn=(groups.find(g=>g.id===id)||{}).name||'';
+  try{
+    await dbDel('groups',id);   // ลบเฉพาะแถวกลุ่ม — ❌ ไม่แตะ customers/documents
+    try{logAudit('group.delete','group',id,{name:_gn});}catch(_){}
+    groups=groups.filter(g=>g.id!==id);renderGroups();renderSidebar();fillSelects();
+    toast('ลบกลุ่มแล้ว');
+  }catch(e){toast('ลบกลุ่มไม่สำเร็จ','err');}
+}
 
 function renderImport(){
   document.getElementById('importContent').innerHTML=`<div style="max-width:800px">
