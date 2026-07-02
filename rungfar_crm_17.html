@@ -6005,7 +6005,7 @@ function renderSettings(){
   const readiness=`
     <div style="margin-top:22px;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:16px 18px">
       <div style="font-size:15px;font-weight:800;color:var(--g9);margin-bottom:3px">ตรวจความพร้อมก่อนทดสอบ</div>
-      <div style="font-size:12px;color:var(--g5);margin-bottom:12px">ตรวจว่า RPC/ฟีเจอร์หลักของ Phase 1 ถูกติดตั้ง (apply migration) แล้ว — อ่านอย่างเดียว ไม่บันทึก/ไม่ลบข้อมูล</div>
+      <div style="font-size:12px;color:var(--g5);margin-bottom:12px">ตรวจว่า migration และประตู server สำคัญของ Phase 1 ถูกติดตั้งแล้วหรือยัง อ่านอย่างเดียว ไม่เพิ่ม/แก้/ลบข้อมูล</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">
         <input type="password" id="phchkPass" autocomplete="off" placeholder="รหัส ADMIN" onkeydown="if(event.key==='Enter')phase1Check()" style="border:1.5px solid var(--g2);border-radius:var(--r);padding:8px 10px;font-size:13px;width:150px;outline:none;color:var(--g9);background:#fff">
         <button onclick="phase1Check()" class="btn btn-p btn-sm">เริ่มตรวจระบบ</button>
@@ -6054,25 +6054,73 @@ async function phase1Check(){
     const r=await _phchkCall(c.name,c.body);
     results.push({label:c.label,admin:c.admin,status:r.status});
   }
-  phase1Render(results);
+  // Stage 52A-3: ตรวจเชิงลึกผ่าน RPC app_admin_phase1_readiness_check (admin-only, อ่านอย่างเดียว)
+  let deep={status:'needpass',rows:[]};
+  if(pass)deep=await _phchkDeep(uname,pass);
+  phase1Render(results,deep);
 }
-function phase1Render(results){
+// Stage 52A-3: เรียก healthcheck RPC — ผลลัพธ์มีเฉพาะสถานะทางเทคนิค (pass/warn/fail)
+//   ❌ ไม่มีข้อมูลลูกค้า/เอกสาร/ไฟล์/path ใด ๆ ใน response — อ่านผลได้ปลอดภัย
+async function _phchkDeep(uname,pass){
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_phase1_readiness_check`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_admin_username:uname,p_admin_password:pass})
+    });
+  }catch(e){return{status:'network',rows:[]};}
+  let body=null;try{body=await res.json();}catch(_){}
+  if(!res.ok){
+    const code=(body&&body.code)||'';const msg=(body&&body.message)||'';
+    if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing',rows:[]};
+    return{status:'error',rows:[]};
+  }
+  const rows=Array.isArray(body)?body:[];
+  if(rows.length&&rows[0].check_status==='unauthorized')return{status:'unauth',rows:[]};
+  return{status:'ok',rows};
+}
+function phase1Render(results,deep){
   const box=document.getElementById('phchkResults');if(!box)return;
   const chip=(status,isAdmin)=>{
     const css='display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap';
     if(status==='pass')   return `<span style="${css};background:#dcfce7;color:#15803d">✓ ผ่าน</span>`;
+    if(status==='warn')   return `<span style="${css};background:#fef3c7;color:#b45309">ต้องตรวจ</span>`;
+    if(status==='fail')   return `<span style="${css};background:#fee2e2;color:#dc2626">✗ ไม่ผ่าน</span>`;
     if(status==='missing')return `<span style="${css};background:#fee2e2;color:#dc2626">✗ ยังไม่ได้ apply migration ที่เกี่ยวข้อง</span>`;
     if(status==='unauth') return `<span style="${css};background:#fef3c7;color:#b45309">${isAdmin?'รหัส ADMIN ไม่ถูกต้อง':'ไม่มีสิทธิ์'}</span>`;
     if(status==='needpass')return `<span style="${css};background:#f3f4f6;color:#6b7280">ต้องใช้รหัส ADMIN</span>`;
     if(status==='network')return `<span style="${css};background:#f3f4f6;color:#6b7280">เชื่อมต่อไม่ได้</span>`;
     return `<span style="${css};background:#f3f4f6;color:#6b7280">ตรวจไม่สำเร็จ</span>`;
   };
+  const secTitle=t=>`<div style="font-size:12px;font-weight:800;color:var(--g6);margin:14px 0 2px;text-transform:none">${t}</div>`;
   const rows=results.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--g2)"><span style="font-size:13px;color:var(--g8);font-weight:600">${esc(r.label)}</span>${chip(r.status,r.admin)}</div>`).join('');
-  const allPass=results.length>0&&results.every(r=>r.status==='pass');
+  // Stage 52A-3: ส่วนตรวจเชิงลึก (migration / ประตู server / ล็อกสิทธิ์เขียนตรง)
+  const GRP={rpc:'ประตู server (RPC)',login:'ล็อกอิน / ความปลอดภัย',audit:'ประวัติการใช้งาน',delreq:'คำขอลบ',locks:'ปิดสิทธิ์เขียนตรงจาก browser'};
+  let deepHtml='';let deepOverall=null;
+  deep=deep||{status:'needpass',rows:[]};
+  if(deep.status==='needpass'){
+    deepHtml=`<div style="padding:8px 2px;font-size:12px;color:#6b7280">กรอกรหัส ADMIN แล้วกด “เริ่มตรวจระบบ” เพื่อตรวจเชิงลึก (migration / ล็อกสิทธิ์เขียนตรง)</div>`;
+  }else if(deep.status==='missing'){
+    deepHtml=`<div style="padding:8px 2px;font-size:12px;color:#dc2626">ยังไม่ได้ apply migration 20260724_phase1_readiness_healthcheck.sql</div>`;
+  }else if(deep.status==='unauth'){
+    deepHtml=`<div style="padding:8px 2px;font-size:12px;color:#b45309">รหัส ADMIN ไม่ถูกต้อง</div>`;
+  }else if(deep.status==='ok'&&deep.rows.length){
+    const order=['rpc','login','audit','delreq','locks'];
+    deepHtml=order.map(g=>{
+      const rs=deep.rows.filter(r=>r.check_group===g);
+      if(!rs.length)return '';
+      return `<div style="margin-top:10px"><div style="font-size:11.5px;font-weight:800;color:var(--g6);margin-bottom:2px">${esc(GRP[g]||g)}</div>`+rs.map(r=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:6px 2px;border-bottom:1px solid var(--g2)"><span style="font-size:12.5px;color:var(--g8);font-weight:600">${esc(r.check_label||'')}${r.detail&&r.check_status!=='pass'?`<div style="font-size:10.5px;font-weight:400;color:#92400e;margin-top:2px">${esc(r.detail)}</div>`:''}</span>${chip(r.check_status,true)}</div>`).join('')+'</div>';
+    }).join('');
+    deepOverall=deep.rows.find(r=>r.check_group==='overall')||null;
+  }else{
+    deepHtml=`<div style="padding:8px 2px;font-size:12px;color:#6b7280">ตรวจเชิงลึกไม่สำเร็จ — ลองใหม่อีกครั้ง</div>`;
+  }
+  const allPass=results.length>0&&results.every(r=>r.status==='pass')&&(!!deepOverall&&deepOverall.check_status==='pass');
   const banner=allPass
-    ?`<div style="margin-top:12px;background:#dcfce7;border:1px solid #86efac;color:#15803d;border-radius:var(--rl);padding:10px 12px;font-size:13px;font-weight:700">✅ ระบบหลักพร้อมสำหรับทดสอบ 2–3 คน</div>`
-    :`<div style="margin-top:12px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:10px 12px;font-size:12.5px">ยังมีบางรายการที่ต้องตรวจสอบ — ดูสถานะแต่ละรายการด้านบน</div>`;
-  box.innerHTML=rows+banner;
+    ?`<div style="margin-top:12px;background:#dcfce7;border:1px solid #86efac;color:#15803d;border-radius:var(--rl);padding:10px 12px;font-size:13px;font-weight:700">✅ ระบบหลักพร้อมสำหรับทดสอบ 2–3 คน${deepOverall&&deepOverall.detail?` — ${esc(deepOverall.detail)}`:''}</div>`
+    :`<div style="margin-top:12px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:10px 12px;font-size:12.5px">ยังมีบางรายการที่ต้องตรวจสอบ — ดูสถานะแต่ละรายการด้านบน${deepOverall&&deepOverall.detail?` (${esc(deepOverall.detail)})`:''}</div>`;
+  box.innerHTML=secTitle('การเรียกใช้งานจริง (เรียก RPC อ่านอย่างเดียว)')+rows+secTitle('ตรวจเชิงลึก Phase 1 (migration / ล็อกสิทธิ์)')+deepHtml+banner;
 }
 
 // RLS-HARDEN-2D: เปิด modal ยืนยัน admin password ก่อนโหลด user list
