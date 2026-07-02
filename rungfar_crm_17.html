@@ -3698,6 +3698,7 @@ async function showApp(){
   try{ await loadAll(true); } finally { hideLoading(); } // Stage 30A: hideLoading เสมอแม้ loadAll พลาด → overlay ไม่ค้าง
   fillSelects();renderDash();renderDashHero();renderSidebar();renderSettings();
   if(typeof refreshDelReqBadge==='function')refreshDelReqBadge(); // Stage 22B: เติม badge คำขอลบ (admin เท่านั้น)
+  if(typeof refreshLineDocBadgeGlobal==='function')refreshLineDocBadgeGlobal(); // Stage 52A-8: เติม badge เอกสารจาก LINE ตอนเปิดแอป (best-effort)
   // set initial nav active (dash) — ไม่ผ่าน gv() เพื่อไม่ re-render
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niInit=document.querySelector(`.ni[onclick*="'dash'"]`);
@@ -4112,6 +4113,12 @@ function renderSidebar(){
   if(nbT)nbT.textContent=total;
   const nb=document.getElementById('nbAlert');
   if(nb){nb.textContent=al;nb.className='nbadge'+(al>0?'':' ok');}
+  // Stage 52A-8: sync badge มือถือ (bottom nav + drawer) จากแหล่งเดียวกับ sidebar ทันที
+  //   (เดิม sync เฉพาะตอนเปลี่ยนหน้า/เปิด drawer → ตัวเลขค้างหลังบันทึกข้อมูลบนมือถือ)
+  const mbA=document.getElementById('mobAlertBadge');
+  if(mbA){mbA.textContent=al;mbA.style.display=al>0?'flex':'none';}
+  const drA=document.getElementById('drawerAlertBadge');
+  if(drA){drA.textContent=al;drA.style.display=al>0?'flex':'none';}
   const sg=document.getElementById('sideGroups');
   if(sg){
     // Stage 21A: ไม่ใส่ label "กลุ่มงาน" ซ้ำแล้ว (หัวข้อ accordion เป็น label อยู่ในตัว) — รายการ+จำนวนเหมือนเดิม
@@ -7892,6 +7899,20 @@ function refreshLineDocBadge(){
   const n=_lineDocCache.filter(r=>r.status==='pending').length;
   const el=document.getElementById('nbLineDoc');if(el){el.textContent=n;el.style.display=n>0?'':'none';}
   const dd=document.getElementById('drawerLineDocBadge');if(dd){dd.textContent=n;dd.style.display=n>0?'':'none';}
+}
+// Stage 52A-8: เติม badge เอกสารจาก LINE ตั้งแต่เปิดแอป (เดิม badge จะแสดงเมื่อเข้า
+//   หน้า "เอกสารจาก LINE" เท่านั้น → ตัวเลขค้าง/มองไม่เห็นงานที่รออนุมัติ)
+//   อ่านอย่างเดียวผ่าน RPC เดิม (เฉพาะ pending) — ใช้แค่จำนวนแถว ❌ ไม่แสดง path/ไฟล์
+//   ล้มเหลว (ยังไม่ apply migration / unauthorized / network) = เงียบ ไม่บล็อกการใช้งาน
+async function refreshLineDocBadgeGlobal(){
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_line_inbox`,{method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({p_user_id:(curUser&&curUser.id!=null)?String(curUser.id):'',p_username:(curUser&&curUser.username)||'',p_status:'pending'})});
+    if(!res.ok)return;
+    let data=[];try{data=await res.json();}catch(_){data=[];}
+    if(Array.isArray(data)){_lineDocCache=data;refreshLineDocBadge();}
+  }catch(_){console.warn('[lineDocBadge] startup refresh skipped');}
 }
 
 // ═══════════════════════════════════════════════════════════════════════
