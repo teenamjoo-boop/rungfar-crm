@@ -2547,6 +2547,12 @@ const LANG = {
     seclogDevLogins:'จำนวน Login', seclogDevFails:'ล้มเหลว', seclogDevSuspCol:'น่าสงสัย', seclogDevLastIp:'IP ล่าสุด',
     seclogFailWarnTitle:'เตือน: login ล้มเหลวหลายครั้ง', seclogFailWarnTimes:'ครั้งในช่วงข้อมูลที่แสดง',
     seclogSuspCardTip:'กดเพื่อดูเฉพาะรายการน่าสงสัย',
+    seclogDevNick:'ชื่อเครื่อง', seclogDevNickSet:'ตั้งชื่อเครื่อง', seclogDevNickEdit:'แก้ชื่อเครื่อง',
+    seclogDevNickSave:'บันทึกชื่อเครื่อง', seclogDevNickClear:'ล้างชื่อเครื่อง', seclogDevNickNote:'หมายเหตุ',
+    seclogDevNickNone:'ยังไม่ได้ตั้งชื่อเครื่อง', seclogDevNickSaved:'บันทึกชื่อเครื่องแล้ว', seclogDevNickCleared:'ล้างชื่อเครื่องแล้ว',
+    seclogDevNickPH:'เช่น คอมออฟฟิศ, มือถือคุณฝน',
+    seclogDevSaveErr:'บันทึกชื่อเครื่องไม่สำเร็จ',
+    seclogDevRefreshWarn:'บันทึกชื่อเครื่องแล้ว แต่โหลดรายการอุปกรณ์ใหม่ไม่สำเร็จ — กด "ค้นหา" อีกครั้ง',
     auditAction:'การกระทำ', auditDetail:'รายละเอียด', auditSearch:'ค้นหา', auditOpenCust:'เปิดข้อมูลลูกค้า', auditPerPage:'ต่อหน้า',
     audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายรายการ',
     audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูลลูกค้า',
@@ -2767,6 +2773,12 @@ const LANG = {
     seclogDevLogins:'Login အရေအတွက်', seclogDevFails:'မအောင်မြင်', seclogDevSuspCol:'သံသယရှိ', seclogDevLastIp:'နောက်ဆုံး IP',
     seclogFailWarnTitle:'သတိ — login အကြိမ်ကြိမ် မအောင်မြင်', seclogFailWarnTimes:'ကြိမ် (ပြသထားသောကာလ)',
     seclogSuspCardTip:'သံသယရှိသာ ကြည့်ရန် နှိပ်ပါ',
+    seclogDevNick:'စက်အမည်', seclogDevNickSet:'စက်အမည်ပေးရန်', seclogDevNickEdit:'စက်အမည်ပြင်ရန်',
+    seclogDevNickSave:'စက်အမည်သိမ်းရန်', seclogDevNickClear:'စက်အမည်ဖျက်ရန်', seclogDevNickNote:'မှတ်ချက်',
+    seclogDevNickNone:'စက်အမည် မပေးရသေးပါ', seclogDevNickSaved:'စက်အမည် သိမ်းပြီးပါပြီ', seclogDevNickCleared:'စက်အမည် ဖျက်ပြီးပါပြီ',
+    seclogDevNickPH:'ဥပမာ — ရုံးကွန်ပြူတာ၊ မဖုန်း',
+    seclogDevSaveErr:'စက်အမည် သိမ်း၍မရပါ',
+    seclogDevRefreshWarn:'စက်အမည် သိမ်းပြီးပါပြီ — သို့သော် ကိရိယာစာရင်း ပြန်တင်၍မရပါ။ "ရှာဖွေ" ကို ထပ်နှိပ်ပါ',
     auditAction:'လုပ်ဆောင်ချက်', auditDetail:'အသေးစိတ်', auditSearch:'ရှာဖွေ', auditOpenCust:'ဖောက်သည်အချက်အလက်ဖွင့်', auditPerPage:'တစ်မျက်နှာ',
     audit_customer_delete:'ဖောက်သည်ဖျက်', audit_customer_bulk_delete:'ဖောက်သည်များဖျက်',
     audit_document_delete:'စာရွက်ဖျက်', audit_customer_export:'ဒေတာထုတ်ယူ',
@@ -7293,7 +7305,8 @@ function secSuspCardToggle(){
 // อ่านผ่าน RPC SECURITY DEFINER app_admin_list_known_devices เท่านั้น
 // ใช้รหัสผ่าน Admin ช่องเดียวกับหน้า security log (slAdminPass)
 // ❌ ไม่บล็อก login / ❌ ไม่แก้ข้อมูล / best-effort — พังแล้วแสดงข้อความ ไม่ crash หน้า
-async function secDevLoad(){
+async function secDevLoad(opts){
+  const _afterSave=!!(opts&&opts.afterSave); // STAGE 53A-2B: refresh หลังบันทึกชื่อ — ถ้าพังให้บอกว่า "บันทึกแล้วแต่โหลดใหม่ไม่สำเร็จ" ไม่ใช่ error ทั่วไป
   const wrap=document.getElementById('sl_dev_wrap');
   if(!wrap)return;
   const box=(txt)=>`<div style="padding:24px 16px;text-align:center;color:var(--g6);background:#fff;border:1px solid var(--g2);border-radius:var(--rl);font-size:13px;line-height:1.8">${txt}</div>`;
@@ -7314,8 +7327,8 @@ async function secDevLoad(){
       body:JSON.stringify(body),mode:'cors'
     });
   }catch(e){
-    console.warn('[SEC] known-devices rpc network error (non-critical):',e.message);
-    wrap.innerHTML=box(T('seclogDevErr'));return;
+    console.error('[SEC] known-devices rpc network error (non-critical):',e);
+    wrap.innerHTML=box(_afterSave?T('seclogDevRefreshWarn'):T('seclogDevErr'));return;
   }
   if(!res.ok){
     let err={};try{err=await res.json();}catch(_){}
@@ -7326,30 +7339,43 @@ async function secDevLoad(){
     }
     // รหัสผ่าน admin ผิด (RPC raise 'unauthorized')
     if(msg==='unauthorized'){wrap.innerHTML=box(T('seclogDevWrongPass'));return;}
-    console.warn('[SEC] known-devices rpc error:',res.status,msg||code);
-    wrap.innerHTML=box(T('seclogDevErr'));return;
+    console.error('[SEC] known-devices rpc error:',res.status,err); // STAGE 53A-2B: log error จริงทั้งก้อนไว้ debug
+    wrap.innerHTML=box(_afterSave?T('seclogDevRefreshWarn'):T('seclogDevErr'));return;
   }
   let data=[];try{data=await res.json();}catch(_){data=[];}
   secDevRender(Array.isArray(data)?data:[]);
 }
 
+let _secDevRows=[]; // STAGE 53A-2: แถวอุปกรณ์ล่าสุด (สำหรับ inline nickname editor)
 function secDevRender(rows){
   const wrap=document.getElementById('sl_dev_wrap');if(!wrap)return;
+  _secDevRows=rows; // STAGE 53A-2
   if(!rows.length){
     wrap.innerHTML=`<div style="padding:32px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogDevEmpty')}</div>`;
     return;
   }
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
   const thCss='padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;white-space:nowrap;border-bottom:1px solid var(--g2)';
-  const trs=rows.map(r=>{
+  const trs=rows.map((r,i)=>{
     const devType=({desktop:T('seclogDevDesktop'),mobile:T('seclogDevMobile'),tablet:T('seclogDevTablet')}[r.device_type])||r.device_type||'—';
     const fp=r.device_fingerprint?String(r.device_fingerprint).slice(0,8)+'…':'—';
     const fails=Number(r.failed_count)||0;
     const susp=Number(r.suspicious_count)||0;
+    // STAGE 53A-2: ชื่อเครื่อง — display-only; ตั้งได้เฉพาะแถวที่มี fingerprint จริง
+    let nickCell;
+    if(!r.device_fingerprint){
+      nickCell=`<span style="color:var(--g3);font-size:11px">—</span>`;
+    }else if(r.nickname){
+      nickCell=`<b style="font-size:12px;color:var(--g8)"${r.note?` title="${esc(T('seclogDevNickNote'))}: ${esc(r.note)}"`:''}>${esc(r.nickname)}</b>
+        <button onclick="secDevNickEdit(${i})" class="btn btn-g btn-sm" style="padding:1px 7px;font-size:10px;margin-left:5px" title="${esc(T('seclogDevNickEdit'))}">✎</button>`;
+    }else{
+      nickCell=`<button onclick="secDevNickEdit(${i})" class="btn btn-g btn-sm" style="padding:2px 8px;font-size:10px" title="${esc(T('seclogDevNickNone'))}">${T('seclogDevNickSet')}</button>`;
+    }
     return`<tr style="border-bottom:1px solid var(--g2)">
       <td style="padding:7px 10px;font-size:12px;font-weight:600">${esc(r.username||'—')}</td>
       <td style="padding:7px 10px;font-size:12px;color:var(--g7)">${esc(r.full_name||'—')}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap">${esc(devType)}${r.browser_name?' · '+esc(r.browser_name):''}</td>
+      <td id="sl_nick_${i}" style="padding:7px 10px;font-size:11px;white-space:nowrap">${nickCell}</td>
       <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g4)">${esc(fp)}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(r.first_seen)}</td>
       <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(r.last_seen)}</td>
@@ -7361,11 +7387,12 @@ function secDevRender(rows){
   }).join('');
   wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
     <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;min-width:860px">
+      <table style="width:100%;border-collapse:collapse;min-width:1000px">
         <thead><tr style="background:var(--g0)">
           <th style="${thCss}">Username</th>
           <th style="${thCss}">${T('seclogTblName')}</th>
           <th style="${thCss}">${T('seclogDevice')} / Browser</th>
+          <th style="${thCss}">${T('seclogDevNick')}</th>
           <th style="${thCss}">${T('seclogTblFP')}</th>
           <th style="${thCss}">${T('seclogDevFirst')}</th>
           <th style="${thCss}">${T('seclogDevLast')}</th>
@@ -7378,6 +7405,85 @@ function secDevRender(rows){
       </table>
     </div>
   </div>`;
+}
+
+// ===== STAGE 53A-2: Device nickname — inline editor (display-only label, ไม่มีผลต่อ login ใด ๆ) =====
+// เปิดฟอร์มเล็กในเซลล์ "ชื่อเครื่อง" — ใช้รหัส Admin ช่องเดิม (slAdminPass) ไม่ถามซ้ำ
+function secDevNickEdit(i){
+  const r=_secDevRows[i];
+  const cell=document.getElementById('sl_nick_'+i);
+  if(!r||!cell||!r.device_fingerprint)return;
+  const inCss='border:1.5px solid var(--g2);border-radius:var(--r);padding:4px 8px;font-family:var(--font);font-size:11px;outline:none;color:var(--g9);background:#fff;box-sizing:border-box';
+  cell.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:180px">
+      <input type="text" id="sl_nick_in_${i}" maxlength="60" value="${esc(r.nickname||'')}" placeholder="${esc(T('seclogDevNickPH'))}" style="${inCss};width:180px">
+      <input type="text" id="sl_note_in_${i}" maxlength="200" value="${esc(r.note||'')}" placeholder="${esc(T('seclogDevNickNote'))}" style="${inCss};width:180px">
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="secDevNickSave(${i})" class="btn btn-p btn-sm" style="padding:2px 8px;font-size:10px">${T('seclogDevNickSave')}</button>
+        ${r.nickname?`<button onclick="secDevNickSubmit(${i},'','')" class="btn btn-g btn-sm" style="padding:2px 8px;font-size:10px">${T('seclogDevNickClear')}</button>`:''}
+        <button onclick="secDevRender(_secDevRows)" class="btn btn-g btn-sm" style="padding:2px 8px;font-size:10px">${T('cancel')}</button>
+      </div>
+    </div>`;
+  const nin=document.getElementById('sl_nick_in_'+i);
+  if(nin){nin.focus();nin.onkeydown=e=>{if(e.key==='Enter')secDevNickSave(i);if(e.key==='Escape')secDevRender(_secDevRows);};}
+}
+function secDevNickSave(i){
+  const nick=(document.getElementById('sl_nick_in_'+i)?.value||'').trim();
+  const note=(document.getElementById('sl_note_in_'+i)?.value||'').trim();
+  secDevNickSubmit(i,nick,note);
+}
+// เรียก RPC app_admin_set_device_nickname — nickname ว่าง = ล้างชื่อ (ลบแถว label ฝั่ง DB)
+// best-effort: พังแล้ว toast แจ้ง ไม่ crash หน้า / ❌ ไม่แตะ security_login_logs / ❌ ไม่มีผลต่อ login
+async function secDevNickSubmit(i,nick,note){
+  const r=_secDevRows[i];
+  if(!r||!r.device_fingerprint)return;
+  if(curUser?.role!=='admin')return;
+  const pass=(document.getElementById('slAdminPass')?.value||'').trim();
+  if(!pass){toast(T('seclogEnterPass'),'err');return;}
+  // STAGE 53A-2B: ปิดปุ่มในเซลล์ระหว่างบันทึก (กันกดซ้ำ) — เปิดคืนเมื่อพลาด; สำเร็จแล้วตารางถูก render ใหม่อยู่แล้ว
+  const _cell=document.getElementById('sl_nick_'+i);
+  const _setBusy=b=>{if(_cell)_cell.querySelectorAll('button').forEach(x=>{x.disabled=b;x.style.opacity=b?'.5':'';});};
+  _setBusy(true);
+  const body={
+    p_admin_username:curUser.username,
+    p_admin_password:pass,
+    p_device_fingerprint:r.device_fingerprint,
+    p_nickname:nick||'',
+    p_note:note||null
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_set_device_nickname`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body),mode:'cors'
+    });
+  }catch(e){
+    console.error('[SEC] set-nickname rpc network error (non-critical):',e);
+    _setBusy(false);toast(T('seclogDevSaveErr'),'err');return;
+  }
+  if(!res.ok){
+    let err={};try{err=await res.json();}catch(_){}
+    const code=err?.code||'';const msg=err?.message||'';
+    console.error('[SEC] set-nickname rpc error:',res.status,err); // STAGE 53A-2B: log error จริงทั้งก้อน (code/message/details/hint)
+    _setBusy(false);
+    if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){
+      toast(T('seclogDevMigration').replace(/<br\s*\/?>/gi,' '),'err');return;
+    }
+    if(msg==='unauthorized'){toast(T('seclogDevWrongPass'),'err');return;}
+    // แจ้งเหตุจริงแบบย่อใน toast (รายละเอียดเต็มดูใน console)
+    toast(T('seclogDevSaveErr')+(msg?' — '+String(msg).slice(0,120):''),'err');return;
+  }
+  let out=[];try{out=await res.json();}catch(_){out=[];}
+  const row=Array.isArray(out)?out[0]:out; // PostgREST คืน array ของแถวเสมอสำหรับ returns table — กันเผื่อ object เดี่ยว
+  if(row&&row.ok){
+    toast(row.status==='cleared'?T('seclogDevNickCleared'):T('seclogDevNickSaved'));
+    secDevLoad({afterSave:true}); // refresh — ถ้าโหลดใหม่พัง จะแจ้ง "บันทึกแล้วแต่โหลดใหม่ไม่สำเร็จ" ไม่ใช่ error ทั่วไป
+  }else{
+    console.error('[SEC] set-nickname unexpected result:',out);
+    _setBusy(false);
+    toast(T('seclogDevSaveErr')+(row&&row.status?' — '+esc(row.status):''),'err');
+  }
 }
 
 // ===== BULK ACTIONS =====
