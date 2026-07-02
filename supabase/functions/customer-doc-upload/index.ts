@@ -29,6 +29,12 @@ const ALLOWED_DOC_TYPES = new Set([
   'passport_photo', 'visa', 'wp', 'employer_card', 'receipt', 'photo', 'pow', 'other',
 ]);
 
+// STAGE 54A-1B: owner generalization — ค่า owner_type ที่ schema รองรับ
+// stage นี้ "อัปโหลดได้เฉพาะ customer" — employer/establishment/case จะเปิดใน
+// stage ถัดไปเมื่อมีตาราง/UI ให้ validate เจ้าของได้จริง (กัน orphan write)
+const ALLOWED_OWNER_TYPES = new Set(['customer', 'employer', 'establishment', 'case']);
+const SUPPORTED_OWNER_TYPES = new Set(['customer']);
+
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg', 'image/png', 'application/pdf',
 ]);
@@ -148,6 +154,8 @@ interface DocInsert {
   fileSize:     number;
   storagePath:  string;
   uploadedBy:   string;
+  ownerType:    string;   // STAGE 54A-1B: dual-write เจ้าของ (ตอนนี้ = 'customer' เสมอ)
+  ownerId:      number;   // STAGE 54A-1B: = customerId สำหรับ owner_type='customer'
 }
 
 async function insertDocument(
@@ -168,6 +176,10 @@ async function insertDocument(
       thumbnail_path: null,
       uploaded_by:    d.uploadedBy,
       file_data:      null,           // ❌ ไม่เก็บ base64 ใน DB
+      // STAGE 54A-1B: dual-write — customer_id ยังถูก set เสมอสำหรับเอกสารลูกค้า
+      // (ต้อง apply migration 20260731_documents_owner_generalization.sql ก่อน deploy ไฟล์นี้)
+      owner_type:     d.ownerType,
+      owner_id:       d.ownerId,
     }),
   });
   if (!res.ok) throw new Error(`documents insert ${res.status}: ${await res.text()}`);
@@ -211,6 +223,31 @@ Deno.serve(async (req: Request) => {
   const customerId = Number(customerIdRaw);
   if (!Number.isInteger(customerId) || customerId <= 0) {
     return json({ ok: false, error: 'invalid_customer_id' }, 400);
+  }
+
+  // ── STAGE 54A-1B: owner_type / owner_id (optional — ไม่ส่ง = พฤติกรรมเดิม 100%) ──
+  //   * ไม่ส่ง → owner_type='customer', owner_id=customer_id (dual-write)
+  //   * ส่ง 'customer' → owner_id (ถ้าส่ง) ต้องตรงกับ customer_id (กันชี้คนละคน)
+  //   * ส่ง employer/establishment/case → ยังไม่เปิดใน stage นี้ (รอตาราง/UI ให้
+  //     validate เจ้าของจริงได้ก่อน — กัน orphan write) → คืน error ชัดเจน
+  const ownerTypeRaw = String(body.owner_type ?? '').trim().toLowerCase();
+  const ownerType    = ownerTypeRaw || 'customer';
+  if (!ALLOWED_OWNER_TYPES.has(ownerType)) {
+    return json({ ok: false, error: 'invalid_owner_type' }, 400);
+  }
+  if (!SUPPORTED_OWNER_TYPES.has(ownerType)) {
+    return json({ ok: false, error: 'owner_type_not_supported' }, 400);
+  }
+  let ownerId = customerId;
+  if (body.owner_id != null && String(body.owner_id).trim() !== '') {
+    const n = Number(body.owner_id);
+    if (!Number.isInteger(n) || n <= 0) {
+      return json({ ok: false, error: 'invalid_owner_id' }, 400);
+    }
+    if (n !== customerId) {
+      return json({ ok: false, error: 'owner_mismatch' }, 400);
+    }
+    ownerId = n;
   }
 
   const docName = docNameRaw.slice(0, 255);
@@ -279,6 +316,8 @@ Deno.serve(async (req: Request) => {
       fileSize:    bytes.length,
       storagePath,
       uploadedBy:  actor.name || actor.code || username,
+      ownerType,           // STAGE 54A-1B: 'customer' เสมอใน stage นี้
+      ownerId,             // STAGE 54A-1B: = customerId
     });
   } catch (e) {
     console.error('[customer-doc-upload] db insert failed:', e instanceof Error ? e.message : e);
