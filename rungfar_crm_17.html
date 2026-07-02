@@ -2557,8 +2557,8 @@ const LANG = {
     delreqRtCustomer:'ขอลบลูกค้า', delreqRtBulk:'ขอลบลูกค้าหลายรายการ', delreqRtDoc:'ขอลบเอกสาร',
     delreqStPending:'รอดำเนินการ', delreqStApproved:'อนุมัติแล้ว', delreqStRejected:'ปฏิเสธแล้ว', delreqStCancelled:'ยกเลิก',
     delreqAskReason:'เหตุผล (ไม่บังคับ):', delreqReviewNote:'หมายเหตุการตรวจ (ไม่บังคับ):',
-    delreqConfirmApprove:'อนุมัติคำขอลบนี้? (โหมดปลอดภัย: ระบบจะเปลี่ยนสถานะเป็น “อนุมัติ” เท่านั้น ยังไม่ลบข้อมูลจริง)', delreqConfirmReject:'ปฏิเสธคำขอลบนี้?',
-    delreqSafeMode:'โหมดปลอดภัย: การลบจะถูกบันทึกเป็นคำขอ และการอนุมัติยังไม่ลบข้อมูลจริง จนกว่าจะเปิดใช้ RPC ลบข้อมูลแบบปลอดภัย',
+    delreqConfirmApprove:'อนุมัติคำขอลบนี้? (ระบบจะลบข้อมูลตามคำขอผ่านประตู server: ลูกค้า = ซ่อนถาวรแบบเก็บหลักฐาน, เอกสาร = ลบรายการ)', delreqConfirmReject:'ปฏิเสธคำขอลบนี้?',
+    delreqSafeMode:'การลบทุกรายการต้องผ่านคำขอ + admin อนุมัติเท่านั้น — เมื่ออนุมัติ ระบบจะลบแบบควบคุม (ลูกค้า = ซ่อนถาวรแบบเก็บหลักฐาน, เอกสาร = ลบรายการ) และบันทึกประวัติทุกครั้ง',
     delreqMigrationNeeded:'ยังไม่ได้ติดตั้งตารางคำขอลบ — กรุณา apply migration 20260625_delete_requests.sql ใน Supabase ก่อน',
     delreqMigration711:'ยังไม่ได้ติดตั้ง RPC คำขอลบ — กรุณา apply migration 20260711',
     // ── LOGIN LEFT PANEL ──
@@ -2767,8 +2767,8 @@ const LANG = {
     delreqRtCustomer:'ဖောက်သည်ဖျက်ရန်တောင်းဆို', delreqRtBulk:'ဖောက်သည်များဖျက်ရန်တောင်းဆို', delreqRtDoc:'စာရွက်ဖျက်ရန်တောင်းဆို',
     delreqStPending:'ဆောင်ရွက်ဆဲ', delreqStApproved:'အတည်ပြုပြီး', delreqStRejected:'ငြင်းပယ်ပြီး', delreqStCancelled:'ပယ်ဖျက်',
     delreqAskReason:'အကြောင်းပြချက် (မဖြစ်မနေမဟုတ်):', delreqReviewNote:'စစ်ဆေးမှတ်ချက် (မဖြစ်မနေမဟုတ်):',
-    delreqConfirmApprove:'ဤဖျက်တောင်းဆိုမှုကို အတည်ပြုမည်လား? (ဘေးကင်းမုဒ်: အခြေအနေကို “အတည်ပြုပြီး” သို့သာ ပြောင်းမည်၊ အမှန်တကယ် မဖျက်သေးပါ)', delreqConfirmReject:'ဤဖျက်တောင်းဆိုမှုကို ငြင်းပယ်မည်လား?',
-    delreqSafeMode:'ဘေးကင်းမုဒ်: ဖျက်ခြင်းကို တောင်းဆိုမှုအဖြစ် မှတ်တမ်းတင်ပြီး အတည်ပြုခြင်းသည် ဘေးကင်းသော ဖျက်ရေး RPC ဖွင့်သည်အထိ အမှန်တကယ် မဖျက်သေးပါ',
+    delreqConfirmApprove:'ဤဖျက်တောင်းဆိုမှုကို အတည်ပြုမည်လား? (အတည်ပြုလျှင် server မှတဆင့် ထိန်းချုပ်ဖျက်ခြင်း ဆောင်ရွက်မည်)', delreqConfirmReject:'ဤဖျက်တောင်းဆိုမှုကို ငြင်းပယ်မည်လား?',
+    delreqSafeMode:'ဖျက်ခြင်းအားလုံးသည် တောင်းဆိုမှု + admin အတည်ပြုမှသာ ဖြစ်နိုင်သည် — အတည်ပြုလျှင် server မှ ထိန်းချုပ်ဖျက်ခြင်း ဆောင်ရွက်ပြီး မှတ်တမ်းတင်သည်',
     delreqMigrationNeeded:'ဖျက်တောင်းဆိုမှုဇယား မတပ်ဆင်ရသေးပါ — Supabase တွင် migration 20260625_delete_requests.sql ကို အရင် apply လုပ်ပါ',
     delreqMigration711:'ဖျက်တောင်းဆို RPC မတပ်ဆင်ရသေးပါ — Supabase တွင် migration 20260711 ကို apply လုပ်ပါ',
     // ── LOGIN LEFT PANEL ──
@@ -3231,14 +3231,14 @@ async function delMdoc(id){
   if(!doc)return;
   if(doc.dbId){
     // STAGE 46A-3: ทุก role (staff + admin) ลบเอกสารตรงไม่ได้ — สร้าง "คำขอลบเอกสาร" เสมอ
-    //   (โหมดปลอดภัย: การอนุมัติยังไม่ลบข้อมูลจริง; client direct DELETE ถูก revoke ที่ DB แล้ว — 46A-2)
+    //   (Stage 52A-13: อนุมัติ = controlled delete ฝั่ง server; client direct DELETE ถูก revoke ที่ DB แล้ว)
     const _cust=(typeof editId!=='undefined'&&editId!=null)?(customers.find(c=>c.id===editId)||{}):{};
     const _dname=doc.label||doc.name||doc.type||'เอกสาร';
-    const reason=prompt('ขอลบเอกสาร: '+_dname+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)',' ');
+    const reason=prompt('ขอลบเอกสาร: '+_dname+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (จะลบจริงเมื่อผู้ดูแลระบบอนุมัติ)',' ');
     if(reason===null)return; // ยกเลิก = ไม่ส่งคำขอ และไม่ลบ
     try{
       await submitDeleteRequest({request_type:'document_delete',entity_type:'document',entity_id:doc.dbId,entity_name:_dname+(_cust.name?(' · ลูกค้า: '+_cust.name):''),reason:reason.trim(),detail:{doc_name:doc.label||doc.name||null,doc_type:doc.type||null,customer_id:(typeof editId!=='undefined'?editId:null),customer_name:_cust.name||null}});
-      toast('ส่งคำขอลบเอกสารแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
+      toast('ส่งคำขอลบเอกสารแล้ว (จะลบจริงเมื่อผู้ดูแลระบบอนุมัติ)');
       refreshDelReqBadge();
     }catch(e){toast('ส่งคำขอไม่สำเร็จ','err');}
     return;
@@ -3825,7 +3825,8 @@ async function loadAll(silent=false){
     // Stage 30B: ลูกค้าโหลดแบบไม่รวม photo (เร็วขึ้นมาก) + ดึงเฉพาะ id ที่มีรูป (payload เล็ก) เพื่อรู้ว่าควรโชว์รูป/lazy-load
     let _photoIds=[];
     [customers,groups,branches,employers,_photoIds]=await Promise.all([
-      dbGet('customers','?order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS),
+      // Stage 52A-13: ซ่อนลูกค้าที่ถูก soft delete (deleted_at) — fallback query เดิมถ้ายังไม่ apply migration 20260728
+      (async()=>{try{return await dbGet('customers','?deleted_at=is.null&order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS);}catch(_){return dbGet('customers','?order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS);}})(),
       dbGet('groups','?order=name.asc'),
       dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required'),
       dbGet('employers','?order=name.asc'),
@@ -5268,14 +5269,14 @@ async function delCust(id){
   const _c=customers.find(c=>c.id===id)||{};
   const _delName=_c.name||'';
   // STAGE 46A-3: ทุก role (staff + admin) ลบลูกค้าตรงไม่ได้ — สร้าง "คำขอลบ" เสมอ
-  //   (โหมดปลอดภัย: การอนุมัติยังไม่ลบข้อมูลจริง; client direct DELETE ถูก revoke ที่ DB แล้ว — 46A-2)
-  const reason=prompt('ขอลบลูกค้า: '+(_delName||('#'+id))+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)',' ');
+  //   (Stage 52A-13: อนุมัติ = controlled delete ฝั่ง server; client direct DELETE ถูก revoke ที่ DB แล้ว)
+  const reason=prompt('ขอลบลูกค้า: '+(_delName||('#'+id))+'\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (จะลบจริงเมื่อผู้ดูแลระบบอนุมัติ)',' ');
   if(reason===null)return; // กดยกเลิก = ไม่ส่งคำขอ และไม่ลบ
   const ename=[_delName,(_c.passport_no||_c.alien_id||'')].filter(Boolean).join(' · ');
   showLoading('กำลังส่งคำขอลบ...');
   try{
     await submitDeleteRequest({request_type:'customer_delete',entity_type:'customer',entity_id:id,entity_name:ename||('#'+id),reason:reason.trim(),detail:{name:_delName,passport_no:_c.passport_no||null,alien_id:_c.alien_id||null}});
-    toast('ส่งคำขอลบแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
+    toast('ส่งคำขอลบแล้ว (จะลบจริงเมื่อผู้ดูแลระบบอนุมัติ)');
     refreshDelReqBadge();
   }catch(e){toast('ส่งคำขอไม่สำเร็จ: '+e.message,'err');}
   finally{hideLoading();}
@@ -7440,15 +7441,15 @@ async function doBulkDelete(){
   const ids=[...selectedIds];
   if(!ids.length){toast('กรุณาเลือกรายการก่อน','err');return;}
   // STAGE 46A-3: ทุก role (staff + admin) ลบหลายรายการตรงไม่ได้ — สร้าง "คำขอลบหลายรายการ" เสมอ
-  //   (โหมดปลอดภัย: การอนุมัติยังไม่ลบข้อมูลจริง; client direct DELETE ถูก revoke ที่ DB แล้ว — 46A-2)
+  //   (Stage 52A-13: อนุมัติ = controlled delete ฝั่ง server; client direct DELETE ถูก revoke ที่ DB แล้ว)
   const names=ids.map(id=>{const c=customers.find(x=>x.id===id)||{};return c.name||('#'+id);});
-  const reason=prompt('ขอลบลูกค้า '+ids.length+' รายการ\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)',' ');
+  const reason=prompt('ขอลบลูกค้า '+ids.length+' รายการ\n\nกรอกเหตุผล (ไม่บังคับ) แล้วกดตกลงเพื่อส่งคำขอลบ (จะลบจริงเมื่อผู้ดูแลระบบอนุมัติ)',' ');
   if(reason===null)return; // ยกเลิก = ไม่ส่งคำขอ และไม่ลบ
   showLoading('กำลังส่งคำขอลบ...');
   try{
     await submitDeleteRequest({request_type:'customer_bulk_delete',entity_type:'customer',entity_id:null,entity_name:ids.length+' รายการ',reason:reason.trim(),detail:{count:ids.length,ids,names:names.slice(0,50)}});
     clearSelection();
-    toast('ส่งคำขอลบหลายรายการแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
+    toast('ส่งคำขอลบหลายรายการแล้ว (จะลบจริงเมื่อผู้ดูแลระบบอนุมัติ)');
     refreshDelReqBadge();
   }catch(e){toast('ส่งคำขอไม่สำเร็จ: '+e.message,'err');}
   finally{hideLoading();}
@@ -7518,7 +7519,7 @@ async function renderDelReq(){
   const rtLabel={customer_delete:T('delreqRtCustomer'),customer_bulk_delete:T('delreqRtBulk'),document_delete:T('delreqRtDoc')};
   const rtColor={customer_delete:'#dc2626',customer_bulk_delete:'#dc2626',document_delete:'#b45309'};
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
-  // STAGE 46A-2: แบนเนอร์เตือน "โหมดปลอดภัย" — อนุมัติยังไม่ลบข้อมูลจริง
+  // STAGE 52A-13: แบนเนอร์อธิบาย controlled delete — ลบจริงเฉพาะเมื่อ admin อนุมัติ (ผ่าน RPC ฝั่ง server)
   const safeBanner=`<div style="display:flex;align-items:flex-start;gap:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.5"><span style="flex:none">🔒</span><span>${esc(T('delreqSafeMode'))}</span></div>`;
   if(!_delReqCache.length){wrap.innerHTML=safeBanner+`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="font-size:13px;font-weight:700;color:var(--g8)">${T('delreqPending')}</span><span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">0</span></div><div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('delreqNone')}</div>`;return;}
   const cards=_delReqCache.map(r=>{
@@ -7549,15 +7550,22 @@ async function approveDelReq(id){
   const req=_delReqCache.find(r=>r.id===id);if(!req)return;
   if(!confirm(T('delreqConfirmApprove')))return;
   const note=prompt(T('delreqReviewNote'),'');
-  // STAGE 46A-4 — SAFE MODE: อนุมัติผ่าน RPC app_review_delete_request (อัปเดตสถานะคำขอเท่านั้น)
-  //   ❌ ไม่ลบ customer/document จริง — RPC เป็น UPDATE delete_requests เท่านั้น (รอ delete RPC แบบปลอดภัยภายหลัง)
+  // STAGE 52A-13 — CONTROLLED DELETE: อนุมัติผ่าน RPC app_review_delete_request (20260728)
+  //   server ทำการลบแบบควบคุมเอง: ลูกค้า = soft delete (deleted_at), เอกสาร = ลบแถวเดียว
+  //   audit log เขียนฝั่ง server ใน RPC แล้ว — ❌ ไม่ logAudit ซ้ำจาก client
   showLoading('กำลังบันทึกการอนุมัติ...');
   try{
     await _delReqRpc('app_review_delete_request',{p_request_id:id,p_status:'approved',p_review_note:(note&&note.trim())?note.trim():null});
-    logAudit('delete_request.approve',req.entity_type,req.entity_id,{request_type:req.request_type,entity_name:req.entity_name||null,request_id:id,safe_mode:true});
-    toast('อนุมัติคำขอลบแล้ว (โหมดปลอดภัย: ยังไม่ลบข้อมูลจริง)');
-    renderDelReq();refreshDelReqBadge();
-  }catch(e){toast((_delReqMissing(e)?T('delreqMigration711'):('ดำเนินการไม่สำเร็จ: '+e.message)),'err');}
+    // เอา entity ที่ถูกลบออกจากรายการฝั่งหน้าจอทันที (ลูกค้า soft-deleted จะไม่กลับมาหลัง reload เพราะ loadAll กรอง deleted_at)
+    if(req.request_type==='customer_delete'&&req.entity_id){const _did=parseInt(req.entity_id);if(!isNaN(_did))customers=customers.filter(c=>c.id!==_did);}
+    else if(req.request_type==='customer_bulk_delete'){const _ids=new Set(((req.detail&&req.detail.ids)||[]).map(Number));if(_ids.size)customers=customers.filter(c=>!_ids.has(c.id));}
+    toast('อนุมัติคำขอลบแล้ว');
+    renderDelReq();refreshDelReqBadge();renderSidebar();renderDash();if(curView==='customers')doFilter();
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์อนุมัติคำขอลบ','err');
+    else if(e&&e.message==='request_not_pending')toast('คำขอนี้ถูกดำเนินการไปแล้ว','err');
+    else toast((_delReqMissing(e)?T('delreqMigration711'):('ดำเนินการไม่สำเร็จ: '+e.message)),'err');
+  }
   finally{hideLoading();}
 }
 async function rejectDelReq(id){
@@ -7566,14 +7574,17 @@ async function rejectDelReq(id){
   const req=_delReqCache.find(r=>r.id===id);if(!req)return;
   if(!confirm(T('delreqConfirmReject')))return;
   const note=prompt(T('delreqReviewNote'),'');
-  // STAGE 46A-4: ปฏิเสธผ่าน RPC app_review_delete_request (status-only, ไม่ลบข้อมูลใด ๆ)
+  // STAGE 52A-13: ปฏิเสธผ่าน RPC เดิม — status-only, ไม่ลบข้อมูลใด ๆ (audit เขียนฝั่ง server)
   showLoading('กำลังบันทึก...');
   try{
     await _delReqRpc('app_review_delete_request',{p_request_id:id,p_status:'rejected',p_review_note:(note&&note.trim())?note.trim():null});
-    logAudit('delete_request.reject',req.entity_type,req.entity_id,{request_type:req.request_type,entity_name:req.entity_name||null,request_id:id});
     toast('ปฏิเสธคำขอลบแล้ว');
     renderDelReq();refreshDelReqBadge();
-  }catch(e){toast((_delReqMissing(e)?T('delreqMigration711'):('ไม่สำเร็จ: '+e.message)),'err');}
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์อนุมัติคำขอลบ','err');
+    else if(e&&e.message==='request_not_pending')toast('คำขอนี้ถูกดำเนินการไปแล้ว','err');
+    else toast((_delReqMissing(e)?T('delreqMigration711'):('ไม่สำเร็จ: '+e.message)),'err');
+  }
   finally{hideLoading();}
 }
 
