@@ -2537,6 +2537,16 @@ const LANG = {
     seclogNoAccessMsg:'ไม่มีสิทธิ์เข้าถึงหน้านี้',
     // ── AUDIT LOG (customer activity) ──
     seclogTabLogin:'เข้าสู่ระบบ', seclogTabActivity:'การใช้งานลูกค้า',
+    seclogDevTitle:'อุปกรณ์ที่เคยเข้า',
+    seclogDevSub:'สรุปอุปกรณ์/เบราว์เซอร์ที่แต่ละผู้ใช้เคยใช้เข้าสู่ระบบ — ดูย้อนหลังเท่านั้น ไม่ได้ใช้บล็อกการเข้าใช้งาน',
+    seclogDevEmpty:'ยังไม่มีประวัติอุปกรณ์',
+    seclogDevWrongPass:'รหัส ADMIN ไม่ถูกต้อง',
+    seclogDevErr:'ไม่สามารถโหลดข้อมูลอุปกรณ์ได้ในขณะนี้ (ตรวจสอบการเชื่อมต่อ)',
+    seclogDevMigration:'ยังไม่ได้ติดตั้งฟังก์ชันในฐานข้อมูล<br>กรุณา apply migration 20260729_known_devices_security_rpc.sql ใน Supabase ก่อน',
+    seclogDevFirst:'ใช้ครั้งแรก', seclogDevLast:'ใช้ล่าสุด',
+    seclogDevLogins:'จำนวน Login', seclogDevFails:'ล้มเหลว', seclogDevSuspCol:'น่าสงสัย', seclogDevLastIp:'IP ล่าสุด',
+    seclogFailWarnTitle:'เตือน: login ล้มเหลวหลายครั้ง', seclogFailWarnTimes:'ครั้งในช่วงข้อมูลที่แสดง',
+    seclogSuspCardTip:'กดเพื่อดูเฉพาะรายการน่าสงสัย',
     auditAction:'การกระทำ', auditDetail:'รายละเอียด', auditSearch:'ค้นหา', auditOpenCust:'เปิดข้อมูลลูกค้า', auditPerPage:'ต่อหน้า',
     audit_customer_delete:'ลบลูกค้า', audit_customer_bulk_delete:'ลบลูกค้าหลายรายการ',
     audit_document_delete:'ลบเอกสาร', audit_customer_export:'ส่งออกข้อมูลลูกค้า',
@@ -2747,6 +2757,16 @@ const LANG = {
     seclogNoAccessMsg:'ဝင်ရောက်ခွင့်မရှိပါ',
     // ── AUDIT LOG (customer activity) ──
     seclogTabLogin:'ဝင်ရောက်မှု', seclogTabActivity:'ဖောက်သည်အသုံးပြုမှု',
+    seclogDevTitle:'ဝင်ရောက်ဖူးသောကိရိယာများ',
+    seclogDevSub:'အသုံးပြုသူတစ်ဦးချင်း အသုံးပြုဖူးသော ကိရိယာ/ဘရောက်ဇာ အကျဉ်းချုပ် — ပြန်ကြည့်ရန်သာ၊ ဝင်ရောက်မှုကို ပိတ်ဆို့ရန်မဟုတ်ပါ',
+    seclogDevEmpty:'ကိရိယာမှတ်တမ်း မရှိသေးပါ',
+    seclogDevWrongPass:'ADMIN စကားဝှက် မမှန်ကန်ပါ',
+    seclogDevErr:'ကိရိယာဒေတာ မဖတ်နိုင်ပါ (ချိတ်ဆက်မှုစစ်ဆေးပါ)',
+    seclogDevMigration:'ဒေတာဘေ့စ်တွင် function မတပ်ဆင်ရသေးပါ<br>20260729_known_devices_security_rpc.sql ကို Supabase တွင် apply လုပ်ပါ',
+    seclogDevFirst:'ပထမဆုံးအသုံးပြု', seclogDevLast:'နောက်ဆုံးအသုံးပြု',
+    seclogDevLogins:'Login အရေအတွက်', seclogDevFails:'မအောင်မြင်', seclogDevSuspCol:'သံသယရှိ', seclogDevLastIp:'နောက်ဆုံး IP',
+    seclogFailWarnTitle:'သတိ — login အကြိမ်ကြိမ် မအောင်မြင်', seclogFailWarnTimes:'ကြိမ် (ပြသထားသောကာလ)',
+    seclogSuspCardTip:'သံသယရှိသာ ကြည့်ရန် နှိပ်ပါ',
     auditAction:'လုပ်ဆောင်ချက်', auditDetail:'အသေးစိတ်', auditSearch:'ရှာဖွေ', auditOpenCust:'ဖောက်သည်အချက်အလက်ဖွင့်', auditPerPage:'တစ်မျက်နှာ',
     audit_customer_delete:'ဖောက်သည်ဖျက်', audit_customer_bulk_delete:'ဖောက်သည်များဖျက်',
     audit_document_delete:'စာရွက်ဖျက်', audit_customer_export:'ဒေတာထုတ်ယူ',
@@ -6682,13 +6702,23 @@ function renderSecLog(){
       </div>
     </div>
     <div id="sl_cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
+    <div id="sl_warn"></div>
     <div id="sl_table_wrap"></div>
+    <!-- STAGE 53A-1: Known devices — awareness/read-only เท่านั้น ไม่บล็อก login -->
+    <div id="sl_dev_section" style="margin-top:18px">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="font-size:14px;font-weight:800;color:var(--g8)">${T('seclogDevTitle')}</div>
+        <div style="font-size:11px;color:var(--g5)">${T('seclogDevSub')}</div>
+      </div>
+      <div id="sl_dev_wrap"></div>
+    </div>
     </div>
     <div id="slActivityPane" style="display:none"></div>
   </div>`;
   secLogTabState='login';
   auditPaneBuilt=false; // DOM ถูกสร้างใหม่ทุกครั้งที่เปิดหน้า → ต้อง build pane ใหม่
   secLogLoad();
+  secDevLoad(); // STAGE 53A-1: โหลดสรุปอุปกรณ์คู่ขนาน (จัดการ state ไม่มีรหัส/รหัสผิดเองภายใน)
 }
 
 // ── Tab switch: login security log <-> customer activity log ──
@@ -7088,6 +7118,7 @@ async function secLogLoad(){
   if(!wrap)return;
   const box=(txt)=>`<div style="padding:44px 20px;text-align:center;color:var(--g6);background:#fff;border:1px solid var(--g2);border-radius:var(--rl);font-size:13px;line-height:1.8">${txt}</div>`;
   // Admin-only (ด่าน UI; ด่านจริงคือการตรวจ credential ใน RPC SECURITY DEFINER)
+  const warnEl=document.getElementById('sl_warn');if(warnEl)warnEl.innerHTML=''; // STAGE 53A-1: ล้างเตือนเก่าก่อนโหลดใหม่
   if(curUser?.role!=='admin'){if(cards)cards.innerHTML='';wrap.innerHTML=box(T('seclogNoAccess'));return;}
   if(cards)cards.innerHTML='';
   const pass=(document.getElementById('slAdminPass')?.value||'').trim();
@@ -7156,7 +7187,17 @@ function secLogRender(logs){
     `<div style="${cardStyle}"><div style="${numStyle}color:var(--g9)">${totalToday}</div><div style="${lblStyle}">${T('seclogLoginToday')}</div></div>`+
     `<div style="${cardStyle}"><div style="${numStyle}color:${failToday>0?'var(--red)':'var(--grn)'}">${failToday}</div><div style="${lblStyle}">${T('seclogFailToday')}</div></div>`+
     `<div style="${cardStyle}" title="${esc(T('seclogNewDevTip'))}"><div style="${numStyle}color:var(--blu)">${newDev}</div><div style="${lblStyle}">${T('seclogNewDev')}</div></div>`+
-    `<div style="${cardStyle}" title="${esc(T('seclogSuspTip'))}"><div style="${numStyle}color:${suspCount>0?'var(--amb)':'var(--grn)'}">${suspCount}</div><div style="${lblStyle}">${T('seclogSuspCount')}</div></div>`;
+    `<div style="${cardStyle}cursor:pointer" title="${esc(T('seclogSuspTip'))} — ${esc(T('seclogSuspCardTip'))}" onclick="secSuspCardToggle()"><div style="${numStyle}color:${suspCount>0?'var(--amb)':'var(--grn)'}">${suspCount}</div><div style="${lblStyle}">${T('seclogSuspCount')} ▾</div></div>`;
+  // ─── STAGE 53A-1: เตือน login ล้มเหลวบ่อย (UI-only จากแถวที่ fetch มาแล้ว — ไม่มี SQL เพิ่ม, ไม่ส่ง alert) ───
+  const warnBox=document.getElementById('sl_warn');
+  if(warnBox){
+    const failBy={};
+    logs.forEach(l=>{if(l.login_status==='failed'&&l.username){failBy[l.username]=(failBy[l.username]||0)+1;}});
+    const heavy=Object.entries(failBy).filter(([,n])=>n>=5).sort((a,b)=>b[1]-a[1]);
+    warnBox.innerHTML=heavy.length
+      ?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:var(--rl);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#b91c1c;line-height:1.7"><b>⚠️ ${T('seclogFailWarnTitle')}:</b> ${heavy.map(([u,n])=>`${esc(u)} — ${n} ${T('seclogFailWarnTimes')}`).join(' · ')}</div>`
+      :'';
+  }
   // ─── Table ───
   if(!logs.length){
     wrap.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogNoDataRange')}</div>`;
@@ -7227,7 +7268,7 @@ function secLogRender(logs){
 function secGoPage(p){_secPage=Number(p)||1;secLogRender(_secLogsShown);}
 function secSetPageSize(n){_secPageSize=Number(n)||20;_secPage=1;secLogRender(_secLogsShown);}
 
-function secLogFilter(){secLogLoad();}
+function secLogFilter(){secLogLoad();secDevLoad();} // STAGE 53A-1: ค้นหา = refresh ทั้ง log และสรุปอุปกรณ์ (รหัส admin ช่องเดียวกัน)
 function secLogClear(){
   const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
   const week=new Date(Date.now()-6*86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Bangkok'});
@@ -7238,6 +7279,105 @@ function secLogClear(){
   const d=document.getElementById('slDevice');if(d)d.value='';
   const sp=document.getElementById('slSusp');if(sp)sp.checked=false;
   secLogLoad();
+  secDevLoad(); // STAGE 53A-1
+}
+
+// STAGE 53A-1: การ์ด "น่าสงสัย" กดเพื่อสลับ filter น่าสงสัยเท่านั้น (UI-only — ไม่มี logic บล็อกใด ๆ)
+function secSuspCardToggle(){
+  const sp=document.getElementById('slSusp');if(!sp)return;
+  sp.checked=!sp.checked;
+  secLogLoad();
+}
+
+// ===== STAGE 53A-1: "อุปกรณ์ที่เคยเข้า" — Known device summary (read-only awareness) =====
+// อ่านผ่าน RPC SECURITY DEFINER app_admin_list_known_devices เท่านั้น
+// ใช้รหัสผ่าน Admin ช่องเดียวกับหน้า security log (slAdminPass)
+// ❌ ไม่บล็อก login / ❌ ไม่แก้ข้อมูล / best-effort — พังแล้วแสดงข้อความ ไม่ crash หน้า
+async function secDevLoad(){
+  const wrap=document.getElementById('sl_dev_wrap');
+  if(!wrap)return;
+  const box=(txt)=>`<div style="padding:24px 16px;text-align:center;color:var(--g6);background:#fff;border:1px solid var(--g2);border-radius:var(--rl);font-size:13px;line-height:1.8">${txt}</div>`;
+  if(curUser?.role!=='admin'){wrap.innerHTML=box(T('seclogNoAccess'));return;}
+  const pass=(document.getElementById('slAdminPass')?.value||'').trim();
+  if(!pass){wrap.innerHTML=box(T('seclogEnterPass'));return;}
+  wrap.innerHTML=box(T('seclogLoading'));
+  const body={
+    p_admin_username:curUser.username,
+    p_admin_password:pass,
+    p_username:(document.getElementById('slUser')?.value||'').trim()||null
+  };
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_admin_list_known_devices`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body),mode:'cors'
+    });
+  }catch(e){
+    console.warn('[SEC] known-devices rpc network error (non-critical):',e.message);
+    wrap.innerHTML=box(T('seclogDevErr'));return;
+  }
+  if(!res.ok){
+    let err={};try{err=await res.json();}catch(_){}
+    const code=err?.code||'';const msg=err?.message||'';
+    // RPC ยังไม่ถูก apply ใน DB
+    if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){
+      wrap.innerHTML=box(T('seclogDevMigration'));return;
+    }
+    // รหัสผ่าน admin ผิด (RPC raise 'unauthorized')
+    if(msg==='unauthorized'){wrap.innerHTML=box(T('seclogDevWrongPass'));return;}
+    console.warn('[SEC] known-devices rpc error:',res.status,msg||code);
+    wrap.innerHTML=box(T('seclogDevErr'));return;
+  }
+  let data=[];try{data=await res.json();}catch(_){data=[];}
+  secDevRender(Array.isArray(data)?data:[]);
+}
+
+function secDevRender(rows){
+  const wrap=document.getElementById('sl_dev_wrap');if(!wrap)return;
+  if(!rows.length){
+    wrap.innerHTML=`<div style="padding:32px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${T('seclogDevEmpty')}</div>`;
+    return;
+  }
+  const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
+  const thCss='padding:9px 10px;font-size:11px;font-weight:700;color:var(--g6);text-align:left;white-space:nowrap;border-bottom:1px solid var(--g2)';
+  const trs=rows.map(r=>{
+    const devType=({desktop:T('seclogDevDesktop'),mobile:T('seclogDevMobile'),tablet:T('seclogDevTablet')}[r.device_type])||r.device_type||'—';
+    const fp=r.device_fingerprint?String(r.device_fingerprint).slice(0,8)+'…':'—';
+    const fails=Number(r.failed_count)||0;
+    const susp=Number(r.suspicious_count)||0;
+    return`<tr style="border-bottom:1px solid var(--g2)">
+      <td style="padding:7px 10px;font-size:12px;font-weight:600">${esc(r.username||'—')}</td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--g7)">${esc(r.full_name||'—')}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap">${esc(devType)}${r.browser_name?' · '+esc(r.browser_name):''}</td>
+      <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g4)">${esc(fp)}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(r.first_seen)}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--g6);white-space:nowrap;font-family:var(--mono)">${fmtDT(r.last_seen)}</td>
+      <td style="padding:7px 10px;font-size:12px;text-align:right;font-family:var(--mono)">${Number(r.login_count)||0}</td>
+      <td style="padding:7px 10px;font-size:12px;text-align:right;font-family:var(--mono);color:${fails>0?'var(--red)':'var(--g5)'}">${fails}</td>
+      <td style="padding:7px 10px;font-size:12px;text-align:right;font-family:var(--mono);color:${susp>0?'var(--amb)':'var(--g5)'}">${susp}</td>
+      <td style="padding:7px 10px;font-size:11px;font-family:var(--mono);color:var(--g6);white-space:nowrap">${r.last_ip_address?esc(r.last_ip_address):'-'}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);overflow:hidden">
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:860px">
+        <thead><tr style="background:var(--g0)">
+          <th style="${thCss}">Username</th>
+          <th style="${thCss}">${T('seclogTblName')}</th>
+          <th style="${thCss}">${T('seclogDevice')} / Browser</th>
+          <th style="${thCss}">${T('seclogTblFP')}</th>
+          <th style="${thCss}">${T('seclogDevFirst')}</th>
+          <th style="${thCss}">${T('seclogDevLast')}</th>
+          <th style="${thCss};text-align:right">${T('seclogDevLogins')}</th>
+          <th style="${thCss};text-align:right">${T('seclogDevFails')}</th>
+          <th style="${thCss};text-align:right">${T('seclogDevSuspCol')}</th>
+          <th style="${thCss}" title="${esc(T('seclogIpTip'))}">${T('seclogDevLastIp')} <span style="color:var(--g4);font-weight:400;cursor:help">ⓘ</span></th>
+        </tr></thead>
+        <tbody>${trs}</tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
 // ===== BULK ACTIONS =====
