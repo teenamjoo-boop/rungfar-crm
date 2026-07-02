@@ -5820,13 +5820,43 @@ function impDetectHeaderRow(arr){
   return bestScore>=2?best:0; // ต้องแมตช์ ≥2 คอลัมน์ ถึงถือว่าเป็นแถว header
 }
 
+// Stage 52A-10: CSV parser แบบเข้าใจเครื่องหมายคำพูด (RFC4180)
+//   เดิมใช้ split(',') ตรง ๆ → ค่าใน "..." ที่มี , หรือขึ้นบรรทัดใหม่ (ที่อยู่/หมายเหตุ/ชื่อบริษัท)
+//   ทำคอลัมน์เพี้ยนทั้งแถว โดยเฉพาะไฟล์ที่ export จากระบบนี้เอง (ทุก cell มี "..." ครอบ)
+function _csvParse(text){
+  const rows=[];let row=[],cell='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"'){if(text[i+1]==='"'){cell+='"';i++;}else inQ=false;}
+      else cell+=ch;
+    }else{
+      if(ch==='"')inQ=true;
+      else if(ch===','){row.push(cell);cell='';}
+      else if(ch==='\n'||ch==='\r'){
+        if(ch==='\r'&&text[i+1]==='\n')i++;
+        row.push(cell);if(row.length>1||String(row[0]).trim()!=='')rows.push(row);
+        row=[];cell='';
+      }
+      else cell+=ch;
+    }
+  }
+  if(cell!==''||row.length){row.push(cell);if(row.length>1||String(row[0]).trim()!=='')rows.push(row);}
+  return rows;
+}
 function handleImpFile(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=async ev=>{
     try{
       impPhotos={};impPhotoScan=false;impPhotoFilter='all';impSaveUnsure=false;
-      if(file.name.endsWith('.csv')){const text=new TextDecoder('utf-8').decode(ev.target.result);const lines=text.split('\n').filter(l=>l.trim());impCols=lines[0].split(',').map(c=>c.replace(/^"|"$/g,'').trim());impData=lines.slice(1).map(l=>l.split(',').map(c=>c.replace(/^"|"$/g,'').trim()));}
+      if(file.name.endsWith('.csv')){
+        let text=new TextDecoder('utf-8').decode(ev.target.result);
+        if(text.charCodeAt(0)===0xFEFF)text=text.slice(1); // ตัด BOM กันชื่อคอลัมน์แรกเพี้ยน (ไฟล์ export ของระบบมี BOM)
+        const _rows=_csvParse(text);
+        impCols=(_rows[0]||[]).map(c=>String(c).trim());
+        impData=_rows.slice(1).map(r=>r.map(c=>String(c).trim())).filter(r=>r.some(c=>c));
+      }
       else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});const _hdr=impDetectHeaderRow(arr);impCols=(arr[_hdr]||[]).map(String);const _raw=arr.slice(_hdr+1);impData=_raw.filter(r=>r.some(c=>c));
         try{const _ph=await impExtractXlsxPhotos(ev.target.result);impPhotoScan=true;const _rm={};let _fi=0;_raw.forEach((r,_j)=>{if(r.some(c=>c)){const _pk=_hdr+_j;if(_ph.photos[_pk])_rm[_fi]=_ph.photos[_pk];_fi++;}});impPhotos=_rm;}catch(_){impPhotos={};impPhotoScan=true;}
       }
