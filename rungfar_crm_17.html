@@ -4660,10 +4660,61 @@ function openEmpDet(id){
 
 function openAddEmp(){editEid=null;['name','biz','phone','contact','addr','note'].forEach(f=>{const el=document.getElementById('ef_'+f);if(el)el.value='';});document.getElementById('empMT').textContent=T('empModalAdd');document.getElementById('empModal').style.display='flex';}
 function openEditEmp(id){editEid=id;const e=employers.find(x=>x.id===id);if(!e)return;document.getElementById('ef_name').value=e.name||'';document.getElementById('ef_biz').value=e.business_type||'';document.getElementById('ef_phone').value=e.phone||'';document.getElementById('ef_contact').value=e.contact_person||'';document.getElementById('ef_addr').value=e.address||'';document.getElementById('ef_note').value=e.note||'';document.getElementById('empMT').textContent=T('empModalEdit');document.getElementById('empModal').style.display='flex';}
+// Stage 52A-6: บันทึกนายจ้าง/กลุ่มผ่าน RPC SECURITY DEFINER (ตรวจตัวตนฝั่ง server)
+//   คืน {status:'ok'|'missing'|'unauthorized'|'error', id, name} — ❌ ไม่ส่ง/ไม่รับ file/path/base64
+//   สเตจนี้ยังไม่ revoke direct write → fallback dbPost/dbPatch เดิมถ้า missing/error
+async function _employerGroupRpc(fname,body){
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/${fname}`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body)
+    });
+  }catch(e){return{status:'error'};}
+  if(res.ok){
+    let d=[];try{d=await res.json();}catch(_){d=[];}
+    const row=Array.isArray(d)?d[0]:d;
+    return{status:'ok',id:(row&&row.id!=null)?row.id:null,name:(row&&row.name)||null,deleted:(row&&row.deleted===true)};
+  }
+  let err={};try{err=await res.json();}catch(_){}
+  const code=(err&&err.code)||'';const msg=(err&&err.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error'};
+}
+async function _employerSaveRpc(employerId,data){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  return _employerGroupRpc('app_save_employer',{p_user_id:uid,p_username:uname,p_employer_id:(employerId!=null?employerId:null),p_data:data||{}});
+}
+async function _groupSaveRpc(groupId,data){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  return _employerGroupRpc('app_save_group',{p_user_id:uid,p_username:uname,p_group_id:(groupId!=null?groupId:null),p_data:data||{}});
+}
+async function _groupDeleteRpc(groupId){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  return _employerGroupRpc('app_delete_group',{p_user_id:uid,p_username:uname,p_group_id:groupId});
+}
 async function saveEmployer(){
   const name=document.getElementById('ef_name').value.trim();if(!name){toast(T('errEmpName'),'err');return;}
   const data={name,business_type:document.getElementById('ef_biz').value.trim(),phone:document.getElementById('ef_phone').value.trim(),contact_person:document.getElementById('ef_contact').value.trim(),address:document.getElementById('ef_addr').value.trim(),note:document.getElementById('ef_note').value.trim(),updated_at:new Date().toISOString()};
-  try{if(editEid){await dbPatch('employers',editEid,data);employers=employers.map(e=>e.id===editEid?{...e,...data}:e);toast(T('toastSaved'));}else{const r=await dbPost('employers',data);if(r&&r[0])employers.push(r[0]);toast(T('toastEmpAdded'));}document.getElementById('empModal').style.display='none';renderEmployers();fillSelects();}catch(e){toast(T('toastError'),'err');}
+  try{
+    // Stage 52A-6: บันทึกผ่าน RPC ก่อน; fallback direct ถ้ายังไม่ apply migration/error (ยังไม่ revoke)
+    const _er=await _employerSaveRpc(editEid||null,data);
+    if(_er.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_er.status==='ok'){
+      if(editEid){employers=employers.map(e=>e.id===editEid?{...e,...data}:e);toast(T('toastSaved'));}
+      else{employers.push({...data,id:_er.id});toast(T('toastEmpAdded'));}
+    }else{
+      if(_er.status==='missing')toast('กรุณา apply migration 20260726','err');
+      if(editEid){await dbPatch('employers',editEid,data);employers=employers.map(e=>e.id===editEid?{...e,...data}:e);if(_er.status!=='missing')toast(T('toastSaved'));}
+      else{const r=await dbPost('employers',data);if(r&&r[0])employers.push(r[0]);if(_er.status!=='missing')toast(T('toastEmpAdded'));}
+    }
+    document.getElementById('empModal').style.display='none';renderEmployers();fillSelects();
+  }catch(e){toast(T('toastError'),'err');}
 }
 
 function setQuickView(v){
@@ -5102,7 +5153,14 @@ async function saveCustomer(){
     if(isComp){
       const selEid=V('f_empId');
       if(selEid)empId=parseInt(selEid);
-      else{const en=VT('f_emp');if(en){try{const r=await dbPost('employers',{name:en,business_type:VT('f_biz'),phone:VT('f_ephon'),address:VT('f_addr')});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;fillSelects();}}catch(e){console.error('[customer save] employer create failed',e);}}}
+      else{const en=VT('f_emp');if(en){try{
+        // Stage 52A-6: สร้างนายจ้างผ่าน RPC ก่อน; fallback direct ถ้า missing/error (ยังไม่ revoke)
+        const _ed={name:en,business_type:VT('f_biz'),phone:VT('f_ephon'),address:VT('f_addr')};
+        const _er=await _employerSaveRpc(null,_ed);
+        if(_er.status==='ok'&&_er.id!=null){employers.push({..._ed,id:_er.id});empId=_er.id;fillSelects();}
+        else if(_er.status==='unauthorized'){console.warn('[customer save] employer create unauthorized — skipped');}
+        else{const r=await dbPost('employers',_ed);if(r&&r[0]){employers.push(r[0]);empId=r[0].id;fillSelects();}}
+      }catch(e){console.error('[customer save] employer create failed',e);}}}
     }
     const total=parseFloat(V('f_ftotal'))||0;const paid=parseFloat(V('f_fpaid'))||0;
     const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),
@@ -5383,7 +5441,20 @@ function openEditGrp(id){editGid=id;const g=groups.find(x=>x.id===id);if(!g)retu
 async function saveGroup(){
   const name=document.getElementById('gf_name').value.trim();if(!name){toast('กรุณากรอกชื่อกลุ่ม','err');return;}
   const data={name,description:document.getElementById('gf_desc').value.trim()};
-  try{if(editGid){await dbPatch('groups',editGid,data);groups=groups.map(g=>g.id===editGid?{...g,...data}:g);try{logAudit('group.update','group',editGid,{name:data.name});}catch(_){}toast('บันทึกแล้ว');}else{const r=await dbPost('groups',data);const _ng=(r&&r[0])||null;if(_ng)groups.push(_ng);try{logAudit('group.create','group',(_ng&&_ng.id)||null,{name:data.name});}catch(_){}toast('เพิ่มกลุ่มแล้ว');}document.getElementById('grpModal').style.display='none';renderGroups();renderSidebar();fillSelects();}catch(e){toast('เกิดข้อผิดพลาด','err');}
+  try{
+    // Stage 52A-6: บันทึกผ่าน RPC ก่อน; fallback direct ถ้ายังไม่ apply migration/error (ยังไม่ revoke)
+    const _gr=await _groupSaveRpc(editGid||null,data);
+    if(_gr.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
+    if(_gr.status==='ok'){
+      if(editGid){groups=groups.map(g=>g.id===editGid?{...g,...data}:g);try{logAudit('group.update','group',editGid,{name:data.name});}catch(_){}toast('บันทึกแล้ว');}
+      else{groups.push({...data,id:_gr.id});try{logAudit('group.create','group',_gr.id||null,{name:data.name});}catch(_){}toast('เพิ่มกลุ่มแล้ว');}
+    }else{
+      if(_gr.status==='missing')toast('กรุณา apply migration 20260726','err');
+      if(editGid){await dbPatch('groups',editGid,data);groups=groups.map(g=>g.id===editGid?{...g,...data}:g);try{logAudit('group.update','group',editGid,{name:data.name});}catch(_){}if(_gr.status!=='missing')toast('บันทึกแล้ว');}
+      else{const r=await dbPost('groups',data);const _ng=(r&&r[0])||null;if(_ng)groups.push(_ng);try{logAudit('group.create','group',(_ng&&_ng.id)||null,{name:data.name});}catch(_){}if(_gr.status!=='missing')toast('เพิ่มกลุ่มแล้ว');}
+    }
+    document.getElementById('grpModal').style.display='none';renderGroups();renderSidebar();fillSelects();
+  }catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
 async function delGrp(id){
   // Stage 49A-2: ลบกลุ่ม = admin เท่านั้น + ยืนยันชัดเจนว่า "ลบเฉพาะกลุ่ม ไม่ลบลูกค้า"
@@ -5391,7 +5462,14 @@ async function delGrp(id){
   if(!confirm('ยืนยันลบกลุ่มนี้หรือไม่? ระบบจะลบเฉพาะชื่อกลุ่ม ไม่ลบข้อมูลลูกค้า'))return;
   const _gn=(groups.find(g=>g.id===id)||{}).name||'';
   try{
-    await dbDel('groups',id);   // ลบเฉพาะแถวกลุ่ม — ❌ ไม่แตะ customers/documents
+    // Stage 52A-6: ลบผ่าน RPC (server บังคับ admin จริง); fallback direct เฉพาะ missing/error
+    //   ลบเฉพาะแถวกลุ่ม — ❌ ไม่แตะ customers/documents
+    const _dr=await _groupDeleteRpc(id);
+    if(_dr.status==='unauthorized'){toast('เฉพาะผู้ดูแลระบบเท่านั้นที่ลบกลุ่มได้','err');return;}
+    if(_dr.status!=='ok'){
+      if(_dr.status==='missing')toast('กรุณา apply migration 20260726','err');
+      await dbDel('groups',id);   // fallback — ผ่านเช็ค admin ฝั่ง UI ด้านบนแล้ว (ยังไม่ revoke)
+    }
     try{logAudit('group.delete','group',id,{name:_gn});}catch(_){}
     groups=groups.filter(g=>g.id!==id);renderGroups();renderSidebar();fillSelects();
     toast('ลบกลุ่มแล้ว');
@@ -5889,7 +5967,12 @@ async function doImport(){
     if(key&&seenInFile.has(key)){countDupFile++;skippedRows.push({ri:ri+2,name,id:_impClean(pp)||_impClean(al)||'—',reason:_impDupReason(_k&&_k.kind)});continue;}
     try{
       let empId=null;
-      if(empName){const _en=normalizeEmployerName(empName);const ef=employers.find(x=>normalizeEmployerName(x.name)===_en);if(ef)empId=ef.id;else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}}
+      if(empName){const _en=normalizeEmployerName(empName);const ef=employers.find(x=>normalizeEmployerName(x.name)===_en);if(ef)empId=ef.id;else{
+        // Stage 52A-6: สร้างนายจ้างผ่าน RPC ก่อน; fallback direct ถ้าไม่ ok (คงผลนำเข้าเดิม — ยังไม่ revoke)
+        const _er=await _employerSaveRpc(null,{name:empName});
+        if(_er.status==='ok'&&_er.id!=null){employers.push({name:empName,id:_er.id});empId=_er.id;}
+        else{const r=await dbPost('employers',{name:empName});if(r&&r[0]){employers.push(r[0]);empId=r[0].id;}}
+      }}
       // Stage 28F: _ds() wraps impDate() — records field+value if unparseable (→ null), never sends raw text to DB date column
       const _bdat=[];
       const _ds=(key,raw)=>{const r=impDate(raw);const rv=String(raw||'').trim();if(rv&&!r)_bdat.push(key+(rv.length<=25?'='+rv:''));return r||null;};
