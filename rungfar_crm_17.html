@@ -1809,6 +1809,36 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('payProofModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="savePayProofLink()">🔗 ผูกหลักฐาน</button></div>
 </div></div>
 
+<!-- MODAL: ADD/EDIT CASE APPOINTMENT (Stage 54A-6B, staff+admin) — นัดหมายภายใน ไม่ใช่ใบนัดราชการ -->
+<div class="mo" id="apptModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="apptMT">เพิ่มนัดหมาย</div><button class="xbtn" onclick="document.getElementById('apptModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fg" style="gap:11px">
+      <div class="fgi"><label class="fl">ประเภทนัด *</label><select class="fi2" id="af_type"></select></div>
+      <div class="fgi"><label class="fl">หัวข้อนัด *</label><input class="fi2" id="af_title" placeholder="เช่น นัดยื่นเอกสาร"></div>
+      <div class="fgi"><label class="fl">วันที่ *</label><input class="fi2" type="date" id="af_date"></div>
+      <div class="fgi"><label class="fl">เวลา</label><input class="fi2" type="time" id="af_time"></div>
+      <div class="fgi"><label class="fl">สถานที่</label><input class="fi2" id="af_location" placeholder="เช่น สำนักงานจัดหางานจังหวัด"></div>
+      <div class="fgi"><label class="fl">ผู้ติดต่อ/เจ้าหน้าที่</label><input class="fi2" id="af_officer" placeholder="(ไม่บังคับ)"></div>
+      <div class="fgi"><label class="fl">สถานะ</label><select class="fi2" id="af_status"></select></div>
+      <div class="fgi full"><label class="fl">หมายเหตุ</label><input class="fi2" id="af_note" placeholder="บันทึกภายใน (ไม่บังคับ)"></div>
+    </div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('apptModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveApptForm()">บันทึก</button></div>
+</div></div>
+
+<!-- MODAL: CHANGE APPOINTMENT STATUS (Stage 54A-6B) -->
+<div class="mo" id="apptStatusModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt">เปลี่ยนสถานะนัดหมาย</div><button class="xbtn" onclick="document.getElementById('apptStatusModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">สถานะใหม่ *</label><select class="fi2" id="asf_status"></select></div>
+    <div class="fgi"><label class="fl">หมายเหตุผลลัพธ์</label><input class="fi2" id="asf_result" placeholder="เช่น ยื่นสำเร็จ / เลื่อนเพราะเอกสารไม่ครบ (ไม่บังคับ)"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('apptStatusModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveApptStatus()">✅ เปลี่ยนสถานะ</button></div>
+</div></div>
+
 <!-- MODAL: CASE TEMPLATE (Stage 54A-2, admin-only) — แม่แบบงาน Phase 2 (เช็คลิสต์ภายใน ไม่ใช่เอกสารราชการ) -->
 <div class="mo" id="ctplModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
@@ -13394,12 +13424,15 @@ function _renderCaseDetail(){
     </div>
     <div id="caseChkSec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดเช็กลิสต์...</div></div>
     <div id="casePaySec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>
+    <div id="caseApptSec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดนัดหมาย...</div></div>
     <div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:10px">ประวัติสถานะ</div>
     ${logs||'<div style="color:var(--g5);font-size:12px">ยังไม่มีประวัติ</div>'}`;
   // STAGE 54A-4: โหลดเช็กลิสต์ของเคสแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
   try{if(typeof _loadCaseChecklist==='function')_loadCaseChecklist(k.id);}catch(_e){}
   // STAGE 54A-6A: โหลดข้อมูลการชำระเงินแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
   try{if(typeof _loadCasePayments==='function')_loadCasePayments(k.id);}catch(_e){}
+  // STAGE 54A-6B: โหลดนัดหมายของเคสแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
+  try{if(typeof _loadCaseAppointments==='function')_loadCaseAppointments(k.id);}catch(_e){}
 }
 function caseBack(){_caseDetail=null;renderCases();}
 // ── แก้ไข metadata ──
@@ -13867,6 +13900,153 @@ async function savePayProofLink(){
   }catch(e){
     if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
     else if(e&&e.message==='document_not_allowed')toast('เอกสารนี้ไม่ใช่ของลูกค้าเจ้าของเคส — ผูกไม่ได้','err');
+    else toast('ไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+
+// =============================================================
+// STAGE 54A-6B — นัดหมาย / วันดำเนินการของเคส (case appointments foundation)
+//   * อ่าน/เขียนผ่าน RPC เท่านั้น (migration 20260806) — client เข้าตารางตรงไม่ได้
+//   * ติดตามภายในบริษัทเท่านั้น — ไม่ใช่ใบนัดราชการ, ไม่ automate เว็บราชการ
+//   * stage นี้ใช้ note เท่านั้น — ไม่มีไฟล์แนบ/ไม่มีอัปโหลด
+//   * ไม่มี hard delete — ยกเลิกนัด = เปลี่ยนสถานะ cancelled (soft)
+//   * audit log เขียนฝั่ง server ใน RPC แล้ว — ❌ ไม่ logAudit ซ้ำจาก client
+// =============================================================
+let _apptRows=[],_apptCaseId=null,_apptEditId=null,_apptStatusId=null;
+const _APPT_TYPE={document_prepare:'เตรียมเอกสาร',submission:'ยื่นเอกสาร',biometrics:'เก็บข้อมูลชีวภาพ',medical:'ตรวจสุขภาพ',training:'อบรม',payment:'ชำระเงิน',receive_result:'รับผล',follow_up:'ติดตามงาน',other:'อื่น ๆ'};
+const _APPT_ST={scheduled:'นัดไว้',completed:'เสร็จแล้ว',missed:'พลาดนัด',postponed:'เลื่อนนัด',cancelled:'ยกเลิก'};
+const _APPT_ST_CLR={scheduled:'#2563eb',completed:'#059669',missed:'#dc2626',postponed:'#d97706',cancelled:'#6b7280'};
+function _apptStChip(st){const c=_APPT_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_APPT_ST[st]||st)}</span>`;}
+function _apptWarn(){
+  return `<div style="font-size:11px;color:var(--g5);margin-bottom:10px">นัดหมายนี้ใช้ติดตามงานภายในบริษัทเท่านั้น ไม่ใช่ใบนัดราชการ และระบบไม่ได้ยื่นงานแทนเว็บราชการ</div>`;
+}
+async function _loadCaseAppointments(caseId){
+  const sec=document.getElementById('caseApptSec');if(!sec||caseId==null)return;
+  _apptCaseId=caseId;
+  let rows=[],sum=null;
+  try{
+    [rows,sum]=await Promise.all([
+      _delReqRpc('app_list_case_appointments',{p_case_id:caseId}),
+      _delReqRpc('app_case_appointment_summary',{p_case_id:caseId})
+    ]);
+  }catch(e){
+    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">📅 ${_caseMissing(e)?'ระบบนัดหมายยังไม่ติดตั้ง — กรุณา apply migration 20260806_case_appointments.sql':'โหลดนัดหมายไม่สำเร็จ: '+esc(e.message)}</div>`;
+    return;
+  }
+  _apptRows=Array.isArray(rows)?rows:[];
+  const s=Array.isArray(sum)?sum[0]:sum;
+  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">นัดหมาย / วันดำเนินการ</div>${_apptWarn()}`;
+  const chip=(label,val,clr)=>`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${clr?clr+'1a':'var(--g1)'};color:${clr||'var(--g6)'}">${label} ${val}</span>`;
+  const summaryHtml=s?`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">
+      ${chip('นัดทั้งหมด',Number(s.total_count||0))}
+      ${chip('นัดที่กำลังมา',Number(s.upcoming_count||0),'#2563eb')}
+      ${chip('เกินกำหนด',Number(s.overdue_count||0),Number(s.overdue_count)>0?'#dc2626':null)}
+      ${chip('เสร็จแล้ว',Number(s.completed_count||0),'#059669')}
+    </div>`:'';
+  const addBtn=`<button class="btn btn-p btn-sm" onclick="openApptForm(null)">+ เพิ่มนัดหมาย</button>`;
+  if(!_apptRows.length){
+    sec.innerHTML=head+summaryHtml+`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:20px;text-align:center"><div style="font-size:12px;color:var(--g5);margin-bottom:10px">ยังไม่มีนัดหมายสำหรับเคสนี้</div>${addBtn}</div>`;
+    return;
+  }
+  const fmtD=v=>{if(!v)return'—';try{return new Date(v+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'2-digit',month:'short',year:'2-digit'});}catch(e){return v;}};
+  const fmtT=v=>{if(!v)return'';return String(v).slice(0,5)+' น.';};
+  const today=new Date().toISOString().split('T')[0];
+  const cards=_apptRows.map(r=>{
+    const overdue=r.appointment_status==='scheduled'&&r.appointment_date<today;
+    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:11px 14px;margin-bottom:8px;${r.appointment_status==='cancelled'?'opacity:.55':''}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+        <div style="flex:1;min-width:150px">
+          <div style="font-size:13px;font-weight:600;color:var(--g9)">${esc(r.appointment_title)}</div>
+          <div style="font-size:10px;color:var(--g5);margin-top:1px">${esc(_APPT_TYPE[r.appointment_type]||r.appointment_type)}</div>
+        </div>
+        ${_apptStChip(r.appointment_status)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:12px;color:${overdue?'var(--red)':'var(--g7)'}">
+        <span>${overdue?'⚠ เลยนัด ':'📅 '}<b>${fmtD(r.appointment_date)}</b>${r.appointment_time?' · '+fmtT(r.appointment_time):''}</span>
+        ${r.location?`<span>📍 ${esc(r.location)}</span>`:''}
+        ${r.officer_or_contact?`<span>👤 ${esc(r.officer_or_contact)}</span>`:''}
+      </div>
+      ${r.note?`<div style="font-size:11px;color:var(--g6);margin-top:6px;background:var(--g0);padding:4px 8px;border-radius:6px">📝 ${esc(r.note)}</div>`:''}
+      ${r.result_note?`<div style="font-size:11px;color:var(--g6);margin-top:4px;background:var(--g0);padding:4px 8px;border-radius:6px">✅ ผล: ${esc(r.result_note)}</div>`:''}
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">
+        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openApptForm(${r.id})">แก้ไข</button>
+        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openApptStatus(${r.id})">เปลี่ยนสถานะ</button>
+      </div>
+    </div>`;
+  }).join('');
+  sec.innerHTML=head+summaryHtml+`<div style="margin-bottom:8px">${addBtn}</div>`+cards;
+}
+// ── เพิ่ม/แก้ไขนัดหมาย ──
+function openApptForm(apptId){
+  if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
+  if(_apptCaseId==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  _apptEditId=apptId;
+  const r=apptId?(_apptRows.find(x=>x.id===apptId)||{}):{};
+  document.getElementById('apptMT').textContent=apptId?'แก้ไขนัดหมาย':'เพิ่มนัดหมาย';
+  _ctplFillSelect('af_type',_APPT_TYPE,r.appointment_type||'submission');
+  _ctplFillSelect('af_status',_APPT_ST,r.appointment_status||'scheduled');
+  document.getElementById('af_title').value=r.appointment_title||'';
+  document.getElementById('af_date').value=r.appointment_date||'';
+  document.getElementById('af_time').value=r.appointment_time?String(r.appointment_time).slice(0,5):'';
+  document.getElementById('af_location').value=r.location||'';
+  document.getElementById('af_officer').value=r.officer_or_contact||'';
+  document.getElementById('af_note').value=r.note||'';
+  document.getElementById('apptModal').style.display='flex';
+}
+async function saveApptForm(){
+  if(_apptCaseId==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const title=(document.getElementById('af_title').value||'').trim();
+  const date=document.getElementById('af_date').value;
+  if(!title||!date){toast('กรุณากรอกหัวข้อนัดและวันที่','err');return;}
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_save_case_appointment',{
+      p_appointment_id:_apptEditId,
+      p_case_id:_apptCaseId,
+      p_appointment_type:document.getElementById('af_type').value||null,
+      p_appointment_title:title,
+      p_appointment_status:document.getElementById('af_status').value||null,
+      p_appointment_date:date,
+      p_appointment_time:document.getElementById('af_time').value||null,
+      p_location:document.getElementById('af_location').value,
+      p_officer_or_contact:document.getElementById('af_officer').value,
+      p_note:document.getElementById('af_note').value
+    });
+    document.getElementById('apptModal').style.display='none';
+    toast(_apptEditId?'บันทึกนัดหมายแล้ว':'เพิ่มนัดหมายแล้ว');
+    await _loadCaseAppointments(_apptCaseId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else if(e&&e.message==='case_not_found')toast('ไม่พบเคส','err');
+    else toast((_caseMissing(e)?'กรุณา apply migration 20260806 ก่อน':'บันทึกไม่สำเร็จ: '+e.message),'err');
+  }finally{hideLoading();}
+}
+// ── เปลี่ยนสถานะนัดหมาย ──
+function openApptStatus(apptId){
+  const r=_apptRows.find(x=>x.id===apptId);if(!r){toast('ไม่พบนัดหมาย','err');return;}
+  _apptStatusId=apptId;
+  const sel=document.getElementById('asf_status');
+  sel.innerHTML=Object.keys(_APPT_ST).filter(k=>k!==r.appointment_status).map(k=>`<option value="${k}">${esc(_APPT_ST[k])}</option>`).join('');
+  document.getElementById('asf_result').value='';
+  document.getElementById('apptStatusModal').style.display='flex';
+}
+async function saveApptStatus(){
+  if(_apptStatusId==null){toast('กรุณาเลือกนัดหมายก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const st=document.getElementById('asf_status').value;
+  if(!st){toast('กรุณาเลือกสถานะ','err');return;}
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_set_case_appointment_status',{
+      p_appointment_id:_apptStatusId,p_appointment_status:st,
+      p_result_note:(document.getElementById('asf_result').value||'').trim()||null
+    });
+    document.getElementById('apptStatusModal').style.display='none';
+    toast('เปลี่ยนสถานะนัดหมายแล้ว');
+    await _loadCaseAppointments(_apptCaseId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
     else toast('ไม่สำเร็จ: '+e.message,'err');
   }finally{hideLoading();}
 }
