@@ -502,6 +502,16 @@ textarea.fi2{resize:vertical;min-height:65px}
 .df{background:var(--g0);border-radius:var(--r);padding:7px 9px;border:1px solid var(--g2)}
 .dfl{font-size:10px;color:var(--g5);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
 .dfv{font-size:12px;font-weight:600;margin-top:2px;color:var(--g9)}
+/* STAGE 54A-8C: case detail dense work layout */
+.crow{display:flex;flex-wrap:wrap;align-items:center;gap:5px 10px;padding:8px 0;border-bottom:1px solid var(--g1)}
+.crow:last-child{border-bottom:none}
+.crow-main{font-size:14px;font-weight:600;color:var(--g9)}
+.crow-sub{font-size:11.5px;color:var(--g5)}
+.crow-note{flex-basis:100%;font-size:12px;color:var(--g6);background:var(--g0);padding:3px 8px;border-radius:6px}
+.crow-doc{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;background:var(--g0);border:1px solid var(--g1);border-radius:7px;padding:4px 9px;font-size:12px}
+.ckv{font-size:13.5px;color:var(--g9);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.ckv .ckl{font-size:11px;color:var(--g5);margin-right:4px}
+.btn-xs{font-size:11.5px !important;padding:3px 9px !important}
 .doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:8px}
 .doc-card{background:var(--g0);border:1.5px solid var(--g2);border-radius:var(--rl);padding:12px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
 .doc-card:hover{border-color:var(--p);background:var(--pp)}
@@ -13486,48 +13496,54 @@ async function openCaseDetail(id){
 function _renderCaseDetail(){
   const wrap=document.getElementById('casesContent');if(!wrap||!_caseDetail)return;
   const k=_caseDetail.caseRow;
+  // reset สถานะ ยุบ/ขยาย ต่อเคส (กันข้อมูลค้างจากเคสก่อนหน้า) — checklist เปิด, ที่เหลือรอ loader ตัดสิน
+  _CASE_SEC_OPEN={chk:true,pay:false,appt:false,trk:false,hist:false};_CASE_SEC_TOUCHED={};
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
-  const logs=(_caseDetail.logs||[]).map((l,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:10px">
-      <div style="width:24px;height:24px;border-radius:50%;background:${i===0?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===0?'●':'✓'}</div>
-      <div style="min-width:0">
-        <div style="font-size:13px;font-weight:600">${l.old_status?esc(_CTPL_STATUS[l.old_status]||l.old_status)+' → ':''}${esc(_CTPL_STATUS[l.new_status]||l.new_status)}</div>
-        <div style="font-size:11px;color:var(--g5);margin-top:2px">${fmtDT(l.created_at)}${l.actor_code?' • '+esc(l.actor_code):''}</div>
-        ${l.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:4px 7px;border-radius:6px">${esc(l.note)}</div>`:''}
+  const logs=(_caseDetail.logs||[]).map((l,i)=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--g1)">
+      <div style="width:17px;height:17px;border-radius:50%;background:${i===0?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:2px">${i===0?'●':'✓'}</div>
+      <div style="min-width:0;flex:1">
+        <span style="font-size:13px;font-weight:600">${l.old_status?esc(_CTPL_STATUS[l.old_status]||l.old_status)+' → ':''}${esc(_CTPL_STATUS[l.new_status]||l.new_status)}</span>
+        <span style="font-size:11.5px;color:var(--g5);margin-left:8px">${fmtDT(l.created_at)}${l.actor_code?' • '+esc(l.actor_code):''}</span>
+        ${l.note?`<div style="font-size:12px;color:var(--g6);margin-top:2px;background:var(--g0);padding:2px 7px;border-radius:6px">${esc(l.note)}</div>`:''}
       </div>
     </div>`).join('');
-  const rowsHtml=[
-    ['ลูกค้า/แรงงาน',`${esc(k.customer_name||'—')}${k.passport_no?` <span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(k.passport_no)}</span>`:''}`],
-    ['นายจ้าง',esc(k.employer_name||'—')],
-    ['แม่แบบ',k.template_name_th?`${esc(k.template_name_th)} <span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(k.template_code||'')}</span>`:esc(k.template_code||'—')],
-    ['หมวดงาน',esc(_CTPL_CAT[k.case_category]||k.case_category||'—')],
-    ['ผู้รับผิดชอบ',k.assigned_to_code?esc((typeof assigneeLabel==='function'&&assigneeLabel(k.assigned_to_code))||k.assigned_to_code):'ยังไม่ระบุ'],
-    ['วันครบกำหนด',k.due_date?fd(k.due_date):'—'],
-    ['เลขคำขอราชการ (จดเอง)',esc(k.ewp_request_no||'—')],
-    ['ยื่นเมื่อ',fmtDT(k.submitted_at)],
-    ['เสร็จเมื่อ',fmtDT(k.completed_at)],
-    ['สร้างโดย',`${esc(k.created_by_code||'—')} · ${fmtDT(k.created_at)}`]
-  ].map(([l,v])=>`<div class="df"><div class="dfl">${l}</div><div class="dfv">${v}</div></div>`).join('');
+  // STAGE 54A-8C: บรรทัดสแกนเร็ว — แสดงเฉพาะช่องที่มีค่า (ไม่โชว์ '—' รก ๆ), ฟอนต์เท่าหน้าอื่น
+  const kv=(l,v)=>v?`<span class="ckv"><span class="ckl">${l}</span><b style="font-weight:600">${v}</b></span>`:'';
+  const scanHtml=[
+    kv('ลูกค้า/แรงงาน',k.customer_name?`${esc(k.customer_name)}${k.passport_no?` <span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(k.passport_no)}</span>`:''}`:''),
+    kv('นายจ้าง',k.employer_name?esc(k.employer_name):''),
+    kv('แม่แบบ',k.template_name_th?esc(k.template_name_th):(k.template_code?esc(k.template_code):'')),
+    kv('หมวดงาน',(_CTPL_CAT[k.case_category]||k.case_category)?esc(_CTPL_CAT[k.case_category]||k.case_category):''),
+    kv('ผู้รับผิดชอบ',k.assigned_to_code?esc((typeof assigneeLabel==='function'&&assigneeLabel(k.assigned_to_code))||k.assigned_to_code):'<span style="color:var(--g5)">ยังไม่ระบุ</span>'),
+    kv('ครบกำหนด',k.due_date?fd(k.due_date):''),
+    kv('เลขคำขอ (จดเอง)',k.ewp_request_no?`<span style="font-family:var(--mono)">${esc(k.ewp_request_no)}</span>`:''),
+    kv('ยื่นเมื่อ',k.submitted_at?fmtDT(k.submitted_at):''),
+    kv('เสร็จเมื่อ',k.completed_at?fmtDT(k.completed_at):''),
+    kv('สร้าง',`${esc(k.created_by_code||'—')} · ${fmtDT(k.created_at)}`)
+  ].filter(Boolean).join('');
   wrap.innerHTML=_caseBanner()+`
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px">
       <button class="btn btn-g btn-sm" onclick="caseBack()">← กลับ</button>
-      <span style="font-size:11px;color:var(--g5);font-family:var(--mono)">${esc(k.case_code)}</span>
+      <span style="font-size:12px;color:var(--g5);font-family:var(--mono)">${esc(k.case_code)}</span>
       ${_caseStChip(k.case_status)}${_casePriChip(k.priority)}
     </div>
-    <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:14px 16px;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:800;color:var(--g9);margin-bottom:10px">${esc(k.case_title)}</div>
-      <div class="dg4">${rowsHtml}</div>
-      ${k.note?`<div style="font-size:12px;color:var(--g6);margin-top:8px;background:var(--g0);padding:6px 10px;border-radius:7px">📝 ${esc(k.note)}</div>`:''}
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-        <button class="btn btn-g btn-sm" onclick="openCaseEdit()">แก้ไขข้อมูล</button>
-        <button class="btn btn-p btn-sm" onclick="openCaseStatus()">เปลี่ยนสถานะ</button>
+    <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:10px 14px;margin-bottom:8px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:6px">
+        <div style="font-size:16px;font-weight:800;color:var(--g9);flex:1;min-width:180px">${esc(k.case_title)}</div>
+        <button class="btn btn-g btn-sm btn-xs" onclick="openCaseEdit()">แก้ไขข้อมูล</button>
+        <button class="btn btn-p btn-sm btn-xs" onclick="openCaseStatus()">เปลี่ยนสถานะ</button>
       </div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px 18px">${scanHtml}</div>
+      ${k.note?`<div style="font-size:12px;color:var(--g6);margin-top:6px;background:var(--g0);padding:3px 9px;border-radius:7px">📝 ${esc(k.note)}</div>`:''}
     </div>
-    <div id="caseChkSec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดเช็กลิสต์...</div></div>
-    <div id="casePaySec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>
-    <div id="caseApptSec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดนัดหมาย...</div></div>
-    <div id="caseTrkSec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดประวัติติดตาม...</div></div>
-    <div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:10px">ประวัติสถานะ</div>
-    ${logs||'<div style="color:var(--g5);font-size:12px">ยังไม่มีประวัติ</div>'}`;
+    ${_caseSecShell('chk','เอกสารที่ต้องจัดการ',`<div id="caseChkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดเช็กลิสต์...</div></div>`,true)}
+    ${_caseSecShell('pay','งานการเงินของเคส',`<div id="casePaySec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>`,false)}
+    ${_caseSecShell('appt','นัดหมายที่ต้องติดตาม',`<div id="caseApptSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดนัดหมาย...</div></div>`,false)}
+    ${_caseSecShell('trk','บันทึกหลังยื่น / เลขคำขอ',`<div id="caseTrkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดประวัติติดตาม...</div></div>`,false)}
+    ${_caseSecShell('hist','ประวัติการเปลี่ยนสถานะ',logs||'<div style="color:var(--g5);font-size:12.5px;padding:4px 0">ยังไม่มีประวัติ</div>',false)}`;
+  // ชิปสรุปประวัติสถานะที่หัวข้อ (ใช้ข้อมูลที่โหลดมาแล้ว — ไม่มี RPC เพิ่ม)
+  const _hl=(_caseDetail.logs||[]);
+  if(_hl.length)_caseSecSet('hist',_secChip(_hl.length+' รายการ','var(--g1)','var(--g6)')+_secChip('ล่าสุด: '+esc(_CTPL_STATUS[_hl[0].new_status]||_hl[0].new_status),'var(--pp)','var(--pd)'),false);
   // STAGE 54A-4: โหลดเช็กลิสต์ของเคสแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
   try{if(typeof _loadCaseChecklist==='function')_loadCaseChecklist(k.id);}catch(_e){}
   // STAGE 54A-6A: โหลดข้อมูลการชำระเงินแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
@@ -13538,6 +13554,31 @@ function _renderCaseDetail(){
   try{if(typeof _loadCaseTracking==='function')_loadCaseTracking(k.id);}catch(_e){}
 }
 function caseBack(){_caseDetail=null;renderCases();}
+// ── STAGE 54A-8B: work sections แบบยุบ/ขยายได้ (compact collapsible) — state ในหน่วยความจำ, reset ต่อเคส ──
+let _CASE_SEC_OPEN={},_CASE_SEC_TOUCHED={};
+function _secChip(txt,bg,fg){return`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${bg};color:${fg};white-space:nowrap">${txt}</span>`;}
+function _caseSecShell(key,title,innerHtml,open){
+  return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);margin-bottom:7px;overflow:hidden">
+    <div onclick="caseSecToggle('${key}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;user-select:none">
+      <span style="font-size:14px;font-weight:700;color:var(--g8);flex-shrink:0">${title}</span>
+      <span id="csecsum_${key}" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0"></span>
+      <span id="csecchev_${key}" style="font-size:11px;color:var(--g5);flex-shrink:0;transition:transform .15s;transform:${open?'rotate(90deg)':'none'}">▸</span>
+    </div>
+    <div id="csecbody_${key}" style="padding:0 12px 8px 12px;display:${open?'block':'none'}">${innerHtml}</div>
+  </div>`;
+}
+function caseSecToggle(key,force){
+  const open=(force==null)?!_CASE_SEC_OPEN[key]:!!force;
+  _CASE_SEC_OPEN[key]=open;
+  if(force==null)_CASE_SEC_TOUCHED[key]=true;
+  const b=document.getElementById('csecbody_'+key);if(b)b.style.display=open?'block':'none';
+  const c=document.getElementById('csecchev_'+key);if(c)c.style.transform=open?'rotate(90deg)':'none';
+}
+// เรียกจาก loader หลังโหลดเสร็จ: ใส่ชิปสรุปที่หัวข้อ + เปิดอัตโนมัติถ้ามีงาน (เว้นแต่ผู้ใช้กดสลับเองในเคสนี้)
+function _caseSecSet(key,chipsHtml,openIfData){
+  const s=document.getElementById('csecsum_'+key);if(s)s.innerHTML=chipsHtml||'';
+  if(!_CASE_SEC_TOUCHED[key])caseSecToggle(key,!!openIfData);
+}
 // ── แก้ไข metadata ──
 function openCaseEdit(){
   if(!_caseDetail||!_caseDetail.caseRow){toast('กรุณาเลือกเคสก่อน','err');return;}
@@ -13640,7 +13681,7 @@ function caseFromCustomer(cid){
 let _chkRows=[],_chkCaseId=null,_chkEditItemId=null,_chkLinkItemId=null,_chkDocPick=null;
 const _CHK_ST={missing:'ยังขาด',received:'ได้รับแล้ว',reviewing:'กำลังตรวจ',approved:'ผ่าน',needs_fix:'ต้องแก้ไข',waived:'ยกเว้น',not_required:'ไม่จำเป็น'};
 const _CHK_CLR={missing:'#dc2626',received:'#2563eb',reviewing:'#b45309',approved:'#059669',needs_fix:'#d97706',waived:'#6b7280',not_required:'#6b7280'};
-function _chkStChip(st){const c=_CHK_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_CHK_ST[st]||st)}</span>`;}
+function _chkStChip(st){const c=_CHK_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${c}1a;color:${c};white-space:nowrap">${esc(_CHK_ST[st]||st)}</span>`;}
 async function _loadCaseChecklist(caseId){
   const sec=document.getElementById('caseChkSec');if(!sec||caseId==null)return;
   _chkCaseId=caseId;
@@ -13651,53 +13692,43 @@ async function _loadCaseChecklist(caseId){
     return;
   }
   _chkRows=Array.isArray(rows)?rows:[];
-  const head=(extra)=>`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">เช็กลิสต์เอกสาร</div>${extra||''}`;
   if(!_chkRows.length){
     const hasTpl=!!(_caseDetail&&_caseDetail.caseRow&&_caseDetail.caseRow.template_id!=null);
-    sec.innerHTML=head(hasTpl
-      ?`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:20px;text-align:center"><div style="font-size:12px;color:var(--g5);margin-bottom:10px">ยังไม่มีเช็กลิสต์สำหรับเคสนี้</div><button class="btn btn-p btn-sm" onclick="caseChkInit()">📋 สร้างเช็กลิสต์จากแม่แบบ</button></div>`
-      :`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:16px;text-align:center;font-size:12px;color:var(--g5)">เคสนี้ไม่ได้ผูกแม่แบบ — สร้างเช็กลิสต์อัตโนมัติไม่ได้</div>`);
+    sec.innerHTML=hasTpl
+      ?`<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 12px"><span style="font-size:13px;color:var(--g5)">ยังไม่มีเช็กลิสต์สำหรับเคสนี้</span><button class="btn btn-p btn-sm btn-xs" onclick="caseChkInit()">📋 สร้างเช็กลิสต์จากแม่แบบ</button></div>`
+      :`<div style="background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 12px;text-align:center;font-size:13px;color:var(--g5)">เคสนี้ไม่ได้ผูกแม่แบบ — สร้างเช็กลิสต์อัตโนมัติไม่ได้</div>`;
+    if(typeof _caseSecSet==='function')_caseSecSet('chk','',true);
     return;
   }
   const tot=_chkRows.length;
   const nMiss=_chkRows.filter(r=>r.checklist_status==='missing').length;
   const nOk=_chkRows.filter(r=>r.checklist_status==='approved').length;
   const nLink=_chkRows.reduce((s,r)=>s+Number(r.linked_count||0),0);
-  const sum=`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">
-    <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--g1);color:var(--g6)">ทั้งหมด ${tot}</span>
-    <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#fee2e2;color:#dc2626">ยังขาด ${nMiss}</span>
-    <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#ecfdf5;color:#059669">ผ่าน ${nOk}</span>
-    <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--pp);color:var(--pd)">เอกสารลิงก์แล้ว ${nLink}</span>
-  </div>`;
+  const chips=_secChip('ทั้งหมด '+tot,'var(--g1)','var(--g6)')+_secChip('ขาด '+nMiss,'#fee2e2','#dc2626')+_secChip('ผ่าน '+nOk,'#ecfdf5','#059669')+_secChip('ลิงก์ '+nLink,'var(--pp)','var(--pd)');
   const cards=_chkRows.map(r=>{
     const docs=(Array.isArray(r.linked_docs)?r.linked_docs:[]).map(d=>`
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:var(--g0);border:1px solid var(--g1);border-radius:8px;padding:6px 10px;margin-top:6px">
-        <span style="font-size:12px;font-weight:600;flex:1;min-width:120px">📄 ${esc(d.doc_name||d.doc_type||'เอกสาร')}</span>
-        ${d.doc_type?`<span style="font-size:10px;color:var(--g5)">${esc(d.doc_type)}</span>`:''}
-        ${d.doc_status?`<span style="font-size:10px;color:var(--g5)">${esc(d.doc_status)}</span>`:''}
-        ${d.doc_expiry?`<span style="font-size:10px;color:var(--g5)">หมดอายุ ${fd(d.doc_expiry)}</span>`:''}
-        <button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="dcOpenDoc('${d.document_id}',${!!d.has_storage})">เปิดดู</button>
-        <button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--red)" onclick="chkUnlink(${d.link_id})">นำออกจากเช็กลิสต์</button>
+      <div class="crow-doc">
+        <span style="font-weight:600;flex:1;min-width:110px">📄 ${esc(d.doc_name||d.doc_type||'เอกสาร')}</span>
+        <span class="crow-sub">${[d.doc_type?esc(d.doc_type):'',d.doc_status?esc(d.doc_status):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):''].filter(Boolean).join(' · ')}</span>
+        <button class="btn btn-g btn-sm btn-xs" onclick="dcOpenDoc('${d.document_id}',${!!d.has_storage})">เปิดดู</button>
+        <button class="btn btn-g btn-sm btn-xs" style="color:var(--red)" onclick="chkUnlink(${d.link_id})">นำออกจากเช็กลิสต์</button>
       </div>`).join('');
-    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:11px 14px;margin-bottom:8px">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
-        <div style="flex:1;min-width:150px">
-          <div style="font-size:13px;font-weight:600;color:var(--g9)">${esc(r.item_title_th)}${r.is_required?' <span style="color:var(--red);font-weight:700">*</span>':''}</div>
-          <div style="font-size:10px;color:var(--g5);font-family:var(--mono);margin-top:1px">${esc(r.item_code)}${r.doc_type?' · '+esc(r.doc_type):''}</div>
-        </div>
-        ${r.required_from?`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:var(--g1);color:var(--g6)">${esc(_CTPL_FROM[r.required_from]||r.required_from)}</span>`:''}
-        ${_chkStChip(r.checklist_status)}
-        ${Number(r.linked_count)>0?`<span style="font-size:10px;color:var(--pd);font-weight:700">🔗 ${r.linked_count}</span>`:''}
+    return`<div class="crow">
+      <div style="flex:1;min-width:170px">
+        <span class="crow-main">${esc(r.item_title_th)}${r.is_required?' <span style="color:var(--red);font-weight:700">*</span>':''}</span>
+        <span class="crow-sub" style="font-family:var(--mono);margin-left:6px">${esc(r.item_code)}${r.doc_type?' · '+esc(r.doc_type):''}</span>
       </div>
-      ${r.note?`<div style="font-size:11px;color:var(--g6);margin-top:5px;background:var(--g0);padding:4px 8px;border-radius:6px">📝 ${esc(r.note)}</div>`:''}
+      ${r.required_from?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:var(--g1);color:var(--g6);white-space:nowrap">${esc(_CTPL_FROM[r.required_from]||r.required_from)}</span>`:''}
+      ${_chkStChip(r.checklist_status)}
+      ${Number(r.linked_count)>0?`<span style="font-size:11px;color:var(--pd);font-weight:700">🔗 ${r.linked_count}</span>`:''}
+      <button class="btn btn-g btn-sm btn-xs" onclick="openChkLink(${r.id})">🔗 เลือกเอกสาร</button>
+      <button class="btn btn-g btn-sm btn-xs" onclick="openChkStatus(${r.id})">แก้สถานะ / หมายเหตุ</button>
+      ${r.note?`<div class="crow-note">📝 ${esc(r.note)}</div>`:''}
       ${docs}
-      <div style="display:flex;gap:7px;margin-top:8px">
-        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openChkLink(${r.id})">🔗 เลือกเอกสาร</button>
-        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openChkStatus(${r.id})">แก้สถานะ / หมายเหตุ</button>
-      </div>
     </div>`;
   }).join('');
-  sec.innerHTML=head(sum)+cards;
+  sec.innerHTML=cards;
+  if(typeof _caseSecSet==='function')_caseSecSet('chk',chips,true);
 }
 async function caseChkInit(){
   if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
@@ -13820,7 +13851,7 @@ let _payRows=[],_payCaseId=null,_payEditId=null,_payStatusId=null,_payProofPayme
 const _PAY_TYPE={service_fee:'ค่าบริการ',deposit:'เงินมัดจำ',final_payment:'ยอดชำระสุดท้าย',government_fee:'ค่าธรรมเนียมราชการ',document_fee:'ค่าเอกสาร',transport_fee:'ค่าเดินทาง',other:'อื่น ๆ'};
 const _PAY_ST={unpaid:'ยังไม่ชำระ',partial:'ชำระบางส่วน',paid:'ชำระแล้ว',overdue:'เกินกำหนด',waived:'ยกเว้น',refunded:'คืนเงินแล้ว',cancelled:'ยกเลิก'};
 const _PAY_ST_CLR={unpaid:'#dc2626',partial:'#d97706',paid:'#059669',overdue:'#dc2626',waived:'#6b7280',refunded:'#2563eb',cancelled:'#6b7280'};
-function _payStChip(st){const c=_PAY_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_PAY_ST[st]||st)}</span>`;}
+function _payStChip(st){const c=_PAY_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${c}1a;color:${c};white-space:nowrap">${esc(_PAY_ST[st]||st)}</span>`;}
 function _payMoney(n){return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});}
 async function _loadCasePayments(caseId){
   const sec=document.getElementById('casePaySec');if(!sec||caseId==null)return;
@@ -13837,17 +13868,12 @@ async function _loadCasePayments(caseId){
   }
   _payRows=Array.isArray(rows)?rows:[];
   const s=Array.isArray(sum)?sum[0]:sum;
-  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">การชำระเงิน</div>`;
-  const cardStat=(label,val,clr)=>`<div style="flex:1;min-width:110px;background:#fff;border:1px solid var(--g2);border-radius:10px;padding:9px 12px;text-align:center"><div style="font-size:11px;color:var(--g5)">${label}</div><div style="font-size:16px;font-weight:800;color:${clr||'var(--g9)'};font-family:var(--mono)">${val}</div></div>`;
-  const summaryHtml=s?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-      ${cardStat('ยอดรวม','฿'+_payMoney(s.total_due))}
-      ${cardStat('ชำระแล้ว','฿'+_payMoney(s.total_paid),'#059669')}
-      ${cardStat('ค้างชำระ','฿'+_payMoney(s.balance_due),Number(s.balance_due)>0?'#dc2626':'var(--g9)')}
-      ${cardStat('ค้าง/เกินกำหนด',(Number(s.unpaid_count||0)+Number(s.partial_count||0))+' / '+Number(s.overdue_count||0)+' รายการ',Number(s.overdue_count)>0?'#dc2626':'var(--g9)')}
-    </div>`:'';
+  const chips=s?(_secChip('ค้าง ฿'+_payMoney(s.balance_due),Number(s.balance_due)>0?'#fee2e2':'var(--g1)',Number(s.balance_due)>0?'#dc2626':'var(--g6)')+_secChip('ชำระแล้ว ฿'+_payMoney(s.total_paid),'#ecfdf5','#059669')+(Number(s.overdue_count)>0?_secChip('เกินกำหนด '+Number(s.overdue_count),'#fee2e2','#dc2626'):'')):'';
+  const openPay=(Number(s&&s.balance_due||0)>0)||_payRows.length>0;
   const addBtn=`<button class="btn btn-p btn-sm" onclick="openPayForm(null)">+ เพิ่มรายการชำระเงิน</button>`;
   if(!_payRows.length){
-    sec.innerHTML=head+summaryHtml+`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:20px;text-align:center"><div style="font-size:12px;color:var(--g5);margin-bottom:10px">ยังไม่มีรายการชำระเงินสำหรับเคสนี้</div>${addBtn}</div>`;
+    sec.innerHTML=`<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 12px"><span style="font-size:13px;color:var(--g5)">ยังไม่มีรายการชำระเงินสำหรับเคสนี้</span>${addBtn}</div>`;
+    if(typeof _caseSecSet==='function')_caseSecSet('pay',chips,openPay);
     return;
   }
   const fmtD=s=>{if(!s)return'—';try{return new Date(s+'T00:00:00').toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}catch(e){return s;}};
@@ -13856,36 +13882,27 @@ async function _loadCasePayments(caseId){
   const cards=_payRows.map(r=>{
     const overdue=r.due_date&&r.due_date<today&&!['paid','waived','refunded','cancelled'].includes(r.payment_status);
     const balance=Number(r.amount_due||0)-Number(r.amount_paid||0);
-    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:11px 14px;margin-bottom:8px;${r.payment_status==='cancelled'?'opacity:.55':''}">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
-        <div style="flex:1;min-width:150px">
-          <div style="font-size:13px;font-weight:600;color:var(--g9)">${esc(r.payment_title||_PAY_TYPE[r.payment_type]||r.payment_type)}</div>
-          <div style="font-size:10px;color:var(--g5);margin-top:1px">${esc(_PAY_TYPE[r.payment_type]||r.payment_type)}</div>
-        </div>
-        ${_payStChip(overdue&&r.payment_status!=='overdue'?'overdue':r.payment_status)}
+    return`<div class="crow" style="${r.payment_status==='cancelled'?'opacity:.55':''}">
+      <div style="flex:1;min-width:170px">
+        <span class="crow-main">${esc(r.payment_title||_PAY_TYPE[r.payment_type]||r.payment_type)}</span>
+        <span class="crow-sub" style="margin-left:6px">${esc(_PAY_TYPE[r.payment_type]||r.payment_type)}</span>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:7px;font-size:12px;color:var(--g7)">
-        <span>ต้องชำระ <b>฿${_payMoney(r.amount_due)}</b></span>
-        <span>ชำระแล้ว <b style="color:#059669">฿${_payMoney(r.amount_paid)}</b></span>
-        <span>คงเหลือ <b style="color:${balance>0?'#dc2626':'var(--g9)'}">฿${_payMoney(balance>0?balance:0)}</b></span>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:4px;font-size:11px;color:var(--g5)">
-        ${r.due_date?`<span>${overdue?'⚠ เลยกำหนด ':'กำหนด '}${fmtD(r.due_date)}</span>`:''}
-        ${r.paid_at?`<span>ชำระเมื่อ ${fmtDT(r.paid_at)}</span>`:''}
-      </div>
-      ${r.note?`<div style="font-size:11px;color:var(--g6);margin-top:6px;background:var(--g0);padding:4px 8px;border-radius:6px">📝 ${esc(r.note)}</div>`:''}
-      ${r.proof_document_id?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:var(--g0);border:1px solid var(--g1);border-radius:8px;padding:6px 10px;margin-top:7px">
-          <span style="font-size:12px;font-weight:600;flex:1;min-width:100px">📄 ${esc(r.proof_doc_name||r.proof_doc_type||'เอกสาร')}</span>
-          <button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="dcOpenDoc('${r.proof_document_id}',${!!r.proof_has_storage})">เปิดดู</button>
+      ${_payStChip(overdue&&r.payment_status!=='overdue'?'overdue':r.payment_status)}
+      <span style="font-size:13px;color:var(--g7);white-space:nowrap">฿${_payMoney(r.amount_due)} · ชำระ <b style="color:#059669">฿${_payMoney(r.amount_paid)}</b> · ค้าง <b style="color:${balance>0?'#dc2626':'var(--g9)'}">฿${_payMoney(balance>0?balance:0)}</b></span>
+      ${r.due_date?`<span class="crow-sub" style="${overdue?'color:var(--red);font-weight:600':''}">${overdue?'⚠ เลยกำหนด ':'กำหนด '}${fmtD(r.due_date)}</span>`:''}
+      ${r.paid_at?`<span class="crow-sub">ชำระเมื่อ ${fmtDT(r.paid_at)}</span>`:''}
+      <button class="btn btn-g btn-sm btn-xs" onclick="openPayForm(${r.id})">แก้ไข</button>
+      <button class="btn btn-g btn-sm btn-xs" onclick="openPayStatus(${r.id})">เปลี่ยนสถานะ</button>
+      <button class="btn btn-g btn-sm btn-xs" onclick="openPayProofLink(${r.id})">🔗 ผูกหลักฐานการชำระเงิน</button>
+      ${r.note?`<div class="crow-note">📝 ${esc(r.note)}</div>`:''}
+      ${r.proof_document_id?`<div class="crow-doc">
+          <span style="font-weight:600;flex:1;min-width:100px">📄 ${esc(r.proof_doc_name||r.proof_doc_type||'เอกสาร')}</span>
+          <button class="btn btn-g btn-sm btn-xs" onclick="dcOpenDoc('${r.proof_document_id}',${!!r.proof_has_storage})">เปิดดู</button>
         </div>`:''}
-      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">
-        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openPayForm(${r.id})">แก้ไข</button>
-        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openPayStatus(${r.id})">เปลี่ยนสถานะ</button>
-        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openPayProofLink(${r.id})">🔗 ผูกหลักฐานการชำระเงิน</button>
-      </div>
     </div>`;
   }).join('');
-  sec.innerHTML=head+summaryHtml+`<div style="margin-bottom:8px">${addBtn}</div>`+cards;
+  sec.innerHTML=`<div style="margin:6px 0">${addBtn}</div>`+cards;
+  if(typeof _caseSecSet==='function')_caseSecSet('pay',chips,openPay);
 }
 // ── เพิ่ม/แก้ไขรายการชำระเงิน ──
 function openPayForm(paymentId){
@@ -14013,7 +14030,7 @@ let _apptRows=[],_apptCaseId=null,_apptEditId=null,_apptStatusId=null;
 const _APPT_TYPE={document_prepare:'เตรียมเอกสาร',submission:'ยื่นเอกสาร',biometrics:'เก็บข้อมูลชีวภาพ',medical:'ตรวจสุขภาพ',training:'อบรม',payment:'ชำระเงิน',receive_result:'รับผล',follow_up:'ติดตามงาน',other:'อื่น ๆ'};
 const _APPT_ST={scheduled:'นัดไว้',completed:'เสร็จแล้ว',missed:'พลาดนัด',postponed:'เลื่อนนัด',cancelled:'ยกเลิก'};
 const _APPT_ST_CLR={scheduled:'#2563eb',completed:'#059669',missed:'#dc2626',postponed:'#d97706',cancelled:'#6b7280'};
-function _apptStChip(st){const c=_APPT_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_APPT_ST[st]||st)}</span>`;}
+function _apptStChip(st){const c=_APPT_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:${c}1a;color:${c};white-space:nowrap">${esc(_APPT_ST[st]||st)}</span>`;}
 async function _loadCaseAppointments(caseId){
   const sec=document.getElementById('caseApptSec');if(!sec||caseId==null)return;
   _apptCaseId=caseId;
@@ -14029,17 +14046,12 @@ async function _loadCaseAppointments(caseId){
   }
   _apptRows=Array.isArray(rows)?rows:[];
   const s=Array.isArray(sum)?sum[0]:sum;
-  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">นัดหมาย / วันที่ดำเนินการ</div>`;
-  const chip=(label,val,clr)=>`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${clr?clr+'1a':'var(--g1)'};color:${clr||'var(--g6)'}">${label} ${val}</span>`;
-  const summaryHtml=s?`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">
-      ${chip('นัดทั้งหมด',Number(s.total_count||0))}
-      ${chip('นัดที่กำลังมา',Number(s.upcoming_count||0),'#2563eb')}
-      ${chip('เกินกำหนด',Number(s.overdue_count||0),Number(s.overdue_count)>0?'#dc2626':null)}
-      ${chip('เสร็จแล้ว',Number(s.completed_count||0),'#059669')}
-    </div>`:'';
+  const chips=s?(_secChip('ใกล้ถึง '+Number(s.upcoming_count||0),'#eff6ff','#2563eb')+(Number(s.overdue_count)>0?_secChip('เกินกำหนด '+Number(s.overdue_count),'#fee2e2','#dc2626'):'')+_secChip('เสร็จแล้ว '+Number(s.completed_count||0),'#ecfdf5','#059669')):'';
+  const openAppt=Number(s&&s.upcoming_count||0)>0||Number(s&&s.overdue_count||0)>0;
   const addBtn=`<button class="btn btn-p btn-sm" onclick="openApptForm(null)">+ เพิ่มนัดหมาย</button>`;
   if(!_apptRows.length){
-    sec.innerHTML=head+summaryHtml+`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:20px;text-align:center"><div style="font-size:12px;color:var(--g5);margin-bottom:10px">ยังไม่มีนัดหมายสำหรับเคสนี้</div>${addBtn}</div>`;
+    sec.innerHTML=`<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 12px"><span style="font-size:13px;color:var(--g5)">ยังไม่มีนัดหมายสำหรับเคสนี้</span>${addBtn}</div>`;
+    if(typeof _caseSecSet==='function')_caseSecSet('appt',chips,openAppt);
     return;
   }
   const fmtD=v=>{if(!v)return'—';try{return new Date(v+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'2-digit',month:'short',year:'2-digit'});}catch(e){return v;}};
@@ -14047,28 +14059,23 @@ async function _loadCaseAppointments(caseId){
   const today=new Date().toISOString().split('T')[0];
   const cards=_apptRows.map(r=>{
     const overdue=r.appointment_status==='scheduled'&&r.appointment_date<today;
-    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:11px 14px;margin-bottom:8px;${r.appointment_status==='cancelled'?'opacity:.55':''}">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
-        <div style="flex:1;min-width:150px">
-          <div style="font-size:13px;font-weight:600;color:var(--g9)">${esc(r.appointment_title)}</div>
-          <div style="font-size:10px;color:var(--g5);margin-top:1px">${esc(_APPT_TYPE[r.appointment_type]||r.appointment_type)}</div>
-        </div>
-        ${_apptStChip(r.appointment_status)}
+    return`<div class="crow" style="${r.appointment_status==='cancelled'?'opacity:.55':''}">
+      <span style="font-size:13.5px;font-weight:700;color:${overdue?'var(--red)':'var(--g9)'};white-space:nowrap">${overdue?'⚠ ':'📅 '}${fmtD(r.appointment_date)}${r.appointment_time?' '+fmtT(r.appointment_time):''}</span>
+      <div style="flex:1;min-width:150px">
+        <span class="crow-main">${esc(r.appointment_title)}</span>
+        <span class="crow-sub" style="margin-left:6px">${esc(_APPT_TYPE[r.appointment_type]||r.appointment_type)}</span>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:12px;color:${overdue?'var(--red)':'var(--g7)'}">
-        <span>${overdue?'⚠ เลยนัด ':'📅 '}<b>${fmtD(r.appointment_date)}</b>${r.appointment_time?' · '+fmtT(r.appointment_time):''}</span>
-        ${r.location?`<span>📍 ${esc(r.location)}</span>`:''}
-        ${r.officer_or_contact?`<span>👤 ${esc(r.officer_or_contact)}</span>`:''}
-      </div>
-      ${r.note?`<div style="font-size:11px;color:var(--g6);margin-top:6px;background:var(--g0);padding:4px 8px;border-radius:6px">📝 ${esc(r.note)}</div>`:''}
-      ${r.result_note?`<div style="font-size:11px;color:var(--g6);margin-top:4px;background:var(--g0);padding:4px 8px;border-radius:6px">✅ ผล: ${esc(r.result_note)}</div>`:''}
-      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">
-        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openApptForm(${r.id})">แก้ไข</button>
-        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openApptStatus(${r.id})">เปลี่ยนสถานะ</button>
-      </div>
+      ${_apptStChip(r.appointment_status)}
+      ${r.location?`<span class="crow-sub">📍 ${esc(r.location)}</span>`:''}
+      ${r.officer_or_contact?`<span class="crow-sub">👤 ${esc(r.officer_or_contact)}</span>`:''}
+      <button class="btn btn-g btn-sm btn-xs" onclick="openApptForm(${r.id})">แก้ไข</button>
+      <button class="btn btn-g btn-sm btn-xs" onclick="openApptStatus(${r.id})">เปลี่ยนสถานะ</button>
+      ${r.note?`<div class="crow-note">📝 ${esc(r.note)}</div>`:''}
+      ${r.result_note?`<div class="crow-note">✅ ผล: ${esc(r.result_note)}</div>`:''}
     </div>`;
   }).join('');
-  sec.innerHTML=head+summaryHtml+`<div style="margin-bottom:8px">${addBtn}</div>`+cards;
+  sec.innerHTML=`<div style="margin:6px 0">${addBtn}</div>`+cards;
+  if(typeof _caseSecSet==='function')_caseSecSet('appt',chips,openAppt);
 }
 // ── เพิ่ม/แก้ไขนัดหมาย ──
 function openApptForm(apptId){
@@ -14156,7 +14163,7 @@ async function saveApptStatus(){
 // =============================================================
 let _trkRows=[],_trkCaseId=null,_trkDocPick=null;
 const _TRK_TYPE={ewp:'เว็บ e-WorkPermit',government_office:'สำนักงานราชการ',phone:'โทรศัพท์',onsite:'ไปที่หน่วยงาน',internal:'ภายในบริษัท'};
-function _trkTypeChip(t){return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:var(--pp);color:var(--pd)">${esc(_TRK_TYPE[t]||t)}</span>`;}
+function _trkTypeChip(t){return`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--pp);color:var(--pd);white-space:nowrap">${esc(_TRK_TYPE[t]||t)}</span>`;}
 async function _loadCaseTracking(caseId){
   const sec=document.getElementById('caseTrkSec');if(!sec||caseId==null)return;
   _trkCaseId=caseId;
@@ -14167,10 +14174,10 @@ async function _loadCaseTracking(caseId){
     return;
   }
   _trkRows=Array.isArray(rows)?rows:[];
-  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">${esc(T('trkSec'))}</div>
-    <div style="margin-bottom:8px"><button class="btn btn-p btn-sm" onclick="openTrkForm()">${esc(T('trkAdd'))}</button></div>`;
+  const head=`<div style="margin:6px 0"><button class="btn btn-p btn-sm" onclick="openTrkForm()">${esc(T('trkAdd'))}</button></div>`;
   if(!_trkRows.length){
-    sec.innerHTML=head+`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:20px;text-align:center;font-size:12px;color:var(--g5)">${esc(T('trkNone'))}</div>`;
+    sec.innerHTML=`<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 12px"><span style="font-size:13px;color:var(--g5)">${esc(T('trkNone'))}</span><button class="btn btn-p btn-sm btn-xs" onclick="openTrkForm()">${esc(T('trkAdd'))}</button></div>`;
+    if(typeof _caseSecSet==='function')_caseSecSet('trk','',false);
     return;
   }
   const fmtDT=v=>{if(!v)return'—';try{return new Date(v).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return v;}};
@@ -14178,22 +14185,25 @@ async function _loadCaseTracking(caseId){
   const today=new Date().toISOString().split('T')[0];
   const cards=_trkRows.map(r=>{
     const nextDue=r.next_check_date&&r.next_check_date<=today;
-    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:11px 14px;margin-bottom:8px">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
-        ${_trkTypeChip(r.tracking_type)}
-        <span style="font-size:11px;color:var(--g5);font-family:var(--mono)">${fmtDT(r.tracked_at)}</span>
-        ${r.next_check_date?`<span style="margin-left:auto;font-size:11px;font-weight:600;color:${nextDue?'var(--red)':'var(--g5)'}">${nextDue?'⚠ ':''}${esc(T('trkNextCheck'))} ${fmtD(r.next_check_date)}</span>`:''}
-      </div>
-      ${r.gov_status_text?`<div style="font-size:13px;font-weight:600;color:var(--g9);margin-top:6px">${esc(T('trkGovStatus'))}: ${esc(r.gov_status_text)}</div>`:''}
-      ${r.note?`<div style="font-size:11px;color:var(--g6);margin-top:5px;background:var(--g0);padding:4px 8px;border-radius:6px">📝 ${esc(r.note)}</div>`:''}
-      ${r.evidence_document_id?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:var(--g0);border:1px solid var(--g1);border-radius:8px;padding:6px 10px;margin-top:6px">
-          <span style="font-size:12px;font-weight:600;flex:1;min-width:100px">📄 ${esc(r.doc_name||r.doc_type||'เอกสาร')}</span>
-          <button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="dcOpenDoc('${r.evidence_document_id}',${!!r.doc_has_storage})">เปิดดู</button>
+    return`<div class="crow">
+      ${_trkTypeChip(r.tracking_type)}
+      <span class="crow-sub" style="font-family:var(--mono)">${fmtDT(r.tracked_at)}</span>
+      ${r.gov_status_text?`<span class="crow-main" style="flex:1;min-width:150px">${esc(T('trkGovStatus'))}: ${esc(r.gov_status_text)}</span>`:'<span style="flex:1"></span>'}
+      ${r.next_check_date?`<span class="crow-sub" style="font-weight:600;${nextDue?'color:var(--red)':''}">${nextDue?'⚠ ':''}${esc(T('trkNextCheck'))} ${fmtD(r.next_check_date)}</span>`:''}
+      <span class="crow-sub" style="color:var(--g4)">${esc(T('trkBy'))}: ${esc(r.created_by_code||'—')}</span>
+      ${r.note?`<div class="crow-note">📝 ${esc(r.note)}</div>`:''}
+      ${r.evidence_document_id?`<div class="crow-doc">
+          <span style="font-weight:600;flex:1;min-width:100px">📄 ${esc(r.doc_name||r.doc_type||'เอกสาร')}</span>
+          <button class="btn btn-g btn-sm btn-xs" onclick="dcOpenDoc('${r.evidence_document_id}',${!!r.doc_has_storage})">เปิดดู</button>
         </div>`:''}
-      <div style="font-size:10px;color:var(--g4);margin-top:6px">${esc(T('trkBy'))}: ${esc(r.created_by_code||'—')}</div>
     </div>`;
   }).join('');
   sec.innerHTML=head+cards;
+  const _tn=_trkRows.length,_tl=_trkRows[0];
+  const _tDue=_trkRows.some(r=>r.next_check_date&&r.next_check_date<=today);
+  const _tGov=_tl&&_tl.gov_status_text?String(_tl.gov_status_text):'';
+  const chips=_secChip(_tn+' บันทึก','var(--g1)','var(--g6)')+(_tGov?_secChip('ล่าสุด: '+esc(_tGov.slice(0,18)+(_tGov.length>18?'…':'')),'var(--pp)','var(--pd)'):'')+(_tDue?_secChip('⚠ ถึงกำหนดตรวจ','#fee2e2','#dc2626'):'');
+  if(typeof _caseSecSet==='function')_caseSecSet('trk',chips,true);
 }
 // ── เพิ่มบันทึกติดตาม (append-only — ไม่มีแก้ไข/ลบ) ──
 async function openTrkForm(){
