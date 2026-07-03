@@ -1719,7 +1719,9 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div id="ccf_cust_results" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:30;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);max-height:220px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.08)"></div>
       <div id="ccf_cust_sel" style="display:none;margin-top:6px;font-size:12px;color:var(--pd);background:var(--pp);border-radius:7px;padding:5px 10px"></div>
     </div>
-    <div class="fgi" style="margin-bottom:12px"><label class="fl">แม่แบบงาน *</label><select class="fi2" id="ccf_template" onchange="ccfTemplateChanged()"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">แม่แบบงาน *</label><select class="fi2" id="ccf_template" onchange="ccfTemplateChanged()"></select>
+      <div id="ccf_tpl_preview" style="display:none;margin-top:6px;font-size:12px;color:var(--g6);background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:7px 10px"></div>
+    </div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเคส (แก้ไขได้)</label><input class="fi2" id="ccf_title" placeholder="เว้นว่าง = ตั้งชื่อจากแม่แบบ + ชื่อลูกค้า"></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ความสำคัญ</label><select class="fi2" id="ccf_priority"></select></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ผู้รับผิดชอบ</label><select class="fi2" id="ccf_assignee"></select></div>
@@ -1881,7 +1883,15 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="fgi" style="margin-bottom:12px"><label class="fl">หมวดงาน *</label><select class="fi2" id="ctf_category"></select></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">สถานะเริ่มต้นของเคส</label><select class="fi2" id="ctf_status"></select></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">คำอธิบาย</label><input class="fi2" id="ctf_desc" placeholder="คำอธิบายภายใน"></div>
-    <div class="fgi"><label class="fl">ลำดับแสดงผล</label><input class="fi2" id="ctf_sort" type="number" placeholder="100"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ลำดับแสดงผล</label><input class="fi2" id="ctf_sort" type="number" placeholder="100"></div>
+    <div style="border-top:1px solid var(--g2);margin:4px 0 12px;padding-top:10px"><div style="font-size:13px;font-weight:700;color:var(--g8)">ข้อมูลเตรียมงาน <span style="color:var(--g5);font-weight:400;font-size:11px">(ไม่บังคับ — ใช้แนะนำพนักงาน)</span></div></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ใช้กับกรณี</label><input class="fi2" id="ctf_eligibility" placeholder="เช่น ใช้กับงานต่ออายุที่ใบอนุญาตยังไม่หมดอายุ"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ขั้นตอนโดยย่อ</label><textarea class="fi2" id="ctf_process" placeholder="สรุปขั้นตอนสั้น ๆ ที่พนักงานต้องทำ"></textarea></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">อ้างอิงมติ <span style="color:var(--g5);font-weight:400;font-size:11px">(หนึ่งบรรทัดต่อหนึ่งรายการ)</span></label><textarea class="fi2" id="ctf_cabinet" placeholder="เช่น มติ ครม. ตัวอย่าง รอเติมจาก PDF"></textarea></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">มาตรา / เงื่อนไข <span style="color:var(--g5);font-weight:400;font-size:11px">(หนึ่งบรรทัดต่อหนึ่งรายการ)</span></label><textarea class="fi2" id="ctf_law" placeholder="เช่น มาตรา/เงื่อนไข ตัวอย่าง รอเติมจาก PDF"></textarea></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">แบบฟอร์มที่เกี่ยวข้อง <span style="color:var(--g5);font-weight:400;font-size:11px">(หนึ่งบรรทัดต่อหนึ่งรายการ)</span></label><textarea class="fi2" id="ctf_form" placeholder="เช่น แบบฟอร์ม ตัวอย่าง รอเติมจาก PDF"></textarea></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">หมายเหตุภายใน (เตรียมงาน)</label><textarea class="fi2" id="ctf_guidance" placeholder="หมายเหตุสำหรับพนักงานเตรียมงาน"></textarea></div>
+    <div class="fgi"><label class="fl">ที่มาข้อมูล</label><input class="fi2" id="ctf_source" placeholder="เช่น รอเติมจากคู่มือ PDF"></div>
   </div>
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('ctplModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCtplForm()">บันทึก</button></div>
 </div></div>
@@ -13036,6 +13046,35 @@ function _ctplMissing(e){return !!(e&&(e.status===404||/does not exist|Could not
 function _ctplBanner(){
   return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">กำหนดรายการเอกสารและขั้นตอนที่ต้องใช้ในแต่ละประเภทงาน</div>`;
 }
+// STAGE 54A-9A: ข้อมูลเตรียมงาน (template metadata) — refs เก็บเป็น jsonb array ของ {label,...}
+function _ctplRefLabel(x){return (x&&typeof x==='object')?(x.label||x.name||x.section||x.code||''):String(x==null?'':x);}
+function _ctplRefsToLines(arr){return (Array.isArray(arr)?arr:[]).map(_ctplRefLabel).filter(s=>String(s).trim()).join('\n');}
+function _ctplLinesToRefs(txt){return String(txt||'').split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({label:s}));}
+function _ctplRefCount(arr){return (Array.isArray(arr)?arr.filter(x=>String(_ctplRefLabel(x)).trim()):[]).length;}
+function _ctplMetaChips(t){
+  const c=[];const nm=_ctplRefCount(t.cabinet_resolution_refs),nl=_ctplRefCount(t.law_refs),nf=_ctplRefCount(t.form_refs);
+  if(nm)c.push(`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#eef2ff;color:#4338ca;white-space:nowrap">มติ ${nm}</span>`);
+  if(nl)c.push(`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#fef3c7;color:#b45309;white-space:nowrap">มาตรา/เงื่อนไข ${nl}</span>`);
+  if(nf)c.push(`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#ecfeff;color:#0e7490;white-space:nowrap">แบบฟอร์ม ${nf}</span>`);
+  return c.join('');
+}
+function _ctplHasMeta(t){return !!(t&&(_ctplRefCount(t.cabinet_resolution_refs)||_ctplRefCount(t.law_refs)||_ctplRefCount(t.form_refs)||(t.eligibility_note||'').trim()||(t.internal_guidance||'').trim()||(t.process_summary||'').trim()||(t.source_note||'').trim()));}
+// การ์ด "ข้อมูลเตรียมงาน" แบบกะทัดรัด (หน้ารายละเอียดแม่แบบ)
+function _ctplMetaBlock(t){
+  const refList=arr=>{const a=(Array.isArray(arr)?arr:[]).filter(x=>String(_ctplRefLabel(x)).trim());return a.length?a.map(x=>esc(_ctplRefLabel(x))).join('<br>'):'';};
+  const na='<span style="color:var(--g4)">ยังไม่ได้ระบุ</span>';
+  const row=(label,val,last)=>`<div style="display:flex;gap:10px;padding:4px 0${last?'':';border-bottom:1px solid var(--g1)'}"><div style="font-size:11.5px;color:var(--g5);width:118px;flex-shrink:0">${label}</div><div style="font-size:13px;color:var(--g9);flex:1;min-width:0">${val||na}</div></div>`;
+  return `<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:11px 14px;margin-bottom:14px">
+    <div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">ข้อมูลเตรียมงาน</div>
+    ${row('อ้างอิงมติ',refList(t.cabinet_resolution_refs))}
+    ${row('มาตรา / เงื่อนไข',refList(t.law_refs))}
+    ${row('แบบฟอร์มที่เกี่ยวข้อง',refList(t.form_refs))}
+    ${row('ใช้กับกรณี',(t.eligibility_note||'').trim()?esc(t.eligibility_note):'')}
+    ${row('ขั้นตอนโดยย่อ',(t.process_summary||'').trim()?esc(t.process_summary):'')}
+    ${row('หมายเหตุภายใน',(t.internal_guidance||'').trim()?esc(t.internal_guidance):'',!( (t.source_note||'').trim() ))}
+    ${(t.source_note||'').trim()?`<div style="font-size:11px;color:var(--g5);margin-top:6px">ที่มา: ${esc(t.source_note)}</div>`:''}
+  </div>`;
+}
 async function renderCaseTpl(){
   const wrap=document.getElementById('caseTplContent');if(!wrap)return;
   if(!_isAdminRole()){wrap.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;return;}
@@ -13069,6 +13108,7 @@ async function renderCaseTpl(){
         <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--pp);color:var(--pd)">เช็คลิสต์ ${t.checklist_count} รายการ</span>
         <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;${t.is_active?'background:#ecfdf5;color:#059669':'background:#f3f4f6;color:#6b7280'}">${t.is_active?'ใช้งาน':'ปิดใช้งาน'}</span>
       </div>
+      ${_ctplMetaChips(t)?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${_ctplMetaChips(t)}</div>`:''}
     </div>`;
   }).join('');
   wrap.innerHTML=_ctplBanner()+head+cards;
@@ -13123,6 +13163,7 @@ function _renderCaseTplDetail(){
         <button class="btn btn-g btn-sm" onclick="ctplToggleActive('template',${t.id},${t.is_active})">${t.is_active?'ปิดใช้งานแม่แบบ':'เปิดใช้งานแม่แบบ'}</button>
       </div>
     </div>
+    ${_ctplMetaBlock(t)}
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <span style="font-size:13px;font-weight:700;color:var(--g8)">รายการเช็คลิสต์</span>
       <span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">${items.length}</span>
@@ -13147,6 +13188,14 @@ function openCtplForm(id){
   document.getElementById('ctf_sort').value=(t.sort_order!=null)?t.sort_order:100;
   _ctplFillSelect('ctf_category',_CTPL_CAT,t.category||'other');
   _ctplFillSelect('ctf_status',_CTPL_STATUS,t.default_case_status||'draft');
+  // STAGE 54A-9A: ข้อมูลเตรียมงาน (refs → หนึ่งบรรทัดต่อหนึ่งรายการ)
+  document.getElementById('ctf_eligibility').value=t.eligibility_note||'';
+  document.getElementById('ctf_process').value=t.process_summary||'';
+  document.getElementById('ctf_guidance').value=t.internal_guidance||'';
+  document.getElementById('ctf_source').value=t.source_note||'';
+  document.getElementById('ctf_cabinet').value=_ctplRefsToLines(t.cabinet_resolution_refs);
+  document.getElementById('ctf_law').value=_ctplRefsToLines(t.law_refs);
+  document.getElementById('ctf_form').value=_ctplRefsToLines(t.form_refs);
   document.getElementById('ctplModal').style.display='flex';
 }
 async function saveCtplForm(){
@@ -13166,7 +13215,15 @@ async function saveCtplForm(){
       p_category:document.getElementById('ctf_category').value,
       p_description:(document.getElementById('ctf_desc').value||'').trim()||null,
       p_default_case_status:document.getElementById('ctf_status').value,
-      p_sort_order:parseInt(document.getElementById('ctf_sort').value)||100
+      p_sort_order:parseInt(document.getElementById('ctf_sort').value)||100,
+      // STAGE 54A-9A: ข้อมูลเตรียมงาน — textarea แต่ละบรรทัด → {"label": บรรทัด} (ไม่บังคับ admin กรอก JSON)
+      p_cabinet_resolution_refs:_ctplLinesToRefs(document.getElementById('ctf_cabinet').value),
+      p_law_refs:_ctplLinesToRefs(document.getElementById('ctf_law').value),
+      p_form_refs:_ctplLinesToRefs(document.getElementById('ctf_form').value),
+      p_eligibility_note:document.getElementById('ctf_eligibility').value,
+      p_internal_guidance:document.getElementById('ctf_guidance').value,
+      p_process_summary:document.getElementById('ctf_process').value,
+      p_source_note:document.getElementById('ctf_source').value
     });
     document.getElementById('ctplModal').style.display='none';
     toast(_ctplEditId?'บันทึกแม่แบบแล้ว':'เพิ่มแม่แบบแล้ว');
@@ -13443,6 +13500,17 @@ function ccfTemplateChanged(){
   const t=tid?_ccfTemplates.find(x=>x.id===tid):null;
   const ti=document.getElementById('ccf_title');
   if(t&&_ccfSelCust&&!ti.value.trim())ti.placeholder=`${t.template_name_th} — ${_ccfSelCust.name}`;
+  // STAGE 54A-9A: พรีวิว "ข้อมูลเตรียมงาน" ของแม่แบบที่เลือก (ใช้ field จาก app_list_case_templates — ไม่มี RPC เพิ่ม)
+  const pv=document.getElementById('ccf_tpl_preview');
+  if(!pv)return;
+  if(!t){pv.style.display='none';pv.innerHTML='';return;}
+  const parts=[];
+  if((t.eligibility_note||'').trim())parts.push(`<div><b>ใช้กับกรณี:</b> ${esc(t.eligibility_note)}</div>`);
+  const chips=_ctplMetaChips(t);
+  if(chips)parts.push(`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:${parts.length?'4px':'0'}">${chips}</div>`);
+  if((t.process_summary||'').trim())parts.push(`<div style="margin-top:4px"><b>ขั้นตอนโดยย่อ:</b> ${esc(t.process_summary)}</div>`);
+  pv.innerHTML=parts.length?parts.join(''):'<span style="color:var(--g4)">แม่แบบนี้ยังไม่มีข้อมูลเตรียมงาน</span>';
+  pv.style.display='block';
 }
 async function saveCaseCreate(){
   if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
@@ -13536,6 +13604,7 @@ function _renderCaseDetail(){
       <div style="display:flex;flex-wrap:wrap;gap:3px 18px">${scanHtml}</div>
       ${k.note?`<div style="font-size:12px;color:var(--g6);margin-top:6px;background:var(--g0);padding:3px 9px;border-radius:7px">📝 ${esc(k.note)}</div>`:''}
     </div>
+    <div id="caseTplMeta"></div>
     ${_caseSecShell('chk','เอกสารที่ต้องจัดการ',`<div id="caseChkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดเช็กลิสต์...</div></div>`,true)}
     ${_caseSecShell('pay','งานการเงินของเคส',`<div id="casePaySec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>`,false)}
     ${_caseSecShell('appt','นัดหมายที่ต้องติดตาม',`<div id="caseApptSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดนัดหมาย...</div></div>`,false)}
@@ -13552,6 +13621,31 @@ function _renderCaseDetail(){
   try{if(typeof _loadCaseAppointments==='function')_loadCaseAppointments(k.id);}catch(_e){}
   // STAGE 54A-7B: โหลดประวัติติดตาม e-WorkPermit/ราชการแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
   try{if(typeof _loadCaseTracking==='function')_loadCaseTracking(k.id);}catch(_e){}
+  // STAGE 54A-9A: ข้อมูลเตรียมงานจากแบบงาน (best-effort — ไม่มี metadata → ไม่แสดง, ไม่ทำให้หน้ายาว)
+  try{if(typeof _loadCaseTplMeta==='function')_loadCaseTplMeta(k.template_id);}catch(_e){}
+}
+// STAGE 54A-9A: ดึง metadata ของแม่แบบที่เคสนี้ผูกไว้ มาแสดงแบบกะทัดรัด (RPC template detail เดิม — ไม่มี RPC ใหม่)
+async function _loadCaseTplMeta(templateId){
+  const sec=document.getElementById('caseTplMeta');if(!sec)return;
+  if(templateId==null){sec.innerHTML='';return;}
+  let raw=null;
+  try{raw=await _delReqRpc('app_get_case_template_detail',{p_template_id:templateId});}
+  catch(e){sec.innerHTML='';return;} // best-effort — ไม่กวนหน้าเคส
+  const d=(typeof _ctplUnwrapDetail==='function')?_ctplUnwrapDetail(raw):null;
+  const t=d&&d.template?d.template:null;
+  if(!t||!_ctplHasMeta(t)){sec.innerHTML='';return;} // ไม่มี metadata → ไม่แสดงเลย (คงความกะทัดรัด)
+  const chips=_ctplMetaChips(t);
+  const bits=[];
+  if((t.eligibility_note||'').trim())bits.push('ใช้กับกรณี: '+esc(t.eligibility_note));
+  if((t.process_summary||'').trim())bits.push('ขั้นตอนโดยย่อ: '+esc(t.process_summary));
+  sec.innerHTML=`<div style="background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 13px;margin-bottom:8px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+      <span style="font-size:12px;font-weight:700;color:var(--g7)">ข้อมูลเตรียมงานจากแบบงาน</span>
+      ${chips}
+    </div>
+    ${bits.length?`<div style="font-size:12px;color:var(--g6);margin-top:4px">${bits.join(' · ')}</div>`:''}
+    ${(t.internal_guidance||'').trim()?`<div style="font-size:12px;color:var(--g6);margin-top:3px">📝 ${esc(t.internal_guidance)}</div>`:''}
+  </div>`;
 }
 function caseBack(){_caseDetail=null;renderCases();}
 // ── STAGE 54A-8B: work sections แบบยุบ/ขยายได้ (compact collapsible) — state ในหน่วยความจำ, reset ต่อเคส ──
