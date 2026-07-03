@@ -1482,7 +1482,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <!-- Stage 40D: ศูนย์เอกสาร — คลังเอกสารลูกค้ากลาง (staff+admin read-only) -->
     <div class="ni" id="niDocCenter" onclick="gv('doccenter')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg></span>คลังเอกสาร</div>
     <!-- Stage 54A-3: เคสงาน Phase 2 (staff + admin) — งานติดตามภายใน ไม่ใช่เอกสารราชการ -->
-    <div class="ni" id="niCases" onclick="gv('cases')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg></span>เคสงาน Phase 2</div>
+    <div class="ni" id="niCases" onclick="gv('cases')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg></span>งานเอกสารแรงงาน</div>
     <!-- Stage 21A: ลูกค้า = หัวข้อยุบ/ขยาย (แตะแถว=ไปหน้าลูกค้า, แตะ chevron=ยุบ/ขยาย) → งานของฉัน -->
     <div class="ni ni-parent" id="niCustomers" data-acc="cust" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span><span class="ni-chev" onclick="event.stopPropagation();sideToggle('cust')" aria-label="ยุบ/ขยาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
     <div class="ni-acc" id="sacc-cust">
@@ -1513,7 +1513,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="ni" id="niDelReq" onclick="gv('delreq')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></span>คำขอลบ <span class="nbadge" id="nbDelReq" style="display:none">0</span></div>
     <div class="ni" id="niMetaAds" onclick="gv('metaads')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
     <!-- Stage 54A-2: แม่แบบงาน Phase 2 (admin-only) — เช็คลิสต์ภายใน CRM เท่านั้น -->
-    <div class="ni" id="niCaseTpl" onclick="gv('casetpl')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg></span>แม่แบบงาน Phase 2</div>
+    <div class="ni" id="niCaseTpl" onclick="gv('casetpl')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg></span>แม่แบบเอกสาร / ขั้นตอนงาน</div>
     <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>ตั้งค่าแจ้งเตือน</div>
   </div>
   <div class="nsec" id="sideFoot">
@@ -1659,7 +1659,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <!-- Stage 40D: ศูนย์เอกสาร -->
       <div class="di" data-view="doccenter" onclick="mobNav('doccenter');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg><span>คลังเอกสาร</span></div>
       <!-- Stage 54A-3: เคสงาน Phase 2 (staff + admin) -->
-      <div class="di" data-view="cases" onclick="mobNav('cases');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg><span>เคสงาน Phase 2</span></div>
+      <div class="di" data-view="cases" onclick="mobNav('cases');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg><span>งานเอกสารแรงงาน</span></div>
       <!-- Stage 22A: ลูกค้า = แตะแถว/ไอคอน → ไปหน้าลูกค้า (parity desktop), แตะ chevron → ยุบ/ขยายเท่านั้น → งานของฉัน -->
       <div class="di di-parent" data-acc="cust" data-view="customers" onclick="mobNav('customers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span><span class="di-chev-tap" onclick="event.stopPropagation();drawerToggle('cust')" aria-label="ยุบ/ขยาย"><svg class="di-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
       <div class="di-acc" id="dacc-cust">
@@ -1687,7 +1687,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
         <div class="di" data-view="delreq" onclick="mobNav('delreq');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg><span>คำขอลบ</span><span class="dbadge" id="drawerDelReqBadge" style="display:none">0</span></div>
         <div class="di" data-view="metaads" onclick="mobNav('metaads');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg><span>วิเคราะห์โฆษณา Meta</span></div>
         <!-- Stage 54A-2: แม่แบบงาน Phase 2 (admin-only) -->
-        <div class="di" data-view="casetpl" onclick="mobNav('casetpl');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg><span>แม่แบบงาน Phase 2</span></div>
+        <div class="di" data-view="casetpl" onclick="mobNav('casetpl');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg><span>แม่แบบเอกสาร / ขั้นตอนงาน</span></div>
         <div class="di" data-view="settings" onclick="mobNav('settings');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span>ตั้งค่า</span></div>
       </div>
     </div>
@@ -1843,9 +1843,9 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
      ตัวเลือกเอกสารหลักฐานฝังอยู่ "ใน modal เดียวกัน" (ไม่มี modal ซ้อน modal — กันบั๊กแบบ 54A-5B) -->
 <div class="mo" id="trkModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:560px">
-  <div class="mh"><div class="mt">เพิ่มบันทึกติดตาม e-WorkPermit / ราชการ</div><button class="xbtn" onclick="document.getElementById('trkModal').style.display='none'">×</button></div>
+  <div class="mh"><div class="mt">เพิ่มบันทึกติดตามสถานะ</div><button class="xbtn" onclick="document.getElementById('trkModal').style.display='none'">×</button></div>
   <div class="mbody">
-    <div style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px;margin-bottom:12px">พนักงานตรวจเว็บราชการด้วยตัวเองแล้วมาจดที่นี่ — ระบบไม่เชื่อมต่อ/ไม่ยื่นแทนเว็บราชการ และบันทึกนี้ไม่ใช่ข้อมูลยืนยันจากราชการ</div>
+    <div style="font-size:11px;color:var(--g5);margin-bottom:12px">พิมพ์ตามที่ตรวจสอบเอง ไม่เชื่อมต่อเว็บราชการ</div>
     <div class="fg" style="gap:11px">
       <div class="fgi"><label class="fl">ประเภทการติดตาม</label><select class="fi2" id="trkf_type"></select></div>
       <div class="fgi"><label class="fl">วันที่ต้องตรวจครั้งถัดไป</label><input class="fi2" type="date" id="trkf_next"></div>
@@ -2116,7 +2116,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div class="fgi full"><label class="fl">หมายเหตุ</label><textarea class="fi2" id="ef_note" placeholder="บันทึก..."></textarea></div>
     </div>
     <!-- Stage 54A-5: ข้อมูล Phase 2 (ทะเบียน/ภาษี/ที่อยู่แยกส่วน/ผู้ลงนาม) — ข้อมูลภายใน CRM เท่านั้น -->
-    <div class="fsec" style="margin-top:14px"><div class="fst">ข้อมูล Phase 2 (สำหรับงานเคส/เอกสาร)</div>
+    <div class="fsec" style="margin-top:14px"><div class="fst">ข้อมูลสำหรับงานเอกสารแรงงาน</div>
     <div class="fg" style="gap:11px">
       <div class="fgi"><label class="fl">ประเภทนายจ้าง</label><select class="fi2" id="ef2_kind"><option value="company">นิติบุคคล/บริษัท</option><option value="individual">บุคคลธรรมดา</option><option value="other">อื่น ๆ</option></select></div>
       <div class="fgi"><label class="fl">เลขทะเบียนนิติบุคคล</label><input class="fi2" id="ef2_reg" placeholder="เลขทะเบียน (ถ้ามี)"></div>
@@ -2130,7 +2130,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div class="fgi"><label class="fl">ผู้มีอำนาจลงนาม</label><input class="fi2" id="ef2_signer" placeholder="ชื่อผู้มีอำนาจลงนาม"></div>
       <div class="fgi"><label class="fl">ตำแหน่งผู้ลงนาม</label><input class="fi2" id="ef2_signerpos" placeholder="เช่น กรรมการผู้จัดการ"></div>
       <div class="fgi full"><label class="fl">ลักษณะกิจการ</label><input class="fi2" id="ef2_bizdesc" placeholder="รายละเอียดกิจการ (ภายใน)"></div>
-      <div class="fgi full"><label class="fl">หมายเหตุ Phase 2</label><input class="fi2" id="ef2_note" placeholder="บันทึกภายในสำหรับงานเคส"></div>
+      <div class="fgi full"><label class="fl">หมายเหตุ (งานเอกสาร)</label><input class="fi2" id="ef2_note" placeholder="บันทึกภายในสำหรับงานเคส"></div>
     </div>
     </div>
   </div>
@@ -2690,22 +2690,21 @@ const LANG = {
     empUrgent:'ด่วน', empWorkers:'แรงงาน', empNone:'ยังไม่มีนายจ้าง',
     empDetPhone:'เบอร์โทร', empDetContact:'ผู้ติดต่อ', empDetAddr:'ที่อยู่',
     empDetWorkerList:'รายชื่อแรงงาน', empDetNoWorker:'ยังไม่มีแรงงาน',
-    emp2Sec:'ข้อมูล Phase 2 (งานเคส/เอกสาร)', emp2Kind:'ประเภทนายจ้าง',
+    emp2Sec:'ข้อมูลสำหรับงานเอกสารแรงงาน', emp2Kind:'ประเภทนายจ้าง',
     emp2KindCompany:'นิติบุคคล/บริษัท', emp2KindIndividual:'บุคคลธรรมดา', emp2KindOther:'อื่น ๆ',
     emp2Reg:'เลขทะเบียนนิติบุคคล', emp2Tax:'เลขผู้เสียภาษี', emp2Email:'อีเมล', emp2Line:'LINE ID',
     emp2Addr2:'ตำบล/อำเภอ/จังหวัด', emp2Signer:'ผู้มีอำนาจลงนาม', emp2SignerPos:'ตำแหน่งผู้ลงนาม',
-    emp2BizDesc:'ลักษณะกิจการ', emp2Note:'หมายเหตุ Phase 2',
+    emp2BizDesc:'ลักษณะกิจการ', emp2Note:'หมายเหตุ (งานเอกสาร)',
     emp2Docs:'เอกสารนายจ้าง', emp2DocsNote:'อัปโหลด/จัดการเอกสารนายจ้างผ่านคลังเอกสารใน stage ถัดไป',
     estSec:'สถานประกอบการ / สถานที่ทำงาน', estAdd:'+ เพิ่มสถานประกอบการ', estNone:'ยังไม่มีสถานประกอบการ',
     estActive:'ใช้งาน', estInactive:'ปิดใช้งาน', estBtnOn:'เปิดใช้งาน', estBtnOff:'ปิดใช้งาน',
-    emp2NeedMigration:'ยังไม่ได้ติดตั้งระบบนายจ้าง Phase 2 — กรุณา apply migration 20260804',
+    emp2NeedMigration:'ยังไม่ได้ติดตั้งระบบข้อมูลนายจ้างเพิ่มเติม — กรุณา apply migration 20260804',
     caseDashOpen:'เคสเปิดอยู่', caseDashDraft:'ฉบับร่าง', caseDashPrep:'กำลังเตรียมเอกสาร',
     caseDashReady:'พร้อมยื่น', caseDashSubmitted:'ยื่นแล้ว', caseDashWaiting:'รอผล',
     caseDashRejected:'ไม่อนุมัติ', caseDashDone:'เสร็จสิ้น', caseDashDueSoon:'ใกล้ครบกำหนด',
     caseDashOverdue:'เกินกำหนด', caseDashHint:'แตะเพื่อกรองตามสถานะ (แตะซ้ำเพื่อล้าง)',
     caseDashNeedMigration:'ยังไม่ได้ติดตั้งสรุปเคส — กรุณา apply migration 20260802 ก่อน',
-    trkSec:'ติดตาม e-WorkPermit / ราชการ',
-    trkWarn:'บันทึกนี้ใช้ติดตามงานภายในบริษัทเท่านั้น ไม่ใช่ข้อมูลยืนยันจากราชการ และระบบไม่เชื่อมต่อเว็บไซต์ราชการ',
+    trkSec:'ติดตามสถานะหลังยื่น',
     trkAdd:'+ เพิ่มบันทึกติดตาม', trkNone:'ยังไม่มีบันทึกติดตามสำหรับเคสนี้',
     trkNeedMigration:'ระบบติดตามยังไม่ติดตั้ง — กรุณา apply migration 20260807_case_tracking_logs.sql',
     trkGovStatus:'สถานะที่พบ', trkNextCheck:'ตรวจครั้งถัดไป', trkBy:'บันทึกโดย',
@@ -2935,22 +2934,21 @@ const LANG = {
     empUrgent:'အရေးတကြီး', empWorkers:'လုပ်သား', empNone:'အလုပ်ရှင်မရှိသေး',
     empDetPhone:'ဖုန်းနံပါတ်', empDetContact:'ဆက်သွယ်ရမည့်သူ', empDetAddr:'လိပ်စာ',
     empDetWorkerList:'လုပ်သားစာရင်း', empDetNoWorker:'လုပ်သားမရှိသေး',
-    emp2Sec:'Phase 2 အချက်အလက် (အမှုတွဲ/စာရွက်စာတမ်း)', emp2Kind:'အလုပ်ရှင်အမျိုးအစား',
+    emp2Sec:'အလုပ်သမားစာရွက်စာတမ်းအတွက် အချက်အလက်', emp2Kind:'အလုပ်ရှင်အမျိုးအစား',
     emp2KindCompany:'ကုမ္ပဏီ/တရားဝင်အဖွဲ့', emp2KindIndividual:'တစ်ဦးချင်း', emp2KindOther:'အခြား',
     emp2Reg:'ကုမ္ပဏီမှတ်ပုံတင်နံပါတ်', emp2Tax:'အခွန်ထမ်းနံပါတ်', emp2Email:'အီးမေးလ်', emp2Line:'LINE ID',
     emp2Addr2:'မြို့နယ်/ခရိုင်/တိုင်း', emp2Signer:'လက်မှတ်ရေးထိုးခွင့်ရှိသူ', emp2SignerPos:'ရာထူး',
-    emp2BizDesc:'လုပ်ငန်းအမျိုးအစား', emp2Note:'Phase 2 မှတ်ချက်',
+    emp2BizDesc:'လုပ်ငန်းအမျိုးအစား', emp2Note:'စာရွက်စာတမ်း မှတ်ချက်',
     emp2Docs:'အလုပ်ရှင်စာရွက်စာတမ်း', emp2DocsNote:'အလုပ်ရှင်စာရွက်စာတမ်းများကို နောက် stage တွင် စာရွက်စာတမ်းသိုလှောင်ခန်းမှ စီမံမည်',
     estSec:'လုပ်ငန်းခွင် / အလုပ်လုပ်သည့်နေရာ', estAdd:'+ လုပ်ငန်းခွင်ထည့်', estNone:'လုပ်ငန်းခွင်မရှိသေး',
     estActive:'အသုံးပြုနေ', estInactive:'ပိတ်ထား', estBtnOn:'ဖွင့်ရန်', estBtnOff:'ပိတ်ရန်',
-    emp2NeedMigration:'Phase 2 အလုပ်ရှင်စနစ် မတပ်ဆင်ရသေး — migration 20260804 ကို apply လုပ်ပါ',
+    emp2NeedMigration:'အလုပ်ရှင်အချက်အလက်ထပ်ဆောင်း မတပ်ဆင်ရသေး — migration 20260804 ကို apply လုပ်ပါ',
     caseDashOpen:'ဖွင့်ထားသောအမှုတွဲ', caseDashDraft:'မူကြမ်း', caseDashPrep:'စာရွက်စာတမ်းပြင်ဆင်နေ',
     caseDashReady:'တင်သွင်းရန်အသင့်', caseDashSubmitted:'တင်သွင်းပြီး', caseDashWaiting:'ရလဒ်စောင့်နေ',
     caseDashRejected:'ငြင်းပယ်ခံရ', caseDashDone:'ပြီးစီး', caseDashDueSoon:'သတ်မှတ်ရက်နီး',
     caseDashOverdue:'ရက်ကျော်လွန်', caseDashHint:'အခြေအနေဖြင့် စစ်ထုတ်ရန် နှိပ်ပါ (ထပ်နှိပ်လျှင် ဖျက်)',
     caseDashNeedMigration:'အမှုတွဲအနှစ်ချုပ် မတပ်ဆင်ရသေး — migration 20260802 ကို apply လုပ်ပါ',
-    trkSec:'e-WorkPermit / အစိုးရ လိုက်ကြည့်မှတ်တမ်း',
-    trkWarn:'ဤမှတ်တမ်းသည် ကုမ္ပဏီတွင်းလိုက်ကြည့်ရန်သာဖြစ်ပြီး အစိုးရမှအတည်ပြုချက်မဟုတ်ပါ — စနစ်သည် အစိုးရဝဘ်ဆိုဒ်နှင့် ချိတ်ဆက်မထားပါ',
+    trkSec:'တင်သွင်းပြီးနောက် အခြေအနေ လိုက်ကြည့်ခြင်း',
     trkAdd:'+ လိုက်ကြည့်မှတ်တမ်းထည့်', trkNone:'ဤအမှုတွဲအတွက် လိုက်ကြည့်မှတ်တမ်းမရှိသေး',
     trkNeedMigration:'လိုက်ကြည့်စနစ် မတပ်ဆင်ရသေး — migration 20260807_case_tracking_logs.sql ကို apply လုပ်ပါ',
     trkGovStatus:'တွေ့ရှိသောအခြေအနေ', trkNextCheck:'နောက်တစ်ကြိမ်စစ်ရန်', trkBy:'မှတ်တမ်းတင်သူ',
@@ -4345,7 +4343,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
   if(niActive)niActive.classList.add('on');
-  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE',doccenter:T('doccenter'),casetpl:'แม่แบบงาน Phase 2',cases:'เคสงาน Phase 2'};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE',doccenter:T('doccenter'),casetpl:'แม่แบบเอกสาร / ขั้นตอนงาน',cases:'งานเอกสารแรงงาน'};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -13026,7 +13024,7 @@ const _CTPL_FROM={worker:'แรงงาน',employer:'นายจ้าง',e
 const _CTPL_STATUS={draft:'ฉบับร่าง',preparing_documents:'กำลังเตรียมเอกสาร',ready_to_submit:'พร้อมยื่น',submitted:'ยื่นแล้ว',waiting_result:'รอผล',approved:'อนุมัติ',rejected:'ไม่อนุมัติ',cancelled:'ยกเลิก',completed:'เสร็จสิ้น'};
 function _ctplMissing(e){return !!(e&&(e.status===404||/does not exist|Could not find the function/i.test((e.pgmsg||e.message||''))));}
 function _ctplBanner(){
-  return `<div style="display:flex;align-items:flex-start;gap:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.5"><span style="flex:none">📋</span><span>แม่แบบงานนี้เป็น <b>เช็คลิสต์ภายในบริษัท</b> สำหรับเตรียมเอกสารเท่านั้น — ไม่ใช่แบบฟอร์มราชการ และระบบไม่ได้ออกเอกสารราชการใด ๆ (Phase 2 foundation — ยังไม่สร้างเคสจริง)</span></div>`;
+  return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">กำหนดรายการเอกสารและขั้นตอนที่ต้องใช้ในแต่ละประเภทงาน</div>`;
 }
 async function renderCaseTpl(){
   const wrap=document.getElementById('caseTplContent');if(!wrap)return;
@@ -13238,7 +13236,7 @@ const _CASE_ST_CLR={draft:'#6b7280',preparing_documents:'#b45309',ready_to_submi
 function _caseStChip(st){const c=_CASE_ST_CLR[st]||'#6b7280';return`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}1a;color:${c}">${esc(_CTPL_STATUS[st]||st)}</span>`;}
 function _casePriChip(p){const c=_CASE_PRI_CLR[p]||'#6b7280';return`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_CASE_PRI[p]||p)}</span>`;}
 function _caseBanner(){
-  return `<div style="display:flex;align-items:flex-start;gap:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.5"><span style="flex:none">🗂️</span><span>เคสนี้เป็น <b>งานติดตามภายในบริษัท</b> ไม่ใช่เอกสารราชการ และระบบไม่ได้ยื่นงานแทนเว็บราชการ</span></div>`;
+  return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">ใช้สำหรับเตรียมงานและติดตามงานภายในบริษัท ก่อนพนักงานนำข้อมูลไปยื่นจริง</div>`;
 }
 function _caseAsgOptions(sel){
   const opts=(typeof assigneeEmps!=='undefined'?assigneeEmps:[]).map(e=>`<option value="${esc(e.employee_code)}"${e.employee_code===sel?' selected':''}>${esc(e.nickname||e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('');
@@ -13619,7 +13617,7 @@ async function _loadDetCases(cid){
     </div>`).join('');
   sec.innerHTML=`<div style="margin-bottom:12px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">เคสงาน (Phase 2)</div>
+      <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">งานเอกสารแรงงาน</div>
       <button class="btn btn-g btn-sm" style="font-size:11px" onclick="caseFromCustomer(${cid})">+ สร้างเคสจากลูกค้านี้</button>
     </div>
     ${items||'<div style="color:var(--g5);font-size:12px;padding:4px 0">ยังไม่มีเคสของลูกค้ารายนี้</div>'}
@@ -13643,9 +13641,6 @@ let _chkRows=[],_chkCaseId=null,_chkEditItemId=null,_chkLinkItemId=null,_chkDocP
 const _CHK_ST={missing:'ยังขาด',received:'ได้รับแล้ว',reviewing:'กำลังตรวจ',approved:'ผ่าน',needs_fix:'ต้องแก้ไข',waived:'ยกเว้น',not_required:'ไม่จำเป็น'};
 const _CHK_CLR={missing:'#dc2626',received:'#2563eb',reviewing:'#b45309',approved:'#059669',needs_fix:'#d97706',waived:'#6b7280',not_required:'#6b7280'};
 function _chkStChip(st){const c=_CHK_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_CHK_ST[st]||st)}</span>`;}
-function _chkWarn(){
-  return `<div style="font-size:11px;color:var(--g5);margin-bottom:10px">เช็กลิสต์นี้ใช้ติดตามงานภายในบริษัทเท่านั้น ไม่ใช่แบบฟอร์มราชการ และระบบไม่ได้ยื่นงานแทนเว็บราชการ</div>`;
-}
 async function _loadCaseChecklist(caseId){
   const sec=document.getElementById('caseChkSec');if(!sec||caseId==null)return;
   _chkCaseId=caseId;
@@ -13656,7 +13651,7 @@ async function _loadCaseChecklist(caseId){
     return;
   }
   _chkRows=Array.isArray(rows)?rows:[];
-  const head=(extra)=>`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">เช็กลิสต์เอกสาร</div>${_chkWarn()}${extra||''}`;
+  const head=(extra)=>`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">เช็กลิสต์เอกสาร</div>${extra||''}`;
   if(!_chkRows.length){
     const hasTpl=!!(_caseDetail&&_caseDetail.caseRow&&_caseDetail.caseRow.template_id!=null);
     sec.innerHTML=head(hasTpl
@@ -13827,9 +13822,6 @@ const _PAY_ST={unpaid:'ยังไม่ชำระ',partial:'ชำระบ�
 const _PAY_ST_CLR={unpaid:'#dc2626',partial:'#d97706',paid:'#059669',overdue:'#dc2626',waived:'#6b7280',refunded:'#2563eb',cancelled:'#6b7280'};
 function _payStChip(st){const c=_PAY_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_PAY_ST[st]||st)}</span>`;}
 function _payMoney(n){return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function _payWarn(){
-  return `<div style="font-size:11px;color:var(--g5);margin-bottom:10px">การชำระเงินนี้ใช้ติดตามงานภายในบริษัทเท่านั้น ไม่ใช่ใบเสร็จราชการ และระบบไม่ได้ยื่นงานแทนเว็บราชการ</div>`;
-}
 async function _loadCasePayments(caseId){
   const sec=document.getElementById('casePaySec');if(!sec||caseId==null)return;
   _payCaseId=caseId;
@@ -13845,7 +13837,7 @@ async function _loadCasePayments(caseId){
   }
   _payRows=Array.isArray(rows)?rows:[];
   const s=Array.isArray(sum)?sum[0]:sum;
-  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">การชำระเงิน</div>${_payWarn()}`;
+  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">การชำระเงิน</div>`;
   const cardStat=(label,val,clr)=>`<div style="flex:1;min-width:110px;background:#fff;border:1px solid var(--g2);border-radius:10px;padding:9px 12px;text-align:center"><div style="font-size:11px;color:var(--g5)">${label}</div><div style="font-size:16px;font-weight:800;color:${clr||'var(--g9)'};font-family:var(--mono)">${val}</div></div>`;
   const summaryHtml=s?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
       ${cardStat('ยอดรวม','฿'+_payMoney(s.total_due))}
@@ -14022,9 +14014,6 @@ const _APPT_TYPE={document_prepare:'เตรียมเอกสาร',submis
 const _APPT_ST={scheduled:'นัดไว้',completed:'เสร็จแล้ว',missed:'พลาดนัด',postponed:'เลื่อนนัด',cancelled:'ยกเลิก'};
 const _APPT_ST_CLR={scheduled:'#2563eb',completed:'#059669',missed:'#dc2626',postponed:'#d97706',cancelled:'#6b7280'};
 function _apptStChip(st){const c=_APPT_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_APPT_ST[st]||st)}</span>`;}
-function _apptWarn(){
-  return `<div style="font-size:11px;color:var(--g5);margin-bottom:10px">นัดหมายนี้ใช้ติดตามงานภายในบริษัทเท่านั้น ไม่ใช่ใบนัดราชการ และระบบไม่ได้ยื่นงานแทนเว็บราชการ</div>`;
-}
 async function _loadCaseAppointments(caseId){
   const sec=document.getElementById('caseApptSec');if(!sec||caseId==null)return;
   _apptCaseId=caseId;
@@ -14040,7 +14029,7 @@ async function _loadCaseAppointments(caseId){
   }
   _apptRows=Array.isArray(rows)?rows:[];
   const s=Array.isArray(sum)?sum[0]:sum;
-  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">นัดหมาย / วันดำเนินการ</div>${_apptWarn()}`;
+  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">นัดหมาย / วันที่ดำเนินการ</div>`;
   const chip=(label,val,clr)=>`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${clr?clr+'1a':'var(--g1)'};color:${clr||'var(--g6)'}">${label} ${val}</span>`;
   const summaryHtml=s?`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">
       ${chip('นัดทั้งหมด',Number(s.total_count||0))}
@@ -14179,7 +14168,6 @@ async function _loadCaseTracking(caseId){
   }
   _trkRows=Array.isArray(rows)?rows:[];
   const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">${esc(T('trkSec'))}</div>
-    <div style="font-size:11px;color:var(--g5);margin-bottom:10px">${esc(T('trkWarn'))}</div>
     <div style="margin-bottom:8px"><button class="btn btn-p btn-sm" onclick="openTrkForm()">${esc(T('trkAdd'))}</button></div>`;
   if(!_trkRows.length){
     sec.innerHTML=head+`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:20px;text-align:center;font-size:12px;color:var(--g5)">${esc(T('trkNone'))}</div>`;
@@ -14291,11 +14279,11 @@ function _emp2Unwrap(r){
 async function _loadEmpPhase2(empId){
   const sec=document.getElementById('empP2Sec');if(!sec||empId==null)return;
   _emp2CurId=empId;
-  sec.innerHTML=`<div style="padding:14px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดข้อมูล Phase 2...</div>`;
+  sec.innerHTML=`<div style="padding:14px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดข้อมูลเพิ่มเติม...</div>`;
   let raw=null;
   try{raw=await _delReqRpc('app_get_employer_detail',{p_employer_id:empId});}
   catch(e){
-    sec.innerHTML=`<div style="margin-top:14px;background:var(--g0);border:1px dashed var(--g3);border-radius:var(--rl);padding:10px 13px;font-size:12px;color:var(--g5)">🏢 ${_caseMissing(e)?esc(T('emp2NeedMigration')):('โหลดข้อมูล Phase 2 ไม่สำเร็จ: '+esc(e.message))}</div>`;
+    sec.innerHTML=`<div style="margin-top:14px;background:var(--g0);border:1px dashed var(--g3);border-radius:var(--rl);padding:10px 13px;font-size:12px;color:var(--g5)">🏢 ${_caseMissing(e)?esc(T('emp2NeedMigration')):('โหลดข้อมูลเพิ่มเติมไม่สำเร็จ: '+esc(e.message))}</div>`;
     return;
   }
   _emp2Detail=_emp2Unwrap(raw);
