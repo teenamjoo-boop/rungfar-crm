@@ -2024,8 +2024,51 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div class="fgi full"><label class="fl">ที่อยู่</label><input class="fi2" id="ef_addr" placeholder="ที่อยู่"></div>
       <div class="fgi full"><label class="fl">หมายเหตุ</label><textarea class="fi2" id="ef_note" placeholder="บันทึก..."></textarea></div>
     </div>
+    <!-- Stage 54A-5: ข้อมูล Phase 2 (ทะเบียน/ภาษี/ที่อยู่แยกส่วน/ผู้ลงนาม) — ข้อมูลภายใน CRM เท่านั้น -->
+    <div class="fsec" style="margin-top:14px"><div class="fst">ข้อมูล Phase 2 (สำหรับงานเคส/เอกสาร)</div>
+    <div class="fg" style="gap:11px">
+      <div class="fgi"><label class="fl">ประเภทนายจ้าง</label><select class="fi2" id="ef2_kind"><option value="company">นิติบุคคล/บริษัท</option><option value="individual">บุคคลธรรมดา</option><option value="other">อื่น ๆ</option></select></div>
+      <div class="fgi"><label class="fl">เลขทะเบียนนิติบุคคล</label><input class="fi2" id="ef2_reg" placeholder="เลขทะเบียน (ถ้ามี)"></div>
+      <div class="fgi"><label class="fl">เลขผู้เสียภาษี</label><input class="fi2" id="ef2_tax" placeholder="เลขผู้เสียภาษี (ถ้ามี)"></div>
+      <div class="fgi"><label class="fl">อีเมล</label><input class="fi2" id="ef2_email" placeholder="อีเมลติดต่อ"></div>
+      <div class="fgi"><label class="fl">LINE ID</label><input class="fi2" id="ef2_line" placeholder="LINE ID"></div>
+      <div class="fgi"><label class="fl">ตำบล/แขวง</label><input class="fi2" id="ef2_subd"></div>
+      <div class="fgi"><label class="fl">อำเภอ/เขต</label><input class="fi2" id="ef2_dist"></div>
+      <div class="fgi"><label class="fl">จังหวัด</label><input class="fi2" id="ef2_prov"></div>
+      <div class="fgi"><label class="fl">รหัสไปรษณีย์</label><input class="fi2" id="ef2_post"></div>
+      <div class="fgi"><label class="fl">ผู้มีอำนาจลงนาม</label><input class="fi2" id="ef2_signer" placeholder="ชื่อผู้มีอำนาจลงนาม"></div>
+      <div class="fgi"><label class="fl">ตำแหน่งผู้ลงนาม</label><input class="fi2" id="ef2_signerpos" placeholder="เช่น กรรมการผู้จัดการ"></div>
+      <div class="fgi full"><label class="fl">ลักษณะกิจการ</label><input class="fi2" id="ef2_bizdesc" placeholder="รายละเอียดกิจการ (ภายใน)"></div>
+      <div class="fgi full"><label class="fl">หมายเหตุ Phase 2</label><input class="fi2" id="ef2_note" placeholder="บันทึกภายในสำหรับงานเคส"></div>
+    </div>
+    </div>
   </div>
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('empModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveEmployer()">บันทึก</button></div>
+</div></div>
+
+<!-- MODAL: ESTABLISHMENT (Stage 54A-5, staff+admin) — สถานประกอบการใต้นายจ้าง (ข้อมูลภายใน CRM) -->
+<!-- Stage 54A-5B: z-index สูงกว่า .mo (200) ปกติ — เพราะ estModal เปิดซ้อนจาก empDetModal
+     ซึ่งถูกสร้างด้วย document.body.appendChild() ใหม่ทุกครั้งที่เปิด (ท้าย DOM เสมอ)
+     เมื่อ z-index เท่ากัน ลำดับ DOM ท้ายสุดจะทับบนเสมอ ไม่ว่าอันไหนเปิดทีหลัง — ต้องยกชั้นให้ estModal ชัดเจน -->
+<div class="mo" id="estModal" style="display:none;z-index:220" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="estMT">เพิ่มสถานประกอบการ</div><button class="xbtn" onclick="document.getElementById('estModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fg" style="gap:11px">
+      <div class="fgi full"><label class="fl">ชื่อสถานประกอบการ *</label><input class="fi2" id="esf_name" placeholder="เช่น ไซต์ก่อสร้างบางนา, โรงงานสาขา 2"></div>
+      <div class="fgi"><label class="fl">รหัสภายใน</label><input class="fi2" id="esf_code" placeholder="(ไม่บังคับ)"></div>
+      <div class="fgi"><label class="fl">ชื่อสาขา</label><input class="fi2" id="esf_branch" placeholder="(ไม่บังคับ)"></div>
+      <div class="fgi full"><label class="fl">ที่อยู่</label><input class="fi2" id="esf_addr" placeholder="ที่อยู่สถานที่ทำงาน"></div>
+      <div class="fgi"><label class="fl">ตำบล/แขวง</label><input class="fi2" id="esf_subd"></div>
+      <div class="fgi"><label class="fl">อำเภอ/เขต</label><input class="fi2" id="esf_dist"></div>
+      <div class="fgi"><label class="fl">จังหวัด</label><input class="fi2" id="esf_prov"></div>
+      <div class="fgi"><label class="fl">รหัสไปรษณีย์</label><input class="fi2" id="esf_post"></div>
+      <div class="fgi"><label class="fl">ผู้ติดต่อ</label><input class="fi2" id="esf_contact"></div>
+      <div class="fgi"><label class="fl">เบอร์โทร</label><input class="fi2" id="esf_phone"></div>
+      <div class="fgi full"><label class="fl">หมายเหตุ</label><input class="fi2" id="esf_note" placeholder="บันทึกภายใน (ไม่บังคับ)"></div>
+    </div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('estModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveEstForm()">บันทึก</button></div>
 </div></div>
 
 <!-- MODAL: CONTACT LOG -->
@@ -2556,6 +2599,15 @@ const LANG = {
     empUrgent:'ด่วน', empWorkers:'แรงงาน', empNone:'ยังไม่มีนายจ้าง',
     empDetPhone:'เบอร์โทร', empDetContact:'ผู้ติดต่อ', empDetAddr:'ที่อยู่',
     empDetWorkerList:'รายชื่อแรงงาน', empDetNoWorker:'ยังไม่มีแรงงาน',
+    emp2Sec:'ข้อมูล Phase 2 (งานเคส/เอกสาร)', emp2Kind:'ประเภทนายจ้าง',
+    emp2KindCompany:'นิติบุคคล/บริษัท', emp2KindIndividual:'บุคคลธรรมดา', emp2KindOther:'อื่น ๆ',
+    emp2Reg:'เลขทะเบียนนิติบุคคล', emp2Tax:'เลขผู้เสียภาษี', emp2Email:'อีเมล', emp2Line:'LINE ID',
+    emp2Addr2:'ตำบล/อำเภอ/จังหวัด', emp2Signer:'ผู้มีอำนาจลงนาม', emp2SignerPos:'ตำแหน่งผู้ลงนาม',
+    emp2BizDesc:'ลักษณะกิจการ', emp2Note:'หมายเหตุ Phase 2',
+    emp2Docs:'เอกสารนายจ้าง', emp2DocsNote:'อัปโหลด/จัดการเอกสารนายจ้างผ่านคลังเอกสารใน stage ถัดไป',
+    estSec:'สถานประกอบการ / สถานที่ทำงาน', estAdd:'+ เพิ่มสถานประกอบการ', estNone:'ยังไม่มีสถานประกอบการ',
+    estActive:'ใช้งาน', estInactive:'ปิดใช้งาน', estBtnOn:'เปิดใช้งาน', estBtnOff:'ปิดใช้งาน',
+    emp2NeedMigration:'ยังไม่ได้ติดตั้งระบบนายจ้าง Phase 2 — กรุณา apply migration 20260804',
     empTblName:'ชื่อ', empTblNat:'สัญชาติ', empTblStatus:'สถานะ',
     grpTitle:'จัดการกลุ่มงาน', grpAdd:'+ เพิ่มกลุ่ม', grpPerson:'คน',
     grpNone:'ยังไม่มีกลุ่ม กด "+ เพิ่มกลุ่ม"',
@@ -2782,6 +2834,15 @@ const LANG = {
     empUrgent:'အရေးတကြီး', empWorkers:'လုပ်သား', empNone:'အလုပ်ရှင်မရှိသေး',
     empDetPhone:'ဖုန်းနံပါတ်', empDetContact:'ဆက်သွယ်ရမည့်သူ', empDetAddr:'လိပ်စာ',
     empDetWorkerList:'လုပ်သားစာရင်း', empDetNoWorker:'လုပ်သားမရှိသေး',
+    emp2Sec:'Phase 2 အချက်အလက် (အမှုတွဲ/စာရွက်စာတမ်း)', emp2Kind:'အလုပ်ရှင်အမျိုးအစား',
+    emp2KindCompany:'ကုမ္ပဏီ/တရားဝင်အဖွဲ့', emp2KindIndividual:'တစ်ဦးချင်း', emp2KindOther:'အခြား',
+    emp2Reg:'ကုမ္ပဏီမှတ်ပုံတင်နံပါတ်', emp2Tax:'အခွန်ထမ်းနံပါတ်', emp2Email:'အီးမေးလ်', emp2Line:'LINE ID',
+    emp2Addr2:'မြို့နယ်/ခရိုင်/တိုင်း', emp2Signer:'လက်မှတ်ရေးထိုးခွင့်ရှိသူ', emp2SignerPos:'ရာထူး',
+    emp2BizDesc:'လုပ်ငန်းအမျိုးအစား', emp2Note:'Phase 2 မှတ်ချက်',
+    emp2Docs:'အလုပ်ရှင်စာရွက်စာတမ်း', emp2DocsNote:'အလုပ်ရှင်စာရွက်စာတမ်းများကို နောက် stage တွင် စာရွက်စာတမ်းသိုလှောင်ခန်းမှ စီမံမည်',
+    estSec:'လုပ်ငန်းခွင် / အလုပ်လုပ်သည့်နေရာ', estAdd:'+ လုပ်ငန်းခွင်ထည့်', estNone:'လုပ်ငန်းခွင်မရှိသေး',
+    estActive:'အသုံးပြုနေ', estInactive:'ပိတ်ထား', estBtnOn:'ဖွင့်ရန်', estBtnOff:'ပိတ်ရန်',
+    emp2NeedMigration:'Phase 2 အလုပ်ရှင်စနစ် မတပ်ဆင်ရသေး — migration 20260804 ကို apply လုပ်ပါ',
     empTblName:'အမည်', empTblNat:'နိုင်ငံသားဆိုင်ရာ', empTblStatus:'အခြေအနေ',
     grpTitle:'အုပ်စုစီမံခန့်ခွဲ', grpAdd:'+ အုပ်စုထည့်', grpPerson:'ဦးရေ',
     grpNone:'အုပ်စုမရှိသေး "+ အုပ်စုထည့်" နှိပ်ပါ',
@@ -4823,17 +4884,33 @@ function openEmpDet(id){
   const html=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--g2)"><div style="width:36px;height:36px;border-radius:10px;background:var(--pp);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--p)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><div style="font-size:20px;font-weight:800">${esc(e.name)}</div>${e.business_type?`<div style="font-size:12px;color:var(--g5)">${esc(e.business_type)}</div>`:''}</div><div style="margin-left:auto;display:flex;gap:8px"><span style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--p)">${empc.length}</span><span style="font-size:11px;color:var(--g5);align-self:flex-end;margin-bottom:4px">${T('dashPerson')}</span>${alrt.length>0?`<span class="eb eb-u" style="align-self:center">${alrt.length} ${T('empUrgent')}</span>`:''}</div></div>
   <div class="dg4"><div class="df"><div class="dfl">${T('empDetPhone')}</div><div class="dfv">${esc(e.phone)||'—'}</div></div><div class="df"><div class="dfl">${T('empDetContact')}</div><div class="dfv">${esc(e.contact_person)||'—'}</div></div><div class="df"><div class="dfl">${T('empDetAddr')}</div><div class="dfv">${esc(e.address)||'—'}</div></div></div>
   <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('empDetWorkerList')}</div>
-  ${empc.length?`<div class="twrap" style="overflow-x:auto"><table><thead><tr><th>${T('empTblName')}</th><th>${T('empTblNat')}</th><th>${T('empTblStatus')}</th><th>${T('day90')}</th><th>VISA/WP</th></tr></thead><tbody>${empc.map(c=>{const d90=du(c.next_90);const dvw=Math.min(...[c.exp_visa,c.exp_wp].filter(Boolean).map(du).filter(d=>d!==null),Infinity);return`<tr onclick="document.getElementById('empDetModal').style.display='none';openDetail(${c.id})" style="cursor:pointer"><td style="font-weight:600;font-size:12px">${esc(c.name)}</td><td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td><td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 7px;border-radius:20px">${wsT(c.work_status||'')}</span></td><td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:'—'}</td><td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:'—'}</td></tr>`;}).join('')}</tbody></table></div>`:`<div style="color:var(--g5);font-size:13px;text-align:center;padding:20px">${T('empDetNoWorker')}</div>`}`;
+  ${empc.length?`<div class="twrap" style="overflow-x:auto"><table><thead><tr><th>${T('empTblName')}</th><th>${T('empTblNat')}</th><th>${T('empTblStatus')}</th><th>${T('day90')}</th><th>VISA/WP</th></tr></thead><tbody>${empc.map(c=>{const d90=du(c.next_90);const dvw=Math.min(...[c.exp_visa,c.exp_wp].filter(Boolean).map(du).filter(d=>d!==null),Infinity);return`<tr onclick="document.getElementById('empDetModal').style.display='none';openDetail(${c.id})" style="cursor:pointer"><td style="font-weight:600;font-size:12px">${esc(c.name)}</td><td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td><td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 7px;border-radius:20px">${wsT(c.work_status||'')}</span></td><td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:'—'}</td><td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:'—'}</td></tr>`;}).join('')}</tbody></table></div>`:`<div style="color:var(--g5);font-size:13px;text-align:center;padding:20px">${T('empDetNoWorker')}</div>`}
+  <div id="empP2Sec"></div>`;
   let m=document.getElementById('empDetModal');
   if(!m){m=document.createElement('div');m.id='empDetModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};m.innerHTML=`<div class="mb mb-lg" onclick="event.stopPropagation()"><div class="mh"><div class="mt" id="empDetTitle"></div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" id="empDetEditBtn" onclick="openEditEmp(${id})">${T('btnEdit')}</button><button class="xbtn" onclick="document.getElementById('empDetModal').style.display='none'">×</button></div></div><div class="mbody" id="empDetBody"></div></div>`;document.body.appendChild(m);}
   document.getElementById('empDetTitle').textContent=e.name;document.getElementById('empDetBody').innerHTML=html;
   // Update edit button text and ID in case modal was reused
   const edb=document.getElementById('empDetEditBtn');if(edb){edb.textContent=T('btnEdit');edb.onclick=()=>{document.getElementById('empDetModal').style.display='none';openEditEmp(id);};}
   m.style.display='flex';
+  // STAGE 54A-5: โหลดข้อมูล Phase 2 + สถานประกอบการแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำสั้น ๆ ไม่พังหน้าเดิม)
+  try{if(typeof _loadEmpPhase2==='function')_loadEmpPhase2(id);}catch(_e){}
 }
 
-function openAddEmp(){editEid=null;['name','biz','phone','contact','addr','note'].forEach(f=>{const el=document.getElementById('ef_'+f);if(el)el.value='';});document.getElementById('empMT').textContent=T('empModalAdd');document.getElementById('empModal').style.display='flex';}
-function openEditEmp(id){editEid=id;const e=employers.find(x=>x.id===id);if(!e)return;document.getElementById('ef_name').value=e.name||'';document.getElementById('ef_biz').value=e.business_type||'';document.getElementById('ef_phone').value=e.phone||'';document.getElementById('ef_contact').value=e.contact_person||'';document.getElementById('ef_addr').value=e.address||'';document.getElementById('ef_note').value=e.note||'';document.getElementById('empMT').textContent=T('empModalEdit');document.getElementById('empModal').style.display='flex';}
+// Stage 54A-5: helper เติม/อ่าน field Phase 2 ของ modal นายจ้าง (ef2_*)
+function _emp2Fill(e){
+  const v=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val==null?'':val;};
+  v('ef2_kind',(e&&e.employer_kind)||'company');
+  v('ef2_reg',e&&e.registration_no);v('ef2_tax',e&&e.tax_id);v('ef2_email',e&&e.contact_email);v('ef2_line',e&&e.line_id);
+  v('ef2_subd',e&&e.subdistrict);v('ef2_dist',e&&e.district);v('ef2_prov',e&&e.province);v('ef2_post',e&&e.postcode);
+  v('ef2_signer',e&&e.authorized_signatory);v('ef2_signerpos',e&&e.authorized_signatory_position);
+  v('ef2_bizdesc',e&&e.business_description);v('ef2_note',e&&e.phase2_note);
+}
+function _emp2Read(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  return{employer_kind:g('ef2_kind')||'company',registration_no:g('ef2_reg'),tax_id:g('ef2_tax'),contact_email:g('ef2_email'),line_id:g('ef2_line'),subdistrict:g('ef2_subd'),district:g('ef2_dist'),province:g('ef2_prov'),postcode:g('ef2_post'),authorized_signatory:g('ef2_signer'),authorized_signatory_position:g('ef2_signerpos'),business_description:g('ef2_bizdesc'),phase2_note:g('ef2_note')};
+}
+function openAddEmp(){editEid=null;['name','biz','phone','contact','addr','note'].forEach(f=>{const el=document.getElementById('ef_'+f);if(el)el.value='';});_emp2Fill(null);document.getElementById('empMT').textContent=T('empModalAdd');document.getElementById('empModal').style.display='flex';}
+function openEditEmp(id){editEid=id;const e=employers.find(x=>x.id===id);if(!e)return;document.getElementById('ef_name').value=e.name||'';document.getElementById('ef_biz').value=e.business_type||'';document.getElementById('ef_phone').value=e.phone||'';document.getElementById('ef_contact').value=e.contact_person||'';document.getElementById('ef_addr').value=e.address||'';document.getElementById('ef_note').value=e.note||'';_emp2Fill(e);document.getElementById('empMT').textContent=T('empModalEdit');document.getElementById('empModal').style.display='flex';}
 // Stage 52A-6: บันทึกนายจ้าง/กลุ่มผ่าน RPC SECURITY DEFINER (ตรวจตัวตนฝั่ง server)
 //   คืน {status:'ok'|'missing'|'unauthorized'|'error', id, name} — ❌ ไม่ส่ง/ไม่รับ file/path/base64
 //   สเตจนี้ยังไม่ revoke direct write → fallback dbPost/dbPatch เดิมถ้า missing/error
@@ -4872,20 +4949,41 @@ async function _groupDeleteRpc(groupId){
   const uname=(curUser&&curUser.username)||'';
   return _employerGroupRpc('app_delete_group',{p_user_id:uid,p_username:uname,p_group_id:groupId});
 }
+// Stage 54A-5: บันทึกผ่าน app_save_employer_phase2 ก่อน (validate kind + stamp updated_by_code + audit)
+//   ยังไม่ apply 20260804 → fallback app_save_employer เดิม (whitelist ตัดคอลัมน์ที่ยังไม่มีทิ้งเอง — ปลอดภัย)
+//   ยังไม่ apply 20260726 → fallback direct เดิม "เฉพาะ field พื้นฐาน" (กันคอลัมน์ใหม่พัง PostgREST)
+async function _employerSavePhase2Rpc(employerId,base,p2){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  return _employerGroupRpc('app_save_employer_phase2',{
+    p_user_id:uid,p_username:uname,p_employer_id:(employerId!=null?employerId:null),
+    p_name:base.name,p_business_type:base.business_type,p_phone:base.phone,
+    p_contact_person:base.contact_person,p_address:base.address,p_note:base.note,
+    p_employer_kind:p2.employer_kind,p_registration_no:p2.registration_no,p_tax_id:p2.tax_id,
+    p_contact_email:p2.contact_email,p_line_id:p2.line_id,
+    p_subdistrict:p2.subdistrict,p_district:p2.district,p_province:p2.province,p_postcode:p2.postcode,
+    p_business_description:p2.business_description,p_authorized_signatory:p2.authorized_signatory,
+    p_authorized_signatory_position:p2.authorized_signatory_position,p_phase2_note:p2.phase2_note
+  });
+}
 async function saveEmployer(){
   const name=document.getElementById('ef_name').value.trim();if(!name){toast(T('errEmpName'),'err');return;}
-  const data={name,business_type:document.getElementById('ef_biz').value.trim(),phone:document.getElementById('ef_phone').value.trim(),contact_person:document.getElementById('ef_contact').value.trim(),address:document.getElementById('ef_addr').value.trim(),note:document.getElementById('ef_note').value.trim(),updated_at:new Date().toISOString()};
+  const base={name,business_type:document.getElementById('ef_biz').value.trim(),phone:document.getElementById('ef_phone').value.trim(),contact_person:document.getElementById('ef_contact').value.trim(),address:document.getElementById('ef_addr').value.trim(),note:document.getElementById('ef_note').value.trim()};
+  const p2=_emp2Read();
+  const data={...base,...p2,updated_at:new Date().toISOString()};
   try{
-    // Stage 52A-6: บันทึกผ่าน RPC ก่อน; fallback direct ถ้ายังไม่ apply migration/error (ยังไม่ revoke)
-    const _er=await _employerSaveRpc(editEid||null,data);
+    // Stage 54A-5: ทาง 1 — RPC ใหม่ (audited); ทาง 2 — app_save_employer เดิม; ทาง 3 — direct เดิม (base เท่านั้น)
+    let _er=await _employerSavePhase2Rpc(editEid||null,base,p2);
+    if(_er.status==='missing')_er=await _employerSaveRpc(editEid||null,data);
     if(_er.status==='unauthorized'){toast('ไม่มีสิทธิ์บันทึกข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}
     if(_er.status==='ok'){
       if(editEid){employers=employers.map(e=>e.id===editEid?{...e,...data}:e);toast(T('toastSaved'));}
       else{employers.push({...data,id:_er.id});toast(T('toastEmpAdded'));}
     }else{
       if(_er.status==='missing')toast('กรุณา apply migration 20260726','err');
-      if(editEid){await dbPatch('employers',editEid,data);employers=employers.map(e=>e.id===editEid?{...e,...data}:e);if(_er.status!=='missing')toast(T('toastSaved'));}
-      else{const r=await dbPost('employers',data);if(r&&r[0])employers.push(r[0]);if(_er.status!=='missing')toast(T('toastEmpAdded'));}
+      const legacy={...base,updated_at:data.updated_at}; // direct fallback: ห้ามส่งคอลัมน์ใหม่ (สคีมาเก่าจะ error)
+      if(editEid){await dbPatch('employers',editEid,legacy);employers=employers.map(e=>e.id===editEid?{...e,...legacy}:e);if(_er.status!=='missing')toast(T('toastSaved'));}
+      else{const r=await dbPost('employers',legacy);if(r&&r[0])employers.push(r[0]);if(_er.status!=='missing')toast(T('toastEmpAdded'));}
     }
     document.getElementById('empModal').style.display='none';renderEmployers();fillSelects();
   }catch(e){toast(T('toastError'),'err');}
@@ -13530,6 +13628,145 @@ async function chkUnlink(linkId){
     await _loadCaseChecklist(_chkCaseId);
   }catch(e){
     if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else toast('ไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+
+// =============================================================
+// STAGE 54A-5 — นายจ้าง Phase 2 + สถานประกอบการ (employer profile + establishments)
+//   * อ่าน/เขียนผ่าน RPC เท่านั้น (migration 20260804) — establishments เข้าตารางตรงไม่ได้
+//   * เพิ่ม/แก้สถานประกอบการ = staff+admin (สิทธิ์เดียวกับแก้นายจ้างเดิม)
+//   * เปิด/ปิดใช้งานสถานประกอบการ = admin เท่านั้น (server บังคับใน RPC) — ไม่มี hard delete
+//   * ข้อมูลภายใน CRM เท่านั้น — ไม่ใช่เอกสารราชการ, ไม่ automate เว็บราชการ
+//   * audit log เขียนฝั่ง server ใน RPC แล้ว — ❌ ไม่ logAudit ซ้ำจาก client
+// =============================================================
+let _emp2Detail=null;   // {employer, establishments, workers, documents_summary}
+let _emp2CurId=null;    // employer id ที่เปิด detail อยู่
+let _estEditId=null;    // establishment id ที่กำลังแก้ไข (null = สร้างใหม่)
+function _emp2Unwrap(r){
+  if(Array.isArray(r))r=r[0];
+  if(r&&typeof r==='object'&&r.app_get_employer_detail!==undefined)r=r.app_get_employer_detail;
+  if(typeof r==='string'){try{r=JSON.parse(r);}catch(_){return null;}}
+  if(r&&typeof r==='object'&&r.employer&&r.employer.id!=null)
+    return{employer:r.employer,establishments:Array.isArray(r.establishments)?r.establishments:[],workers:Array.isArray(r.workers)?r.workers:[],documents_summary:r.documents_summary||{}};
+  return null;
+}
+async function _loadEmpPhase2(empId){
+  const sec=document.getElementById('empP2Sec');if(!sec||empId==null)return;
+  _emp2CurId=empId;
+  sec.innerHTML=`<div style="padding:14px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดข้อมูล Phase 2...</div>`;
+  let raw=null;
+  try{raw=await _delReqRpc('app_get_employer_detail',{p_employer_id:empId});}
+  catch(e){
+    sec.innerHTML=`<div style="margin-top:14px;background:var(--g0);border:1px dashed var(--g3);border-radius:var(--rl);padding:10px 13px;font-size:12px;color:var(--g5)">🏢 ${_caseMissing(e)?esc(T('emp2NeedMigration')):('โหลดข้อมูล Phase 2 ไม่สำเร็จ: '+esc(e.message))}</div>`;
+    return;
+  }
+  _emp2Detail=_emp2Unwrap(raw);
+  if(!_emp2Detail){console.warn('[EMP2] unexpected detail shape:',raw);sec.innerHTML='';return;}
+  _renderEmpPhase2();
+}
+function _renderEmpPhase2(){
+  const sec=document.getElementById('empP2Sec');if(!sec||!_emp2Detail)return;
+  const e=_emp2Detail.employer||{};
+  const kinds={company:T('emp2KindCompany'),individual:T('emp2KindIndividual'),other:T('emp2KindOther')};
+  const rows=[
+    [T('emp2Kind'),kinds[e.employer_kind]||e.employer_kind],
+    [T('emp2Reg'),e.registration_no],
+    [T('emp2Tax'),e.tax_id],
+    [T('emp2Email'),e.contact_email],
+    [T('emp2Line'),e.line_id],
+    [T('emp2Addr2'),[e.subdistrict,e.district,e.province,e.postcode].filter(Boolean).join(' ')],
+    [T('emp2Signer'),e.authorized_signatory?(e.authorized_signatory+(e.authorized_signatory_position?' ('+e.authorized_signatory_position+')':'')):''],
+    [T('emp2BizDesc'),e.business_description]
+  ].map(([l,v])=>`<div class="df"><div class="dfl">${l}</div><div class="dfv">${v?esc(v):'—'}</div></div>`).join('');
+  const ests=_emp2Detail.establishments||[];
+  const isAdmin=_isAdminRole();
+  const estCards=ests.map(s=>`<div style="background:var(--g0);border:1px solid var(--g1);border-radius:9px;padding:9px 12px;margin-bottom:7px;${s.is_active?'':'opacity:.55'}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+        <div style="flex:1;min-width:150px">
+          <div style="font-size:13px;font-weight:600;color:var(--g9)">${esc(s.name)}${s.branch_name?` <span style="font-size:11px;color:var(--g5)">(${esc(s.branch_name)})</span>`:''}</div>
+          <div style="font-size:11px;color:var(--g5);margin-top:2px">${[s.establishment_code?esc(s.establishment_code):'',s.address_line?esc(s.address_line):'',[s.subdistrict,s.district,s.province,s.postcode].filter(Boolean).map(esc).join(' ')].filter(Boolean).join(' · ')||'—'}</div>
+          ${s.contact_person||s.contact_phone?`<div style="font-size:11px;color:var(--g5);margin-top:2px">${[s.contact_person?esc(s.contact_person):'',s.contact_phone?esc(s.contact_phone):''].filter(Boolean).join(' · ')}</div>`:''}
+        </div>
+        <span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;${s.is_active?'background:#ecfdf5;color:#059669':'background:#f3f4f6;color:#6b7280'}">${s.is_active?esc(T('estActive')):esc(T('estInactive'))}</span>
+        <button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="openEstForm(${s.id})">${T('btnEdit')}</button>
+        ${isAdmin?`<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="estToggleActive(${s.id},${!!s.is_active})">${s.is_active?esc(T('estBtnOff')):esc(T('estBtnOn'))}</button>`:''}
+      </div>
+    </div>`).join('');
+  const docsN=Number((_emp2Detail.documents_summary&&_emp2Detail.documents_summary.employer_documents)||0);
+  sec.innerHTML=`
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--g2)">
+      <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">${T('emp2Sec')}</div>
+      <div class="dg4">${rows}</div>
+      ${e.phase2_note?`<div style="font-size:12px;color:var(--g6);margin-top:8px;background:var(--g0);padding:6px 10px;border-radius:7px">📝 ${esc(e.phase2_note)}</div>`:''}
+      <div style="font-size:11px;color:var(--g5);margin-top:10px;background:var(--g0);border:1px dashed var(--g3);border-radius:8px;padding:7px 11px">📎 ${T('emp2Docs')}: <b>${docsN}</b> — ${esc(T('emp2DocsNote'))}</div>
+      <div style="display:flex;align-items:center;gap:9px;margin-top:14px;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--g7)">${T('estSec')}</div>
+        <span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:1px 9px;font-size:11px;font-weight:700;font-family:var(--mono)">${ests.length}</span>
+        <button class="btn btn-p btn-sm" style="font-size:11px;margin-left:auto" onclick="openEstForm(null)">${T('estAdd')}</button>
+      </div>
+      ${estCards||`<div style="color:var(--g5);font-size:12px;padding:10px 0">${T('estNone')}</div>`}
+    </div>`;
+}
+// ── เพิ่ม/แก้ไขสถานประกอบการ (staff+admin) ──
+function openEstForm(estId){
+  if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
+  if(_emp2CurId==null){toast('กรุณาเปิดนายจ้างก่อน','err');return;}
+  _estEditId=estId;
+  const s=estId?((_emp2Detail&&_emp2Detail.establishments||[]).find(x=>x.id===estId)||{}):{};
+  const v=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val==null?'':val;};
+  v('esf_name',s.name);v('esf_code',s.establishment_code);v('esf_branch',s.branch_name);
+  v('esf_addr',s.address_line);v('esf_subd',s.subdistrict);v('esf_dist',s.district);
+  v('esf_prov',s.province);v('esf_post',s.postcode);
+  v('esf_contact',s.contact_person);v('esf_phone',s.contact_phone);v('esf_note',s.note);
+  document.getElementById('estMT').textContent=estId?'แก้ไขสถานประกอบการ':'เพิ่มสถานประกอบการ';
+  document.getElementById('estModal').style.display='flex';
+}
+async function saveEstForm(){
+  if(_emp2CurId==null){toast('กรุณาเปิดนายจ้างก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const name=g('esf_name');
+  if(!name){toast('กรุณากรอกชื่อสถานประกอบการ','err');return;}
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_save_establishment',{
+      p_establishment_id:_estEditId,
+      p_employer_id:_emp2CurId,
+      p_establishment_code:g('esf_code'),
+      p_name:name,
+      p_branch_name:g('esf_branch'),
+      p_address_line:g('esf_addr'),
+      p_subdistrict:g('esf_subd'),
+      p_district:g('esf_dist'),
+      p_province:g('esf_prov'),
+      p_postcode:g('esf_post'),
+      p_contact_person:g('esf_contact'),
+      p_contact_phone:g('esf_phone'),
+      p_note:g('esf_note')
+    });
+    document.getElementById('estModal').style.display='none';
+    toast(_estEditId?'บันทึกสถานประกอบการแล้ว':'เพิ่มสถานประกอบการแล้ว');
+    await _loadEmpPhase2(_emp2CurId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else if(e&&e.message==='employer_not_found')toast('ไม่พบนายจ้าง','err');
+    else toast((_caseMissing(e)?T('emp2NeedMigration'):'บันทึกไม่สำเร็จ: '+e.message),'err');
+  }finally{hideLoading();}
+}
+// ── เปิด/ปิดใช้งานสถานประกอบการ (admin เท่านั้น — soft toggle, ไม่มี hard delete) ──
+async function estToggleActive(id,curActive){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(id==null||isNaN(Number(id))){toast('กรุณาเลือกสถานประกอบการก่อน','err');return;}
+  if(!(await guardSession()))return;
+  if(!confirm(curActive?'ปิดใช้งานสถานประกอบการนี้? (ปิดชั่วคราว ไม่ลบข้อมูล — เปิดกลับได้)':'เปิดใช้งานสถานประกอบการนี้?'))return;
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_set_establishment_active',{p_establishment_id:Number(id),p_is_active:!curActive});
+    toast(curActive?'ปิดใช้งานแล้ว':'เปิดใช้งานแล้ว');
+    await _loadEmpPhase2(_emp2CurId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');
     else toast('ไม่สำเร็จ: '+e.message,'err');
   }finally{hideLoading();}
 }
