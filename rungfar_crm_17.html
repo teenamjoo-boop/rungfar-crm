@@ -1481,6 +1481,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="ni" id="niLineDoc" onclick="gv('linedoc')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>เอกสารจาก LINE <span class="nbadge" id="nbLineDoc" style="display:none">0</span></div>
     <!-- Stage 40D: ศูนย์เอกสาร — คลังเอกสารลูกค้ากลาง (staff+admin read-only) -->
     <div class="ni" id="niDocCenter" onclick="gv('doccenter')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg></span>คลังเอกสาร</div>
+    <!-- Stage 54A-3: เคสงาน Phase 2 (staff + admin) — งานติดตามภายใน ไม่ใช่เอกสารราชการ -->
+    <div class="ni" id="niCases" onclick="gv('cases')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg></span>เคสงาน Phase 2</div>
     <!-- Stage 21A: ลูกค้า = หัวข้อยุบ/ขยาย (แตะแถว=ไปหน้าลูกค้า, แตะ chevron=ยุบ/ขยาย) → งานของฉัน -->
     <div class="ni ni-parent" id="niCustomers" data-acc="cust" onclick="gv('customers')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg></span>ลูกค้า <span class="nbadge ok" id="nbTotal">0</span><span class="ni-chev" onclick="event.stopPropagation();sideToggle('cust')" aria-label="ยุบ/ขยาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
     <div class="ni-acc" id="sacc-cust">
@@ -1595,6 +1597,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="view" id="view-doccenter"><div style="max-width:1200px" id="docCenterContent"></div></div>
     <!-- Stage 54A-2: แม่แบบงาน Phase 2 (admin-only, RPC-only) -->
     <div class="view" id="view-casetpl"><div style="max-width:1000px" id="caseTplContent"></div></div>
+    <!-- Stage 54A-3: เคสงาน Phase 2 (staff + admin, RPC-only) -->
+    <div class="view" id="view-cases"><div style="max-width:1100px" id="casesContent"></div></div>
   </div>
 </div>
 </div>
@@ -1654,6 +1658,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div class="di" data-view="linedoc" onclick="mobNav('linedoc');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span>เอกสารจาก LINE</span><span class="dbadge" id="drawerLineDocBadge" style="display:none">0</span></div>
       <!-- Stage 40D: ศูนย์เอกสาร -->
       <div class="di" data-view="doccenter" onclick="mobNav('doccenter');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l2 2h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 13h8M8 17h5"/></svg><span>คลังเอกสาร</span></div>
+      <!-- Stage 54A-3: เคสงาน Phase 2 (staff + admin) -->
+      <div class="di" data-view="cases" onclick="mobNav('cases');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg><span>เคสงาน Phase 2</span></div>
       <!-- Stage 22A: ลูกค้า = แตะแถว/ไอคอน → ไปหน้าลูกค้า (parity desktop), แตะ chevron → ยุบ/ขยายเท่านั้น → งานของฉัน -->
       <div class="di di-parent" data-acc="cust" data-view="customers" onclick="mobNav('customers');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 0 1 0 6"/><path d="M21 20c0-2.5-2-4-4-4.5"/></svg><span>ลูกค้า</span><span class="di-chev-tap" onclick="event.stopPropagation();drawerToggle('cust')" aria-label="ยุบ/ขยาย"><svg class="di-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
       <div class="di-acc" id="dacc-cust">
@@ -1691,6 +1697,53 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   </div>
 </div>
 </div>
+
+<!-- MODAL: CREATE CASE (Stage 54A-3, staff+admin) — เคสงานภายใน ไม่ใช่เอกสารราชการ -->
+<div class="mo" id="caseCreateModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt">สร้างเคสงาน</div><button class="xbtn" onclick="document.getElementById('caseCreateModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fgi" style="margin-bottom:12px;position:relative">
+      <label class="fl">ลูกค้า / แรงงาน *</label>
+      <input class="fi2" id="ccf_cust_search" placeholder="ค้นหาชื่อ / พาสปอร์ต / เลขต่างด้าว" oninput="ccfFilterCust()" onblur="setTimeout(()=>{const r=document.getElementById('ccf_cust_results');if(r)r.style.display='none';},150)" autocomplete="off">
+      <div id="ccf_cust_results" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:30;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);max-height:220px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.08)"></div>
+      <div id="ccf_cust_sel" style="display:none;margin-top:6px;font-size:12px;color:var(--pd);background:var(--pp);border-radius:7px;padding:5px 10px"></div>
+    </div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">แม่แบบงาน *</label><select class="fi2" id="ccf_template" onchange="ccfTemplateChanged()"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเคส (แก้ไขได้)</label><input class="fi2" id="ccf_title" placeholder="เว้นว่าง = ตั้งชื่อจากแม่แบบ + ชื่อลูกค้า"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ความสำคัญ</label><select class="fi2" id="ccf_priority"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ผู้รับผิดชอบ</label><select class="fi2" id="ccf_assignee"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">วันครบกำหนด</label><input class="fi2" id="ccf_due" type="date"></div>
+    <div class="fgi"><label class="fl">หมายเหตุ</label><input class="fi2" id="ccf_note" placeholder="หมายเหตุภายใน (ไม่บังคับ)"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('caseCreateModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCaseCreate()">สร้างเคส</button></div>
+</div></div>
+
+<!-- MODAL: EDIT CASE METADATA (Stage 54A-3) — ❌ ไม่เปลี่ยนสถานะที่นี่ -->
+<div class="mo" id="caseEditModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt">แก้ไขข้อมูลเคส</div><button class="xbtn" onclick="document.getElementById('caseEditModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเคส</label><input class="fi2" id="cef_title"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ความสำคัญ</label><select class="fi2" id="cef_priority"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ผู้รับผิดชอบ</label><select class="fi2" id="cef_assignee"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">วันครบกำหนด</label><input class="fi2" id="cef_due" type="date"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">เลขคำขอจากระบบราชการ (ถ้ามี)</label><input class="fi2" id="cef_ewp" placeholder="พิมพ์เองเมื่อได้เลขจริงจากระบบราชการ"></div>
+    <div class="fgi"><label class="fl">หมายเหตุ</label><input class="fi2" id="cef_note"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('caseEditModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCaseEdit()">บันทึก</button></div>
+</div></div>
+
+<!-- MODAL: CHANGE CASE STATUS (Stage 54A-3) -->
+<div class="mo" id="caseStatusModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt">เปลี่ยนสถานะเคส</div><button class="xbtn" onclick="document.getElementById('caseStatusModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">สถานะใหม่ *</label><select class="fi2" id="csf_status"></select></div>
+    <div class="fgi"><label class="fl">หมายเหตุ</label><input class="fi2" id="csf_note" placeholder="เหตุผล/รายละเอียด (ไม่บังคับ)"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('caseStatusModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCaseStatus()">✅ เปลี่ยนสถานะ</button></div>
+</div></div>
 
 <!-- MODAL: CASE TEMPLATE (Stage 54A-2, admin-only) — แม่แบบงาน Phase 2 (เช็คลิสต์ภายใน ไม่ใช่เอกสารราชการ) -->
 <div class="mo" id="ctplModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
@@ -4096,7 +4149,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
   if(niActive)niActive.classList.add('on');
-  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE',doccenter:T('doccenter'),casetpl:'แม่แบบงาน Phase 2'};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE',doccenter:T('doccenter'),casetpl:'แม่แบบงาน Phase 2',cases:'เคสงาน Phase 2'};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -4169,6 +4222,8 @@ function gv(v,opts={}){
   if(v==='metaads'){if(curUser?.role!=='admin'){gv('dash');return;}renderMetaAds();}
   // STAGE 54A-2: แม่แบบงาน Phase 2 — admin-only route guard (เหมือน users/metaads/settings)
   if(v==='casetpl'){if(curUser?.role!=='admin'){gv('dash');return;}renderCaseTpl();}
+  // STAGE 54A-3: เคสงาน Phase 2 — staff + admin (ทั้งแอปอยู่หลัง login อยู่แล้ว)
+  if(v==='cases')renderCases();
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
   // STAGE 22B: คำขอลบ — admin-only route guard (เหมือน users/metaads/settings)
   if(v==='delreq'){if(curUser?.role!=='admin'){gv('dash');return;}renderDelReq();}
@@ -5421,6 +5476,7 @@ async function openDetail(id){
   ${_finSec}
   ${_xlSec}
   ${docs.length?renderDetailDocSection(docs):''}
+  <div id="detCaseSec"></div>
   ${_clogSec}
   ${_histSec}
   ${(()=>{
@@ -5442,6 +5498,8 @@ async function openDetail(id){
     </div>`;
   })()}`;
   document.getElementById('dModal').style.display='flex';
+  // STAGE 54A-3: โหลดเคสของลูกค้ารายนี้แบบ best-effort (fire-and-forget — RPC ยังไม่ติดตั้งก็ไม่พังหน้าเดิม)
+  try{if(typeof _loadDetCases==='function')_loadDetCases(c.id);}catch(_e){}
 }
 function editFromDetail(){document.getElementById('dModal').style.display='none';openEdit(detId);}
 
@@ -12928,6 +12986,346 @@ async function saveCtplItemForm(){
     else toast('บันทึกไม่สำเร็จ: '+e.message,'err');
   }finally{hideLoading();}
 }
+// =============================================================
+// STAGE 54A-3 — เคสงาน Phase 2 (basic case management, staff + admin)
+//   * อ่าน/เขียนผ่าน RPC เท่านั้น (migration 20260802) — client เข้าตารางตรงไม่ได้
+//   * เคส = งานติดตามภายในบริษัท — ไม่ใช่เอกสารราชการ, ไม่ยื่นงานแทนเว็บราชการ
+//   * ไม่มี hard delete (ยกเลิก = เปลี่ยนสถานะ cancelled)
+//   * audit log เขียนฝั่ง server ใน RPC แล้ว — ❌ ไม่ logAudit ซ้ำจาก client
+//   * ใช้ _delReqRpc เป็น generic RPC caller (ประทับ p_user_id/p_username ให้)
+// =============================================================
+let _caseCache=[],_caseTotal=0,_casePage=1,_caseDetail=null;
+const CASE_PG=20;
+let _caseFilters={q:'',status:'',category:'',assignee:'',dueFrom:'',dueTo:''};
+let _ccfSelCust=null;      // ลูกค้าที่เลือกใน modal สร้างเคส
+let _ccfTemplates=[];      // แม่แบบ active (โหลดตอนเปิด modal)
+const _CASE_PRI={low:'ต่ำ',normal:'ปกติ',high:'สูง',urgent:'ด่วน'};
+const _CASE_PRI_CLR={low:'#6b7280',normal:'#2563eb',high:'#d97706',urgent:'#dc2626'};
+const _CASE_ST_CLR={draft:'#6b7280',preparing_documents:'#b45309',ready_to_submit:'#7c3aed',submitted:'#2563eb',waiting_result:'#0891b2',approved:'#059669',rejected:'#dc2626',cancelled:'#6b7280',completed:'#059669'};
+function _caseStChip(st){const c=_CASE_ST_CLR[st]||'#6b7280';return`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}1a;color:${c}">${esc(_CTPL_STATUS[st]||st)}</span>`;}
+function _casePriChip(p){const c=_CASE_PRI_CLR[p]||'#6b7280';return`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_CASE_PRI[p]||p)}</span>`;}
+function _caseBanner(){
+  return `<div style="display:flex;align-items:flex-start;gap:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.5"><span style="flex:none">🗂️</span><span>เคสนี้เป็น <b>งานติดตามภายในบริษัท</b> ไม่ใช่เอกสารราชการ และระบบไม่ได้ยื่นงานแทนเว็บราชการ</span></div>`;
+}
+function _caseAsgOptions(sel){
+  const opts=(typeof assigneeEmps!=='undefined'?assigneeEmps:[]).map(e=>`<option value="${esc(e.employee_code)}"${e.employee_code===sel?' selected':''}>${esc(e.nickname||e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('');
+  return `<option value="">ยังไม่ระบุ</option>`+opts;
+}
+function _caseMissing(e){return !!(e&&(e.status===404||/does not exist|Could not find the function/i.test((e.pgmsg||e.message||''))));}
+function renderCases(){
+  const wrap=document.getElementById('casesContent');if(!wrap)return;
+  if(!curUser){wrap.innerHTML='';return;}
+  if(_caseDetail){_renderCaseDetail();return;}
+  const f=_caseFilters;
+  const stOpts=`<option value="">สถานะทั้งหมด</option>`+Object.keys(_CTPL_STATUS).map(k=>`<option value="${k}"${f.status===k?' selected':''}>${esc(_CTPL_STATUS[k])}</option>`).join('');
+  const catOpts=`<option value="">หมวดทั้งหมด</option>`+Object.keys(_CTPL_CAT).map(k=>`<option value="${k}"${f.category===k?' selected':''}>${esc(_CTPL_CAT[k])}</option>`).join('');
+  const asgOpts=`<option value="">ผู้รับผิดชอบทั้งหมด</option>`+(typeof assigneeEmps!=='undefined'?assigneeEmps:[]).map(e=>`<option value="${esc(e.employee_code)}"${f.assignee===e.employee_code?' selected':''}>${esc(e.nickname||e.full_name||e.employee_code)}</option>`).join('');
+  wrap.innerHTML=_caseBanner()+`
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">
+      <input class="fi2" id="caseQ" placeholder="ค้นหา: รหัสเคส / ชื่อเคส / ชื่อลูกค้า / พาสปอร์ต" value="${esc(f.q)}" style="flex:2;min-width:200px" onkeydown="if(event.key==='Enter')caseApplyFilters()">
+      <button class="btn btn-g btn-sm" onclick="caseApplyFilters()">ค้นหา</button>
+      <button class="btn btn-p btn-sm" onclick="openCaseCreate(null)">+ สร้างเคส</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <select class="fi2" id="caseFst" style="flex:1;min-width:130px" onchange="caseApplyFilters()">${stOpts}</select>
+      <select class="fi2" id="caseFcat" style="flex:1;min-width:130px" onchange="caseApplyFilters()">${catOpts}</select>
+      <select class="fi2" id="caseFasg" style="flex:1;min-width:130px" onchange="caseApplyFilters()">${asgOpts}</select>
+      <input class="fi2" id="caseFdf" type="date" value="${esc(f.dueFrom)}" style="flex:1;min-width:120px" title="ครบกำหนด: จาก" onchange="caseApplyFilters()">
+      <input class="fi2" id="caseFdt" type="date" value="${esc(f.dueTo)}" style="flex:1;min-width:120px" title="ครบกำหนด: ถึง" onchange="caseApplyFilters()">
+    </div>
+    <div id="caseListArea"><div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div></div>`;
+  _loadCases();
+}
+function caseApplyFilters(){
+  _caseFilters={
+    q:(document.getElementById('caseQ')?.value||'').trim(),
+    status:document.getElementById('caseFst')?.value||'',
+    category:document.getElementById('caseFcat')?.value||'',
+    assignee:document.getElementById('caseFasg')?.value||'',
+    dueFrom:document.getElementById('caseFdf')?.value||'',
+    dueTo:document.getElementById('caseFdt')?.value||''
+  };
+  _casePage=1;_loadCases();
+}
+async function _loadCases(){
+  const area=document.getElementById('caseListArea');if(!area)return;
+  area.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
+  const f=_caseFilters;
+  let rows=[];
+  try{
+    rows=await _delReqRpc('app_list_cases',{
+      p_search:f.q||null,p_status:f.status||null,p_category:f.category||null,
+      p_assigned_to_code:f.assignee||null,
+      p_due_from:f.dueFrom||null,p_due_to:f.dueTo||null,
+      p_limit:CASE_PG,p_offset:(_casePage-1)*CASE_PG
+    });
+  }catch(e){
+    const msg=_caseMissing(e)?'ยังไม่ได้ติดตั้งระบบเคสงาน — กรุณา apply migration 20260802_basic_case_management.sql ก่อน':('โหลดไม่สำเร็จ: '+esc(e.message));
+    area.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${msg}</div>`;return;
+  }
+  _caseCache=Array.isArray(rows)?rows:[];
+  _caseTotal=_caseCache.length?Number(_caseCache[0].total_count||_caseCache.length):0;
+  if(!_caseCache.length){area.innerHTML=`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${_casePage>1?'ไม่มีข้อมูลหน้านี้':'ยังไม่มีเคสงาน — กด "+ สร้างเคส" เพื่อเริ่ม'}</div>`;return;}
+  const today=new Date().toISOString().split('T')[0];
+  const cards=_caseCache.map(r=>{
+    const overdue=r.due_date&&r.due_date<today&&!['approved','rejected','cancelled','completed'].includes(r.case_status);
+    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:12px 15px;margin-bottom:8px;cursor:pointer" onclick="openCaseDetail(${r.id})">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:5px">
+        <span style="font-size:11px;color:var(--g5);font-family:var(--mono)">${esc(r.case_code)}</span>
+        ${_caseStChip(r.case_status)}${_casePriChip(r.priority)}
+        <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:var(--g1);color:var(--g6)">${esc(_CTPL_CAT[r.case_category]||r.case_category)}</span>
+        ${r.due_date?`<span style="font-size:11px;font-weight:600;color:${overdue?'var(--red)':'var(--g5)'};margin-left:auto">${overdue?'⚠ เลยกำหนด ':'กำหนด '}${fd(r.due_date)}</span>`:''}
+      </div>
+      <div style="font-size:14px;font-weight:700;color:var(--g9)">${esc(r.case_title)}</div>
+      <div style="font-size:12px;color:var(--g6);margin-top:3px;display:flex;flex-wrap:wrap;gap:10px">
+        <span>👤 ${esc(r.customer_name||'—')}</span>
+        ${r.employer_name?`<span>🏢 ${esc(r.employer_name)}</span>`:''}
+        ${r.assigned_to_code?`<span>ผู้รับผิดชอบ: ${esc((typeof assigneeLabel==='function'&&assigneeLabel(r.assigned_to_code))||r.assigned_to_code)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  const pages=Math.max(1,Math.ceil(_caseTotal/CASE_PG));
+  const pager=pages>1?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px">
+      <button class="btn btn-g btn-sm" ${_casePage<=1?'disabled':''} onclick="casePageGo(${_casePage-1})">← ก่อนหน้า</button>
+      <span style="font-size:12px;color:var(--g6)">หน้า ${_casePage} / ${pages} (ทั้งหมด ${_caseTotal})</span>
+      <button class="btn btn-g btn-sm" ${_casePage>=pages?'disabled':''} onclick="casePageGo(${_casePage+1})">ถัดไป →</button>
+    </div>`:'';
+  area.innerHTML=`<div style="font-size:12px;color:var(--g6);margin-bottom:8px">พบ ${_caseTotal} เคส</div>`+cards+pager;
+}
+function casePageGo(p){if(p<1)return;_casePage=p;_loadCases();}
+// ── สร้างเคส ──
+async function openCaseCreate(prefCustId){
+  if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
+  _ccfSelCust=null;
+  document.getElementById('ccf_cust_search').value='';
+  document.getElementById('ccf_cust_sel').style.display='none';
+  document.getElementById('ccf_title').value='';
+  document.getElementById('ccf_due').value='';
+  document.getElementById('ccf_note').value='';
+  _ctplFillSelect('ccf_priority',_CASE_PRI,'normal');
+  document.getElementById('ccf_assignee').innerHTML=_caseAsgOptions('');
+  const tplSel=document.getElementById('ccf_template');
+  tplSel.innerHTML='<option value="">กำลังโหลดแม่แบบ...</option>';
+  document.getElementById('caseCreateModal').style.display='flex';
+  if(prefCustId!=null){const c=(typeof customers!=='undefined'?customers:[]).find(x=>x.id===prefCustId);if(c)ccfPickCust(c.id);}
+  try{
+    const rows=await _delReqRpc('app_list_case_templates',{p_include_inactive:false});
+    _ccfTemplates=Array.isArray(rows)?rows:[];
+    tplSel.innerHTML='<option value="">— เลือกแม่แบบ —</option>'+_ccfTemplates.map(t=>`<option value="${t.id}">${esc(_CTPL_CAT[t.category]||t.category)} · ${esc(t.template_name_th)}</option>`).join('');
+  }catch(e){tplSel.innerHTML='<option value="">โหลดแม่แบบไม่สำเร็จ</option>';toast('โหลดแม่แบบไม่สำเร็จ: '+e.message,'err');}
+}
+function ccfFilterCust(){
+  const box=document.getElementById('ccf_cust_results');
+  const q=(document.getElementById('ccf_cust_search').value||'').trim().toLowerCase();
+  if(!box)return;
+  if(!q){box.style.display='none';return;}
+  const list=(typeof customers!=='undefined'?customers:[]).filter(c=>
+    (c.name&&c.name.toLowerCase().includes(q))||(c.name_th&&c.name_th.toLowerCase().includes(q))||
+    (c.passport_no&&c.passport_no.toLowerCase().includes(q))||(c.alien_id&&c.alien_id.toLowerCase().includes(q))
+  ).slice(0,20);
+  box.innerHTML=list.length?list.map(c=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--g1);font-size:13px" onmousedown="ccfPickCust(${c.id})"><b>${esc(c.name)}</b>${c.passport_no?` <span style="color:var(--g5);font-family:var(--mono);font-size:11px">${esc(c.passport_no)}</span>`:''}</div>`).join(''):'<div style="padding:10px 12px;color:var(--g5);font-size:12px">ไม่พบลูกค้า</div>';
+  box.style.display='block';
+}
+function ccfPickCust(id){
+  const c=(typeof customers!=='undefined'?customers:[]).find(x=>x.id===id);if(!c)return;
+  _ccfSelCust=c;
+  document.getElementById('ccf_cust_search').value=c.name;
+  const sel=document.getElementById('ccf_cust_sel');
+  sel.innerHTML=`✓ ${esc(c.name)}${c.passport_no?' · '+esc(c.passport_no):''}${c.employer_id&&typeof empN==='function'?' · '+esc(empN(c.employer_id)):''}`;
+  sel.style.display='block';
+  document.getElementById('ccf_cust_results').style.display='none';
+  ccfTemplateChanged();
+}
+function ccfTemplateChanged(){
+  const tid=parseInt(document.getElementById('ccf_template').value)||null;
+  const t=tid?_ccfTemplates.find(x=>x.id===tid):null;
+  const ti=document.getElementById('ccf_title');
+  if(t&&_ccfSelCust&&!ti.value.trim())ti.placeholder=`${t.template_name_th} — ${_ccfSelCust.name}`;
+}
+async function saveCaseCreate(){
+  if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
+  if(!(await guardSession()))return;
+  if(!_ccfSelCust||_ccfSelCust.id==null){toast('กรุณาเลือกลูกค้าก่อน','err');return;}
+  const tid=parseInt(document.getElementById('ccf_template').value)||null;
+  if(!tid){toast('กรุณาเลือกแม่แบบงาน','err');return;}
+  showLoading('กำลังสร้างเคส...');
+  try{
+    await _delReqRpc('app_create_case',{
+      p_customer_id:_ccfSelCust.id,
+      p_template_id:tid,
+      p_case_title:(document.getElementById('ccf_title').value||'').trim()||null,
+      p_priority:document.getElementById('ccf_priority').value||'normal',
+      p_assigned_to_code:document.getElementById('ccf_assignee').value||null,
+      p_due_date:document.getElementById('ccf_due').value||null,
+      p_note:(document.getElementById('ccf_note').value||'').trim()||null
+    });
+    document.getElementById('caseCreateModal').style.display='none';
+    toast('สร้างเคสแล้ว');
+    _caseDetail=null;_casePage=1;
+    if(curView==='cases')renderCases();
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์สร้างเคส','err');
+    else if(e&&e.message==='customer_not_found')toast('ไม่พบลูกค้า (อาจถูกลบไปแล้ว)','err');
+    else if(e&&e.message==='template_not_found_or_inactive')toast('แม่แบบไม่พร้อมใช้งาน','err');
+    else toast((_caseMissing(e)?'กรุณา apply migration 20260802 ก่อน':'สร้างเคสไม่สำเร็จ: '+e.message),'err');
+  }finally{hideLoading();}
+}
+// ── รายละเอียดเคส ──
+function _caseUnwrapDetail(r){
+  if(Array.isArray(r))r=r[0];
+  if(r&&typeof r==='object'&&r.app_get_case_detail!==undefined)r=r.app_get_case_detail;
+  if(typeof r==='string'){try{r=JSON.parse(r);}catch(_){return null;}}
+  if(r&&typeof r==='object'&&r.case&&r.case.id!=null)
+    return{caseRow:r.case,logs:Array.isArray(r.status_logs)?r.status_logs:[]};
+  return null;
+}
+async function openCaseDetail(id){
+  if(id==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  if(curView!=='cases')gv('cases');
+  const wrap=document.getElementById('casesContent');if(!wrap)return;
+  wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
+  let raw=null;
+  try{raw=await _delReqRpc('app_get_case_detail',{p_case_id:id});}
+  catch(e){toast('โหลดรายละเอียดไม่สำเร็จ: '+e.message,'err');_caseDetail=null;renderCases();return;}
+  _caseDetail=_caseUnwrapDetail(raw);
+  if(!_caseDetail){console.warn('[CASE] unexpected detail shape:',raw);toast('รูปแบบข้อมูลไม่ถูกต้อง','err');renderCases();return;}
+  _renderCaseDetail();
+}
+function _renderCaseDetail(){
+  const wrap=document.getElementById('casesContent');if(!wrap||!_caseDetail)return;
+  const k=_caseDetail.caseRow;
+  const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
+  const logs=(_caseDetail.logs||[]).map((l,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:10px">
+      <div style="width:24px;height:24px;border-radius:50%;background:${i===0?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i===0?'●':'✓'}</div>
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:600">${l.old_status?esc(_CTPL_STATUS[l.old_status]||l.old_status)+' → ':''}${esc(_CTPL_STATUS[l.new_status]||l.new_status)}</div>
+        <div style="font-size:11px;color:var(--g5);margin-top:2px">${fmtDT(l.created_at)}${l.actor_code?' • '+esc(l.actor_code):''}</div>
+        ${l.note?`<div style="font-size:12px;color:var(--g6);margin-top:3px;background:var(--g0);padding:4px 7px;border-radius:6px">${esc(l.note)}</div>`:''}
+      </div>
+    </div>`).join('');
+  const rowsHtml=[
+    ['ลูกค้า/แรงงาน',`${esc(k.customer_name||'—')}${k.passport_no?` <span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(k.passport_no)}</span>`:''}`],
+    ['นายจ้าง',esc(k.employer_name||'—')],
+    ['แม่แบบ',k.template_name_th?`${esc(k.template_name_th)} <span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(k.template_code||'')}</span>`:esc(k.template_code||'—')],
+    ['หมวดงาน',esc(_CTPL_CAT[k.case_category]||k.case_category||'—')],
+    ['ผู้รับผิดชอบ',k.assigned_to_code?esc((typeof assigneeLabel==='function'&&assigneeLabel(k.assigned_to_code))||k.assigned_to_code):'ยังไม่ระบุ'],
+    ['วันครบกำหนด',k.due_date?fd(k.due_date):'—'],
+    ['เลขคำขอราชการ (จดเอง)',esc(k.ewp_request_no||'—')],
+    ['ยื่นเมื่อ',fmtDT(k.submitted_at)],
+    ['เสร็จเมื่อ',fmtDT(k.completed_at)],
+    ['สร้างโดย',`${esc(k.created_by_code||'—')} · ${fmtDT(k.created_at)}`]
+  ].map(([l,v])=>`<div class="df"><div class="dfl">${l}</div><div class="dfv">${v}</div></div>`).join('');
+  wrap.innerHTML=_caseBanner()+`
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px">
+      <button class="btn btn-g btn-sm" onclick="caseBack()">← กลับ</button>
+      <span style="font-size:11px;color:var(--g5);font-family:var(--mono)">${esc(k.case_code)}</span>
+      ${_caseStChip(k.case_status)}${_casePriChip(k.priority)}
+    </div>
+    <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:14px 16px;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:800;color:var(--g9);margin-bottom:10px">${esc(k.case_title)}</div>
+      <div class="dg4">${rowsHtml}</div>
+      ${k.note?`<div style="font-size:12px;color:var(--g6);margin-top:8px;background:var(--g0);padding:6px 10px;border-radius:7px">📝 ${esc(k.note)}</div>`:''}
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        <button class="btn btn-g btn-sm" onclick="openCaseEdit()">แก้ไขข้อมูล</button>
+        <button class="btn btn-p btn-sm" onclick="openCaseStatus()">เปลี่ยนสถานะ</button>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--g5)">📎 เช็กลิสต์เอกสารจะทำใน Stage 54A-4</div>
+    <div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:10px">ประวัติสถานะ</div>
+    ${logs||'<div style="color:var(--g5);font-size:12px">ยังไม่มีประวัติ</div>'}`;
+}
+function caseBack(){_caseDetail=null;renderCases();}
+// ── แก้ไข metadata ──
+function openCaseEdit(){
+  if(!_caseDetail||!_caseDetail.caseRow){toast('กรุณาเลือกเคสก่อน','err');return;}
+  const k=_caseDetail.caseRow;
+  document.getElementById('cef_title').value=k.case_title||'';
+  _ctplFillSelect('cef_priority',_CASE_PRI,k.priority||'normal');
+  document.getElementById('cef_assignee').innerHTML=_caseAsgOptions(k.assigned_to_code||'');
+  document.getElementById('cef_due').value=k.due_date||'';
+  document.getElementById('cef_ewp').value=k.ewp_request_no||'';
+  document.getElementById('cef_note').value=k.note||'';
+  document.getElementById('caseEditModal').style.display='flex';
+}
+async function saveCaseEdit(){
+  if(!_caseDetail||!_caseDetail.caseRow||_caseDetail.caseRow.id==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const cid=_caseDetail.caseRow.id;
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_update_case',{
+      p_case_id:cid,
+      p_case_title:(document.getElementById('cef_title').value||'').trim()||null,
+      p_priority:document.getElementById('cef_priority').value||null,
+      p_assigned_to_code:document.getElementById('cef_assignee').value,   // '' = ล้างผู้รับผิดชอบ (server แปลงเป็น null)
+      p_due_date:document.getElementById('cef_due').value||null,
+      p_ewp_request_no:document.getElementById('cef_ewp').value,          // '' = ล้างเลข (server แปลงเป็น null)
+      p_note:document.getElementById('cef_note').value                    // '' = ล้างหมายเหตุ
+    });
+    document.getElementById('caseEditModal').style.display='none';
+    toast('บันทึกแล้ว');
+    await openCaseDetail(cid);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์แก้ไขเคส','err');
+    else toast('บันทึกไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+// ── เปลี่ยนสถานะ ──
+function openCaseStatus(){
+  if(!_caseDetail||!_caseDetail.caseRow){toast('กรุณาเลือกเคสก่อน','err');return;}
+  const cur=_caseDetail.caseRow.case_status;
+  const sel=document.getElementById('csf_status');
+  sel.innerHTML=Object.keys(_CTPL_STATUS).filter(k=>k!==cur).map(k=>`<option value="${k}">${esc(_CTPL_STATUS[k])}</option>`).join('');
+  document.getElementById('csf_note').value='';
+  document.getElementById('caseStatusModal').style.display='flex';
+}
+async function saveCaseStatus(){
+  if(!_caseDetail||!_caseDetail.caseRow||_caseDetail.caseRow.id==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const cid=_caseDetail.caseRow.id;
+  const st=document.getElementById('csf_status').value;
+  if(!st){toast('กรุณาเลือกสถานะ','err');return;}
+  showLoading('กำลังเปลี่ยนสถานะ...');
+  try{
+    await _delReqRpc('app_change_case_status',{
+      p_case_id:cid,p_new_status:st,
+      p_note:(document.getElementById('csf_note').value||'').trim()||null
+    });
+    document.getElementById('caseStatusModal').style.display='none';
+    toast('เปลี่ยนสถานะแล้ว');
+    await openCaseDetail(cid);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์เปลี่ยนสถานะ','err');
+    else if(e&&e.message==='same_status')toast('สถานะเดิมอยู่แล้ว','err');
+    else toast('ไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+// ── ผูกกับหน้ารายละเอียดลูกค้า (best-effort — RPC ยังไม่ติดตั้ง = ซ่อนเงียบ ๆ) ──
+async function _loadDetCases(cid){
+  const sec=document.getElementById('detCaseSec');if(!sec||cid==null)return;
+  let rows=[];
+  try{rows=await _delReqRpc('app_list_cases',{p_customer_id:cid,p_limit:10,p_offset:0});}
+  catch(e){sec.innerHTML='';return;} // migration ยังไม่ apply → ไม่กวนหน้าลูกค้าเดิม
+  rows=Array.isArray(rows)?rows:[];
+  const items=rows.map(r=>`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--g1);cursor:pointer" onclick="document.getElementById('dModal').style.display='none';openCaseDetail(${r.id})">
+      <span style="font-size:11px;color:var(--g5);font-family:var(--mono)">${esc(r.case_code)}</span>
+      <span style="font-size:12px;font-weight:600;flex:1;min-width:120px">${esc(r.case_title)}</span>
+      ${_caseStChip(r.case_status)}
+    </div>`).join('');
+  sec.innerHTML=`<div style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px">เคสงาน (Phase 2)</div>
+      <button class="btn btn-g btn-sm" style="font-size:11px" onclick="caseFromCustomer(${cid})">+ สร้างเคสจากลูกค้านี้</button>
+    </div>
+    ${items||'<div style="color:var(--g5);font-size:12px;padding:4px 0">ยังไม่มีเคสของลูกค้ารายนี้</div>'}
+  </div>`;
+}
+function caseFromCustomer(cid){
+  document.getElementById('dModal').style.display='none';
+  gv('cases');
+  openCaseCreate(cid);
+}
+
 async function ctplToggleActive(target,id,curActive){
   if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
   // STAGE 54A-2B: ห้ามยิง RPC ด้วย id ว่าง — undefined ถูก JSON.stringify ตัดทิ้ง
