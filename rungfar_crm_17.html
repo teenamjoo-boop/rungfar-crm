@@ -1510,6 +1510,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <!-- Stage 22B: คำขอลบ (admin-only) — badge = จำนวนคำขอที่รอดำเนินการ -->
     <div class="ni" id="niDelReq" onclick="gv('delreq')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></span>คำขอลบ <span class="nbadge" id="nbDelReq" style="display:none">0</span></div>
     <div class="ni" id="niMetaAds" onclick="gv('metaads')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg></span>วิเคราะห์โฆษณา Meta</div>
+    <!-- Stage 54A-2: แม่แบบงาน Phase 2 (admin-only) — เช็คลิสต์ภายใน CRM เท่านั้น -->
+    <div class="ni" id="niCaseTpl" onclick="gv('casetpl')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg></span>แม่แบบงาน Phase 2</div>
     <div class="ni" id="niSettings" onclick="gv('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>ตั้งค่าแจ้งเตือน</div>
   </div>
   <div class="nsec" id="sideFoot">
@@ -1591,6 +1593,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="view" id="view-linedoc"><div style="max-width:1100px" id="lineDocContent"></div></div>
     <!-- Stage 40D: ศูนย์เอกสาร — read-only document vault -->
     <div class="view" id="view-doccenter"><div style="max-width:1200px" id="docCenterContent"></div></div>
+    <!-- Stage 54A-2: แม่แบบงาน Phase 2 (admin-only, RPC-only) -->
+    <div class="view" id="view-casetpl"><div style="max-width:1000px" id="caseTplContent"></div></div>
   </div>
 </div>
 </div>
@@ -1676,6 +1680,8 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
         <!-- Stage 22B: คำขอลบ (admin-only) — badge = จำนวนคำขอที่รอดำเนินการ -->
         <div class="di" data-view="delreq" onclick="mobNav('delreq');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg><span>คำขอลบ</span><span class="dbadge" id="drawerDelReqBadge" style="display:none">0</span></div>
         <div class="di" data-view="metaads" onclick="mobNav('metaads');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-4"/></svg><span>วิเคราะห์โฆษณา Meta</span></div>
+        <!-- Stage 54A-2: แม่แบบงาน Phase 2 (admin-only) -->
+        <div class="di" data-view="casetpl" onclick="mobNav('casetpl');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg><span>แม่แบบงาน Phase 2</span></div>
         <div class="di" data-view="settings" onclick="mobNav('settings');mobDrawerClose()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span>ตั้งค่า</span></div>
       </div>
     </div>
@@ -1685,6 +1691,39 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   </div>
 </div>
 </div>
+
+<!-- MODAL: CASE TEMPLATE (Stage 54A-2, admin-only) — แม่แบบงาน Phase 2 (เช็คลิสต์ภายใน ไม่ใช่เอกสารราชการ) -->
+<div class="mo" id="ctplModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="ctplMT">เพิ่มแม่แบบงาน</div><button class="xbtn" onclick="document.getElementById('ctplModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">รหัสแม่แบบ * <span style="color:var(--g5);font-weight:400">(A-Z 0-9 _ เท่านั้น)</span></label><input class="fi2" id="ctf_code" placeholder="เช่น WP_RENEWAL" style="text-transform:uppercase"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อแม่แบบ (ไทย) *</label><input class="fi2" id="ctf_name_th" placeholder="เช่น ต่อใบอนุญาตทำงาน"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อแม่แบบ (อังกฤษ)</label><input class="fi2" id="ctf_name_en" placeholder="(ไม่บังคับ)"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">หมวดงาน *</label><select class="fi2" id="ctf_category"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">สถานะเริ่มต้นของเคส</label><select class="fi2" id="ctf_status"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">คำอธิบาย</label><input class="fi2" id="ctf_desc" placeholder="คำอธิบายภายใน"></div>
+    <div class="fgi"><label class="fl">ลำดับแสดงผล</label><input class="fi2" id="ctf_sort" type="number" placeholder="100"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('ctplModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCtplForm()">บันทึก</button></div>
+</div></div>
+
+<!-- MODAL: CASE TEMPLATE CHECKLIST ITEM (Stage 54A-2, admin-only) -->
+<div class="mo" id="ctplItemModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="ctplItemMT">เพิ่มรายการเช็คลิสต์</div><button class="xbtn" onclick="document.getElementById('ctplItemModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">รหัสรายการ * <span style="color:var(--g5);font-weight:400">(a-z 0-9 _ เท่านั้น)</span></label><input class="fi2" id="cif_code" placeholder="เช่น passport_or_ci" style="text-transform:lowercase"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อรายการ (ไทย) *</label><input class="fi2" id="cif_name_th" placeholder="เช่น พาสปอร์ต / CI ของแรงงาน"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อรายการ (อังกฤษ)</label><input class="fi2" id="cif_name_en" placeholder="(ไม่บังคับ)"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ต้องมาจากฝั่ง</label><select class="fi2" id="cif_from"></select></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชนิดเอกสาร (doc_type)</label><input class="fi2" id="cif_doc_type" placeholder="เช่น passport, receipt (ไม่บังคับ)"></div>
+    <div class="fgi" style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="cif_required" checked style="width:16px;height:16px"><label class="fl" for="cif_required" style="margin:0;cursor:pointer">รายการบังคับ (ต้องมีก่อนยื่น)</label></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">หมายเหตุ</label><input class="fi2" id="cif_note" placeholder="หมายเหตุภายใน (ไม่บังคับ)"></div>
+    <div class="fgi"><label class="fl">ลำดับแสดงผล</label><input class="fi2" id="cif_sort" type="number" placeholder="100"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('ctplItemModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveCtplItemForm()">บันทึก</button></div>
+</div></div>
 
 <!-- MODAL: STAFF INFO DETAIL (Stage 5) -->
 <div class="mo" id="staffDetailModal" style="display:none" onclick="if(event.target===this)closeStaffDetail()">
@@ -4057,7 +4096,7 @@ function gv(v,opts={}){
   document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
   const niActive=document.querySelector(`.ni[onclick*="'${v}'"]`);
   if(niActive)niActive.classList.add('on');
-  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE',doccenter:T('doccenter')};
+  const titles={dash:T('dashboard'),customers:T('customers'),alerts:T('alerts'),employers:T('employers'),groups:T('groups'),import:T('import'),settings:T('settings'),users:T('users'),attendance:T('attendance'),staffinfo:'ข้อมูลพนักงาน',metaads:'วิเคราะห์โฆษณา Meta',seclog:T('seclog'),delreq:T('delreqTitle'),linedoc:'เอกสารจาก LINE',doccenter:T('doccenter'),casetpl:'แม่แบบงาน Phase 2'};
   document.getElementById('ttitle').textContent=opts.title||titles[v]||v;
   if(v==='dash')renderDash();
   if(v==='customers'){
@@ -4128,6 +4167,8 @@ function gv(v,opts={}){
   if(v==='staffinfo')renderStaffInfo();
   // META-ADS: route guard — เฉพาะ admin (read-only mock dashboard)
   if(v==='metaads'){if(curUser?.role!=='admin'){gv('dash');return;}renderMetaAds();}
+  // STAGE 54A-2: แม่แบบงาน Phase 2 — admin-only route guard (เหมือน users/metaads/settings)
+  if(v==='casetpl'){if(curUser?.role!=='admin'){gv('dash');return;}renderCaseTpl();}
   if(v==='seclog'){if(curUser?.role==='admin')renderSecLog();else{const c=document.getElementById('seclogContent');if(c)c.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;}}
   // STAGE 22B: คำขอลบ — admin-only route guard (เหมือน users/metaads/settings)
   if(v==='delreq'){if(curUser?.role!=='admin'){gv('dash');return;}renderDelReq();}
@@ -12674,6 +12715,237 @@ function metaExportDecisionCSV(){
   const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`meta_ads_decision_${metaPeriodLabel().replace(/[^0-9A-Za-z_\-]/g,'-')}.csv`;a.click();URL.revokeObjectURL(a.href);
   toast('ดาวน์โหลดตาราง Decision แล้ว');
+}
+
+// =============================================================
+// STAGE 54A-2 — แม่แบบงาน Phase 2 (case/checklist templates, admin-only)
+//   * อ่าน/เขียนผ่าน RPC เท่านั้น (migration 20260801) — client เข้าตารางตรงไม่ได้
+//   * เป็น "เช็คลิสต์ภายใน CRM" เท่านั้น — ยังไม่สร้างเคสจริง / ไม่สร้างเอกสารราชการ
+//   * เขียน = admin เท่านั้น (server บังคับใน RPC) — soft เปิด/ปิดใช้งาน, ไม่มี hard delete
+//   * audit log เขียนฝั่ง server ใน RPC แล้ว — ❌ ไม่ logAudit ซ้ำจาก client
+//   * ใช้ _delReqRpc เป็น generic RPC caller (ประทับ p_user_id/p_username ให้อัตโนมัติ)
+// =============================================================
+let _ctplCache=[];
+let _ctplDetail=null;          // {template, items} ของแม่แบบที่เปิดดูอยู่ (null = หน้า list)
+let _ctplShowInactive=false;
+let _ctplEditId=null;          // template id ที่กำลังแก้ไขใน modal (null = สร้างใหม่)
+let _ctplItemEditId=null;      // item id ที่กำลังแก้ไขใน modal (null = สร้างใหม่)
+const _CTPL_CAT={mou:'MOU',ci:'CI',visa:'วีซ่า',work_permit:'ใบอนุญาตทำงาน',report_90:'รายงานตัว 90 วัน',change_employer:'เปลี่ยนนายจ้าง',renewal:'ต่ออายุ',notification:'แจ้งเข้า-ออก',other:'อื่น ๆ'};
+const _CTPL_FROM={worker:'แรงงาน',employer:'นายจ้าง',establishment:'สถานประกอบการ',case:'เคส',payment:'การชำระเงิน',internal:'ภายใน'};
+const _CTPL_STATUS={draft:'ฉบับร่าง',preparing_documents:'กำลังเตรียมเอกสาร',ready_to_submit:'พร้อมยื่น',submitted:'ยื่นแล้ว',waiting_result:'รอผล',approved:'อนุมัติ',rejected:'ไม่อนุมัติ',cancelled:'ยกเลิก',completed:'เสร็จสิ้น'};
+function _ctplMissing(e){return !!(e&&(e.status===404||/does not exist|Could not find the function/i.test((e.pgmsg||e.message||''))));}
+function _ctplBanner(){
+  return `<div style="display:flex;align-items:flex-start;gap:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:var(--rl);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.5"><span style="flex:none">📋</span><span>แม่แบบงานนี้เป็น <b>เช็คลิสต์ภายในบริษัท</b> สำหรับเตรียมเอกสารเท่านั้น — ไม่ใช่แบบฟอร์มราชการ และระบบไม่ได้ออกเอกสารราชการใด ๆ (Phase 2 foundation — ยังไม่สร้างเคสจริง)</span></div>`;
+}
+async function renderCaseTpl(){
+  const wrap=document.getElementById('caseTplContent');if(!wrap)return;
+  if(!_isAdminRole()){wrap.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;return;}
+  if(_ctplDetail){_renderCaseTplDetail();return;}
+  wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
+  let rows=[];
+  try{rows=await _delReqRpc('app_list_case_templates',{p_include_inactive:_ctplShowInactive});}
+  catch(e){
+    const msg=_ctplMissing(e)?'ยังไม่ได้ติดตั้งระบบแม่แบบงาน — กรุณา apply migration 20260801_case_template_foundation.sql ก่อน':('โหลดไม่สำเร็จ: '+esc(e.message));
+    wrap.innerHTML=_ctplBanner()+`<div style="padding:40px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${msg}</div>`;return;
+  }
+  _ctplCache=Array.isArray(rows)?rows:[];
+  const head=`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px">
+    <span style="font-size:13px;font-weight:700;color:var(--g8)">แม่แบบงานทั้งหมด</span>
+    <span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">${_ctplCache.length}</span>
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g6);cursor:pointer;margin-left:auto"><input type="checkbox" ${_ctplShowInactive?'checked':''} onchange="_ctplShowInactive=this.checked;renderCaseTpl()" style="width:14px;height:14px">แสดงที่ปิดใช้งาน</label>
+    <button class="btn btn-p btn-sm" onclick="openCtplForm(null)">+ เพิ่มแม่แบบ</button>
+  </div>`;
+  if(!_ctplCache.length){wrap.innerHTML=_ctplBanner()+head+`<div style="padding:48px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ยังไม่มีแม่แบบงาน</div>`;return;}
+  let lastCat=null;
+  const cards=_ctplCache.map(t=>{
+    const catHead=(t.category!==lastCat)?`<div style="font-size:12px;font-weight:700;color:var(--g6);margin:${lastCat?'16px':'0'} 0 8px">${esc(_CTPL_CAT[t.category]||t.category)}</div>`:'';
+    lastCat=t.category;
+    const inactive=!t.is_active;
+    return catHead+`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:12px 15px;margin-bottom:8px;cursor:pointer;${inactive?'opacity:.55':''}" onclick="openCaseTplDetail(${t.id})">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:14px;font-weight:700;color:var(--g9)">${esc(t.template_name_th)}</div>
+          <div style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-top:2px">${esc(t.template_code)}${t.template_name_en?' · '+esc(t.template_name_en):''}</div>
+        </div>
+        <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--pp);color:var(--pd)">เช็คลิสต์ ${t.checklist_count} รายการ</span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;${t.is_active?'background:#ecfdf5;color:#059669':'background:#f3f4f6;color:#6b7280'}">${t.is_active?'ใช้งาน':'ปิดใช้งาน'}</span>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML=_ctplBanner()+head+cards;
+}
+// STAGE 54A-2B: unwrap ผลลัพธ์ RPC ที่คืน jsonb แบบ scalar — PostgREST อาจคืนได้หลายรูป:
+//   {template,items} ตรง ๆ | [{...}] | [{app_get_case_template_detail:{...}}] | JSON string
+function _ctplUnwrapDetail(r){
+  if(Array.isArray(r))r=r[0];
+  if(r&&typeof r==='object'&&r.app_get_case_template_detail!==undefined)r=r.app_get_case_template_detail;
+  if(typeof r==='string'){try{r=JSON.parse(r);}catch(_){return null;}}
+  if(r&&typeof r==='object'&&r.template&&r.template.id!=null)
+    return{template:r.template,items:Array.isArray(r.items)?r.items:[]};
+  return null;
+}
+async function openCaseTplDetail(id){
+  const wrap=document.getElementById('caseTplContent');if(!wrap||!_isAdminRole())return;
+  if(id==null){toast('กรุณาเลือกแม่แบบก่อน','err');return;}
+  wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
+  let raw=null;
+  try{raw=await _delReqRpc('app_get_case_template_detail',{p_template_id:id});}
+  catch(e){toast('โหลดรายละเอียดไม่สำเร็จ: '+e.message,'err');_ctplDetail=null;renderCaseTpl();return;}
+  _ctplDetail=_ctplUnwrapDetail(raw);
+  if(!_ctplDetail){console.warn('[CTPL] unexpected detail shape:',raw);toast('รูปแบบข้อมูลรายละเอียดไม่ถูกต้อง','err');renderCaseTpl();return;}
+  _renderCaseTplDetail();
+}
+function _renderCaseTplDetail(){
+  const wrap=document.getElementById('caseTplContent');if(!wrap||!_ctplDetail)return;
+  const t=_ctplDetail.template||{};
+  const items=(_ctplDetail.items||[]).slice().sort((a,b)=>(a.sort_order-b.sort_order)||String(a.item_code).localeCompare(String(b.item_code)));
+  const itemRows=items.map(i=>`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:10px 13px;margin-bottom:7px;${i.is_active?'':'opacity:.55'}">
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:13px;font-weight:600;color:var(--g9)">${esc(i.item_name_th)}${i.is_required?' <span style="color:var(--red);font-weight:700">*</span>':''}</div>
+        <div style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-top:1px">${esc(i.item_code)}${i.doc_type?' · '+esc(i.doc_type):''}</div>
+        ${i.note?`<div style="font-size:11px;color:var(--g6);margin-top:3px">${esc(i.note)}</div>`:''}
+      </div>
+      <span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--g1);color:var(--g6)">${esc(_CTPL_FROM[i.required_from]||i.required_from)}</span>
+      <button class="btn btn-g btn-sm" onclick="openCtplItemForm(${i.id})">แก้ไข</button>
+      <button class="btn btn-g btn-sm" onclick="ctplToggleActive('item',${i.id},${i.is_active})">${i.is_active?'ปิดใช้งาน':'เปิดใช้งาน'}</button>
+    </div>`).join('');
+  wrap.innerHTML=_ctplBanner()+`
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px">
+      <button class="btn btn-g btn-sm" onclick="ctplBack()">← กลับ</button>
+      <span style="font-size:14px;font-weight:700;color:var(--g9)">${esc(t.template_name_th||'')}</span>
+      <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;${t.is_active?'background:#ecfdf5;color:#059669':'background:#f3f4f6;color:#6b7280'}">${t.is_active?'ใช้งาน':'ปิดใช้งาน'}</span>
+    </div>
+    <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:13px 15px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--g5);font-family:var(--mono)">${esc(t.template_code||'')}${t.template_name_en?' · '+esc(t.template_name_en):''}</div>
+      <div style="font-size:12px;color:var(--g6);margin-top:5px">หมวด: <b>${esc(_CTPL_CAT[t.category]||t.category||'—')}</b> · สถานะเริ่มต้น: <b>${esc(_CTPL_STATUS[t.default_case_status]||t.default_case_status||'—')}</b> · ลำดับ: ${t.sort_order??'—'}</div>
+      ${t.description?`<div style="font-size:12px;color:var(--g6);margin-top:5px">${esc(t.description)}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-g btn-sm" onclick="openCtplForm(${t.id})">แก้ไขแม่แบบ</button>
+        <button class="btn btn-g btn-sm" onclick="ctplToggleActive('template',${t.id},${t.is_active})">${t.is_active?'ปิดใช้งานแม่แบบ':'เปิดใช้งานแม่แบบ'}</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:700;color:var(--g8)">รายการเช็คลิสต์</span>
+      <span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">${items.length}</span>
+      <button class="btn btn-p btn-sm" style="margin-left:auto" onclick="openCtplItemForm(null)">+ เพิ่มรายการ</button>
+    </div>
+    ${itemRows||`<div style="padding:36px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ยังไม่มีรายการเช็คลิสต์</div>`}`;
+}
+function ctplBack(){_ctplDetail=null;renderCaseTpl();}
+function _ctplFillSelect(id,map,selected){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=Object.keys(map).map(k=>`<option value="${k}"${k===selected?' selected':''}>${esc(map[k])}</option>`).join('');
+}
+function openCtplForm(id){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  _ctplEditId=id;
+  const t=id?((_ctplDetail&&_ctplDetail.template&&_ctplDetail.template.id===id)?_ctplDetail.template:(_ctplCache.find(x=>x.id===id)||{})):{};
+  document.getElementById('ctplMT').textContent=id?'แก้ไขแม่แบบงาน':'เพิ่มแม่แบบงาน';
+  document.getElementById('ctf_code').value=t.template_code||'';
+  document.getElementById('ctf_name_th').value=t.template_name_th||'';
+  document.getElementById('ctf_name_en').value=t.template_name_en||'';
+  document.getElementById('ctf_desc').value=t.description||'';
+  document.getElementById('ctf_sort').value=(t.sort_order!=null)?t.sort_order:100;
+  _ctplFillSelect('ctf_category',_CTPL_CAT,t.category||'other');
+  _ctplFillSelect('ctf_status',_CTPL_STATUS,t.default_case_status||'draft');
+  document.getElementById('ctplModal').style.display='flex';
+}
+async function saveCtplForm(){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!(await guardSession()))return;
+  const code=(document.getElementById('ctf_code').value||'').trim().toUpperCase();
+  const nameTh=(document.getElementById('ctf_name_th').value||'').trim();
+  if(!code||!nameTh){toast('กรุณากรอกรหัสและชื่อแม่แบบ (ไทย)','err');return;}
+  if(!/^[A-Z0-9_]{2,60}$/.test(code)){toast('รหัสแม่แบบต้องเป็น A-Z 0-9 _ (2-60 ตัว)','err');return;}
+  showLoading('กำลังบันทึกแม่แบบ...');
+  try{
+    await _delReqRpc('app_admin_save_case_template',{
+      p_template_id:_ctplEditId,
+      p_template_code:code,
+      p_template_name_th:nameTh,
+      p_template_name_en:(document.getElementById('ctf_name_en').value||'').trim()||null,
+      p_category:document.getElementById('ctf_category').value,
+      p_description:(document.getElementById('ctf_desc').value||'').trim()||null,
+      p_default_case_status:document.getElementById('ctf_status').value,
+      p_sort_order:parseInt(document.getElementById('ctf_sort').value)||100
+    });
+    document.getElementById('ctplModal').style.display='none';
+    toast(_ctplEditId?'บันทึกแม่แบบแล้ว':'เพิ่มแม่แบบแล้ว');
+    if(_ctplEditId&&_ctplDetail&&_ctplDetail.template&&_ctplDetail.template.id===_ctplEditId)await openCaseTplDetail(_ctplEditId);
+    else{_ctplDetail=null;renderCaseTpl();}
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');
+    else if(e&&/duplicate key/i.test(e.message||''))toast('รหัสแม่แบบนี้มีอยู่แล้ว','err');
+    else toast('บันทึกไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+function openCtplItemForm(itemId){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!_ctplDetail||!_ctplDetail.template){toast('กรุณาเปิดแม่แบบก่อน','err');return;}
+  _ctplItemEditId=itemId;
+  const i=itemId?((_ctplDetail.items||[]).find(x=>x.id===itemId)||{}):{};
+  document.getElementById('ctplItemMT').textContent=itemId?'แก้ไขรายการเช็คลิสต์':'เพิ่มรายการเช็คลิสต์';
+  document.getElementById('cif_code').value=i.item_code||'';
+  document.getElementById('cif_name_th').value=i.item_name_th||'';
+  document.getElementById('cif_name_en').value=i.item_name_en||'';
+  document.getElementById('cif_doc_type').value=i.doc_type||'';
+  document.getElementById('cif_required').checked=(i.is_required!==false);
+  document.getElementById('cif_note').value=i.note||'';
+  document.getElementById('cif_sort').value=(i.sort_order!=null)?i.sort_order:100;
+  _ctplFillSelect('cif_from',_CTPL_FROM,i.required_from||'worker');
+  document.getElementById('ctplItemModal').style.display='flex';
+}
+async function saveCtplItemForm(){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  if(!(await guardSession()))return;
+  if(!_ctplDetail||!_ctplDetail.template)return;
+  const code=(document.getElementById('cif_code').value||'').trim().toLowerCase();
+  const nameTh=(document.getElementById('cif_name_th').value||'').trim();
+  if(!code||!nameTh){toast('กรุณากรอกรหัสและชื่อรายการ (ไทย)','err');return;}
+  if(!/^[a-z0-9_]{2,60}$/.test(code)){toast('รหัสรายการต้องเป็น a-z 0-9 _ (2-60 ตัว)','err');return;}
+  const tplId=_ctplDetail.template.id;
+  if(tplId==null){toast('กรุณาเลือกแม่แบบก่อน','err');return;} // STAGE 54A-2B: กัน template_id ว่าง
+  showLoading('กำลังบันทึกรายการ...');
+  try{
+    await _delReqRpc('app_admin_save_case_template_item',{
+      p_item_id:_ctplItemEditId,
+      p_template_id:tplId,
+      p_item_code:code,
+      p_item_name_th:nameTh,
+      p_item_name_en:(document.getElementById('cif_name_en').value||'').trim()||null,
+      p_doc_type:(document.getElementById('cif_doc_type').value||'').trim()||null,
+      p_is_required:document.getElementById('cif_required').checked,
+      p_required_from:document.getElementById('cif_from').value,
+      p_note:(document.getElementById('cif_note').value||'').trim()||null,
+      p_sort_order:parseInt(document.getElementById('cif_sort').value)||100
+    });
+    document.getElementById('ctplItemModal').style.display='none';
+    toast(_ctplItemEditId?'บันทึกรายการแล้ว':'เพิ่มรายการแล้ว');
+    await openCaseTplDetail(tplId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');
+    else if(e&&/duplicate key/i.test(e.message||''))toast('รหัสรายการนี้มีอยู่แล้วในแม่แบบ','err');
+    else toast('บันทึกไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+async function ctplToggleActive(target,id,curActive){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  // STAGE 54A-2B: ห้ามยิง RPC ด้วย id ว่าง — undefined ถูก JSON.stringify ตัดทิ้ง
+  //   ทำให้ PostgREST หา signature ที่ไม่มี p_id ไม่เจอ (schema cache error)
+  if(id==null||isNaN(Number(id))){toast('กรุณาเลือกแม่แบบก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const label=target==='template'?'แม่แบบ':'รายการ';
+  if(!confirm(curActive?`ปิดใช้งาน${label}นี้? (ปิดชั่วคราว ไม่ลบข้อมูล — เปิดกลับได้)`:`เปิดใช้งาน${label}นี้?`))return;
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_admin_set_case_template_active',{p_target:target,p_id:Number(id),p_is_active:!curActive});
+    toast(curActive?'ปิดใช้งานแล้ว':'เปิดใช้งานแล้ว');
+    if(_ctplDetail&&_ctplDetail.template){await openCaseTplDetail(_ctplDetail.template.id);}
+    else renderCaseTpl();
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');
+    else toast('ไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
 }
 </script>
 </body>
