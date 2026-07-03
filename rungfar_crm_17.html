@@ -2678,6 +2678,11 @@ const LANG = {
     estSec:'สถานประกอบการ / สถานที่ทำงาน', estAdd:'+ เพิ่มสถานประกอบการ', estNone:'ยังไม่มีสถานประกอบการ',
     estActive:'ใช้งาน', estInactive:'ปิดใช้งาน', estBtnOn:'เปิดใช้งาน', estBtnOff:'ปิดใช้งาน',
     emp2NeedMigration:'ยังไม่ได้ติดตั้งระบบนายจ้าง Phase 2 — กรุณา apply migration 20260804',
+    caseDashOpen:'เคสเปิดอยู่', caseDashDraft:'ฉบับร่าง', caseDashPrep:'กำลังเตรียมเอกสาร',
+    caseDashReady:'พร้อมยื่น', caseDashSubmitted:'ยื่นแล้ว', caseDashWaiting:'รอผล',
+    caseDashRejected:'ไม่อนุมัติ', caseDashDone:'เสร็จสิ้น', caseDashDueSoon:'ใกล้ครบกำหนด',
+    caseDashOverdue:'เกินกำหนด', caseDashHint:'แตะเพื่อกรองตามสถานะ (แตะซ้ำเพื่อล้าง)',
+    caseDashNeedMigration:'ยังไม่ได้ติดตั้งสรุปเคส — กรุณา apply migration 20260802 ก่อน',
     empTblName:'ชื่อ', empTblNat:'สัญชาติ', empTblStatus:'สถานะ',
     grpTitle:'จัดการกลุ่มงาน', grpAdd:'+ เพิ่มกลุ่ม', grpPerson:'คน',
     grpNone:'ยังไม่มีกลุ่ม กด "+ เพิ่มกลุ่ม"',
@@ -2913,6 +2918,11 @@ const LANG = {
     estSec:'လုပ်ငန်းခွင် / အလုပ်လုပ်သည့်နေရာ', estAdd:'+ လုပ်ငန်းခွင်ထည့်', estNone:'လုပ်ငန်းခွင်မရှိသေး',
     estActive:'အသုံးပြုနေ', estInactive:'ပိတ်ထား', estBtnOn:'ဖွင့်ရန်', estBtnOff:'ပိတ်ရန်',
     emp2NeedMigration:'Phase 2 အလုပ်ရှင်စနစ် မတပ်ဆင်ရသေး — migration 20260804 ကို apply လုပ်ပါ',
+    caseDashOpen:'ဖွင့်ထားသောအမှုတွဲ', caseDashDraft:'မူကြမ်း', caseDashPrep:'စာရွက်စာတမ်းပြင်ဆင်နေ',
+    caseDashReady:'တင်သွင်းရန်အသင့်', caseDashSubmitted:'တင်သွင်းပြီး', caseDashWaiting:'ရလဒ်စောင့်နေ',
+    caseDashRejected:'ငြင်းပယ်ခံရ', caseDashDone:'ပြီးစီး', caseDashDueSoon:'သတ်မှတ်ရက်နီး',
+    caseDashOverdue:'ရက်ကျော်လွန်', caseDashHint:'အခြေအနေဖြင့် စစ်ထုတ်ရန် နှိပ်ပါ (ထပ်နှိပ်လျှင် ဖျက်)',
+    caseDashNeedMigration:'အမှုတွဲအနှစ်ချုပ် မတပ်ဆင်ရသေး — migration 20260802 ကို apply လုပ်ပါ',
     empTblName:'အမည်', empTblNat:'နိုင်ငံသားဆိုင်ရာ', empTblStatus:'အခြေအနေ',
     grpTitle:'အုပ်စုစီမံခန့်ခွဲ', grpAdd:'+ အုပ်စုထည့်', grpPerson:'ဦးရေ',
     grpNone:'အုပ်စုမရှိသေး "+ အုပ်စုထည့်" နှိပ်ပါ',
@@ -13213,6 +13223,7 @@ function renderCases(){
   const catOpts=`<option value="">หมวดทั้งหมด</option>`+Object.keys(_CTPL_CAT).map(k=>`<option value="${k}"${f.category===k?' selected':''}>${esc(_CTPL_CAT[k])}</option>`).join('');
   const asgOpts=`<option value="">ผู้รับผิดชอบทั้งหมด</option>`+(typeof assigneeEmps!=='undefined'?assigneeEmps:[]).map(e=>`<option value="${esc(e.employee_code)}"${f.assignee===e.employee_code?' selected':''}>${esc(e.nickname||e.full_name||e.employee_code)}</option>`).join('');
   wrap.innerHTML=_caseBanner()+`
+    <div id="caseDashCards" style="display:none"></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">
       <input class="fi2" id="caseQ" placeholder="ค้นหา: รหัสเคส / ชื่อเคส / ชื่อลูกค้า / พาสปอร์ต" value="${esc(f.q)}" style="flex:2;min-width:200px" onkeydown="if(event.key==='Enter')caseApplyFilters()">
       <button class="btn btn-g btn-sm" onclick="caseApplyFilters()">ค้นหา</button>
@@ -13227,6 +13238,66 @@ function renderCases(){
     </div>
     <div id="caseListArea"><div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div></div>`;
   _loadCases();
+  // STAGE 54A-7C: การ์ดสรุปเคส — 1 RPC เดียว (app_case_summary จาก 20260802) ไม่มี N+1
+  _loadCaseSummary();
+}
+// =============================================================
+// STAGE 54A-7C — การ์ดสรุปเคส (dashboard summary cards, frontend-only)
+//   * ใช้ RPC เดิม app_case_summary (migration 20260802 — มีอยู่แล้ว ไม่แก้ SQL ใด ๆ)
+//   * เรียกครั้งเดียวต่อการ render หน้า list — ไม่มี N+1
+//   * แตะการ์ดสถานะ = ตั้ง/สลับตัวกรองสถานะเดิม (แตะซ้ำ = ล้าง) ผ่าน state _caseFilters เดิม
+//   * การ์ด total_open / due_soon / overdue เป็นตัวเลขแสดงผลอย่างเดียว
+//     (ตัวกรอง list เดิมไม่มีเงื่อนไข "เปิดอยู่/ใกล้ครบ/เกิน" ตรง ๆ — ไม่ฝืนสร้างใหม่ใน stage นี้)
+// =============================================================
+let _caseSummaryCache=null;
+const _CASE_DASH=[
+  ['total_open','caseDashOpen','var(--p)',null],
+  ['draft','caseDashDraft','#6b7280','draft'],
+  ['preparing_documents','caseDashPrep','#b45309','preparing_documents'],
+  ['ready_to_submit','caseDashReady','#7c3aed','ready_to_submit'],
+  ['submitted','caseDashSubmitted','#2563eb','submitted'],
+  ['waiting_result','caseDashWaiting','#0891b2','waiting_result'],
+  ['rejected','caseDashRejected','#dc2626','rejected'],
+  ['completed','caseDashDone','#059669','completed'],
+  ['due_soon','caseDashDueSoon','#d97706',null],
+  ['overdue','caseDashOverdue','#dc2626',null]
+];
+async function _loadCaseSummary(){
+  const box=document.getElementById('caseDashCards');if(!box)return;
+  if(_caseSummaryCache)_renderCaseDashCards(); // มี cache → โชว์ทันที กันการ์ดกะพริบ แล้วค่อย refresh
+  try{
+    const r=await _delReqRpc('app_case_summary',{});
+    _caseSummaryCache=Array.isArray(r)?r[0]:r;
+  }catch(e){
+    // RPC ยังไม่ติดตั้ง (20260802) → แจ้งสั้น ๆ; error อื่น → ซ่อนการ์ดเงียบ ๆ ไม่กวน case list
+    if(_caseMissing(e)){box.style.display='block';box.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:9px 13px;font-size:12px;color:var(--g5);margin-bottom:12px">📊 ${esc(T('caseDashNeedMigration'))}</div>`;}
+    else box.style.display='none';
+    return;
+  }
+  _renderCaseDashCards();
+}
+function _renderCaseDashCards(){
+  const box=document.getElementById('caseDashCards');if(!box)return;
+  const s=_caseSummaryCache;
+  if(!s){box.style.display='none';return;}
+  const cards=_CASE_DASH.map(([key,tkey,clr,fst])=>{
+    const val=Number(s[key]||0);
+    const active=!!(fst&&_caseFilters.status===fst);
+    const click=fst?` onclick="caseDashFilter('${fst}')" title="${esc(T('caseDashHint'))}"`:'';
+    return`<div${click} style="flex:1;min-width:96px;background:#fff;border:1.5px solid ${active?clr:'var(--g2)'};border-radius:10px;padding:8px 10px;text-align:center;${fst?'cursor:pointer;':''}${active?`box-shadow:0 0 0 2px ${clr}22;`:''}">
+      <div style="font-size:10px;color:var(--g5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(T(tkey))}</div>
+      <div style="font-size:17px;font-weight:800;font-family:var(--mono);color:${val>0?clr:'var(--g4)'}">${val}</div>
+    </div>`;
+  }).join('');
+  box.style.display='block';
+  box.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">${cards}</div>`;
+}
+// แตะการ์ดสถานะ = toggle ตัวกรองสถานะใน _caseFilters แล้ว render ใหม่ทั้งหน้า
+// (renderCases สร้าง filter bar จาก _caseFilters อยู่แล้ว — dropdown จะ selected ตรงกันเอง)
+function caseDashFilter(st){
+  _caseFilters.status=(_caseFilters.status===st)?'':st;
+  _casePage=1;
+  renderCases();
 }
 function caseApplyFilters(){
   _caseFilters={
