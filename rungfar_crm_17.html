@@ -1769,6 +1769,46 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
   <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('chkLinkModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveChkLink()">🔗 ลิงก์เอกสาร</button></div>
 </div></div>
 
+<!-- MODAL: ADD/EDIT CASE PAYMENT (Stage 54A-6A, staff+admin) — ติดตามภายใน ไม่ใช่ใบเสร็จราชการ -->
+<div class="mo" id="payModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt" id="payMT">เพิ่มรายการชำระเงิน</div><button class="xbtn" onclick="document.getElementById('payModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fg" style="gap:11px">
+      <div class="fgi"><label class="fl">ประเภทรายการ *</label><select class="fi2" id="pf_type"></select></div>
+      <div class="fgi"><label class="fl">ชื่อรายการ</label><input class="fi2" id="pf_title" placeholder="เช่น ค่าบริการงวดแรก"></div>
+      <div class="fgi"><label class="fl">ยอดที่ต้องชำระ (บาท)</label><input class="fi2" type="number" id="pf_due" placeholder="0" step="0.01" min="0"></div>
+      <div class="fgi"><label class="fl">ยอดที่ชำระแล้ว (บาท)</label><input class="fi2" type="number" id="pf_paid" placeholder="0" step="0.01" min="0"></div>
+      <div class="fgi"><label class="fl">สถานะ (เว้นว่าง = คำนวณอัตโนมัติ)</label><select class="fi2" id="pf_status"></select></div>
+      <div class="fgi"><label class="fl">วันครบกำหนด</label><input class="fi2" type="date" id="pf_due_date"></div>
+      <div class="fgi full"><label class="fl">หมายเหตุ</label><input class="fi2" id="pf_note" placeholder="บันทึกภายใน (ไม่บังคับ)"></div>
+    </div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('payModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="savePayForm()">บันทึก</button></div>
+</div></div>
+
+<!-- MODAL: CHANGE PAYMENT STATUS (Stage 54A-6A) -->
+<div class="mo" id="payStatusModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()">
+  <div class="mh"><div class="mt">เปลี่ยนสถานะการชำระเงิน</div><button class="xbtn" onclick="document.getElementById('payStatusModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">สถานะใหม่ *</label><select class="fi2" id="psf_status"></select></div>
+    <div class="fgi"><label class="fl">หมายเหตุ</label><input class="fi2" id="psf_note" placeholder="เหตุผล/รายละเอียด (ไม่บังคับ)"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('payStatusModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="savePayStatus()">✅ เปลี่ยนสถานะ</button></div>
+</div></div>
+
+<!-- MODAL: LINK PAYMENT PROOF DOCUMENT (Stage 54A-6A) — ผูกเอกสารเดิมเท่านั้น ไม่มีอัปโหลดใหม่ -->
+<div class="mo" id="payProofModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:560px">
+  <div class="mh"><div class="mt">ผูกหลักฐานการชำระเงิน</div><button class="xbtn" onclick="document.getElementById('payProofModal').style.display='none'">×</button></div>
+  <div class="mbody">
+    <div style="font-size:11px;color:var(--g5);margin-bottom:10px">แสดงเฉพาะเอกสารของลูกค้าเจ้าของเคสนี้ — ผูกเป็นหลักฐานเท่านั้น ไม่คัดลอก/ไม่ย้ายไฟล์</div>
+    <div id="payProofDocList" style="max-height:300px;overflow-y:auto;border:1px solid var(--g2);border-radius:var(--rl)"></div>
+  </div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('payProofModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="savePayProofLink()">🔗 ผูกหลักฐาน</button></div>
+</div></div>
+
 <!-- MODAL: CASE TEMPLATE (Stage 54A-2, admin-only) — แม่แบบงาน Phase 2 (เช็คลิสต์ภายใน ไม่ใช่เอกสารราชการ) -->
 <div class="mo" id="ctplModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
@@ -13353,10 +13393,13 @@ function _renderCaseDetail(){
       </div>
     </div>
     <div id="caseChkSec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดเช็กลิสต์...</div></div>
+    <div id="casePaySec" style="margin-bottom:14px"><div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>
     <div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:10px">ประวัติสถานะ</div>
     ${logs||'<div style="color:var(--g5);font-size:12px">ยังไม่มีประวัติ</div>'}`;
   // STAGE 54A-4: โหลดเช็กลิสต์ของเคสแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
   try{if(typeof _loadCaseChecklist==='function')_loadCaseChecklist(k.id);}catch(_e){}
+  // STAGE 54A-6A: โหลดข้อมูลการชำระเงินแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
+  try{if(typeof _loadCasePayments==='function')_loadCasePayments(k.id);}catch(_e){}
 }
 function caseBack(){_caseDetail=null;renderCases();}
 // ── แก้ไข metadata ──
@@ -13628,6 +13671,202 @@ async function chkUnlink(linkId){
     await _loadCaseChecklist(_chkCaseId);
   }catch(e){
     if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else toast('ไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+
+// =============================================================
+// STAGE 54A-6A — การชำระเงินภายในของเคส (case payments foundation)
+//   * อ่าน/เขียนผ่าน RPC เท่านั้น (migration 20260805) — client เข้าตารางตรงไม่ได้
+//   * ติดตามภายในบริษัทเท่านั้น — ไม่ใช่ใบเสร็จราชการ, ไม่ automate เว็บราชการ
+//   * หลักฐานการชำระเงิน = ผูกเอกสารเดิมในคลังเท่านั้น — ไม่มีอัปโหลดใหม่ที่นี่
+//   * ไม่มี hard delete — ยกเลิก = เปลี่ยนสถานะ cancelled (soft)
+//   * audit log เขียนฝั่ง server ใน RPC แล้ว — ❌ ไม่ logAudit ซ้ำจาก client
+// =============================================================
+let _payRows=[],_payCaseId=null,_payEditId=null,_payStatusId=null,_payProofPaymentId=null,_payProofDocPick=null;
+const _PAY_TYPE={service_fee:'ค่าบริการ',deposit:'เงินมัดจำ',final_payment:'ยอดชำระสุดท้าย',government_fee:'ค่าธรรมเนียมราชการ',document_fee:'ค่าเอกสาร',transport_fee:'ค่าเดินทาง',other:'อื่น ๆ'};
+const _PAY_ST={unpaid:'ยังไม่ชำระ',partial:'ชำระบางส่วน',paid:'ชำระแล้ว',overdue:'เกินกำหนด',waived:'ยกเว้น',refunded:'คืนเงินแล้ว',cancelled:'ยกเลิก'};
+const _PAY_ST_CLR={unpaid:'#dc2626',partial:'#d97706',paid:'#059669',overdue:'#dc2626',waived:'#6b7280',refunded:'#2563eb',cancelled:'#6b7280'};
+function _payStChip(st){const c=_PAY_ST_CLR[st]||'#6b7280';return`<span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_PAY_ST[st]||st)}</span>`;}
+function _payMoney(n){return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function _payWarn(){
+  return `<div style="font-size:11px;color:var(--g5);margin-bottom:10px">การชำระเงินนี้ใช้ติดตามงานภายในบริษัทเท่านั้น ไม่ใช่ใบเสร็จราชการ และระบบไม่ได้ยื่นงานแทนเว็บราชการ</div>`;
+}
+async function _loadCasePayments(caseId){
+  const sec=document.getElementById('casePaySec');if(!sec||caseId==null)return;
+  _payCaseId=caseId;
+  let rows=[],sum=null;
+  try{
+    [rows,sum]=await Promise.all([
+      _delReqRpc('app_list_case_payments',{p_case_id:caseId}),
+      _delReqRpc('app_case_payment_summary',{p_case_id:caseId})
+    ]);
+  }catch(e){
+    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">💳 ${_caseMissing(e)?'ระบบการชำระเงินยังไม่ติดตั้ง — กรุณา apply migration 20260805_case_payments.sql':'โหลดข้อมูลการชำระเงินไม่สำเร็จ: '+esc(e.message)}</div>`;
+    return;
+  }
+  _payRows=Array.isArray(rows)?rows:[];
+  const s=Array.isArray(sum)?sum[0]:sum;
+  const head=`<div style="font-size:13px;font-weight:700;color:var(--g8);margin-bottom:6px">การชำระเงิน</div>${_payWarn()}`;
+  const cardStat=(label,val,clr)=>`<div style="flex:1;min-width:110px;background:#fff;border:1px solid var(--g2);border-radius:10px;padding:9px 12px;text-align:center"><div style="font-size:11px;color:var(--g5)">${label}</div><div style="font-size:16px;font-weight:800;color:${clr||'var(--g9)'};font-family:var(--mono)">${val}</div></div>`;
+  const summaryHtml=s?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      ${cardStat('ยอดรวม','฿'+_payMoney(s.total_due))}
+      ${cardStat('ชำระแล้ว','฿'+_payMoney(s.total_paid),'#059669')}
+      ${cardStat('ค้างชำระ','฿'+_payMoney(s.balance_due),Number(s.balance_due)>0?'#dc2626':'var(--g9)')}
+      ${cardStat('ค้าง/เกินกำหนด',(Number(s.unpaid_count||0)+Number(s.partial_count||0))+' / '+Number(s.overdue_count||0)+' รายการ',Number(s.overdue_count)>0?'#dc2626':'var(--g9)')}
+    </div>`:'';
+  const addBtn=`<button class="btn btn-p btn-sm" onclick="openPayForm(null)">+ เพิ่มรายการชำระเงิน</button>`;
+  if(!_payRows.length){
+    sec.innerHTML=head+summaryHtml+`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:20px;text-align:center"><div style="font-size:12px;color:var(--g5);margin-bottom:10px">ยังไม่มีรายการชำระเงินสำหรับเคสนี้</div>${addBtn}</div>`;
+    return;
+  }
+  const fmtD=s=>{if(!s)return'—';try{return new Date(s+'T00:00:00').toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}catch(e){return s;}};
+  const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
+  const today=new Date().toISOString().split('T')[0];
+  const cards=_payRows.map(r=>{
+    const overdue=r.due_date&&r.due_date<today&&!['paid','waived','refunded','cancelled'].includes(r.payment_status);
+    const balance=Number(r.amount_due||0)-Number(r.amount_paid||0);
+    return`<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:11px 14px;margin-bottom:8px;${r.payment_status==='cancelled'?'opacity:.55':''}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+        <div style="flex:1;min-width:150px">
+          <div style="font-size:13px;font-weight:600;color:var(--g9)">${esc(r.payment_title||_PAY_TYPE[r.payment_type]||r.payment_type)}</div>
+          <div style="font-size:10px;color:var(--g5);margin-top:1px">${esc(_PAY_TYPE[r.payment_type]||r.payment_type)}</div>
+        </div>
+        ${_payStChip(overdue&&r.payment_status!=='overdue'?'overdue':r.payment_status)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:7px;font-size:12px;color:var(--g7)">
+        <span>ต้องชำระ <b>฿${_payMoney(r.amount_due)}</b></span>
+        <span>ชำระแล้ว <b style="color:#059669">฿${_payMoney(r.amount_paid)}</b></span>
+        <span>คงเหลือ <b style="color:${balance>0?'#dc2626':'var(--g9)'}">฿${_payMoney(balance>0?balance:0)}</b></span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:4px;font-size:11px;color:var(--g5)">
+        ${r.due_date?`<span>${overdue?'⚠ เลยกำหนด ':'กำหนด '}${fmtD(r.due_date)}</span>`:''}
+        ${r.paid_at?`<span>ชำระเมื่อ ${fmtDT(r.paid_at)}</span>`:''}
+      </div>
+      ${r.note?`<div style="font-size:11px;color:var(--g6);margin-top:6px;background:var(--g0);padding:4px 8px;border-radius:6px">📝 ${esc(r.note)}</div>`:''}
+      ${r.proof_document_id?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:var(--g0);border:1px solid var(--g1);border-radius:8px;padding:6px 10px;margin-top:7px">
+          <span style="font-size:12px;font-weight:600;flex:1;min-width:100px">📄 ${esc(r.proof_doc_name||r.proof_doc_type||'เอกสาร')}</span>
+          <button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="dcOpenDoc('${r.proof_document_id}',${!!r.proof_has_storage})">เปิดดู</button>
+        </div>`:''}
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">
+        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openPayForm(${r.id})">แก้ไข</button>
+        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openPayStatus(${r.id})">เปลี่ยนสถานะ</button>
+        <button class="btn btn-g btn-sm" style="font-size:11px" onclick="openPayProofLink(${r.id})">🔗 ผูกหลักฐานการชำระเงิน</button>
+      </div>
+    </div>`;
+  }).join('');
+  sec.innerHTML=head+summaryHtml+`<div style="margin-bottom:8px">${addBtn}</div>`+cards;
+}
+// ── เพิ่ม/แก้ไขรายการชำระเงิน ──
+function openPayForm(paymentId){
+  if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
+  if(_payCaseId==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  _payEditId=paymentId;
+  const r=paymentId?(_payRows.find(x=>x.id===paymentId)||{}):{};
+  document.getElementById('payMT').textContent=paymentId?'แก้ไขรายการชำระเงิน':'เพิ่มรายการชำระเงิน';
+  _ctplFillSelect('pf_type',_PAY_TYPE,r.payment_type||'service_fee');
+  document.getElementById('pf_title').value=r.payment_title||'';
+  document.getElementById('pf_due').value=(r.amount_due!=null)?r.amount_due:'';
+  document.getElementById('pf_paid').value=(r.amount_paid!=null)?r.amount_paid:'';
+  const stSel=document.getElementById('pf_status');
+  stSel.innerHTML='<option value="">— คำนวณอัตโนมัติ —</option>'+Object.keys(_PAY_ST).map(k=>`<option value="${k}"${r.payment_status===k?' selected':''}>${esc(_PAY_ST[k])}</option>`).join('');
+  if(!paymentId)stSel.value='';
+  document.getElementById('pf_due_date').value=r.due_date||'';
+  document.getElementById('pf_note').value=r.note||'';
+  document.getElementById('payModal').style.display='flex';
+}
+async function savePayForm(){
+  if(_payCaseId==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const due=document.getElementById('pf_due').value;
+  const paid=document.getElementById('pf_paid').value;
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_save_case_payment',{
+      p_payment_id:_payEditId,
+      p_case_id:_payCaseId,
+      p_payment_type:document.getElementById('pf_type').value||null,
+      p_payment_title:(document.getElementById('pf_title').value||'').trim()||null,
+      p_amount_due:due===''?null:Number(due),
+      p_amount_paid:paid===''?null:Number(paid),
+      p_payment_status:document.getElementById('pf_status').value||null,
+      p_due_date:document.getElementById('pf_due_date').value||null,
+      p_note:document.getElementById('pf_note').value
+    });
+    document.getElementById('payModal').style.display='none';
+    toast(_payEditId?'บันทึกแล้ว':'เพิ่มรายการแล้ว');
+    await _loadCasePayments(_payCaseId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else if(e&&e.message==='invalid_amount')toast('ยอดเงินต้องไม่ติดลบ','err');
+    else toast((_caseMissing(e)?'กรุณา apply migration 20260805 ก่อน':'บันทึกไม่สำเร็จ: '+e.message),'err');
+  }finally{hideLoading();}
+}
+// ── เปลี่ยนสถานะ ──
+function openPayStatus(paymentId){
+  const r=_payRows.find(x=>x.id===paymentId);if(!r){toast('ไม่พบรายการ','err');return;}
+  _payStatusId=paymentId;
+  const sel=document.getElementById('psf_status');
+  sel.innerHTML=Object.keys(_PAY_ST).filter(k=>k!==r.payment_status).map(k=>`<option value="${k}">${esc(_PAY_ST[k])}</option>`).join('');
+  document.getElementById('psf_note').value='';
+  document.getElementById('payStatusModal').style.display='flex';
+}
+async function savePayStatus(){
+  if(_payStatusId==null){toast('กรุณาเลือกรายการก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const st=document.getElementById('psf_status').value;
+  if(!st){toast('กรุณาเลือกสถานะ','err');return;}
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_set_case_payment_status',{
+      p_payment_id:_payStatusId,p_payment_status:st,
+      p_note:(document.getElementById('psf_note').value||'').trim()||null
+    });
+    document.getElementById('payStatusModal').style.display='none';
+    toast('เปลี่ยนสถานะแล้ว');
+    await _loadCasePayments(_payCaseId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else toast('ไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+// ── ผูกหลักฐานการชำระเงิน (เอกสารเดิมของลูกค้าเจ้าของเคสเท่านั้น) ──
+async function openPayProofLink(paymentId){
+  const custId=_caseDetail&&_caseDetail.caseRow?_caseDetail.caseRow.customer_id:null;
+  if(custId==null){toast('ไม่พบลูกค้าของเคสนี้','err');return;}
+  _payProofPaymentId=paymentId;_payProofDocPick=null;
+  const list=document.getElementById('payProofDocList');
+  list.innerHTML='<div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดเอกสาร...</div>';
+  document.getElementById('payProofModal').style.display='flex';
+  let docs=[];
+  try{docs=await _delReqRpc('app_list_documents',{p_customer_id:String(custId),p_limit:100,p_offset:0});}
+  catch(e){list.innerHTML=`<div style="padding:16px;text-align:center;color:var(--g5);font-size:12px">โหลดเอกสารไม่สำเร็จ: ${esc(e.message)}</div>`;return;}
+  docs=Array.isArray(docs)?docs:[];
+  if(!docs.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--g5);font-size:12px">ลูกค้ารายนี้ยังไม่มีเอกสารในคลัง</div>';return;}
+  const fmtD=s=>{if(!s)return'';try{return new Date(s).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}catch(e){return s;}};
+  list.innerHTML=docs.map(d=>`
+    <label style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-bottom:1px solid var(--g1);cursor:pointer">
+      <input type="radio" name="payDocPick" value="${esc(String(d.id))}" onchange="_payProofDocPick='${esc(String(d.id))}'" style="margin-top:3px">
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600">${esc(d.doc_name||d.doc_type||'เอกสาร')}</div>
+        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(d.doc_type):'',d.doc_status?esc(d.doc_status):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
+      </div>
+    </label>`).join('');
+}
+async function savePayProofLink(){
+  if(_payProofPaymentId==null){toast('กรุณาเลือกรายการชำระเงินก่อน','err');return;}
+  const docId=parseInt(_payProofDocPick,10);
+  if(!docId){toast('กรุณาเลือกเอกสารก่อน','err');return;}
+  if(!(await guardSession()))return;
+  showLoading('กำลังบันทึก...');
+  try{
+    await _delReqRpc('app_save_case_payment',{p_payment_id:_payProofPaymentId,p_proof_document_id:docId});
+    document.getElementById('payProofModal').style.display='none';
+    toast('ผูกหลักฐานการชำระเงินแล้ว');
+    await _loadCasePayments(_payCaseId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else if(e&&e.message==='document_not_allowed')toast('เอกสารนี้ไม่ใช่ของลูกค้าเจ้าของเคส — ผูกไม่ได้','err');
     else toast('ไม่สำเร็จ: '+e.message,'err');
   }finally{hideLoading();}
 }
