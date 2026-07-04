@@ -160,6 +160,43 @@ REG_RESOLUTION_<YYYYMMDD>_<GROUP>
 
 ---
 
+## ภาคผนวก — Stage 54A-10B (Registration Category Infrastructure Prep)
+
+- **อัปเดตเมื่อ:** 2026-07-04 · **Repo HEAD ก่อนเริ่ม:** `fd53423`
+- **สรุป:** เพิ่ม **หมวดใหม่ (category) `registration_resolution`** เป็น **infrastructure เท่านั้น** — ยังไม่มีแม่แบบใดใช้หมวดนี้
+
+### คีย์/ป้ายที่เลือกใช้
+| ส่วน | ค่า |
+|---|---|
+| internal category key | `registration_resolution` |
+| ป้ายไทย (frontend `_CTPL_CAT`) | `ขึ้นทะเบียนตามมติ ครม.` |
+| ป้ายอังกฤษ (อ้างอิง/เอกสาร) | `Cabinet-resolution registration` |
+
+> **เหตุผลที่ใช้ key นี้ (ไม่ย่อ):** คีย์เดิมเป็น lowercase snake_case และมีแบบหลายคำอยู่แล้ว (`change_employer`, `work_permit`, `report_90`) · คอลัมน์ `category` เป็น `text` ไม่มีลิมิตความยาว · `registration_resolution` จึงเข้ากับ convention และไม่กำกวม — ไม่มีเหตุผลเชิงโครงสร้างให้ย่อ
+
+### ทำอะไรบ้าง (additive + idempotent ทั้งหมด)
+สร้าง migration ใหม่ 1 ไฟล์: `supabase/migrations/20260809_registration_resolution_category.sql`
+1. ขยาย CHECK `case_templates_category_check` (drop-if-exists + add) — เพิ่ม `registration_resolution`
+2. ขยาย CHECK `cases_category_check` — จำเป็นเพราะ `app_create_case` คัดลอก `template.category` → `cases.case_category`
+3. `create or replace app_admin_save_case_template` (คัดจาก 20260808, แก้เฉพาะบรรทัด enum หมวด) — ให้ admin บันทึกแม่แบบหมวดใหม่ได้
+4. `create or replace app_list_cases` (คัดจาก 20260802, แก้เฉพาะบรรทัด enum หมวด) — ให้ตัวกรองเคสยอมรับหมวดใหม่
+
+Frontend: `rungfar_crm_17.html` — เพิ่ม `registration_resolution:'ขึ้นทะเบียนตามมติ ครม.'` ใน `_CTPL_CAT` (แหล่งเดียว) → ไหลไปยัง dropdown สร้าง/แก้แม่แบบ, การจัดกลุ่ม list, ตัวกรองหมวดในหน้าเคส, และป้ายทุกจุดอัตโนมัติ
+
+### กติกาที่ย้ำ (สำหรับสเตจถัดไป)
+- **หมวดนี้เป็นโครงสร้างเปล่า** — ห้ามถือว่ามีแม่แบบพร้อมใช้ · ยังไม่ seed แม่แบบใด ๆ
+- **แม่แบบจริงต้องมีแหล่งตรวจแล้วต่อมติ** (PDF/คู่มือของมตินั้น) · **1 มติ ครม. = 1 แม่แบบ** · ห้ามเดา law/มติ/ฟอร์ม/ค่าธรรมเนียม
+- **CI_MYANMAR ไม่ใช่ถังของงานขึ้นทะเบียนตามมติ ครม.** — คงเป็นงาน CI/เอกสาร/สถานะ ของพม่าเท่านั้น
+- **ยังไม่รัน SQL กับ Supabase** — migration เตรียมไว้ให้เจ้าของรันเองภายหลัง (idempotent ปลอดภัยรันซ้ำ)
+
+### สเตจถัดไป (ปรับจากหัวข้อ 11)
+- ✅ **54A-10B (หมวด):** ทำแล้ว — key = `registration_resolution`
+- ต่อไป **54A-10C:** เตรียมแหล่ง (OCR P10 · วันที่มติ P14 · PDF CI แท้ถ้าต้องการ)
+- **54A-10D:** seed 1 แม่แบบต่อ 1 มติที่ตรวจแล้ว ในหมวด `registration_resolution` (`on conflict do nothing`)
+- **54A-10E:** กรอกเนื้อหารายมติผ่าน apply-script pattern (dry-run/ROLLBACK)
+
+---
+
 ## 12. Final report (สรุปสิ่งที่ทำในสเตจนี้)
 
 **ไฟล์ที่สร้าง/แก้:**

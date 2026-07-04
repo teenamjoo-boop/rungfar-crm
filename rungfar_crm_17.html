@@ -13039,7 +13039,7 @@ let _ctplDetail=null;          // {template, items} ของแม่แบบ�
 let _ctplShowInactive=false;
 let _ctplEditId=null;          // template id ที่กำลังแก้ไขใน modal (null = สร้างใหม่)
 let _ctplItemEditId=null;      // item id ที่กำลังแก้ไขใน modal (null = สร้างใหม่)
-const _CTPL_CAT={mou:'MOU',ci:'CI',visa:'วีซ่า',work_permit:'ใบอนุญาตทำงาน',report_90:'รายงานตัว 90 วัน',change_employer:'เปลี่ยนนายจ้าง',renewal:'ต่ออายุ',notification:'แจ้งเข้า-ออก',other:'อื่น ๆ'};
+const _CTPL_CAT={mou:'MOU',ci:'CI',visa:'วีซ่า',work_permit:'ใบอนุญาตทำงาน',report_90:'รายงานตัว 90 วัน',change_employer:'เปลี่ยนนายจ้าง',renewal:'ต่ออายุ',notification:'แจ้งเข้า-ออก',registration_resolution:'ขึ้นทะเบียนตามมติ ครม.',other:'อื่น ๆ'};
 const _CTPL_FROM={worker:'แรงงาน',employer:'นายจ้าง',establishment:'สถานประกอบการ',case:'เคส',payment:'การชำระเงิน',internal:'ภายใน'};
 const _CTPL_STATUS={draft:'ฉบับร่าง',preparing_documents:'กำลังเตรียมเอกสาร',ready_to_submit:'พร้อมยื่น',submitted:'ยื่นแล้ว',waiting_result:'รอผล',approved:'อนุมัติ',rejected:'ไม่อนุมัติ',cancelled:'ยกเลิก',completed:'เสร็จสิ้น'};
 function _ctplMissing(e){return !!(e&&(e.status===404||/does not exist|Could not find the function/i.test((e.pgmsg||e.message||''))));}
