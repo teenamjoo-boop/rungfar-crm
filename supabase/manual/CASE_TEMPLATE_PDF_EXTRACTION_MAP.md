@@ -345,3 +345,47 @@
 - อัปเดต `CASE_TEMPLATE_CONTENT_REVIEW_PACK.md` (ภาคผนวกคำตอบเจ้าของ)
 - อัปเดต `CASE_TEMPLATE_CONTENT_WORKSHEET.md` เฉพาะ 4 แม่แบบที่เจ้าของอนุมัติ (OUT + MOU×3) — กรอกช่องที่ยืนยัน · ค่าธรรมเนียม/มติ = NEED_REVIEW
 - **ยังไม่ทำ:** OCR P10 (เลื่อนตามเจ้าของ) · ไม่แตะ SQL/HTML/UI/seed
+
+---
+
+# ภาคผนวก B — Stage 54A-9H2 (owner mapping correction)
+
+- **อัปเดตเมื่อ:** 2026-07-04 · HEAD `88bfc9a` · เอกสาร/apply-script เท่านั้น (ไม่รัน SQL)
+
+| หัวข้อ | การแก้ไขตามเจ้าของ |
+|---|---|
+| **EMPLOYER_NOTIFICATION_IN** | เจ้าของยืนยัน **P01/P07 = แจ้งเข้า** → เพิ่มลง apply script (eligibility + process) · **law/form/cabinet = NEED_REVIEW** เพราะไฟล์ปนถ้อยคำ บต.53/แจ้งออก (ต้องตรวจก่อน finalize) — ไม่เดาแบบฟอร์ม |
+| **EMPLOYER_NOTIFICATION_OUT** | **แหล่งหลัก = new_01/P17** (เนื้อหาตรงกับ P02 ทุกตัวอักษร → P17 ยืนยัน mapping OUT) · เนื้อหา ม.13ว.1/ม.46ว.3, บต.53 คงเดิม |
+| **CI_MYANMAR** | เจ้าของยืนยัน **P09/P14 ใช้กับงาน CI พม่า** → เพิ่มลง apply script (source-backed): cabinet = มติ 19 ส.ค. 2568 (P09), law = ม.63/2 (P14)+ม.64/1, form = บต.32, เน้นเอกสารหน้า 8 · ⚠️ PDF **ไม่ได้เขียนคำว่า "CI" ตรง ๆ** — mapping เป็นการยืนยันของเจ้าของ · วันที่มติ P14/ค่าธรรมเนียม = NEED_REVIEW |
+| **MoU ×3** | คงเดิม — ใช้ชุด P03/P04/P06 ร่วมกัน ทั้งสาย ม.41/บต.31 และ ม.46/บต.33 · ยังไม่แยกตามสัญชาติ |
+| **ค่าธรรมเนียม** | คง NEED_REVIEW ทุกแม่แบบ (ไม่ hardcode) |
+
+**apply script (`APPLY_CASE_TEMPLATE_APPROVED_CONTENT_20260704.sql`) — เดิม 9H2 เคยรวม 6 แม่แบบ**
+(ดูการแก้ไขล่าสุดใน ภาคผนวก C — 9H3 ปรับเหลือ 5 แม่แบบ)
+
+---
+
+# ภาคผนวก C — Stage 54A-9H3 (MOU cabinet + CI deferral correction)
+
+- **อัปเดตเมื่อ:** 2026-07-04 · HEAD `88bfc9a` · เอกสาร/apply-script เท่านั้น (ไม่รัน SQL)
+
+## C.1 MOU ไม่ใช่งานมติ ครม.
+- **MOU_MYANMAR_NEW / MOU_LAOS_NEW / MOU_CAMBODIA_NEW:** `cabinet_resolution_refs` = **ว่าง `[]`** (บังคับใน apply script) → dry-run **cab_n = 0** ทั้งสาม
+- ค่าธรรมเนียม = NEED_REVIEW เหมือนเดิม · law/form (ม.41/46/43, นจ.2, บต.31/33/13) คงเดิม
+
+## C.2 CI_MYANMAR — เลื่อนออก + reframe
+- **ถอด CI_MYANMAR ออกจาก apply script (SECTION 1)** — ไม่กรอกเข้า CRM ในรอบนี้
+- เหตุผล: **P09/P14 คืองาน "ขึ้นทะเบียน/ขออนุญาตทำงานตามมติ ครม." สำหรับแรงงานพม่า ไม่ใช่ CI ล้วน**
+  - แต่ละมติ ครม. มี **เงื่อนไข/เอกสาร/ระยะเวลา/ขั้นตอนต่างกัน** → ไม่ควรยัดรวมเป็น CI_MYANMAR เดียว
+  - PDF ไม่ได้เขียนคำว่า "CI" ตรง ๆ (mapping เดิมเป็นการยืนยันเชิงธุรกิจของเจ้าของ)
+- สถานะใหม่: **PARTIAL / NEED_REVIEW** — เนื้อหา P09/P14 เก็บเป็น "ร่างอ้างอิง" ใน worksheet เท่านั้น
+
+## C.3 ข้อแนะนำการออกแบบในอนาคต (future template family)
+- สร้าง **template family ใหม่**: **“ขึ้นทะเบียนใหม่ / ขออนุญาตทำงานตามมติ ครม.”**
+  - **1 มติ ครม. = 1 template** (แยกตามมติ/รอบ) — ไม่รวมทุกมติเป็นแม่แบบเดียว
+  - แต่ละแม่แบบต้อง **ตรวจ PDF/คู่มือของมตินั้นก่อน** จึงกรอก (เช่น มติ 19 ส.ค. 2568 = P09, ม.63/2 = P14 คนละมติ/บริบท)
+  - ห้าม overload CI_MYANMAR เป็นถังรวมงานมติ ครม.
+
+## C.4 apply script รอบนี้ (5 แม่แบบ, dry-run/ROLLBACK)
+MOU_MYANMAR_NEW · MOU_LAOS_NEW · MOU_CAMBODIA_NEW · EMPLOYER_NOTIFICATION_OUT (แหล่งหลัก new_01/P17) · EMPLOYER_NOTIFICATION_IN (owner-confirmed แจ้งเข้า; law/form = NEED_REVIEW)
+**cab_n คาดหวัง = 0 ทุกแถว** · CI_MYANMAR ไม่อยู่ในผล

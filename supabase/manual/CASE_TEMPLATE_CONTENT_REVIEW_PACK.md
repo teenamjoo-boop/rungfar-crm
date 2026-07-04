@@ -255,3 +255,26 @@
 
 ## ไฟล์ใหม่
 - **P17** = สำเนาเนื้อหา P02 (แจ้งออก) · **P18** = สำเนาเนื้อหา P08 (ลงทะเบียนคนต่างด้าว) · **P19** = ใหม่: ลงทะเบียนระบบ "สำหรับนายจ้าง-คนไทย" (105 หน้า, คู่มือระบบฝั่งนายจ้าง)
+
+---
+
+# ภาคผนวก — Stage 54A-9H2 (owner mapping correction)
+
+เจ้าของแก้ไข mapping ก่อนกรอกลง CRM (2026-07-04) — สรุปสถานะพร้อมกรอก:
+
+**พร้อมกรอก (อยู่ใน apply script, dry-run):** 6 แม่แบบ *(⚠️ ปรับใน 9H3 ด้านล่าง เหลือ 5)*
+- **MOU_MYANMAR/LAOS/CAMBODIA** — VERIFIED (ชุด P03/P04/P06, 2 สาย ม.41+ม.46) · ค่าธรรมเนียม/มติ = NEED_REVIEW
+- **EMPLOYER_NOTIFICATION_OUT** — VERIFIED · แหล่งหลัก **new_01/P17** (ตรงกับ P02)
+- **EMPLOYER_NOTIFICATION_IN** — owner-confirmed = แจ้งเข้า (P01/P07) · กรอกเฉพาะ eligibility/process · **มาตรา/แบบฟอร์ม/มติ = NEED_REVIEW** (ไฟล์ปนถ้อยคำแจ้งออก บต.53 — ต้องตรวจก่อน finalize)
+- **CI_MYANMAR** — *(9H2 เดิม; ดูการแก้ 9H3 ด้านล่าง)*
+
+**ยังไม่กรอก:** VISA_WP_RENEWAL, WP_RENEWAL (NEED_OCR — P10) · VISA_RENEWAL, REPORT_90_DAYS, HEALTH_INSURANCE (NEED_SOURCE) · CHANGE_EMPLOYER, CHANGE_EMPLOYER_URGENT (PARTIAL — รอไฟล์/นิยาม) · WORKER_DOCUMENT_FIX, PASSPORT_UPDATE, OTHER_LABOR_DOCUMENT (PARTIAL)
+
+---
+
+# ภาคผนวก — Stage 54A-9H3 (MOU cabinet + CI deferral)
+
+- **MOU_*** — ยืนยันว่า **ไม่ใช่งานมติ ครม.** → `cabinet_resolution_refs` = ว่าง `[]` (cab_n = 0) · ค่าธรรมเนียม = NEED_REVIEW
+- **CI_MYANMAR — ⛔ เลื่อนออกจาก apply script (ไม่กรอกเข้า CRM รอบนี้):** P09/P14 คืองาน "ขึ้นทะเบียน/ขออนุญาตทำงานตามมติ ครม." ไม่ใช่ CI ล้วน · แต่ละมติมีเงื่อนไข/เอกสาร/ระยะเวลาต่างกัน → สถานะ PARTIAL/NEED_REVIEW
+- **ข้อแนะนำอนาคต:** สร้าง template family ใหม่ **“ขึ้นทะเบียนใหม่ / ขออนุญาตทำงานตามมติ ครม.”** (1 มติ = 1 แม่แบบ) หลังตรวจ PDF ของมตินั้น — ห้าม overload CI_MYANMAR
+- **apply script รอบนี้ = 5 แม่แบบ:** MOU×3 + EMPLOYER_NOTIFICATION_OUT + EMPLOYER_NOTIFICATION_IN (dry-run/ROLLBACK)
