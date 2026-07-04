@@ -282,3 +282,66 @@
 2. ขอ PDF เพิ่มสำหรับ NEED_SOURCE (เปลี่ยนนายจ้าง, งาน ตม. VISA/90วัน)
 3. ตัดสินใจ MoU: ใช้ชุดเดียวกันกับ 3 สัญชาติ และพิจารณาสร้าง template เฉพาะ ม.63/63-1/64
 4. เมื่อยืนยันแล้วค่อยกรอก `CASE_TEMPLATE_CONTENT_WORKSHEET.md` → จากนั้นจึงทำ seed/SQL ในสเตจถัดไป
+
+---
+
+# ภาคผนวก — Stage 54A-9G (New PDF intake + Owner decisions merged)
+
+- **อัปเดตเมื่อ:** 2026-07-04
+- **Repo HEAD ขณะอัปเดต:** `a7a2afd` — "Add case template owner decision answers"
+- **อ้างอิงคำตอบเจ้าของ:** `CASE_TEMPLATE_OWNER_DECISION_ANSWERS.md`
+- **ขอบเขต:** เอกสารเท่านั้น · ไม่ OCR (เจ้าของอนุมัติ OCR แต่ให้ทำ "ทีหลัง") · ไม่แตะ CRM/SQL/HTML
+
+## A.1 PDF inventory เพิ่มเติม (ไฟล์ใหม่ 3 ไฟล์ → รวมทั้งหมด 19 ไฟล์)
+
+| ID | filename | md5 (16) | pages | text? | subject | duplicate |
+|----|----------|----------|-------|-------|---------|-----------|
+| P17 | `20260704_new_01_notification_out.pdf.pdf` | `58cdff6290fc7ac7` | 34 | ✅ | แจ้งคนต่างด้าวออกจากงาน — ม.13ว.1/ม.46ว.3 — บต.53 | **เนื้อหาซ้ำ P02** (text ตรงกันทุกตัวอักษร, md5 ต่าง = export ใหม่) |
+| P18 | `20260704_new_02_foreigner_registration.pdf.pdf` | `10fbb898f060f588` | 44 | ✅ | ลงทะเบียน/บัญชีผู้ใช้ สำหรับคนต่างด้าว | **เนื้อหาซ้ำ P08** (text ตรงกันทุกตัวอักษร) |
+| P19 | `20260704_new_03_employer_registration_thai.pdf.pdf` | `28be8a95314abeb1` | 105 | ✅ | **ลงทะเบียนเข้าใช้ระบบ สำหรับนายจ้าง-คนไทย** (บุคคลธรรมดา/นิติบุคคล) | ไม่ซ้ำ — เนื้อหาใหม่ (คู่มือระบบ ฝั่งนายจ้าง) |
+
+> **หมายเหตุ ID:** ไม่มีการเปลี่ยน P01–P16 · ไฟล์ใหม่ได้ ID P17–P19 (หลัง P16) · P17/P18 เป็น "content-duplicate" ของ P02/P08 (byte ต่าง แต่ข้อความเหมือน 100%) — ให้ใช้เป็นสำเนายืนยัน ไม่ใช่แหล่งใหม่
+> **สรุปสถานะไฟล์:** 19 ไฟล์ · byte-unique 18 (P01≡P07) · content-unique 16 (P17≡P02, P18≡P08 ทางเนื้อหา) · image-only 1 (P10) · P19 เป็นเนื้อหาใหม่จริง
+
+## A.2 Duplicate analysis (อัปเดต)
+- **Byte-identical:** P01 ≡ P07 (เหมือนเดิม)
+- **Content-identical (text ตรงกัน, md5 ต่าง):**
+  - **P17 ≡ P02** (แจ้งออก / บต.53) — ยืนยันชัดว่า P02 คืองาน "แจ้งออก" จริง
+  - **P18 ≡ P08** (ลงทะเบียนคนต่างด้าว)
+- **Unique ใหม่:** P19 (ลงทะเบียนนายจ้าง-คนไทย) — เข้าชุด System set ร่วมกับ P08/P15
+
+## A.3 การรวมคำตอบเจ้าของเข้ากับ mapping (owner decisions merged)
+
+| หัวข้อ | คำตอบเจ้าของ | ผลต่อ mapping |
+|---|---|---|
+| **A. MoU** | ใช้ได้ทั้งสายบริษัทนำเข้า (ม.41/บต.31) และสายนายจ้าง (ม.46/บต.33) · เอกสารประกอบส่วนใหญ่ยื่นทั้งคู่ | MOU×3 = VERIFIED · ใช้ชุด P03/P04/P06 ร่วมกัน 3 สัญชาติ · ระบุทั้ง 2 สายใน form_refs |
+| **B. Renew P10** | อนุมัติ OCR **"ทีหลัง"** · เป็นการต่ออายุใบอนุญาต **พม่า** ตาม **มติ ครม. 8 ก.ค. 2568** · ดูหน้า 9 เอกสารประกอบ | P10 = **NEED_OCR (อนุมัติแล้ว แต่เลื่อนทำ)** · ยังไม่ดึงเนื้อในสเตจนี้ · วันที่มติ = ข้อมูลจากเจ้าของ (ยังไม่ยืนยันจากตัว PDF เพราะเป็นภาพ) |
+| **C. P01/P07** | ยืนยันทั้งคู่เป็น **"แจ้งเข้า"** · ไฟล์ "แจ้งออก" หามาแล้ว (= P17) | EMPLOYER_NOTIFICATION_IN → ใช้ P01/P07 (ตามเจ้าของ) · **แต่ form_refs = NEED_REVIEW** เพราะในไฟล์แสดงเฉพาะ บต.53 (แบบของ "ออก") — แบบของ "แจ้งเข้า" ยังไม่ยืนยัน ห้ามเดา |
+| **D. CI_MYANMAR** | ยืนยัน P09/P14 ใช้กับงาน CI พม่าได้ · เป็นการ**ขึ้นทะเบียนใหม่ก่อนได้ CI** · เน้นหน้า 8 เอกสารประกอบ | CI_MYANMAR = PARTIAL (เจ้าของยืนยันแหล่ง) · เพิ่มโน้ต "ขึ้นทะเบียนใหม่ → CI" + เน้นหน้า 8 |
+| **E. ค่าธรรมเนียม** | เว้น NEED_REVIEW ก่อน · เริ่ม 100 บาท (ค่าทำรายการ) + บวกเพิ่มแล้วแต่เคส (~+10) · รออัปเดตเลขแน่นอน | ทุก template คง **ค่าธรรมเนียม = NEED_REVIEW** |
+| **F. ไฟล์ที่ขาด** | เปลี่ยนนายจ้าง = **แจ้งออก(นายจ้างเดิม) + แจ้งเข้า(นายจ้างใหม่)** · งาน ตม. (วีซ่า/90วัน) หามาให้ภายหลัง | CHANGE_EMPLOYER/URGENT → PARTIAL (กระบวนการ = P02/P17 + P01/P07 ตามนิยามเจ้าของ) · VISA_RENEWAL/REPORT_90_DAYS คง NEED_SOURCE |
+| **G. อนุมัติ 4 แม่แบบ** | อนุมัติกรอก EMPLOYER_NOTIFICATION_OUT + MOU×3 เฉพาะช่องที่มีแหล่ง (P02, P03/P04/P06) · ค่าธรรมเนียม/ระยะเวลา/เงื่อนไข = NEED_REVIEW ห้ามเดา | อัปเดต worksheet 4 แม่แบบนี้ (ดู A.5) |
+
+## A.4 สถานะ template หลังรวมคำตอบเจ้าของ (เทียบของเดิม)
+
+| template | เดิม (9E) | ใหม่ (9G) | เหตุผล |
+|---|---|---|---|
+| MOU_MYANMAR_NEW / LAOS / CAMBODIA | VERIFIED | **VERIFIED (อนุมัติกรอก)** | เจ้าของยืนยันชุด P03/P04/P06 + 2 สาย |
+| EMPLOYER_NOTIFICATION_OUT | VERIFIED | **VERIFIED (อนุมัติกรอก)** | P02 + P17 ยืนยันตรงกัน |
+| EMPLOYER_NOTIFICATION_IN | NEED_REVIEW | **PARTIAL** | เจ้าของยืนยันทิศทาง=เข้า (P01/P07) · form ยัง NEED_REVIEW |
+| CI_MYANMAR | PARTIAL | **PARTIAL (แหล่งยืนยัน)** | เจ้าของยืนยัน P09/P14 ใช้ได้ · process/CI-specific ยังต้องตรวจ |
+| CHANGE_EMPLOYER | NEED_SOURCE | **PARTIAL** | นิยามเจ้าของ = แจ้งออก+แจ้งเข้า (P02/P17+P01/P07) |
+| CHANGE_EMPLOYER_URGENT | NEED_SOURCE | **PARTIAL** | เหมือน CHANGE_EMPLOYER · เงื่อนไขเร่งด่วน NEED_REVIEW |
+| VISA_WP_RENEWAL / WP_RENEWAL | NEED_REVIEW | **NEED_OCR (อนุมัติ, เลื่อน)** | P10 ภาพสแกน · OCR อนุมัติแต่ทำทีหลัง |
+| VISA_RENEWAL / REPORT_90_DAYS | NEED_SOURCE | **NEED_SOURCE** | ไฟล์ ตม. มาภายหลัง |
+| WORKER_DOCUMENT_FIX / PASSPORT_UPDATE | PARTIAL | **PARTIAL** | P16 (บต.44) เหมือนเดิม |
+| HEALTH_INSURANCE | NEED_SOURCE | **NEED_SOURCE (งานภายใน)** | ไม่มีคู่มือกระบวนการ |
+| OTHER_LABOR_DOCUMENT | PARTIAL | **PARTIAL** | P05/P11/P12/P13 เหมือนเดิม |
+
+**สรุปนับใหม่:** VERIFIED 4 · PARTIAL 6 (เพิ่ม IN, CHANGE_EMPLOYER, CHANGE_EMPLOYER_URGENT; CI คงที่) · NEED_OCR 2 · NEED_SOURCE 3 (VISA_RENEWAL, REPORT_90_DAYS, HEALTH_INSURANCE)
+
+## A.5 สิ่งที่แก้ในสเตจนี้
+- อัปเดตไฟล์นี้ (ภาคผนวก A)
+- อัปเดต `CASE_TEMPLATE_CONTENT_REVIEW_PACK.md` (ภาคผนวกคำตอบเจ้าของ)
+- อัปเดต `CASE_TEMPLATE_CONTENT_WORKSHEET.md` เฉพาะ 4 แม่แบบที่เจ้าของอนุมัติ (OUT + MOU×3) — กรอกช่องที่ยืนยัน · ค่าธรรมเนียม/มติ = NEED_REVIEW
+- **ยังไม่ทำ:** OCR P10 (เลื่อนตามเจ้าของ) · ไม่แตะ SQL/HTML/UI/seed

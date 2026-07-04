@@ -230,3 +230,28 @@
 2. กรอกจริง 4 แม่แบบ VERIFIED (หัวข้อ 6) ลง `CASE_TEMPLATE_CONTENT_WORKSHEET.md` แล้วเลื่อนสถานะเป็น READY_TO_ENTER_CRM
 3. ขอ PDF เพิ่มสำหรับ NEED_SOURCE (เปลี่ยนนายจ้าง, งาน ตม.) และตัดสินใจ OCR P10
 4. เมื่อ worksheet พร้อม → สเตจถัดไปค่อยกรอกลงหน้า "แม่แบบเอกสาร/ขั้นตอนงาน" ใน CRM (ยังไม่ทำในตอนนี้)
+
+---
+
+# ภาคผนวก — Owner-decision update (Stage 54A-9G, 2026-07-04, HEAD `a7a2afd`)
+
+รวมคำตอบเจ้าของจาก `CASE_TEMPLATE_OWNER_DECISION_ANSWERS.md` + ไฟล์ PDF ใหม่ 3 ไฟล์ (P17–P19)
+
+## สถานะใหม่ (แทนที่หัวข้อ 2 เดิม)
+- **VERIFIED (4):** MOU_MYANMAR_NEW, MOU_LAOS_NEW, MOU_CAMBODIA_NEW, EMPLOYER_NOTIFICATION_OUT → **เจ้าของอนุมัติกรอก** (เฉพาะช่องที่ยืนยัน · ค่าธรรมเนียม/มติ = NEED_REVIEW)
+- **PARTIAL (6):** CI_MYANMAR, EMPLOYER_NOTIFICATION_IN, CHANGE_EMPLOYER, CHANGE_EMPLOYER_URGENT, WORKER_DOCUMENT_FIX, PASSPORT_UPDATE, OTHER_LABOR_DOCUMENT — *(หมายเหตุ: OTHER เป็น PARTIAL อยู่แล้ว รวมเป็น 7 รายการ PARTIAL)*
+- **NEED_OCR (2):** VISA_WP_RENEWAL, WP_RENEWAL — เจ้าของอนุมัติ OCR P10 แต่ให้ทำ **ทีหลัง** (ยังไม่กรอก)
+- **NEED_SOURCE (3):** VISA_RENEWAL, REPORT_90_DAYS (ไฟล์ ตม.มาภายหลัง), HEALTH_INSURANCE (งานภายใน)
+
+## การเปลี่ยนแปลงสำคัญจากคำตอบเจ้าของ
+1. **EMPLOYER_NOTIFICATION_IN:** เจ้าของยืนยัน P01/P07 = "แจ้งเข้า" → ปลดจากบล็อก เป็น PARTIAL
+   - กรอกได้: eligibility (นายจ้างแจ้งคนต่างด้าวเข้าทำงาน)
+   - **form_refs = NEED_REVIEW** — ในไฟล์แสดงเฉพาะ บต.53 (แบบของ "ออก") ยังไม่พบแบบของ "แจ้งเข้า" → ห้ามเดา (อาจเป็น บต.52 แต่ไม่มีในข้อความ)
+2. **EMPLOYER_NOTIFICATION_OUT:** ยืนยันด้วย P17 (เนื้อหาตรงกับ P02 ทุกตัวอักษร) → VERIFIED เต็ม
+3. **CHANGE_EMPLOYER / CHANGE_EMPLOYER_URGENT:** นิยามเจ้าของ = **แจ้งออก (นายจ้างเดิม) + แจ้งเข้า (นายจ้างใหม่)** → PARTIAL (อ้างอิง P02/P17 + P01/P07); เงื่อนไข "เร่งด่วน" = NEED_REVIEW
+4. **CI_MYANMAR:** เจ้าของยืนยัน P09/P14 ใช้ได้ = "ขึ้นทะเบียนใหม่ก่อนได้ CI" เน้นหน้า 8 → PARTIAL (แหล่งยืนยันแล้ว)
+5. **Renew (P10):** เป็นการต่ออายุ **พม่า ตามมติ ครม. 8 ก.ค. 2568** (ข้อมูลเจ้าของ) · ดูหน้า 9 · **OCR อนุมัติแต่เลื่อนทำ** → ยังไม่กรอก
+6. **ค่าธรรมเนียม:** ทุก template คง NEED_REVIEW (เริ่ม ~100 บาท + บวกเพิ่มแล้วแต่เคส — ยังไม่ยืนยันเลขแน่นอน)
+
+## ไฟล์ใหม่
+- **P17** = สำเนาเนื้อหา P02 (แจ้งออก) · **P18** = สำเนาเนื้อหา P08 (ลงทะเบียนคนต่างด้าว) · **P19** = ใหม่: ลงทะเบียนระบบ "สำหรับนายจ้าง-คนไทย" (105 หน้า, คู่มือระบบฝั่งนายจ้าง)
