@@ -1711,8 +1711,9 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 <!-- MODAL: CREATE CASE (Stage 54A-3, staff+admin) — เคสงานภายใน ไม่ใช่เอกสารราชการ -->
 <div class="mo" id="caseCreateModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()">
-  <div class="mh"><div class="mt">สร้างเคสงาน</div><button class="xbtn" onclick="document.getElementById('caseCreateModal').style.display='none'">×</button></div>
+  <div class="mh"><div class="mt">สร้างเคสงานเอกสาร</div><button class="xbtn" onclick="document.getElementById('caseCreateModal').style.display='none'">×</button></div>
   <div class="mbody">
+    <div style="font-size:11.5px;color:var(--g5);margin-bottom:12px">เคสเตรียมงานภายในบริษัท — พนักงานนำข้อมูลไปยื่นเองภายหลัง ระบบไม่ได้ยื่นถึงหน่วยงานราชการ</div>
     <div class="fgi" style="margin-bottom:12px;position:relative">
       <label class="fl">ลูกค้า / แรงงาน *</label>
       <input class="fi2" id="ccf_cust_search" placeholder="ค้นหาชื่อ / พาสปอร์ต / เลขต่างด้าว" oninput="ccfFilterCust()" onblur="setTimeout(()=>{const r=document.getElementById('ccf_cust_results');if(r)r.style.display='none';},150)" autocomplete="off">
@@ -1722,7 +1723,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ประเภทงาน *</label><select class="fi2" id="ccf_template" onchange="ccfTemplateChanged()"></select>
       <div id="ccf_tpl_preview" style="display:none;margin-top:6px;font-size:12px;color:var(--g6);background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:7px 10px"></div>
     </div>
-    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเคส (แก้ไขได้)</label><input class="fi2" id="ccf_title" placeholder="เว้นว่าง = ตั้งชื่อจากแม่แบบ + ชื่อลูกค้า"></div>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเคส (แก้ไขได้)</label><input class="fi2" id="ccf_title" placeholder="เว้นว่าง = ตั้งชื่อจากประเภทงาน + ชื่อลูกค้า"></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ความสำคัญ</label><select class="fi2" id="ccf_priority"></select></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ผู้รับผิดชอบ</label><select class="fi2" id="ccf_assignee"></select></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">วันครบกำหนด</label><input class="fi2" id="ccf_due" type="date"></div>
@@ -2723,10 +2724,10 @@ const LANG = {
     caseDashReady:'พร้อมยื่น', caseDashSubmitted:'ยื่นแล้ว', caseDashWaiting:'รอผล',
     caseDashRejected:'ไม่อนุมัติ', caseDashDone:'เสร็จสิ้น', caseDashDueSoon:'ใกล้ครบกำหนด',
     caseDashOverdue:'เกินกำหนด', caseDashHint:'แตะเพื่อกรองตามสถานะ (แตะซ้ำเพื่อล้าง)',
-    caseDashNeedMigration:'ยังไม่ได้ติดตั้งสรุปเคส — กรุณา apply migration 20260802 ก่อน',
+    caseDashNeedMigration:'การ์ดสรุปเคสยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260802)',
     trkSec:'ติดตามสถานะหลังยื่น',
     trkAdd:'+ เพิ่มบันทึกติดตาม', trkNone:'ยังไม่มีบันทึกติดตามสำหรับเคสนี้',
-    trkNeedMigration:'ระบบติดตามยังไม่ติดตั้ง — กรุณา apply migration 20260807_case_tracking_logs.sql',
+    trkNeedMigration:'ส่วนบันทึกหลังยื่นยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260807)',
     trkGovStatus:'สถานะที่พบ', trkNextCheck:'ตรวจครั้งถัดไป', trkBy:'บันทึกโดย',
     empTblName:'ชื่อ', empTblNat:'สัญชาติ', empTblStatus:'สถานะ',
     grpTitle:'จัดการกลุ่มงาน', grpAdd:'+ เพิ่มกลุ่ม', grpPerson:'คน',
@@ -13062,7 +13063,7 @@ function _tplGuardBadge(t){
 }
 function _ctplMissing(e){return !!(e&&(e.status===404||/does not exist|Could not find the function/i.test((e.pgmsg||e.message||''))));}
 function _ctplBanner(){
-  return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">กำหนดรายการเอกสารและขั้นตอนที่ต้องใช้ในแต่ละประเภทงาน</div>`;
+  return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">พื้นที่ผู้ดูแลระบบ — ตรวจทานรายการเอกสารและขั้นตอนของแต่ละประเภทงาน · แม่แบบที่ติดป้าย "ยังไม่เปิดใช้งาน" พนักงานจะไม่เห็นในหน้าสร้างเคส · กลุ่ม "ทดสอบภายใน" ต้องตรวจ checklist ก่อนใช้จริง</div>`;
 }
 // STAGE 54A-9A: ข้อมูลเตรียมงาน (template metadata) — refs เก็บเป็น jsonb array ของ {label,...}
 function _ctplRefLabel(x){return (x&&typeof x==='object')?(x.label||x.name||x.section||x.code||''):String(x==null?'':x);}
@@ -13324,7 +13325,7 @@ const _CASE_ST_CLR={draft:'#6b7280',preparing_documents:'#b45309',ready_to_submi
 function _caseStChip(st){const c=_CASE_ST_CLR[st]||'#6b7280';return`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}1a;color:${c}">${esc(_CTPL_STATUS[st]||st)}</span>`;}
 function _casePriChip(p){const c=_CASE_PRI_CLR[p]||'#6b7280';return`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${c}1a;color:${c}">${esc(_CASE_PRI[p]||p)}</span>`;}
 function _caseBanner(){
-  return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">ใช้สำหรับเตรียมงานและติดตามงานภายในบริษัท ก่อนพนักงานนำข้อมูลไปยื่นจริง</div>`;
+  return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">ใช้สำหรับเตรียมงานและติดตามงานภายในบริษัท ก่อนพนักงานนำข้อมูลไปยื่นจริง — ระบบไม่เชื่อมต่อ/ไม่ยื่นถึงหน่วยงานราชการอัตโนมัติ</div>`;
 }
 function _caseAsgOptions(sel){
   const opts=(typeof assigneeEmps!=='undefined'?assigneeEmps:[]).map(e=>`<option value="${esc(e.employee_code)}"${e.employee_code===sel?' selected':''}>${esc(e.nickname||e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('');
@@ -13441,7 +13442,7 @@ async function _loadCases(){
       p_limit:CASE_PG,p_offset:(_casePage-1)*CASE_PG
     });
   }catch(e){
-    const msg=_caseMissing(e)?'ยังไม่ได้ติดตั้งระบบเคสงาน — กรุณา apply migration 20260802_basic_case_management.sql ก่อน':('โหลดไม่สำเร็จ: '+esc(e.message));
+    const msg=_caseMissing(e)?'ระบบเคสงานยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260802)':('โหลดไม่สำเร็จ: '+esc(e.message));
     area.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">${msg}</div>`;return;
   }
   _caseCache=Array.isArray(rows)?rows:[];
@@ -13564,7 +13565,7 @@ async function saveCaseCreate(){
     if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์สร้างเคส','err');
     else if(e&&e.message==='customer_not_found')toast('ไม่พบลูกค้า (อาจถูกลบไปแล้ว)','err');
     else if(e&&e.message==='template_not_found_or_inactive')toast('แม่แบบไม่พร้อมใช้งาน','err');
-    else toast((_caseMissing(e)?'กรุณา apply migration 20260802 ก่อน':'สร้างเคสไม่สำเร็จ: '+e.message),'err');
+    else toast((_caseMissing(e)?'ระบบเคสงานยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260802)':'สร้างเคสไม่สำเร็จ: '+e.message),'err');
   }finally{hideLoading();}
 }
 // ── รายละเอียดเคส ──
@@ -13632,11 +13633,11 @@ function _renderCaseDetail(){
       ${k.note?`<div style="font-size:12px;color:var(--g6);margin-top:6px;background:var(--g0);padding:3px 9px;border-radius:7px">📝 ${esc(k.note)}</div>`:''}
     </div>
     <div id="caseTplMeta"></div>
-    ${_caseSecShell('chk','เอกสารที่ต้องจัดการ',`<div id="caseChkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดเช็กลิสต์...</div></div>`,true)}
+    ${_caseSecShell('chk','Checklist เอกสาร',`<div id="caseChkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดเช็กลิสต์...</div></div>`,true)}
     ${_caseSecShell('pay','งานการเงินของเคส',`<div id="casePaySec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>`,false)}
     ${_caseSecShell('appt','นัดหมายที่ต้องติดตาม',`<div id="caseApptSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดนัดหมาย...</div></div>`,false)}
     ${_caseSecShell('trk','บันทึกหลังยื่น / เลขคำขอ',`<div id="caseTrkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดประวัติติดตาม...</div></div>`,false)}
-    ${_caseSecShell('hist','ประวัติการเปลี่ยนสถานะ',logs||'<div style="color:var(--g5);font-size:12.5px;padding:4px 0">ยังไม่มีประวัติ</div>',false)}`;
+    ${_caseSecShell('hist','ประวัติสถานะ',logs||'<div style="color:var(--g5);font-size:12.5px;padding:4px 0">ยังไม่มีประวัติ</div>',false)}`;
   // ชิปสรุปประวัติสถานะที่หัวข้อ (ใช้ข้อมูลที่โหลดมาแล้ว — ไม่มี RPC เพิ่ม)
   const _hl=(_caseDetail.logs||[]);
   if(_hl.length)_caseSecSet('hist',_secChip(_hl.length+' รายการ','var(--g1)','var(--g6)')+_secChip('ล่าสุด: '+esc(_CTPL_STATUS[_hl[0].new_status]||_hl[0].new_status),'var(--pp)','var(--pd)'),false);
@@ -13809,7 +13810,7 @@ async function _loadCaseChecklist(caseId){
   let rows=[];
   try{rows=await _delReqRpc('app_list_case_checklist',{p_case_id:caseId});}
   catch(e){
-    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">📎 ${_caseMissing(e)?'ระบบเช็กลิสต์ยังไม่ติดตั้ง — กรุณา apply migration 20260803_case_checklist_documents.sql':'โหลดเช็กลิสต์ไม่สำเร็จ: '+esc(e.message)}</div>`;
+    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">📎 ${_caseMissing(e)?'ส่วน Checklist เอกสารยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260803)':'โหลดเช็กลิสต์ไม่สำเร็จ: '+esc(e.message)}</div>`;
     return;
   }
   _chkRows=Array.isArray(rows)?rows:[];
@@ -13984,7 +13985,7 @@ async function _loadCasePayments(caseId){
       _delReqRpc('app_case_payment_summary',{p_case_id:caseId})
     ]);
   }catch(e){
-    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">💳 ${_caseMissing(e)?'ระบบการชำระเงินยังไม่ติดตั้ง — กรุณา apply migration 20260805_case_payments.sql':'โหลดข้อมูลการชำระเงินไม่สำเร็จ: '+esc(e.message)}</div>`;
+    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">💳 ${_caseMissing(e)?'ส่วนงานการเงินของเคสยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260805)':'โหลดข้อมูลการชำระเงินไม่สำเร็จ: '+esc(e.message)}</div>`;
     return;
   }
   _payRows=Array.isArray(rows)?rows:[];
@@ -14067,7 +14068,7 @@ async function savePayForm(){
   }catch(e){
     if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
     else if(e&&e.message==='invalid_amount')toast('ยอดเงินต้องไม่ติดลบ','err');
-    else toast((_caseMissing(e)?'กรุณา apply migration 20260805 ก่อน':'บันทึกไม่สำเร็จ: '+e.message),'err');
+    else toast((_caseMissing(e)?'ส่วนงานการเงินยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260805)':'บันทึกไม่สำเร็จ: '+e.message),'err');
   }finally{hideLoading();}
 }
 // ── เปลี่ยนสถานะ ──
@@ -14162,7 +14163,7 @@ async function _loadCaseAppointments(caseId){
       _delReqRpc('app_case_appointment_summary',{p_case_id:caseId})
     ]);
   }catch(e){
-    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">📅 ${_caseMissing(e)?'ระบบนัดหมายยังไม่ติดตั้ง — กรุณา apply migration 20260806_case_appointments.sql':'โหลดนัดหมายไม่สำเร็จ: '+esc(e.message)}</div>`;
+    sec.innerHTML=`<div style="background:#fff;border:1px dashed var(--g3);border-radius:var(--rl);padding:11px 14px;font-size:12px;color:var(--g5)">📅 ${_caseMissing(e)?'ส่วนนัดหมายยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260806)':'โหลดนัดหมายไม่สำเร็จ: '+esc(e.message)}</div>`;
     return;
   }
   _apptRows=Array.isArray(rows)?rows:[];
@@ -14241,7 +14242,7 @@ async function saveApptForm(){
   }catch(e){
     if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
     else if(e&&e.message==='case_not_found')toast('ไม่พบเคส','err');
-    else toast((_caseMissing(e)?'กรุณา apply migration 20260806 ก่อน':'บันทึกไม่สำเร็จ: '+e.message),'err');
+    else toast((_caseMissing(e)?'ส่วนนัดหมายยังไม่เปิดใช้งาน — แจ้งผู้ดูแลระบบ (20260806)':'บันทึกไม่สำเร็จ: '+e.message),'err');
   }finally{hideLoading();}
 }
 // ── เปลี่ยนสถานะนัดหมาย ──
