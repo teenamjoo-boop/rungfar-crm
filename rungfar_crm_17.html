@@ -1719,7 +1719,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
       <div id="ccf_cust_results" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:30;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);max-height:220px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.08)"></div>
       <div id="ccf_cust_sel" style="display:none;margin-top:6px;font-size:12px;color:var(--pd);background:var(--pp);border-radius:7px;padding:5px 10px"></div>
     </div>
-    <div class="fgi" style="margin-bottom:12px"><label class="fl">แม่แบบงาน *</label><select class="fi2" id="ccf_template" onchange="ccfTemplateChanged()"></select>
+    <div class="fgi" style="margin-bottom:12px"><label class="fl">ประเภทงาน *</label><select class="fi2" id="ccf_template" onchange="ccfTemplateChanged()"></select>
       <div id="ccf_tpl_preview" style="display:none;margin-top:6px;font-size:12px;color:var(--g6);background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:7px 10px"></div>
     </div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเคส (แก้ไขได้)</label><input class="fi2" id="ccf_title" placeholder="เว้นว่าง = ตั้งชื่อจากแม่แบบ + ชื่อลูกค้า"></div>
@@ -13042,6 +13042,24 @@ let _ctplItemEditId=null;      // item id ที่กำลังแก้ไ�
 const _CTPL_CAT={mou:'MOU',ci:'CI',visa:'วีซ่า',work_permit:'ใบอนุญาตทำงาน',report_90:'รายงานตัว 90 วัน',change_employer:'เปลี่ยนนายจ้าง',renewal:'ต่ออายุ',notification:'แจ้งเข้า-ออก',registration_resolution:'ขึ้นทะเบียนตามมติ ครม.',other:'อื่น ๆ'};
 const _CTPL_FROM={worker:'แรงงาน',employer:'นายจ้าง',establishment:'สถานประกอบการ',case:'เคส',payment:'การชำระเงิน',internal:'ภายใน'};
 const _CTPL_STATUS={draft:'ฉบับร่าง',preparing_documents:'กำลังเตรียมเอกสาร',ready_to_submit:'พร้อมยื่น',submitted:'ยื่นแล้ว',waiting_result:'รอผล',approved:'อนุมัติ',rejected:'ไม่อนุมัติ',cancelled:'ยกเลิก',completed:'เสร็จสิ้น'};
+// =============================================================
+// STAGE 54A-RESET-2 — frontend-only recovery guard
+//   * เปิดให้พนักงานสร้างเคสได้เฉพาะแม่แบบกลุ่มทดสอบภายใน (pilot) เท่านั้น
+//   * แม่แบบอื่น = "ยังไม่เปิดใช้งาน" — ยังเห็นในหน้าผู้ดูแลระบบ แต่สร้างเคสไม่ได้
+//   * ❌ ไม่ลบ/ไม่แก้ข้อมูลใน DB, ไม่แตะ RPC/SQL — เป็นการกรองฝั่งหน้าจออย่างเดียว
+// =============================================================
+const _TPL_PILOT=new Set(['MOU_MYANMAR_NEW','MOU_LAOS_NEW','MOU_CAMBODIA_NEW','EMPLOYER_NOTIFICATION_IN','EMPLOYER_NOTIFICATION_OUT']);
+const _TPL_FROZEN_CAT=new Set(['registration_resolution']);
+function _tplGuard(t){
+  if(!t)return'frozen';
+  if(_TPL_FROZEN_CAT.has(t.category))return'frozen';
+  return _TPL_PILOT.has(String(t.template_code||'').toUpperCase())?'pilot':'frozen';
+}
+function _tplGuardBadge(t){
+  return _tplGuard(t)==='pilot'
+    ?`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#fef3c7;color:#b45309;white-space:nowrap">ทดสอบภายใน</span>`
+    :`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#f3f4f6;color:#6b7280;white-space:nowrap">ยังไม่เปิดใช้งาน</span>`;
+}
 function _ctplMissing(e){return !!(e&&(e.status===404||/does not exist|Could not find the function/i.test((e.pgmsg||e.message||''))));}
 function _ctplBanner(){
   return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">กำหนดรายการเอกสารและขั้นตอนที่ต้องใช้ในแต่ละประเภทงาน</div>`;
@@ -13106,6 +13124,7 @@ async function renderCaseTpl(){
           <div style="font-size:11px;color:var(--g5);font-family:var(--mono);margin-top:2px">${esc(t.template_code)}${t.template_name_en?' · '+esc(t.template_name_en):''}</div>
         </div>
         <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--pp);color:var(--pd)">เช็คลิสต์ ${t.checklist_count} รายการ</span>
+        ${_tplGuardBadge(t)}
         <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;${t.is_active?'background:#ecfdf5;color:#059669':'background:#f3f4f6;color:#6b7280'}">${t.is_active?'ใช้งาน':'ปิดใช้งาน'}</span>
       </div>
       ${_ctplMetaChips(t)?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${_ctplMetaChips(t)}</div>`:''}
@@ -13152,8 +13171,10 @@ function _renderCaseTplDetail(){
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px">
       <button class="btn btn-g btn-sm" onclick="ctplBack()">← กลับ</button>
       <span style="font-size:14px;font-weight:700;color:var(--g9)">${esc(t.template_name_th||'')}</span>
+      ${_tplGuardBadge(t)}
       <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;${t.is_active?'background:#ecfdf5;color:#059669':'background:#f3f4f6;color:#6b7280'}">${t.is_active?'ใช้งาน':'ปิดใช้งาน'}</span>
     </div>
+    ${_tplGuard(t)==='frozen'?`<div style="background:#f3f4f6;border:1px solid var(--g2);border-radius:var(--rl);padding:8px 13px;margin-bottom:12px;font-size:12px;color:var(--g6)">แม่แบบนี้ <b>ยังไม่เปิดใช้งาน</b> — พนักงานจะไม่เห็นในหน้าสร้างเคส (ข้อมูลยังอยู่ครบ ไม่ถูกลบ)</div>`:`<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:var(--rl);padding:8px 13px;margin-bottom:12px;font-size:12px;color:#b45309">⚠ ทดสอบภายใน / ต้องตรวจ checklist ก่อนใช้จริง</div>`}
     <div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:13px 15px;margin-bottom:14px">
       <div style="font-size:11px;color:var(--g5);font-family:var(--mono)">${esc(t.template_code||'')}${t.template_name_en?' · '+esc(t.template_name_en):''}</div>
       <div style="font-size:12px;color:var(--g6);margin-top:5px">หมวด: <b>${esc(_CTPL_CAT[t.category]||t.category||'—')}</b> · สถานะเริ่มต้น: <b>${esc(_CTPL_STATUS[t.default_case_status]||t.default_case_status||'—')}</b> · ลำดับ: ${t.sort_order??'—'}</div>
@@ -13316,7 +13337,8 @@ function renderCases(){
   if(_caseDetail){_renderCaseDetail();return;}
   const f=_caseFilters;
   const stOpts=`<option value="">สถานะทั้งหมด</option>`+Object.keys(_CTPL_STATUS).map(k=>`<option value="${k}"${f.status===k?' selected':''}>${esc(_CTPL_STATUS[k])}</option>`).join('');
-  const catOpts=`<option value="">หมวดทั้งหมด</option>`+Object.keys(_CTPL_CAT).map(k=>`<option value="${k}"${f.category===k?' selected':''}>${esc(_CTPL_CAT[k])}</option>`).join('');
+  // STAGE 54A-RESET-2: หมวดที่ยังไม่เปิดใช้งานไม่ขึ้นในตัวกรองของพนักงาน (เคสเดิมยังเห็นในรายการรวมตามปกติ)
+  const catOpts=`<option value="">ประเภทงานทั้งหมด</option>`+Object.keys(_CTPL_CAT).filter(k=>!_TPL_FROZEN_CAT.has(k)).map(k=>`<option value="${k}"${f.category===k?' selected':''}>${esc(_CTPL_CAT[k])}</option>`).join('');
   const asgOpts=`<option value="">ผู้รับผิดชอบทั้งหมด</option>`+(typeof assigneeEmps!=='undefined'?assigneeEmps:[]).map(e=>`<option value="${esc(e.employee_code)}"${f.assignee===e.employee_code?' selected':''}>${esc(e.nickname||e.full_name||e.employee_code)}</option>`).join('');
   wrap.innerHTML=_caseBanner()+`
     <div id="caseDashCards" style="display:none"></div>
@@ -13469,8 +13491,11 @@ async function openCaseCreate(prefCustId){
   if(prefCustId!=null){const c=(typeof customers!=='undefined'?customers:[]).find(x=>x.id===prefCustId);if(c)ccfPickCust(c.id);}
   try{
     const rows=await _delReqRpc('app_list_case_templates',{p_include_inactive:false});
-    _ccfTemplates=Array.isArray(rows)?rows:[];
-    tplSel.innerHTML='<option value="">— เลือกแม่แบบ —</option>'+_ccfTemplates.map(t=>`<option value="${t.id}">${esc(_CTPL_CAT[t.category]||t.category)} · ${esc(t.template_name_th)}</option>`).join('');
+    // STAGE 54A-RESET-2: พนักงานเลือกได้เฉพาะแม่แบบ pilot — แม่แบบที่ยังไม่เปิดใช้งานยังอยู่ใน DB ครบ แค่ไม่ขึ้นให้เลือก
+    _ccfTemplates=(Array.isArray(rows)?rows:[]).filter(t=>_tplGuard(t)==='pilot');
+    tplSel.innerHTML=_ccfTemplates.length
+      ?'<option value="">— เลือกประเภทงาน —</option>'+_ccfTemplates.map(t=>`<option value="${t.id}">${esc(_CTPL_CAT[t.category]||t.category)} · ${esc(t.template_name_th)} (ทดสอบภายใน)</option>`).join('')
+      :'<option value="">ยังไม่มีประเภทงานที่เปิดใช้งาน</option>';
   }catch(e){tplSel.innerHTML='<option value="">โหลดแม่แบบไม่สำเร็จ</option>';toast('โหลดแม่แบบไม่สำเร็จ: '+e.message,'err');}
 }
 function ccfFilterCust(){
@@ -13505,7 +13530,9 @@ function ccfTemplateChanged(){
   if(!pv)return;
   if(!t){pv.style.display='none';pv.innerHTML='';return;}
   const parts=[];
-  if((t.eligibility_note||'').trim())parts.push(`<div><b>ใช้กับกรณี:</b> ${esc(t.eligibility_note)}</div>`);
+  // STAGE 54A-RESET-2: แม่แบบที่เปิดให้เลือกทั้งหมดเป็นกลุ่มทดสอบภายใน — เตือนก่อนใช้จริงเสมอ
+  parts.push(`<div style="color:#b45309;font-weight:700">⚠ ทดสอบภายใน / ต้องตรวจ checklist ก่อนใช้จริง</div>`);
+  if((t.eligibility_note||'').trim())parts.push(`<div style="margin-top:4px"><b>ใช้กับกรณี:</b> ${esc(t.eligibility_note)}</div>`);
   const chips=_ctplMetaChips(t);
   if(chips)parts.push(`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:${parts.length?'4px':'0'}">${chips}</div>`);
   if((t.process_summary||'').trim())parts.push(`<div style="margin-top:4px"><b>ขั้นตอนโดยย่อ:</b> ${esc(t.process_summary)}</div>`);
@@ -13517,7 +13544,7 @@ async function saveCaseCreate(){
   if(!(await guardSession()))return;
   if(!_ccfSelCust||_ccfSelCust.id==null){toast('กรุณาเลือกลูกค้าก่อน','err');return;}
   const tid=parseInt(document.getElementById('ccf_template').value)||null;
-  if(!tid){toast('กรุณาเลือกแม่แบบงาน','err');return;}
+  if(!tid){toast('กรุณาเลือกประเภทงาน','err');return;}
   showLoading('กำลังสร้างเคส...');
   try{
     await _delReqRpc('app_create_case',{
