@@ -13632,7 +13632,7 @@ function _renderCaseDetail(){
   const scanHtml=[
     kv('ลูกค้า/แรงงาน',k.customer_name?`${esc(k.customer_name)}${k.passport_no?` <span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(k.passport_no)}</span>`:''}`:''),
     kv('นายจ้าง',k.employer_name?esc(k.employer_name):''),
-    kv('แม่แบบ',k.template_name_th?esc(k.template_name_th):(k.template_code?esc(k.template_code):'')),
+    kv('ประเภทงาน',k.template_name_th?esc(k.template_name_th):(k.template_code?esc(k.template_code):'')),
     kv('หมวดงาน',(_CTPL_CAT[k.case_category]||k.case_category)?esc(_CTPL_CAT[k.case_category]||k.case_category):''),
     kv('ผู้รับผิดชอบ',k.assigned_to_code?esc((typeof assigneeLabel==='function'&&assigneeLabel(k.assigned_to_code))||k.assigned_to_code):'<span style="color:var(--g5)">ยังไม่ระบุ</span>'),
     kv('ครบกำหนด',k.due_date?fd(k.due_date):''),
