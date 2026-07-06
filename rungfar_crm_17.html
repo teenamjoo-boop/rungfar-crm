@@ -5748,6 +5748,7 @@ async function openDetail(id){
   ${_xlSec}
   ${docs.length?renderDetailDocSection(docs):''}
   <div id="detCaseSec"></div>
+  ${_wpr2Section(c)}
   ${_clogSec}
   ${_histSec}
   ${(()=>{
@@ -5771,6 +5772,71 @@ async function openDetail(id){
   document.getElementById('dModal').style.display='flex';
   // STAGE 54A-3: โหลดเคสของลูกค้ารายนี้แบบ best-effort (fire-and-forget — RPC ยังไม่ติดตั้งก็ไม่พังหน้าเดิม)
   try{if(typeof _loadDetCases==='function')_loadDetCases(c.id);}catch(_e){}
+}
+// =============================================================
+// STAGE 57C-RESET-2 — ข้อมูลแรงงานสำหรับ Phase 2 (readiness draft, read-only)
+//   * แสดงผลอย่างเดียวจาก object ลูกค้าที่โหลดอยู่แล้ว (Phase 1) — ❌ ไม่บันทึก, ไม่มี input/save
+//   * ช่องที่ยังไม่มีในระบบจริง = "ยังไม่มีช่องข้อมูลจริง" → ต้องวางแผน DB แยกในภายหลัง
+//   * ❌ ไม่แตะ customer table / save RPC / import-export / delete — เป็น panel อ่านอย่างเดียว
+// =============================================================
+function _wpr2Section(c){
+  if(!c)return'';
+  const has=v=>!!(v!=null&&String(v).trim()!=='');
+  const NA='<span style="color:var(--g4);font-style:italic">ยังไม่มีช่องข้อมูลจริง</span>';
+  const NASAVE='<span style="color:var(--g4);font-style:italic">ยังไม่ได้บันทึกในระบบจริง</span>';
+  const row=(label,html)=>`<div class="df"><div class="dfl">${label}</div><div class="dfv">${html}</div></div>`;
+  // Group 1 — ข้อมูลพื้นฐานแรงงาน (ใช้ field เดิม: name / name_th / nationality / dob / phone)
+  const g1=[
+    row('คำนำหน้า',NA),
+    row('ชื่ออังกฤษ',has(c.name)?esc(c.name):NA),
+    row('ชื่อกลางอังกฤษ',NA),
+    row('นามสกุลอังกฤษ',NA),
+    row('ชื่อไทย',has(c.name_th)?esc(c.name_th):NA),
+    row('ชื่อกลางไทย',NA),
+    row('นามสกุลไทย',NA),
+    row('สัญชาติ',has(c.nationality)?esc(c.nationality):NA),
+    row('เพศ',NA),
+    row('วันเกิด',has(c.dob)?fd(c.dob):NA),
+    row('ไม่ทราบวันเกิดที่ชัดเจน',NA),
+    row('ระดับการศึกษา',NA),
+    row('ประสบการณ์ทำงาน',NA),
+    row('เบอร์โทร',has(c.phone)?esc(c.phone):NA)
+  ].join('');
+  // Group 2 — บัญชี e-WorkPermit (ยังไม่มี field จริง — แสดงตัวเลือกสถานะอนาคตเพื่ออ้างอิงเท่านั้น)
+  const ewpOpts=['ยังไม่ลงทะเบียน','รอกรอกข้อมูล','รอยืนยันอีเมล','ยืนยันแล้ว','ลืมรหัสผ่าน/ต้องรีเซ็ต','มีบัญชีจากระบบเดิม','ข้อมูลเอกสารเดินทางยังไม่ครบ'];
+  const g2=[
+    row('อีเมลที่ใช้สมัคร e-WorkPermit',NASAVE),
+    row('สถานะบัญชี e-WorkPermit',NASAVE)
+  ].join('')+`<div style="grid-column:1/-1;font-size:11px;color:var(--g5);margin-top:2px">สถานะที่จะออกแบบในอนาคต (ยังไม่บันทึก): ${ewpOpts.join(' · ')}</div>`;
+  // Group 3 — เอกสารเดินทางหลัก (ใช้ field เดิม: passport_no / exp_passport / visa_no / exp_visa)
+  const g3=[
+    row('มี/ไม่มีเอกสารเดินทาง',has(c.passport_no)?'มี (อ้างจากเลขพาสปอร์ตในระบบ)':NA),
+    row('ประเภทเอกสารเดินทาง',NA),
+    row('เลขเอกสาร',has(c.passport_no)?`<span style="font-family:var(--mono);font-size:12px">${esc(c.passport_no)}</span>`:NA),
+    row('ประเทศที่ออก',NA),
+    row('วันที่ออก',NA),
+    row('วันหมดอายุ',has(c.exp_passport)?fd(c.exp_passport):NA),
+    row('ข้อมูล Visa / ตรวจลงตรา',(has(c.visa_no)||has(c.exp_visa))?`${has(c.visa_no)?esc(c.visa_no):''}${has(c.exp_visa)?' · หมดอายุ '+fd(c.exp_visa):''}`:NA)
+  ].join('');
+  // สรุปความพร้อม (display-only จากค่าที่โหลดอยู่แล้ว)
+  const baseOk=has(c.name)&&has(c.nationality)&&has(c.dob)&&has(c.phone);
+  const travelOk=has(c.passport_no)&&has(c.exp_passport);
+  const chip=t=>`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#fef3c7;color:#b45309;white-space:nowrap">${t}</span>`;
+  const summary=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+    ${chip(baseOk?'ข้อมูลที่มีครบ · ยังขาด field Phase 2':'ข้อมูลพื้นฐานยังขาด')}
+    ${chip(travelOk?'เอกสารเดินทาง: มีเลข+วันหมดอายุ · ยังขาดรายละเอียด':'เอกสารเดินทางยังขาด')}
+    ${chip('บัญชี e-WorkPermit: ยังไม่พร้อม (ยังไม่มีในระบบจริง)')}
+  </div>
+  <div style="font-size:11.5px;color:#92400e;margin-top:6px">สรุป: ควรตรวจข้อมูลก่อนเปิดเคส Phase 2 — ยังมี field ที่ต้องวางแผน DB แยกก่อน</div>`;
+  const grp=(title,rows)=>`<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${title}</div><div class="dg4">${rows}</div></div>`;
+  return `<details style="margin-bottom:12px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:8px 12px">
+    <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--g8)">ข้อมูลแรงงานสำหรับ Phase 2</summary>
+    <div style="font-size:11px;color:var(--g5);margin:4px 0 2px">ใช้ตรวจความพร้อมข้อมูลก่อนเปิดเคสเอกสารแรงงาน — ช่องที่ยังไม่มีในระบบจริงต้องวางแผน DB แยกก่อน (ยังไม่บันทึก)</div>
+    ${summary}
+    ${grp('ข้อมูลพื้นฐานแรงงาน',g1)}
+    ${grp('บัญชี e-WorkPermit',g2)}
+    ${grp('เอกสารเดินทางหลัก',g3)}
+  </details>`;
 }
 function editFromDetail(){document.getElementById('dModal').style.display='none';openEdit(detId);}
 
