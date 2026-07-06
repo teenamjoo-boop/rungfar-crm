@@ -13686,15 +13686,23 @@ async function _loadCaseTplMeta(templateId){
   const d=(typeof _ctplUnwrapDetail==='function')?_ctplUnwrapDetail(raw):null;
   const t=d&&d.template?d.template:null;
   if(!t||!_ctplHasMeta(t)){sec.innerHTML='';return;} // ไม่มี metadata → ไม่แสดงเลย (คงความกะทัดรัด)
-  const chips=_ctplMetaChips(t);
+  // STAGE 55F-RESET-2: ชิป/หัวข้อแบบพนักงาน — ลดกรอบกฎหมาย (ไม่โชว์ชิป "มติ"), ใช้คำงานจริง
+  //   เนื้อหาแนวทาง (ใช้กับกรณี / ขั้นตอนโดยย่อ / หมายเหตุภายใน) คงไว้ครบ — เปลี่ยนเฉพาะ label ที่แสดง
+  //   ❌ ไม่แตะ _ctplMetaChips เดิม (หน้าผู้ดูแลระบบยังใช้ตามเดิม)
+  const _nCond=_ctplRefCount(t.law_refs),_nForm=_ctplRefCount(t.form_refs);
+  const _chipArr=[];
+  if(_nCond)_chipArr.push(`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#fef3c7;color:#b45309;white-space:nowrap">เงื่อนไขงาน ${_nCond}</span>`);
+  if(_nForm)_chipArr.push(`<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#ecfeff;color:#0e7490;white-space:nowrap">แบบฟอร์ม ${_nForm}</span>`);
+  const chips=_chipArr.join('');
   const bits=[];
   if((t.eligibility_note||'').trim())bits.push('ใช้กับกรณี: '+esc(t.eligibility_note));
   if((t.process_summary||'').trim())bits.push('ขั้นตอนโดยย่อ: '+esc(t.process_summary));
   sec.innerHTML=`<div style="background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 13px;margin-bottom:8px">
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-      <span style="font-size:12px;font-weight:700;color:var(--g7)">ข้อมูลเตรียมงานจากแบบงาน</span>
+      <span style="font-size:12px;font-weight:700;color:var(--g7)">ข้อมูลเตรียมงาน</span>
       ${chips}
     </div>
+    <div style="font-size:11px;color:var(--g5);margin-top:3px">ใช้เป็นแนวทางเตรียมเอกสารภายในบริษัท — ต้องตรวจ checklist และเอกสารจริงก่อนยื่น</div>
     ${bits.length?`<div style="font-size:12px;color:var(--g6);margin-top:4px">${bits.join(' · ')}</div>`:''}
     ${(t.internal_guidance||'').trim()?`<div style="font-size:12px;color:var(--g6);margin-top:3px">📝 ${esc(t.internal_guidance)}</div>`:''}
   </div>`;
