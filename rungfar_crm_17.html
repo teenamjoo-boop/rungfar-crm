@@ -14810,13 +14810,41 @@ function _renderEmpPhase2(){
       <div class="dg4">${rows}</div>
       ${e.phase2_note?`<div style="font-size:12px;color:var(--g6);margin-top:8px;background:var(--g0);padding:6px 10px;border-radius:7px">📝 ${esc(e.phase2_note)}</div>`:''}
       <div style="font-size:11px;color:var(--g5);margin-top:10px;background:var(--g0);border:1px dashed var(--g3);border-radius:8px;padding:7px 11px">📎 ${T('emp2Docs')}: <b>${docsN}</b> — ${esc(T('emp2DocsNote'))}</div>
+      <div id="empDocSec"></div>
       <div style="display:flex;align-items:center;gap:9px;margin-top:14px;margin-bottom:8px">
         <div style="font-size:12px;font-weight:700;color:var(--g7)">${T('estSec')}</div>
         <span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:1px 9px;font-size:11px;font-weight:700;font-family:var(--mono)">${ests.length}</span>
         <button class="btn btn-p btn-sm" style="font-size:11px;margin-left:auto" onclick="openEstForm(null)">${T('estAdd')}</button>
       </div>
+      <!-- STAGE 57H-RESET-2: เอกสารสถานประกอบการ — deferred (การ์ดหลายรายการ = เสี่ยง N+1 RPC); แสดง note ปลอดภัยแทน -->
+      ${ests.length?`<div style="font-size:11px;color:var(--g5);font-style:italic;margin-bottom:8px">เอกสารสถานประกอบการ: ยังไม่มีเอกสารในคลังเอกสาร — จะแสดง/จัดการในสเตจถัดไป หลังตรวจ Storage/RLS แล้ว</div>`:''}
       ${estCards||`<div style="color:var(--g5);font-size:12px;padding:10px 0">${T('estNone')}</div>`}
     </div>`;
+  // STAGE 57H-RESET-2: โหลดเอกสารนายจ้างแบบ read-only (best-effort) — RPC/helper เดิม, ไม่มี upload/delete
+  try{if(typeof _loadEmpDocs==='function')_loadEmpDocs(e.id);}catch(_e){}
+}
+// =============================================================
+// STAGE 57H-RESET-2 — เอกสารนายจ้าง / บริษัท (read-only baseline panel, frontend-only)
+//   * ใช้ RPC เดิม app_list_documents (p_owner_type='employer' — migration 20260731 รองรับแล้ว) ❌ ไม่มี SQL/RPC ใหม่
+//   * เปิดไฟล์ผ่าน dcOpenDoc (signed URL เดิม) — ❌ ไม่โชว์ storage_path/bucket/base64, โหลดไฟล์ตอนกดเท่านั้น
+//   * ❌ ไม่มี upload/แก้ไข/ลบ/ผูก checklist — เป็น baseline อ่านอย่างเดียว
+// =============================================================
+async function _loadEmpDocs(empId){
+  const sec=document.getElementById('empDocSec');if(!sec||empId==null)return;
+  const upNote='<div style="font-size:11px;color:var(--g5);font-style:italic;margin-top:8px">การอัปโหลดเอกสารนายจ้างจะทำในสเตจที่แยกต่างหาก หลังตรวจ Storage/RLS แล้ว</div>';
+  let docs=[];
+  try{docs=await _delReqRpc('app_list_documents',{p_owner_type:'employer',p_owner_id:Number(empId),p_limit:100,p_offset:0});}
+  catch(e){sec.innerHTML=`<div style="font-size:11px;color:var(--g5);margin-top:8px">โหลดเอกสารนายจ้างไม่สำเร็จ: ${esc(e.message)}</div>`;return;}
+  docs=Array.isArray(docs)?docs:[];
+  const head=`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:2px">เอกสารนายจ้าง / บริษัท</div><div style="font-size:11px;color:var(--g5);margin-bottom:6px">แสดงเอกสารที่ผูกกับนายจ้างหรือบริษัทนี้ ใช้ตรวจประกอบเคสงานเอกสารแรงงาน</div>`;
+  if(!docs.length){sec.innerHTML=head+`<div style="font-size:12px;color:var(--g5);background:var(--g0);border:1px dashed var(--g3);border-radius:8px;padding:8px 11px">ยังไม่มีเอกสารนายจ้างในคลังเอกสาร</div>`+upNote+`</div>`;return;}
+  const _fD=s=>{if(!s)return'';try{return new Date(s).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}catch(_e){return'';}};
+  const rows=docs.map(d=>`<div class="crow-doc" style="margin-bottom:6px">
+      <span style="font-weight:600;flex:1;min-width:120px">📄 ${esc(d.doc_name||(d.doc_type?_dcDocTypeLabel(d.doc_type):'')||'เอกสาร')}</span>
+      <span class="crow-sub">${[d.doc_type?esc(_dcDocTypeLabel(d.doc_type)):'',d.doc_status?esc(_dcStatusLabel(d.doc_status)):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):'',_fD(d.created_at)].filter(Boolean).join(' · ')}</span>
+      <button class="btn btn-g btn-sm btn-xs" onclick="dcOpenDoc('${esc(String(d.id))}',${!!d.has_storage})">เปิดดู</button>
+    </div>`).join('');
+  sec.innerHTML=head+rows+upNote+`</div>`;
 }
 // ── เพิ่ม/แก้ไขสถานประกอบการ (staff+admin) ──
 function openEstForm(estId){
