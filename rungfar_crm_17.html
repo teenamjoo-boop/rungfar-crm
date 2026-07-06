@@ -13862,7 +13862,6 @@ async function _loadCaseChecklist(caseId){
     return`<div class="crow">
       <div style="flex:1;min-width:170px">
         <span class="crow-main">${esc(r.item_title_th)}${r.is_required?' <span style="color:var(--red);font-weight:700">*</span>':''}</span>
-        <span class="crow-sub" style="font-family:var(--mono);margin-left:6px">${esc(r.item_code)}${r.doc_type?' · '+esc(r.doc_type):''}</span>
       </div>
       ${r.required_from?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:var(--g1);color:var(--g6);white-space:nowrap">${esc(_CTPL_FROM[r.required_from]||r.required_from)}</span>`:''}
       ${_chkStChip(r.checklist_status)}
