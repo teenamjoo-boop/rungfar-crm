@@ -1723,6 +1723,25 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ประเภทงาน *</label><select class="fi2" id="ccf_template" onchange="ccfTemplateChanged()"></select>
       <div id="ccf_tpl_preview" style="display:none;margin-top:6px;font-size:12px;color:var(--g6);background:var(--g0);border:1px solid var(--g2);border-radius:8px;padding:7px 10px"></div>
     </div>
+    <!-- STAGE 57B-RESET-2: ข้อมูลคัดกรองก่อนสร้างเคส (frontend-only prototype — ไม่บันทึกลง DB, ไม่มี RPC ใหม่) -->
+    <div id="ccqBlock" style="display:none;margin-bottom:12px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:10px 12px">
+      <div style="font-size:13px;font-weight:700;color:var(--g8)">ข้อมูลคัดกรองก่อนสร้างเคส</div>
+      <div style="font-size:11px;color:var(--g5);margin:2px 0 10px">ใช้ช่วยเลือก checklist และตรวจความพร้อมก่อนยื่นจริง — ยังไม่ใช่การยื่นราชการ</div>
+      <div class="fg" style="gap:10px">
+        <div class="fgi"><label class="fl">ผู้ยื่น / ฝั่งดำเนินงาน</label><select class="fi2" id="ccq_submitter" onchange="_ccqSummary()"></select></div>
+        <div class="fgi"><label class="fl">สถานะแรงงานตอนนี้</label><select class="fi2" id="ccq_worker" onchange="_ccqSummary()"></select></div>
+        <div class="fgi"><label class="fl">เอกสารเดินทาง</label><select class="fi2" id="ccq_travel" onchange="_ccqSummary()"></select></div>
+        <div class="fgi"><label class="fl">การชำระเงิน</label><select class="fi2" id="ccq_payment" onchange="_ccqSummary()"></select></div>
+        <div class="fgi"><label class="fl">นัดหมาย</label><select class="fi2" id="ccq_appt" onchange="_ccqSummary()"></select></div>
+        <div class="fgi"><label class="fl">เลขคำขอเดิม</label><select class="fi2" id="ccq_prevreq" onchange="_ccqSummary()"></select></div>
+      </div>
+      <div id="ccq_hints" style="display:none;margin-top:9px;font-size:11.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px"></div>
+      <div style="margin-top:9px">
+        <div style="font-size:12px;font-weight:700;color:var(--g7)">สรุปข้อมูลคัดกรอง</div>
+        <div id="ccq_summary" style="font-size:12px;color:var(--g6);margin-top:3px">ยังไม่ได้เลือกข้อมูลคัดกรอง</div>
+        <button type="button" class="btn btn-g btn-sm btn-xs" id="ccq_note_btn" style="margin-top:6px;display:none" onclick="ccqApplyNote()">ใส่สรุปนี้ในหมายเหตุ</button>
+      </div>
+    </div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ชื่อเคส (แก้ไขได้)</label><input class="fi2" id="ccf_title" placeholder="เว้นว่าง = ตั้งชื่อจากประเภทงาน + ชื่อลูกค้า"></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ความสำคัญ</label><select class="fi2" id="ccf_priority"></select></div>
     <div class="fgi" style="margin-bottom:12px"><label class="fl">ผู้รับผิดชอบ</label><select class="fi2" id="ccf_assignee"></select></div>
@@ -13505,6 +13524,70 @@ async function _loadCases(){
   area.innerHTML=`<div style="font-size:12px;color:var(--g6);margin-bottom:8px">พบ ${_caseTotal} เคส</div>`+cards+pager;
 }
 function casePageGo(p){if(p<1)return;_casePage=p;_loadCases();}
+// =============================================================
+// STAGE 57B-RESET-2 — ข้อมูลคัดกรองก่อนสร้างเคส (frontend-only prototype)
+//   * UX เตรียมทางสำหรับ question flow — คำตอบอยู่ฝั่งหน้าจอเท่านั้น ไม่มีคอลัมน์/RPC/param ใหม่
+//   * ปุ่ม "ใส่สรุปนี้ในหมายเหตุ" ต่อข้อความเข้าช่องหมายเหตุเดิม (ccf_note → p_note เดิมของ app_create_case)
+//   * ❌ ยังไม่ใช้คำตอบเปลี่ยน checklist / ไม่แตะการเลือกแม่แบบ — แค่ช่วยพนักงานคัดกรองและจดบริบท
+// =============================================================
+const _CCQ_QUESTIONS=[
+  ['ccq_submitter','ผู้ยื่น',['บริษัทนำเข้า / บนจ.','นายจ้าง','ผู้รับมอบอำนาจ','เจ้าหน้าที่ภายในบริษัท']],
+  ['ccq_worker','สถานะแรงงาน',['รอเข้าไทย','เข้าไทยแล้ว','ต้องแจ้งเข้า','ต้องแจ้งออก','เอกสารเดิมยังไม่ครบ','ต้องตรวจข้อมูลก่อน']],
+  ['ccq_travel','เอกสารเดินทาง',['มี Passport / CI แล้ว','ยังไม่มีเอกสารเดินทาง','มีแต่ข้อมูลยังไม่ครบ','ต้องตรวจวันหมดอายุ']],
+  ['ccq_payment','การเงิน',['ยังไม่ระบุ','มีค่าบริการ','มีค่าธรรมเนียม','ชำระแล้วบางส่วน','ชำระครบแล้ว']],
+  ['ccq_appt','นัดหมาย',['ยังไม่ระบุ','ต้องนัดยื่น','ต้องนัดตรวจสุขภาพ','ต้องนัดรับเอกสาร','ไม่มีนัดหมายตอนนี้']],
+  ['ccq_prevreq','เลขคำขอเดิม',['ยังไม่มี','มีเลขคำขอเดิม','รอตรวจเลขคำขอ','ไม่เกี่ยวกับเคสนี้']]
+];
+function _ccqReset(){
+  _CCQ_QUESTIONS.forEach(([id,_l,opts])=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML='<option value="">— เลือก —</option>'+opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  });
+  const blk=document.getElementById('ccqBlock');if(blk)blk.style.display='none';
+  _ccqSummary();
+}
+// คำแนะนำเฉพาะประเภทงาน — แสดงเป็นบรรทัดเตือนให้พนักงานถาม/ตรวจ (display-only ไม่ใช่ฟอร์ม)
+function _ccqHints(t){
+  const code=String((t&&t.template_code)||'').toUpperCase();
+  if(code.indexOf('MOU_')===0)return['MOU นี้ฝั่งบริษัทนำเข้า หรือ นายจ้างยื่นเอง?','ต้องมี Demand Letter / นจ.2 หรือไม่','มีรายชื่อแรงงานครบหรือยัง','ต้องใช้เอกสารนายจ้าง / บริษัทนำเข้า / บริษัทต้นทางอะไรบ้าง'];
+  if(code==='EMPLOYER_NOTIFICATION_IN')return['วันที่เริ่มงานคือวันไหน','นายจ้าง/สถานประกอบการพร้อมหรือยัง','แรงงานเข้าไทยแล้วหรือยัง'];
+  if(code==='EMPLOYER_NOTIFICATION_OUT')return['วันที่ออกจากงานคือวันไหน','เหตุผลออกจากงานคืออะไร','ข้อมูลนายจ้างเดิมถูกต้องหรือยัง'];
+  return[];
+}
+function _ccqUpdate(t){
+  const blk=document.getElementById('ccqBlock');if(!blk)return;
+  const show=!!t&&_tplGuard(t)==='pilot'; // แสดงเฉพาะแม่แบบ pilot (create-case เลือกได้เฉพาะ pilot อยู่แล้ว — กันซ้ำอีกชั้น)
+  blk.style.display=show?'block':'none';
+  const hb=document.getElementById('ccq_hints');
+  if(hb){
+    const hints=show?_ccqHints(t):[];
+    hb.style.display=hints.length?'block':'none';
+    hb.innerHTML=hints.length?('<b>สิ่งที่ควรถาม/ตรวจสำหรับงานนี้:</b><br>'+hints.map(h=>'• '+esc(h)).join('<br>')):'';
+  }
+  _ccqSummary();
+}
+function _ccqPairs(){
+  return _CCQ_QUESTIONS.map(([id,label])=>{const el=document.getElementById(id);const v=(el&&el.value)||'';return v?(label+': '+v):null;}).filter(Boolean);
+}
+function _ccqSummary(){
+  const box=document.getElementById('ccq_summary'),btn=document.getElementById('ccq_note_btn');
+  if(!box)return;
+  const pairs=_ccqPairs();
+  box.innerHTML=pairs.length?pairs.map(p=>'• '+esc(p)).join('<br>'):'<span style="color:var(--g4)">ยังไม่ได้เลือกข้อมูลคัดกรอง</span>';
+  if(btn)btn.style.display=pairs.length?'inline-block':'none';
+}
+function ccqApplyNote(){
+  const pairs=_ccqPairs();
+  if(!pairs.length){toast('ยังไม่ได้เลือกข้อมูลคัดกรอง','err');return;}
+  const el=document.getElementById('ccf_note');if(!el)return;
+  const txt='คัดกรอง: '+pairs.join(' / ');
+  // STAGE 57B-FIX-1: กันซ้ำ — ตัดสรุปคัดกรองเดิม (segment ที่ขึ้นต้น "คัดกรอง:") ออกก่อน แล้วค่อยใส่อันใหม่
+  //   segment คั่นด้วย " | " (ตาม format เดิม) — โน้ตอื่นของผู้ใช้ถูกเก็บไว้ครบ
+  const kept=(el.value||'').split('|').map(s=>s.trim()).filter(s=>s&&!s.startsWith('คัดกรอง:'));
+  kept.push(txt);
+  el.value=kept.join(' | ');
+  toast('ใส่สรุปคัดกรองในหมายเหตุแล้ว');
+}
 // ── สร้างเคส ──
 async function openCaseCreate(prefCustId){
   if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
@@ -13514,6 +13597,7 @@ async function openCaseCreate(prefCustId){
   document.getElementById('ccf_title').value='';
   document.getElementById('ccf_due').value='';
   document.getElementById('ccf_note').value='';
+  _ccqReset(); // STAGE 57B-RESET-2: ล้างคำตอบคัดกรอง + ซ่อนบล็อกจนกว่าจะเลือกประเภทงาน
   _ctplFillSelect('ccf_priority',_CASE_PRI,'normal');
   document.getElementById('ccf_assignee').innerHTML=_caseAsgOptions('');
   const tplSel=document.getElementById('ccf_template');
@@ -13556,6 +13640,7 @@ function ccfTemplateChanged(){
   const t=tid?_ccfTemplates.find(x=>x.id===tid):null;
   const ti=document.getElementById('ccf_title');
   if(t&&_ccfSelCust&&!ti.value.trim())ti.placeholder=`${t.template_name_th} — ${_ccfSelCust.name}`;
+  _ccqUpdate(t); // STAGE 57B-RESET-2: บล็อกคัดกรองแสดงเมื่อเลือกแม่แบบ pilot + อัปเดตคำแนะนำเฉพาะงาน
   // STAGE 54A-9A: พรีวิว "ข้อมูลเตรียมงาน" ของแม่แบบที่เลือก (ใช้ field จาก app_list_case_templates — ไม่มี RPC เพิ่ม)
   const pv=document.getElementById('ccf_tpl_preview');
   if(!pv)return;
