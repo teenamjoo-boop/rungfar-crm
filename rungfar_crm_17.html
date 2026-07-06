@@ -13855,7 +13855,7 @@ async function _loadCaseChecklist(caseId){
     const docs=(Array.isArray(r.linked_docs)?r.linked_docs:[]).map(d=>`
       <div class="crow-doc">
         <span style="font-weight:600;flex:1;min-width:110px">📄 ${esc(d.doc_name||d.doc_type||'เอกสาร')}</span>
-        <span class="crow-sub">${[d.doc_type?esc(d.doc_type):'',d.doc_status?esc(d.doc_status):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):''].filter(Boolean).join(' · ')}</span>
+        <span class="crow-sub">${[d.doc_type?esc(_dcDocTypeLabel(d.doc_type)):'',d.doc_status?esc(_dcStatusLabel(d.doc_status)):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):''].filter(Boolean).join(' · ')}</span>
         <button class="btn btn-g btn-sm btn-xs" onclick="dcOpenDoc('${d.document_id}',${!!d.has_storage})">เปิดดู</button>
         <button class="btn btn-g btn-sm btn-xs" style="color:var(--red)" onclick="chkUnlink(${d.link_id})">นำออกจากเช็กลิสต์</button>
       </div>`).join('');
@@ -13941,7 +13941,7 @@ async function openChkLink(itemId){
       <input type="radio" name="chkDocPick" value="${esc(String(d.id))}" onchange="_chkDocPick='${esc(String(d.id))}'" style="margin-top:3px">
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:600">${esc(d.doc_name||d.doc_type||'เอกสาร')}</div>
-        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(d.doc_type):'',d.doc_status?esc(d.doc_status):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
+        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(_dcDocTypeLabel(d.doc_type)):'',d.doc_status?esc(_dcStatusLabel(d.doc_status)):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
       </div>
     </label>`).join('');
 }
@@ -14141,7 +14141,7 @@ async function openPayProofLink(paymentId){
       <input type="radio" name="payDocPick" value="${esc(String(d.id))}" onchange="_payProofDocPick='${esc(String(d.id))}'" style="margin-top:3px">
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:600">${esc(d.doc_name||d.doc_type||'เอกสาร')}</div>
-        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(d.doc_type):'',d.doc_status?esc(d.doc_status):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
+        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(_dcDocTypeLabel(d.doc_type)):'',d.doc_status?esc(_dcStatusLabel(d.doc_status)):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
       </div>
     </label>`).join('');
 }
@@ -14380,7 +14380,7 @@ async function openTrkForm(){
       <input type="radio" name="trkDocPick" value="${esc(String(d.id))}" onchange="_trkDocPick='${esc(String(d.id))}'" style="margin-top:3px">
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:600">${esc(d.doc_name||d.doc_type||'เอกสาร')}</div>
-        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(d.doc_type):'',d.doc_status?esc(d.doc_status):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
+        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(_dcDocTypeLabel(d.doc_type)):'',d.doc_status?esc(_dcStatusLabel(d.doc_status)):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
       </div>
     </label>`).join('');
 }
