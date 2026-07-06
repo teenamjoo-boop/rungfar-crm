@@ -4243,6 +4243,17 @@ function mergeDuplicateEmployers(){
 
 function du(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);const x=new Date(d);x.setHours(0,0,0,0);return Math.round((x-t)/86400000);}
 function fd(d){if(!d)return'—';return new Date(d).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}
+// STAGE 57F-RESET-2: จัดสถานะวันหมดอายุจากค่าเดิม (display-only) — ❌ ไม่แตะ alert backend, ไม่บันทึก
+//   near = ภายใน 60 วัน, expired = ก่อนวันนี้; ใช้ในแผง Phase 2 (worker profile / ตรวจความพร้อมก่อนยื่น)
+function _expStatus(dateStr){
+  if(!dateStr||!String(dateStr).trim())return{key:'none',label:'ไม่มีข้อมูลวันหมดอายุ',clr:'var(--g5)',bg:'var(--g1)'};
+  const d=du(dateStr);
+  if(d===null||isNaN(d))return{key:'bad',label:'วันที่ไม่ถูกต้อง / ต้องตรวจ',clr:'#dc2626',bg:'#fee2e2'};
+  if(d<0)return{key:'expired',label:'หมดอายุแล้ว',clr:'#dc2626',bg:'#fee2e2'};
+  if(d<=60)return{key:'near',label:'ใกล้หมดอายุ',clr:'#b45309',bg:'#fef3c7'};
+  return{key:'ok',label:'ยังใช้ได้',clr:'#059669',bg:'#ecfdf5'};
+}
+function _expChip(dateStr){const s=_expStatus(dateStr);return`<span style="padding:1px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${s.bg};color:${s.clr};white-space:nowrap">${s.label}</span>`;}
 function ec(d){if(d===null)return'eb-n';if(d<0||d<=7)return'eb-u';if(d<=14)return'eb-w';if(d<=30)return'eb-s';return'eb-ok';}
 function el(d){if(d===null)return'—';if(d<0)return`${T('elExpired')} ${Math.abs(d)} ${T('elDays')}`;if(d===0)return T('elToday');return`${d} ${T('elDays')}`;}
 function wsIdx(s){return WS.indexOf(s);}
@@ -5808,23 +5819,32 @@ function _wpr2Section(c){
     row('อีเมลที่ใช้สมัคร e-WorkPermit',NASAVE),
     row('สถานะบัญชี e-WorkPermit',NASAVE)
   ].join('')+`<div style="grid-column:1/-1;font-size:11px;color:var(--g5);margin-top:2px">สถานะที่จะออกแบบในอนาคต (ยังไม่บันทึก): ${ewpOpts.join(' · ')}</div>`;
-  // Group 3 — เอกสารเดินทางหลัก (ใช้ field เดิม: passport_no / exp_passport / visa_no / exp_visa)
+  // Group 3 — เอกสารเดินทางหลัก (ใช้ field เดิม + STAGE 57F: ชิปสถานะวันหมดอายุ)
+  const NONUM='<span style="color:var(--g4);font-style:italic">ยังไม่มีเลขเอกสาร</span>';
+  const NOEXP='<span style="color:var(--g4);font-style:italic">ยังไม่มีวันหมดอายุ</span>';
   const g3=[
-    row('มี/ไม่มีเอกสารเดินทาง',has(c.passport_no)?'มี (อ้างจากเลขพาสปอร์ตในระบบ)':NA),
+    row('มี/ไม่มีเอกสารเดินทาง',has(c.passport_no)?'มี (อ้างจากเลขพาสปอร์ตในระบบ)':'<span style="color:var(--g4);font-style:italic">ต้องตรวจข้อมูลก่อนเปิดเคส</span>'),
     row('ประเภทเอกสารเดินทาง',NA),
-    row('เลขเอกสาร',has(c.passport_no)?`<span style="font-family:var(--mono);font-size:12px">${esc(c.passport_no)}</span>`:NA),
+    row('Passport — เลขเอกสาร',has(c.passport_no)?`<span style="font-family:var(--mono);font-size:12px">${esc(c.passport_no)}</span>`:NONUM),
+    row('Passport — วันหมดอายุ',has(c.exp_passport)?`${fd(c.exp_passport)} ${_expChip(c.exp_passport)}`:NOEXP),
     row('ประเทศที่ออก',NA),
     row('วันที่ออก',NA),
-    row('วันหมดอายุ',has(c.exp_passport)?fd(c.exp_passport):NA),
-    row('ข้อมูล Visa / ตรวจลงตรา',(has(c.visa_no)||has(c.exp_visa))?`${has(c.visa_no)?esc(c.visa_no):''}${has(c.exp_visa)?' · หมดอายุ '+fd(c.exp_visa):''}`:NA)
+    row('Visa — เลข / วันหมดอายุ',(has(c.visa_no)||has(c.exp_visa))?`${has(c.visa_no)?esc(c.visa_no):'—'}${has(c.exp_visa)?' · '+fd(c.exp_visa)+' '+_expChip(c.exp_visa):' · '+NOEXP}`:'<span style="color:var(--g4);font-style:italic">ยังไม่มีข้อมูล Visa</span>'),
+    row('Work Permit — เลข / วันหมดอายุ',(has(c.wp_no)||has(c.exp_wp))?`${has(c.wp_no)?esc(c.wp_no):'—'}${has(c.exp_wp)?' · '+fd(c.exp_wp)+' '+_expChip(c.exp_wp):' · '+NOEXP}`:'<span style="color:var(--g4);font-style:italic">ยังไม่มีข้อมูล Work Permit</span>')
   ].join('');
   // สรุปความพร้อม (display-only จากค่าที่โหลดอยู่แล้ว)
   const baseOk=has(c.name)&&has(c.nationality)&&has(c.dob)&&has(c.phone);
-  const travelOk=has(c.passport_no)&&has(c.exp_passport);
+  // STAGE 57F: สรุปเอกสารเดินทางสะท้อนสถานะวันหมดอายุพาสปอร์ต
+  const _ppE=_expStatus(c.exp_passport);
+  const travelTxt=!has(c.passport_no)?'เอกสารเดินทางยังขาด — ต้องตรวจข้อมูลก่อน'
+    :(_ppE.key==='expired'?'พาสปอร์ตหมดอายุแล้ว — ต้องตรวจ'
+    :(_ppE.key==='near'?'พาสปอร์ตใกล้หมดอายุ — ต้องตรวจ'
+    :(_ppE.key==='none'||_ppE.key==='bad'?'เอกสารเดินทาง: มีเลข · ต้องตรวจวันหมดอายุ'
+    :'เอกสารเดินทาง: มีเลข+วันหมดอายุ · ยังขาดรายละเอียด')));
   const chip=t=>`<span style="padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#fef3c7;color:#b45309;white-space:nowrap">${t}</span>`;
   const summary=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
     ${chip(baseOk?'ข้อมูลที่มีครบ · ยังขาด field Phase 2':'ข้อมูลพื้นฐานยังขาด')}
-    ${chip(travelOk?'เอกสารเดินทาง: มีเลข+วันหมดอายุ · ยังขาดรายละเอียด':'เอกสารเดินทางยังขาด')}
+    ${chip(travelTxt)}
     ${chip('บัญชี e-WorkPermit: ยังไม่พร้อม (ยังไม่มีในระบบจริง)')}
   </div>
   <div style="font-size:11.5px;color:#92400e;margin-top:6px">สรุป: ควรตรวจข้อมูลก่อนเปิดเคส Phase 2 — ยังมี field ที่ต้องวางแผน DB แยกก่อน</div>`;
@@ -13881,6 +13901,41 @@ function _rtsRender(){
   }
   add('Checklist เอกสาร',chkSt,chkDetail);
   add('เอกสารแนบ',docSt,docDetail);
+  // 5B) เอกสารเดินทาง — STAGE 57F: ใช้ field เดิมของแรงงาน (จาก customers ที่โหลดแล้ว) ตรวจวันหมดอายุ Passport/Visa/WP
+  const _cust=(typeof customers!=='undefined'&&k.customer_id!=null)?customers.find(x=>x.id===k.customer_id):null;
+  const _ppNo=k.passport_no||(_cust&&_cust.passport_no)||'';
+  const _ppExp=_cust?_cust.exp_passport:'';
+  let tdSt='pass',tdDetail='';
+  if(!_ppNo){tdSt='warn';tdDetail='ยังไม่มีเลข Passport / CI';actions.push('ตรวจเอกสารเดินทาง (Passport/CI)');}
+  else{
+    const es=_expStatus(_ppExp);
+    if(es.key==='none'){tdSt='warn';tdDetail='มีเลขพาสปอร์ต · ยังไม่มีวันหมดอายุ';actions.push('ตรวจวันหมดอายุพาสปอร์ต');}
+    else if(es.key==='bad'){tdSt='warn';tdDetail='วันหมดอายุพาสปอร์ตไม่ถูกต้อง — ต้องตรวจ';actions.push('ตรวจวันหมดอายุพาสปอร์ต');}
+    else if(es.key==='expired'){tdSt='warn';tdDetail='พาสปอร์ตหมดอายุแล้ว ('+fd(_ppExp)+')';actions.push('ตรวจ/ต่ออายุพาสปอร์ต');}
+    else if(es.key==='near'){tdSt='warn';tdDetail='พาสปอร์ตใกล้หมดอายุ ('+fd(_ppExp)+')';actions.push('ตรวจ/ต่ออายุพาสปอร์ต');}
+    else{tdSt='pass';tdDetail='พาสปอร์ตยังใช้ได้ (ถึง '+fd(_ppExp)+')';}
+  }
+  add('เอกสารเดินทาง (Passport/CI)',tdSt,tdDetail);
+  // 5C) วันหมดอายุ Visa / Work Permit — แสดงเฉพาะเมื่อมีข้อมูลจริง (ตาม spec)
+  //   STAGE 57F-FIX-1: "มีเลขแต่ไม่มีวันหมดอายุ" ต้องเป็น warn เสมอ — ห้ามขึ้น pass เพราะ _expStatus('') คืน key='none' (ไม่ใช่ 'ok')
+  const _docExpCheck=(no,exp,label)=>{
+    const hasNo=!!(no&&String(no).trim()),hasExp=!!(exp&&String(exp).trim());
+    if(!hasNo&&!hasExp)return null;
+    if(hasNo&&!hasExp)return{st:'warn',txt:label+': มีเลข · ยังไม่มีวันหมดอายุ'};
+    const es=_expStatus(exp);
+    if(es.key==='ok')return{st:'pass',txt:label+': '+es.label};
+    return{st:'warn',txt:label+': '+es.label+(hasExp?' ('+fd(exp)+')':'')};
+  };
+  const _hasV=_cust&&((_cust.visa_no&&String(_cust.visa_no).trim())||(_cust.exp_visa&&String(_cust.exp_visa).trim()));
+  const _hasW=_cust&&((_cust.wp_no&&String(_cust.wp_no).trim())||(_cust.exp_wp&&String(_cust.exp_wp).trim()));
+  if(_hasV||_hasW){
+    const parts=[];let anyW=false;
+    const _vChk=_hasV?_docExpCheck(_cust.visa_no,_cust.exp_visa,'Visa'):null;
+    const _wChk=_hasW?_docExpCheck(_cust.wp_no,_cust.exp_wp,'Work Permit'):null;
+    if(_vChk){parts.push(_vChk.txt);if(_vChk.st==='warn'){anyW=true;actions.push('ตรวจวันหมดอายุ Visa');}}
+    if(_wChk){parts.push(_wChk.txt);if(_wChk.st==='warn'){anyW=true;actions.push('ตรวจวันหมดอายุ Work Permit');}}
+    add('วันหมดอายุ Visa / Work Permit',anyW?'warn':'pass',parts.join(' · '));
+  }
   // 6) การเงิน
   const payLoaded=(typeof _payCaseId!=='undefined')&&_payCaseId===k.id;
   let paySt='neutral',payDetail='กำลังตรวจ...';
@@ -13917,7 +13972,8 @@ function _rtsRender(){
   // สรุปสถานะรวม (display-only — ไม่เปลี่ยนสถานะเคส)
   const stOf=lbl=>{const r=rows.find(x=>x.label===lbl);return r?r.st:'neutral';};
   const identityWarn=[stOf('ข้อมูลแรงงาน'),stOf('นายจ้าง / บริษัท'),stOf('ประเภทงาน')].indexOf('warn')>=0;
-  const chkWarn=[stOf('Checklist เอกสาร'),stOf('เอกสารแนบ')].indexOf('warn')>=0;
+  // STAGE 57F: เอกสารเดินทาง/วันหมดอายุ นับรวมในกลุ่มเอกสาร (row 'วันหมดอายุ Visa / Work Permit' อาจไม่มี → stOf คืน neutral)
+  const chkWarn=[stOf('Checklist เอกสาร'),stOf('เอกสารแนบ'),stOf('เอกสารเดินทาง (Passport/CI)'),stOf('วันหมดอายุ Visa / Work Permit')].indexOf('warn')>=0;
   const secWarn=[stOf('การเงิน'),stOf('นัดหมาย')].indexOf('warn')>=0;
   let overall,oclr,obg;
   if(!chkLoaded){overall='กำลังตรวจความพร้อม…';oclr='var(--g6)';obg='var(--g1)';}
