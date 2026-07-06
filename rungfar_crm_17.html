@@ -13351,6 +13351,11 @@ function _casePriChip(p){const c=_CASE_PRI_CLR[p]||'#6b7280';return`<span style=
 function _caseBanner(){
   return `<div style="font-size:12px;color:var(--g5);margin-bottom:12px">ใช้สำหรับเตรียมงานและติดตามงานภายในบริษัท ก่อนพนักงานนำข้อมูลไปยื่นจริง — ระบบไม่เชื่อมต่อ/ไม่ยื่นถึงหน่วยงานราชการอัตโนมัติ</div>`;
 }
+// STAGE 56A-RESET-2: เคสเก่าที่สร้างจากแม่แบบซึ่งถูกแช่แข็ง/ไม่ใช่ pilot ในช่วง recovery
+//   * ใช้ template_code + case_category ที่เคสสแนปช็อตไว้ (RPC เดิมคืนมาอยู่แล้ว — ไม่มี RPC/query ใหม่)
+//   * pilot 5 รหัส = ไม่เตือน; ที่เหลือ (รวม frozen / null) = ให้ตรวจสอบก่อนใช้จริง
+//   * แสดงผลอย่างเดียว — ไม่แตะข้อมูลเคส/สถานะ/แม่แบบ
+function _caseNeedsReview(r){return !!r&&_tplGuard({template_code:r.template_code,category:r.case_category})!=='pilot';}
 function _caseAsgOptions(sel){
   const opts=(typeof assigneeEmps!=='undefined'?assigneeEmps:[]).map(e=>`<option value="${esc(e.employee_code)}"${e.employee_code===sel?' selected':''}>${esc(e.nickname||e.full_name||e.employee_code)} (${esc(e.employee_code)})</option>`).join('');
   return `<option value="">ยังไม่ระบุ</option>`+opts;
@@ -13480,6 +13485,7 @@ async function _loadCases(){
         <span style="font-size:11px;color:var(--g5);font-family:var(--mono)">${esc(r.case_code)}</span>
         ${_caseStChip(r.case_status)}${_casePriChip(r.priority)}
         <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:var(--g1);color:var(--g6)">${esc(_CTPL_CAT[r.case_category]||r.case_category)}</span>
+        ${_caseNeedsReview(r)?`<span title="สร้างจากแม่แบบที่ยังไม่เปิดใช้งานในช่วง Recovery" style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#fef3c7;color:#b45309;white-space:nowrap">ต้องตรวจสอบ</span>`:''}
         ${r.due_date?`<span style="font-size:11px;font-weight:600;color:${overdue?'var(--red)':'var(--g5)'};margin-left:auto">${overdue?'⚠ เลยกำหนด ':'กำหนด '}${fd(r.due_date)}</span>`:''}
       </div>
       <div style="font-size:14px;font-weight:700;color:var(--g9)">${esc(r.case_title)}</div>
@@ -13656,6 +13662,7 @@ function _renderCaseDetail(){
       <div style="display:flex;flex-wrap:wrap;gap:3px 18px">${scanHtml}</div>
       ${k.note?`<div style="font-size:12px;color:var(--g6);margin-top:6px;background:var(--g0);padding:3px 9px;border-radius:7px">📝 ${esc(k.note)}</div>`:''}
     </div>
+    ${_caseNeedsReview(k)?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--rl);padding:8px 13px;margin-bottom:8px;font-size:12px;color:#92400e">⚠ เคสนี้สร้างจากแม่แบบที่ยังไม่เปิดใช้งานในช่วง Recovery — ต้องตรวจ checklist และเอกสารจริงก่อนใช้จริง</div>`:''}
     <div id="caseTplMeta"></div>
     ${_caseSecShell('chk','Checklist เอกสาร',`<div id="caseChkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดเช็กลิสต์...</div></div>`,true)}
     ${_caseSecShell('pay','งานการเงินของเคส',`<div id="casePaySec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>`,false)}
