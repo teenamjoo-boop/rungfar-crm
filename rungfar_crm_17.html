@@ -13815,6 +13815,7 @@ function _renderCaseDetail(){
     </div>
     ${_caseNeedsReview(k)?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--rl);padding:8px 13px;margin-bottom:8px;font-size:12px;color:#92400e">⚠ เคสนี้สร้างจากแม่แบบที่ยังไม่เปิดใช้งานในช่วง Recovery — ต้องตรวจ checklist และเอกสารจริงก่อนใช้จริง</div>`:''}
     <div id="caseTplMeta"></div>
+    <div id="caseRtsSec"></div>
     ${_caseSecShell('chk','Checklist เอกสาร',`<div id="caseChkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดเช็กลิสต์...</div></div>`,true)}
     ${_caseSecShell('pay','งานการเงินของเคส',`<div id="casePaySec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>`,false)}
     ${_caseSecShell('appt','นัดหมายที่ต้องติดตาม',`<div id="caseApptSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดนัดหมาย...</div></div>`,false)}
@@ -13833,6 +13834,111 @@ function _renderCaseDetail(){
   try{if(typeof _loadCaseTracking==='function')_loadCaseTracking(k.id);}catch(_e){}
   // STAGE 54A-9A: ข้อมูลเตรียมงานจากแบบงาน (best-effort — ไม่มี metadata → ไม่แสดง, ไม่ทำให้หน้ายาว)
   try{if(typeof _loadCaseTplMeta==='function')_loadCaseTplMeta(k.template_id);}catch(_e){}
+  // STAGE 57D-RESET-2: แสดงแผงตรวจความพร้อมทันที (loaders จะรีเฟรชผ่าน _caseSecSet เมื่อข้อมูลมาถึง)
+  try{if(typeof _rtsRender==='function')_rtsRender();}catch(_e){}
+}
+// =============================================================
+// STAGE 57D-RESET-2 — ตรวจความพร้อมก่อนยื่น (ready-to-submit review, frontend-only)
+//   * อ่านจากข้อมูลที่โหลดในหน้าเคสแล้วเท่านั้น (_caseDetail.caseRow + _chkRows/_payRows/_apptRows/_trkRows)
+//   * ❌ ไม่บันทึก / ไม่เปลี่ยนสถานะ / ไม่สร้าง checklist / ไม่มี RPC/param ใหม่
+//   * เป็นเช็กลิสต์ภายในก่อนพนักงานยื่นจริงในระบบราชการ — CRM ไม่ได้ยื่นให้อัตโนมัติ
+// =============================================================
+function _rtsRender(){
+  const sec=document.getElementById('caseRtsSec');
+  if(!sec||!_caseDetail||!_caseDetail.caseRow)return;
+  const k=_caseDetail.caseRow;
+  const today=new Date().toISOString().split('T')[0];
+  const ICON={pass:'✅',warn:'⚠️',neutral:'•'},CLR={pass:'#059669',warn:'#b45309',neutral:'var(--g5)'};
+  const rows=[],actions=[];
+  const add=(label,st,detail)=>rows.push({label,st,detail:detail||''});
+  // 1) ข้อมูลแรงงาน
+  add('ข้อมูลแรงงาน',k.customer_name?'pass':'warn',k.customer_name?esc(k.customer_name):'ยังไม่มีข้อมูลแรงงาน');
+  if(!k.customer_name)actions.push('ตรวจข้อมูลแรงงาน');
+  // 2) นายจ้าง / บริษัท
+  add('นายจ้าง / บริษัท',k.employer_name?'pass':'warn',k.employer_name?esc(k.employer_name):'ยังไม่ผูกนายจ้าง');
+  if(!k.employer_name)actions.push('ตรวจข้อมูลนายจ้าง');
+  // 3) ประเภทงาน
+  const typeName=k.template_name_th||k.template_code||'';
+  const nonPilot=(typeof _caseNeedsReview==='function')&&_caseNeedsReview(k);
+  add('ประเภทงาน',(typeName&&!nonPilot)?'pass':'warn',nonPilot?'แม่แบบยังไม่เปิดใช้งาน — ต้องตรวจสอบก่อน':(typeName?esc(typeName):'ยังไม่ระบุประเภทงาน'));
+  // 4) Checklist เอกสาร + 5) เอกสารแนบ
+  const chkLoaded=(typeof _chkCaseId!=='undefined')&&_chkCaseId===k.id;
+  let chkSt='neutral',chkDetail='กำลังตรวจ...',docSt='neutral',docDetail='กำลังตรวจ...';
+  if(chkLoaded){
+    const rowsC=Array.isArray(_chkRows)?_chkRows:[];
+    if(!rowsC.length){chkSt='warn';chkDetail='ยังไม่ได้สร้าง checklist';actions.push('สร้าง checklist จากแม่แบบ');docSt='neutral';docDetail='ยังไม่มี checklist';}
+    else{
+      const reqRows=rowsC.filter(r=>r.is_required!==false);
+      const miss=rowsC.filter(r=>r.checklist_status==='missing').length;
+      const fix=rowsC.filter(r=>r.checklist_status==='needs_fix').length;
+      if(miss>0){chkSt='warn';chkDetail='มีรายการที่ยังขาด '+miss+' รายการ';actions.push('ตรวจรายการที่ยังขาด');}
+      else if(fix>0){chkSt='warn';chkDetail='มีรายการที่ต้องแก้ '+fix+' รายการ';actions.push('ตรวจรายการที่ต้องแก้');}
+      else{chkSt='pass';chkDetail='ครบ '+rowsC.length+' รายการ';}
+      const noLink=reqRows.filter(r=>Number(r.linked_count||0)===0&&!['waived','not_required','approved'].includes(r.checklist_status)).length;
+      if(noLink>0){docSt='warn';docDetail='ยังไม่ผูกเอกสาร '+noLink+' รายการที่จำเป็น';actions.push('เลือกเอกสารที่ยังขาด');}
+      else{docSt='pass';docDetail='เอกสารที่จำเป็นผูกครบ';}
+    }
+  }
+  add('Checklist เอกสาร',chkSt,chkDetail);
+  add('เอกสารแนบ',docSt,docDetail);
+  // 6) การเงิน
+  const payLoaded=(typeof _payCaseId!=='undefined')&&_payCaseId===k.id;
+  let paySt='neutral',payDetail='กำลังตรวจ...';
+  if(payLoaded){
+    const rowsP=Array.isArray(_payRows)?_payRows:[];
+    if(!rowsP.length){paySt='neutral';payDetail='ยังไม่มีรายการชำระเงิน';}
+    else{
+      const due=rowsP.filter(r=>!['paid','waived','refunded','cancelled'].includes(r.payment_status)&&(Number(r.amount_due||0)-Number(r.amount_paid||0))>0).length;
+      if(due>0){paySt='warn';payDetail='มียอดค้างชำระ '+due+' รายการ';actions.push('ตรวจยอดค้างชำระ');}
+      else{paySt='pass';payDetail='ชำระครบ';}
+    }
+  }
+  add('การเงิน',paySt,payDetail);
+  // 7) นัดหมาย
+  const apptLoaded=(typeof _apptCaseId!=='undefined')&&_apptCaseId===k.id;
+  let apptSt='neutral',apptDetail='กำลังตรวจ...';
+  if(apptLoaded){
+    const rowsA=Array.isArray(_apptRows)?_apptRows:[];
+    if(!rowsA.length){apptSt='neutral';apptDetail='ไม่มีนัดหมาย';}
+    else{
+      const over=rowsA.filter(r=>r.appointment_status==='scheduled'&&r.appointment_date&&r.appointment_date<today).length;
+      if(over>0){apptSt='warn';apptDetail='มีนัดที่เลยกำหนด '+over+' รายการ';actions.push('ตรวจวันนัด');}
+      else{apptSt='pass';apptDetail='ไม่มีนัดที่เลยกำหนด';}
+    }
+  }
+  add('นัดหมาย',apptSt,apptDetail);
+  // 8) บันทึกหลังยื่น / เลขคำขอ (manual — บันทึกหลังพนักงานยื่นจริง)
+  const trkLoaded=(typeof _trkCaseId!=='undefined')&&_trkCaseId===k.id;
+  const hasReq=!!(k.ewp_request_no&&String(k.ewp_request_no).trim());
+  const hasTrk=trkLoaded&&Array.isArray(_trkRows)&&_trkRows.length>0;
+  let subSt='neutral',subDetail='ยังไม่ถึงขั้นยื่น — บันทึกหลังพนักงานยื่นจริง';
+  if(hasReq||hasTrk){subSt='pass';subDetail='มีบันทึกหลังยื่น'+(hasReq?' · เลขคำขอ '+esc(k.ewp_request_no):'');}
+  add('บันทึกหลังยื่น / เลขคำขอ',subSt,subDetail);
+  // สรุปสถานะรวม (display-only — ไม่เปลี่ยนสถานะเคส)
+  const stOf=lbl=>{const r=rows.find(x=>x.label===lbl);return r?r.st:'neutral';};
+  const identityWarn=[stOf('ข้อมูลแรงงาน'),stOf('นายจ้าง / บริษัท'),stOf('ประเภทงาน')].indexOf('warn')>=0;
+  const chkWarn=[stOf('Checklist เอกสาร'),stOf('เอกสารแนบ')].indexOf('warn')>=0;
+  const secWarn=[stOf('การเงิน'),stOf('นัดหมาย')].indexOf('warn')>=0;
+  let overall,oclr,obg;
+  if(!chkLoaded){overall='กำลังตรวจความพร้อม…';oclr='var(--g6)';obg='var(--g1)';}
+  else if(identityWarn){overall='ควรตรวจข้อมูลก่อน';oclr='#dc2626';obg='#fee2e2';}
+  else if(chkWarn){overall='ยังไม่พร้อมยื่น';oclr='#b45309';obg='#fef3c7';}
+  else if(secWarn){overall='ใกล้พร้อมยื่น';oclr='#b45309';obg='#fef3c7';}
+  else if(['ready_to_submit','submitted','waiting_result','approved','completed'].indexOf(k.case_status)>=0){overall='พร้อมยื่นภายในบริษัท';oclr='#059669';obg='#ecfdf5';}
+  else{overall='พร้อมให้พนักงานตรวจทาน';oclr='#059669';obg='#ecfdf5';}
+  const rowHtml=rows.map(r=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px solid var(--g1)">
+    <span style="flex-shrink:0">${ICON[r.st]||'•'}</span>
+    <span style="font-size:12.5px;font-weight:600;color:var(--g8);min-width:135px">${r.label}</span>
+    <span style="font-size:12px;color:${CLR[r.st]||'var(--g5)'};flex:1;min-width:0">${r.detail}</span>
+  </div>`).join('');
+  const uniqActions=actions.filter((a,i)=>actions.indexOf(a)===i);
+  const actHtml=uniqActions.length?`<div style="margin-top:8px;font-size:12px;color:var(--g6)"><b>สิ่งที่ควรทำต่อ:</b><br>${uniqActions.map(a=>'• '+esc(a)).join('<br>')}</div>`:'';
+  sec.innerHTML=`<details open style="margin-bottom:8px;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:9px 13px">
+    <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--g8)">ตรวจความพร้อมก่อนยื่น <span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${obg};color:${oclr}">${overall}</span></summary>
+    <div style="font-size:11px;color:var(--g5);margin:5px 0 8px">ใช้ตรวจภายในก่อนพนักงานนำข้อมูลไปยื่นจริง — ระบบไม่ได้ยื่นให้หน่วยงานราชการอัตโนมัติ</div>
+    ${rowHtml}
+    ${actHtml}
+  </details>`;
 }
 // STAGE 54A-9A: ดึง metadata ของแม่แบบที่เคสนี้ผูกไว้ มาแสดงแบบกะทัดรัด (RPC template detail เดิม — ไม่มี RPC ใหม่)
 async function _loadCaseTplMeta(templateId){
@@ -13890,6 +13996,8 @@ function caseSecToggle(key,force){
 function _caseSecSet(key,chipsHtml,openIfData){
   const s=document.getElementById('csecsum_'+key);if(s)s.innerHTML=chipsHtml||'';
   if(!_CASE_SEC_TOUCHED[key])caseSecToggle(key,!!openIfData);
+  // STAGE 57D-RESET-2: รีเฟรชแผงตรวจความพร้อมเมื่อข้อมูล section (checklist/payment/appointment/tracking) settle — display เท่านั้น
+  try{if(typeof _rtsRender==='function')_rtsRender();}catch(_e){}
 }
 // ── แก้ไข metadata ──
 function openCaseEdit(){
