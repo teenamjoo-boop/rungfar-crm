@@ -14266,14 +14266,30 @@ async function openChkLink(itemId){
   docs=Array.isArray(docs)?docs:[];
   if(!docs.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--g5);font-size:12px">ลูกค้ารายนี้ยังไม่มีเอกสารในคลัง</div>';return;}
   const fmtD=s=>{if(!s)return'';try{return new Date(s).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}catch(e){return s;}};
-  list.innerHTML=docs.map(d=>`
+  // STAGE 57I-RESET-2 — visual owner grouping only. ใช้ document list เดิม (customer docs, RPC เดิม)
+  //   ❌ ไม่มี fetch/RPC/SQL/upload/delete ใหม่ — แค่จัดกลุ่มตามเจ้าของเอกสารด้วย taxonomy doc_type เดิม
+  //   ทุกเอกสารยังเลือกได้เหมือนเดิม (doc_type ที่ไม่รู้จัก → กลุ่ม "แรงงาน" fallback จึงไม่มีเอกสารหาย)
+  const _rowHtml=d=>`
     <label style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-bottom:1px solid var(--g1);cursor:pointer">
       <input type="radio" name="chkDocPick" value="${esc(String(d.id))}" onchange="_chkDocPick='${esc(String(d.id))}'" style="margin-top:3px">
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:600">${esc(d.doc_name||d.doc_type||'เอกสาร')}</div>
         <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(_dcDocTypeLabel(d.doc_type)):'',d.doc_status?esc(_dcStatusLabel(d.doc_status)):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
       </div>
-    </label>`).join('');
+    </label>`;
+  const _OWNER_GROUPS=[
+    {title:'แรงงาน',types:['passport','ci','work_permit','medical','insurance','profile_photo','passport_photo','visa','wp','photo'],fallback:true,empty:'ยังไม่มีเอกสารแรงงาน'},
+    {title:'นายจ้าง / บริษัท',types:['employer_id_card','house_registration','employer_poa','employer_card','pow','company_certificate','pp20','commercial_registration'],empty:'ยังไม่มีเอกสารนายจ้าง'},
+    {title:'สถานประกอบการ',types:['workplace_photo','map'],empty:'ยังไม่มีเอกสารสถานประกอบการ'},
+    {title:'เคส',types:['request_form','appointment_slip','payment_proof','eworkpermit_reply','requested_extra_doc','receipt'],empty:'ยังไม่มีเอกสารเฉพาะเคส'}
+  ];
+  const _fbGroup=_OWNER_GROUPS.find(g=>g.fallback);
+  const _bucket=g=>docs.filter(d=>{const own=_OWNER_GROUPS.find(x=>x.types.indexOf(d.doc_type||'')>=0)||_fbGroup;return own===g;});
+  list.innerHTML=_OWNER_GROUPS.map(g=>{
+    const items=_bucket(g);
+    const body=items.length?items.map(_rowHtml).join(''):`<div style="padding:9px 12px;font-size:11px;color:var(--g5);font-style:italic">${g.empty}</div>`;
+    return `<div style="position:sticky;top:0;padding:6px 12px;background:var(--g0);border-bottom:1px solid var(--g1);font-size:11px;font-weight:700;color:var(--g7)">${g.title}</div>${body}`;
+  }).join('');
 }
 async function saveChkLink(){
   if(_chkLinkItemId==null){toast('กรุณาเลือกรายการเช็กลิสต์ก่อน','err');return;}
