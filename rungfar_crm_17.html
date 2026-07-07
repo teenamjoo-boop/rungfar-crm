@@ -13229,6 +13229,86 @@ function _ctplMetaBlock(t){
     ${(t.source_note||'').trim()?`<div style="font-size:11px;color:var(--g5);margin-top:6px">ที่มา: ${esc(t.source_note)}</div>`:''}
   </div>`;
 }
+// =============================================================
+// STAGE 58B-RESET-2 — พรีวิวตรวจทานเนื้อหาแม่แบบ/เช็กลิสต์ (read-only review, frontend-only)
+//   * อ่านจากข้อมูลแม่แบบที่โหลดมาแล้ว (_ctplDetail) เท่านั้น — ❌ ไม่มี RPC/SQL/write ใหม่
+//   * ป้ายคุณภาพเนื้อหา + คอลัมน์ "ต้องตรวจเพิ่ม" คำนวณจากข้อมูลจริง ไม่ hard-code คำกล่าวอ้างเท็จ
+//   * ใช้ช่วยพนักงานตรวจก่อนเตรียมเอกสารจริง — CRM ไม่ได้ยื่นให้อัตโนมัติ (ยื่นจริงโดยพนักงาน)
+// =============================================================
+// ชุด item_code "กลาง" (generic base seed 20260801) — ใช้ตรวจว่าเนื้อหายังไม่ถูกปรับเฉพาะงาน
+const _CTPL_GENERIC_CODES=new Set(['passport_or_ci','worker_photo','employer_documents','company_certificate','power_of_attorney','payment_receipt','appointment_date','submit_result_note','work_permit','visa_page']);
+function _ctplReviewChip(txt,tone){
+  const c=tone==='warn'?['#fef3c7','#b45309']:(tone==='info'?['#eef2ff','#4338ca']:['#f3f4f6','#6b7280']);
+  return `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c[0]};color:${c[1]};white-space:nowrap">${esc(txt)}</span>`;
+}
+function _ctplReviewBadges(t,items){
+  const codes=(items||[]).map(i=>String(i.item_code||'').toLowerCase());
+  const cat=String(t.category||'').toLowerCase();
+  const isMou=cat==='mou';
+  const allGeneric=items.length>0 && items.every(i=>_CTPL_GENERIC_CODES.has(String(i.item_code||'').toLowerCase()));
+  const hasEmployerItem=(items||[]).some(i=>i.required_from==='employer');
+  const hasNameList=codes.some(c=>/name.?list|worker.?list|namelist/.test(c));
+  const hasPostSubmit=codes.some(c=>/result_doc|evidence|request_no|receipt_reply|reply|submit_evidence|after_submit/.test(c));
+  const b=[];
+  if(allGeneric)b.push(_ctplReviewChip('เนื้อหายังเป็นชุดกลาง','warn'));
+  b.push(_ctplReviewChip('ต้องตรวจงานจริง','warn'));
+  if(isMou){
+    b.push(_ctplReviewChip('ต้องแยก ม.41 / ม.46','info'));
+    if(!hasNameList)b.push(_ctplReviewChip('ยังไม่มี Name List หลายแรงงาน','info'));
+  }
+  if(hasEmployerItem)b.push(_ctplReviewChip('ยังต้องตรวจเอกสารนายจ้าง','info'));
+  if(!hasPostSubmit)b.push(_ctplReviewChip('ยังต้องตรวจหลักฐานหลังยื่น','info'));
+  return b;
+}
+// คำแนะนำ "ต้องตรวจเพิ่ม" ต่อรายการ — อิงกลุ่มเจ้าของ/รหัสรายการจริง (ถ้อยคำปลอดภัย, ไม่อ้างว่ายื่นอัตโนมัติ)
+function _ctplItemReviewHint(i){
+  const c=String(i.item_code||'').toLowerCase();
+  const f=i.required_from;
+  if(f==='employer')return 'เอกสารนายจ้าง — รอบนี้ยังลิงก์เข้าเช็กลิสต์ไม่ได้ (ต้องตรวจ backend)';
+  if(f==='payment')return 'หลักฐานชำระเงินภายใน — ไม่ใช่ใบเสร็จราชการ';
+  if(f==='internal')return 'พนักงานบันทึกผล/เลขคำขอเอง หลังยื่นจริง';
+  if(f==='case')return 'พนักงานกรอกวันนัด/วันยื่นเอง';
+  if(/passport|_ci\b|_ci$|passport_or_ci/.test(c))return 'ตรวจวันหมดอายุพาสปอร์ต/CI';
+  if(/work_permit/.test(c))return 'ตรวจใบอนุญาตทำงานเดิม';
+  if(/visa/.test(c))return 'ตรวจหน้าวีซ่าล่าสุด';
+  if(/photo/.test(c))return 'ตรวจรูปถ่ายให้เป็นปัจจุบัน';
+  return 'ต้องตรวจงานจริง';
+}
+function _ctplReviewBlock(t,items){
+  const badges=_ctplReviewBadges(t,items);
+  const rows=(items||[]).map((i,idx)=>{
+    const req=i.is_required?'<span style="color:#b45309;font-weight:700">บังคับ</span>':'<span style="color:var(--g5)">ไม่บังคับ</span>';
+    const owner=`<span style="padding:2px 8px;border-radius:20px;background:var(--g1);color:var(--g6);font-weight:600;white-space:nowrap">${esc(_CTPL_FROM[i.required_from]||i.required_from||'—')}</span>`;
+    const dtype=i.doc_type?`<span style="font-family:var(--mono)">${esc(i.doc_type)}</span>`:'<span style="color:var(--g4)">—</span>';
+    const note=i.note?esc(i.note):(i.is_active?'<span style="color:var(--g4)">—</span>':'<span style="color:var(--g5)">ปิดใช้งาน</span>');
+    return `<tr style="border-top:1px solid var(--g1)">
+      <td style="padding:7px 8px;font-size:12px;color:var(--g5);text-align:center;vertical-align:top">${idx+1}</td>
+      <td style="padding:7px 8px;vertical-align:top"><div style="font-size:12.5px;font-weight:600;color:var(--g9)">${esc(i.item_name_th)}</div><div style="font-size:10px;color:var(--g4);font-family:var(--mono);margin-top:1px">${esc(i.item_code)}</div></td>
+      <td style="padding:7px 8px;font-size:12px;white-space:nowrap;vertical-align:top">${req}</td>
+      <td style="padding:7px 8px;font-size:12px;vertical-align:top">${owner}</td>
+      <td style="padding:7px 8px;font-size:11.5px;color:var(--g6);vertical-align:top">${dtype}</td>
+      <td style="padding:7px 8px;font-size:11.5px;color:var(--g6);vertical-align:top">${note}</td>
+      <td style="padding:7px 8px;font-size:11.5px;color:#92400e;vertical-align:top">${esc(_ctplItemReviewHint(i))}</td>
+    </tr>`;
+  }).join('');
+  const th=(txt,align)=>`<th style="padding:7px 8px;font-size:11px;color:var(--g6);text-align:${align||'left'};font-weight:700;white-space:nowrap">${txt}</th>`;
+  return `<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:13px 15px;margin-bottom:14px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:13px;font-weight:700;color:var(--g8)">🔍 พรีวิวตรวจทานเนื้อหา (อ่านอย่างเดียว)</span>
+      <span style="font-size:11px;color:var(--g5)">ใช้ช่วยตรวจ checklist ก่อนเตรียมเอกสารจริง</span>
+    </div>
+    ${badges.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${badges.join('')}</div>`:''}
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table style="width:100%;border-collapse:collapse;min-width:660px">
+        <thead><tr style="background:var(--g0)">
+          ${th('ลำดับ','center')}${th('รายการเอกสาร / ขั้นตอน')}${th('บังคับ')}${th('กลุ่มเจ้าของ')}${th('ประเภทเอกสาร')}${th('สถานะ/หมายเหตุ')}${th('ต้องตรวจเพิ่ม')}
+        </tr></thead>
+        <tbody>${rows||`<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--g5)">ยังไม่มีรายการ</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--g5);margin-top:9px">หมายเหตุ: เนื้อหานี้ใช้เตรียมเอกสาร/ตรวจ checklist ภายในก่อน "ยื่นจริงโดยพนักงาน" — CRM ไม่ได้ยื่นให้อัตโนมัติ พนักงานยื่นเอง บันทึกเลขคำขอเอง และติดตามสถานะเอง</div>
+  </div>`;
+}
 async function renderCaseTpl(){
   const wrap=document.getElementById('caseTplContent');if(!wrap)return;
   if(!_isAdminRole()){wrap.innerHTML=`<div style="padding:60px;text-align:center;color:var(--g5)">${T('seclogNoAccessMsg')}</div>`;return;}
@@ -13321,6 +13401,7 @@ function _renderCaseTplDetail(){
       </div>`}
     </div>
     ${_ctplMetaBlock(t)}
+    ${_ctplReviewBlock(t,items)}
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <span style="font-size:13px;font-weight:700;color:var(--g8)">รายการเช็คลิสต์</span>
       <span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:var(--mono)">${items.length}</span>
