@@ -1792,9 +1792,9 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 <!-- MODAL: LINK DOCUMENT TO CHECKLIST (Stage 54A-4) — ลิงก์เอกสารเดิมเท่านั้น ไม่มีอัปโหลดใหม่ -->
 <div class="mo" id="chkLinkModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:560px">
-  <div class="mh"><div class="mt">เลือกเอกสารจากคลังของลูกค้า</div><button class="xbtn" onclick="document.getElementById('chkLinkModal').style.display='none'">×</button></div>
+  <div class="mh"><div class="mt">เลือกเอกสารเพื่อลิงก์กับเช็กลิสต์</div><button class="xbtn" onclick="document.getElementById('chkLinkModal').style.display='none'">×</button></div>
   <div class="mbody">
-    <div style="font-size:11px;color:var(--g5);margin-bottom:10px">แสดงเฉพาะเอกสารของลูกค้าเจ้าของเคสนี้ — ลิงก์เข้าเช็กลิสต์เท่านั้น ไม่คัดลอก/ไม่ย้ายไฟล์</div>
+    <div style="font-size:11px;color:var(--g5);margin-bottom:10px">เลือกเอกสารที่มีอยู่แล้วในคลังเอกสารเพื่อลิงก์กับเช็กลิสต์ — ไม่ได้คัดลอก/ไม่ย้ายไฟล์</div>
     <div id="chkLinkDocList" style="max-height:300px;overflow-y:auto;border:1px solid var(--g2);border-radius:var(--rl);margin-bottom:12px"></div>
     <div class="fgi"><label class="fl">หมายเหตุการลิงก์</label><input class="fi2" id="chf_link_note" placeholder="(ไม่บังคับ)"></div>
   </div>
@@ -14251,45 +14251,72 @@ async function saveChkStatus(){
   }finally{hideLoading();}
 }
 // ── ลิงก์เอกสารเดิมของลูกค้าเจ้าของเคส ──
+// STAGE 57J-RESET-2 — ตัวเลือกเอกสารแบบหลายเจ้าของ (multi-owner selector, frontend-only)
+//   * ใช้ RPC เดิม app_list_documents (owner_type รองรับแล้วใน migration 20260731) ❌ ไม่มี SQL/RPC/param ใหม่
+//   * แรงงาน  = โหลดด้วย p_customer_id เดิม (พฤติกรรมเดิมทุกอย่าง) → เลือกได้ + ลิงก์ได้
+//   * เคสนี้  = โหลดด้วย p_owner_type='case' → เลือกได้ (app_link_case_document อนุญาต owner_type='case')
+//   * นายจ้าง = โหลดด้วย p_owner_type='employer' แบบ "อ้างอิงอย่างเดียว" — เซิร์ฟเวอร์ (RPC ลิงก์เดิม)
+//              อนุญาตลิงก์เฉพาะเอกสาร customer/case เท่านั้น จึง ❌ ไม่ทำ radio ให้กันลิงก์แล้วพัง
+//   * สถานประกอบการ = deferred (ไม่มี establishment id เดียวที่เชื่อถือได้ผูกกับเคส + กัน N+1) → แสดง placeholder
+//   * โหลดแยกแต่ละ section (best-effort) — section ใดพังไม่กระทบ section อื่น, ไม่มี console spam
+//   * ❌ ไม่โชว์ storage_path/bucket/signed URL/base64 — เปิดไฟล์ผ่าน dcOpenDoc เดิมเมื่อกดเท่านั้น
+const _chkFmtCA=s=>{if(!s)return'';try{return new Date(s).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}catch(_e){return'';}};
+function _chkDocMeta(d){return[d.doc_type?_dcDocTypeLabel(d.doc_type):'',d.doc_status?_dcStatusLabel(d.doc_status):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):'',d.uploaded_by||'',_chkFmtCA(d.created_at)].filter(Boolean).map(esc).join(' · ');}
+function _chkOwnerBadge(label){return`<span style="font-size:9px;font-weight:700;color:var(--g6);background:var(--g1);border-radius:8px;padding:1px 6px;margin-left:4px;white-space:nowrap">${esc(label)}</span>`;}
+function _chkTitle(d){return esc(d.doc_name||(d.doc_type?_dcDocTypeLabel(d.doc_type):'')||'เอกสาร');}
+function _chkPickRow(d,label){return`
+    <label style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-bottom:1px solid var(--g1);cursor:pointer">
+      <input type="radio" name="chkDocPick" value="${esc(String(d.id))}" onchange="_chkDocPick='${esc(String(d.id))}'" style="margin-top:3px">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:12px;font-weight:600">${_chkTitle(d)}${_chkOwnerBadge(label)}</div>
+        <div style="font-size:10px;color:var(--g5);margin-top:2px">${_chkDocMeta(d)}</div>
+      </div>
+    </label>`;}
+function _chkRefRow(d,label){return`
+    <div style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-bottom:1px solid var(--g1)">
+      <span style="margin-top:2px;font-size:12px">📄</span>
+      <div style="min-width:0;flex:1">
+        <div style="font-size:12px;font-weight:600">${_chkTitle(d)}${_chkOwnerBadge(label)}</div>
+        <div style="font-size:10px;color:var(--g5);margin-top:2px">${_chkDocMeta(d)}</div>
+      </div>
+      <button class="btn btn-g btn-sm btn-xs" onclick="dcOpenDoc('${esc(String(d.id))}',${!!d.has_storage})">เปิดดู</button>
+    </div>`;}
+function _chkSecHdr(title){return`<div style="position:sticky;top:0;z-index:1;padding:6px 12px;background:var(--g0);border-bottom:1px solid var(--g1);font-size:11px;font-weight:700;color:var(--g7)">${title}</div>`;}
+function _chkSecMsg(t){return`<div style="padding:9px 12px;font-size:11px;color:var(--g5);font-style:italic">${esc(t)}</div>`;}
+async function _chkFillSection(elId,params,label,selectable,emptyMsg,refNote){
+  const el=document.getElementById(elId);if(!el)return;
+  let docs=[];
+  try{docs=await _delReqRpc('app_list_documents',params);}
+  catch(e){el.innerHTML=_chkSecMsg('โหลดไม่สำเร็จ: '+e.message);return;}
+  docs=Array.isArray(docs)?docs:[];
+  if(!docs.length){el.innerHTML=_chkSecMsg(emptyMsg);return;}
+  const rows=docs.map(d=>selectable?_chkPickRow(d,label):_chkRefRow(d,label)).join('');
+  el.innerHTML=(!selectable&&refNote?`<div style="padding:6px 12px;font-size:10px;color:var(--g5);background:var(--g0)">${esc(refNote)}</div>`:'')+rows;
+}
 async function openChkLink(itemId){
   const r=_chkRows.find(x=>x.id===itemId);if(!r){toast('ไม่พบรายการ','err');return;}
-  const custId=_caseDetail&&_caseDetail.caseRow?_caseDetail.caseRow.customer_id:null;
+  const cr=_caseDetail&&_caseDetail.caseRow?_caseDetail.caseRow:null;
+  const custId=cr?cr.customer_id:null;
   if(custId==null){toast('ไม่พบลูกค้าของเคสนี้','err');return;}
   _chkLinkItemId=itemId;_chkDocPick=null;
   document.getElementById('chf_link_note').value='';
+  const empId=cr?cr.employer_id:null;
+  const caseId=cr?cr.id:null;
+  const load='<div style="padding:12px;text-align:center;color:var(--g5);font-size:11px">กำลังโหลด...</div>';
   const list=document.getElementById('chkLinkDocList');
-  list.innerHTML='<div style="padding:20px;text-align:center;color:var(--g5);font-size:12px">กำลังโหลดเอกสาร...</div>';
+  // สร้างโครงกลุ่มตามเจ้าของเอกสารก่อน แล้วค่อยเติมแต่ละ section แบบ async (แยกความล้มเหลวต่อ section)
+  list.innerHTML=
+    _chkSecHdr('แรงงาน')+`<div id="chkSecWorker">${load}</div>`+
+    _chkSecHdr('นายจ้าง / บริษัท')+`<div id="chkSecEmployer">${empId!=null?load:_chkSecMsg('ยังไม่มีเอกสารนายจ้าง / บริษัท หรือยังไม่ได้ผูกนายจ้างกับเคสนี้')}</div>`+
+    _chkSecHdr('สถานประกอบการ')+`<div id="chkSecEst">${_chkSecMsg('ยังไม่มีเอกสารสถานประกอบการ หรือยังไม่ได้เลือกสถานประกอบการ')}</div>`+
+    _chkSecHdr('เคสนี้')+`<div id="chkSecCase">${caseId!=null?load:_chkSecMsg('ยังไม่มีเอกสารเฉพาะเคสนี้')}</div>`;
   document.getElementById('chkLinkModal').style.display='flex';
-  let docs=[];
-  try{docs=await _delReqRpc('app_list_documents',{p_customer_id:String(custId),p_limit:100,p_offset:0});}
-  catch(e){list.innerHTML=`<div style="padding:16px;text-align:center;color:var(--g5);font-size:12px">โหลดเอกสารไม่สำเร็จ: ${esc(e.message)}</div>`;return;}
-  docs=Array.isArray(docs)?docs:[];
-  if(!docs.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--g5);font-size:12px">ลูกค้ารายนี้ยังไม่มีเอกสารในคลัง</div>';return;}
-  const fmtD=s=>{if(!s)return'';try{return new Date(s).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}catch(e){return s;}};
-  // STAGE 57I-RESET-2 — visual owner grouping only. ใช้ document list เดิม (customer docs, RPC เดิม)
-  //   ❌ ไม่มี fetch/RPC/SQL/upload/delete ใหม่ — แค่จัดกลุ่มตามเจ้าของเอกสารด้วย taxonomy doc_type เดิม
-  //   ทุกเอกสารยังเลือกได้เหมือนเดิม (doc_type ที่ไม่รู้จัก → กลุ่ม "แรงงาน" fallback จึงไม่มีเอกสารหาย)
-  const _rowHtml=d=>`
-    <label style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-bottom:1px solid var(--g1);cursor:pointer">
-      <input type="radio" name="chkDocPick" value="${esc(String(d.id))}" onchange="_chkDocPick='${esc(String(d.id))}'" style="margin-top:3px">
-      <div style="min-width:0">
-        <div style="font-size:12px;font-weight:600">${esc(d.doc_name||d.doc_type||'เอกสาร')}</div>
-        <div style="font-size:10px;color:var(--g5);margin-top:2px">${[d.doc_type?esc(_dcDocTypeLabel(d.doc_type)):'',d.doc_status?esc(_dcStatusLabel(d.doc_status)):'',d.doc_expiry?'หมดอายุ '+fd(d.doc_expiry):'',d.uploaded_by?esc(d.uploaded_by):'',fmtD(d.created_at)].filter(Boolean).join(' · ')}</div>
-      </div>
-    </label>`;
-  const _OWNER_GROUPS=[
-    {title:'แรงงาน',types:['passport','ci','work_permit','medical','insurance','profile_photo','passport_photo','visa','wp','photo'],fallback:true,empty:'ยังไม่มีเอกสารแรงงาน'},
-    {title:'นายจ้าง / บริษัท',types:['employer_id_card','house_registration','employer_poa','employer_card','pow','company_certificate','pp20','commercial_registration'],empty:'ยังไม่มีเอกสารนายจ้าง'},
-    {title:'สถานประกอบการ',types:['workplace_photo','map'],empty:'ยังไม่มีเอกสารสถานประกอบการ'},
-    {title:'เคส',types:['request_form','appointment_slip','payment_proof','eworkpermit_reply','requested_extra_doc','receipt'],empty:'ยังไม่มีเอกสารเฉพาะเคส'}
-  ];
-  const _fbGroup=_OWNER_GROUPS.find(g=>g.fallback);
-  const _bucket=g=>docs.filter(d=>{const own=_OWNER_GROUPS.find(x=>x.types.indexOf(d.doc_type||'')>=0)||_fbGroup;return own===g;});
-  list.innerHTML=_OWNER_GROUPS.map(g=>{
-    const items=_bucket(g);
-    const body=items.length?items.map(_rowHtml).join(''):`<div style="padding:9px 12px;font-size:11px;color:var(--g5);font-style:italic">${g.empty}</div>`;
-    return `<div style="position:sticky;top:0;padding:6px 12px;background:var(--g0);border-bottom:1px solid var(--g1);font-size:11px;font-weight:700;color:var(--g7)">${g.title}</div>${body}`;
-  }).join('');
+  // แรงงาน/ลูกค้า — พฤติกรรมเดิม (p_customer_id) เลือกได้ + ลิงก์ได้ผ่าน saveChkLink เดิม
+  _chkFillSection('chkSecWorker',{p_customer_id:String(custId),p_limit:100,p_offset:0},'แรงงาน',true,'ลูกค้ารายนี้ยังไม่มีเอกสารในคลัง');
+  // นายจ้าง/บริษัท — อ้างอิงอย่างเดียว (RPC ลิงก์เดิมอนุญาตเฉพาะเอกสารลูกค้า/เคส)
+  if(empId!=null)_chkFillSection('chkSecEmployer',{p_owner_type:'employer',p_owner_id:Number(empId),p_limit:100,p_offset:0},'นายจ้าง / บริษัท',false,'ยังไม่มีเอกสารนายจ้าง / บริษัท หรือยังไม่ได้ผูกนายจ้างกับเคสนี้','เอกสารนายจ้างใช้อ้างอิง/ตรวจประกอบ — ยังลิงก์เข้าเช็กลิสต์โดยตรงไม่ได้');
+  // เคสนี้ — เลือกได้ (app_link_case_document อนุญาต owner_type=\'case\')
+  if(caseId!=null)_chkFillSection('chkSecCase',{p_owner_type:'case',p_owner_id:Number(caseId),p_limit:100,p_offset:0},'เคสนี้',true,'ยังไม่มีเอกสารเฉพาะเคสนี้');
 }
 async function saveChkLink(){
   if(_chkLinkItemId==null){toast('กรุณาเลือกรายการเช็กลิสต์ก่อน','err');return;}
