@@ -1,0 +1,276 @@
+-- DRAFT ONLY — DO NOT APPLY
+-- Created for planning/review only
+-- Requires backup, staging verification, and explicit approval before use
+-- =====================================================================
+-- STAGE 58F-RESET-2 — Draft Phase 2 Backend SQL (companion to
+--   manual/PHASE2_BACKEND_CONTRACT_58F.md)
+--
+--   ⚠️⚠️⚠️  ทุกบล็อกในไฟล์นี้เป็น "ร่าง" เพื่ออ่าน/รีวิวเท่านั้น  ⚠️⚠️⚠️
+--   - ไม่มีบล็อกใดตั้งใจให้รันตอนนี้ (เนื้อ DDL/DML ถูกครอบเป็นแผน)
+--   - ไม่ใช่ migration · ห้ามย้ายเข้า supabase/migrations/
+--   - เมื่อทำจริง: แยกเป็น migration additive ใหม่ 1 ไฟล์ + apply-script
+--     สำหรับเนื้อหา (dry-run/ROLLBACK) ตาม pattern เดิม
+--   - รักษา pattern เดิมทุกข้อ: RPC-only, revoke all + grant anon/authenticated,
+--     SECURITY DEFINER, identity predicate เดิม, metadata-only (has_storage),
+--     additive + idempotent, no hard delete, audit best-effort
+-- =====================================================================
+
+
+-- =====================================================================
+-- SECTION 1 — BACKUP QUERIES / SNAPSHOT NOTES (ต้องทำก่อน apply ใด ๆ)
+-- =====================================================================
+-- (ร่าง — รันบน staging/หลัง backup เท่านั้น)
+--
+-- นับแถว baseline ก่อนแก้ (เก็บผลไว้เทียบหลัง apply/rollback):
+--   select 'case_templates' t, count(*) n from public.case_templates
+--   union all select 'case_template_checklist_items', count(*) from public.case_template_checklist_items
+--   union all select 'cases', count(*) from public.cases
+--   union all select 'case_documents', count(*) from public.case_documents
+--   union all select 'documents', count(*) from public.documents;
+--
+-- Snapshot เนื้อหา checklist ของ 5 แม่แบบเป้าหมาย (ก่อน apply เนื้อหาจริง):
+--   select t.template_code, i.item_code, i.item_name_th, i.is_required,
+--          i.required_from, i.sort_order, i.is_active
+--   from public.case_templates t
+--   join public.case_template_checklist_items i on i.template_id = t.id
+--   where t.template_code in
+--     ('MOU_MYANMAR_NEW','MOU_LAOS_NEW','MOU_CAMBODIA_NEW',
+--      'EMPLOYER_NOTIFICATION_OUT','EMPLOYER_NOTIFICATION_IN')
+--   order by t.template_code, i.sort_order;
+--
+-- หมายเหตุ backup: ใช้ Supabase backup/PITR + export CSV ของ 5 ตารางข้างบน
+--   ก่อนรัน apply-script ใด ๆ · เก็บผลนับแถว/ snapshot ไว้ใน runbook 58G
+
+
+-- =====================================================================
+-- SECTION 2 — ADDITIVE SCHEMA DRAFT: case_workers (Name List)  [DO NOT APPLY]
+--   ผูกกับ Contract §D · additive ล้วน · ไม่แตะ cases/customers
+-- =====================================================================
+-- /* DRAFT
+-- create table if not exists public.case_workers (
+--   id              bigserial primary key,
+--   case_id         bigint not null references public.cases(id) on delete cascade,
+--   customer_id     bigint not null,           -- ไม่ FK (customers ใช้ soft delete เหมือน cases.customer_id)
+--   role            text not null default 'worker',
+--   name_list_seq   integer null,
+--   note            text null,
+--   is_active       boolean not null default true,
+--   created_at      timestamptz not null default now(),
+--   created_by_code text null,
+--   constraint case_workers_role_check check (role in ('worker','dependent','other'))
+-- );
+--
+-- comment on table public.case_workers is
+--   'DRAFT 58F: หลายแรงงานต่อเคส (MOU Name List). cases.customer_id ยังเป็นแรงงานหลัก/แสดง (backward compat). RPC-only, no hard delete (soft is_active).';
+--
+-- create index if not exists idx_case_workers_case
+--   on public.case_workers (case_id, name_list_seq nulls last);
+-- create index if not exists idx_case_workers_customer
+--   on public.case_workers (customer_id);
+-- -- กันเพิ่มแรงงานคนเดิมซ้ำในเคสเดียว (เฉพาะแถว active)
+-- create unique index if not exists uq_case_workers_case_customer_active
+--   on public.case_workers (case_id, customer_id) where is_active;
+--
+-- -- RPC-only: ปิดสิทธิ์ตรงทั้งหมด (pattern เดียวกับ 54A-2..7)
+-- revoke all on table public.case_workers from public, anon, authenticated;
+-- revoke all on sequence public.case_workers_id_seq from public, anon, authenticated;
+--
+-- -- RPC เสนอ (ร่าง signature — body ทำใน stage จริง):
+-- --   app_add_case_worker(p_user_id, p_username, p_case_id, p_customer_id,
+-- --                       p_role default 'worker', p_name_list_seq default null, p_note default null)
+-- --   app_list_case_workers(p_user_id, p_username, p_case_id)  -- + นับ required docs/คน
+-- --   app_remove_case_worker(p_user_id, p_username, p_case_worker_id)  -- soft is_active=false
+-- --       (ห้ามลบแรงงานที่ = cases.customer_id)
+-- DRAFT */
+
+
+-- =====================================================================
+-- SECTION 3 — ADDITIVE FIELDS DRAFT: cases + template item side  [DO NOT APPLY]
+--   ผูกกับ Contract §C, §F · เพิ่มเฉพาะ mou_side + establishment_id (+ item side)
+-- =====================================================================
+-- /* DRAFT
+-- -- 3.1 cases.mou_side (มาตรา 41 บริษัทนำเข้ายื่น / 46 นายจ้างยื่นเอง)
+-- alter table public.cases add column if not exists mou_side text null;
+-- do $$ begin
+--   if not exists (select 1 from pg_constraint
+--                  where conname='cases_mou_side_check'
+--                    and conrelid='public.cases'::regclass) then
+--     alter table public.cases add constraint cases_mou_side_check
+--       check (mou_side is null or mou_side in ('41','46'));
+--   end if;
+-- end $$;
+--
+-- -- 3.2 cases.establishment_id (ผูกสถานประกอบการเข้าเคส — ปลดล็อก establishment doc ใน §E)
+-- --     ไม่ FK cascade: ห้ามลบ establishment ทำเคสหาย; ตรวจความสัมพันธ์ที่ RPC
+-- alter table public.cases add column if not exists establishment_id bigint null;
+-- -- (optional index)
+-- create index if not exists idx_cases_establishment on public.cases (establishment_id);
+--
+-- -- 3.3 (ถ้าทำ §C) แยก item ตาม MOU side บนแม่แบบ — null = ใช้ร่วมทั้ง 41/46
+-- alter table public.case_template_checklist_items add column if not exists mou_side text null;
+-- do $$ begin
+--   if not exists (select 1 from pg_constraint
+--                  where conname='case_tpl_items_mou_side_check'
+--                    and conrelid='public.case_template_checklist_items'::regclass) then
+--     alter table public.case_template_checklist_items add constraint case_tpl_items_mou_side_check
+--       check (mou_side is null or mou_side in ('41','46'));
+--   end if;
+-- end $$;
+--
+-- -- หมายเหตุ: app_create_case ต้องเพิ่ม p_mou_side (arg ท้ายสุด, default null) และ
+-- --   app_init_case_checklist ต้อง filter item ที่ mou_side is null OR = cases.mou_side
+-- --   (create or replace, ลำดับ arg เดิมคงไว้ → frontend ไม่ต้องแก้)
+-- --   name_list_status (§F) เพิ่มเมื่อทำ §D:
+-- --   alter table public.cases add column if not exists name_list_status text null;
+-- DRAFT */
+
+
+-- =====================================================================
+-- SECTION 4 — DRAFT app_link_case_document VALIDATION UPDATE  [DO NOT APPLY]
+--   ผูกกับ Contract §E · เพิ่ม OR-clause employer/establishment/case_workers
+--   ⚠️ signature เดิมคงไว้ (create or replace) · metadata-only · ไม่ลด security check
+-- =====================================================================
+-- /* DRAFT — แสดงเฉพาะ "ส่วนตรวจ ownership" ที่เปลี่ยน; ส่วนอื่นคง body เดิม 54A-4
+--
+--   -- ... identity check เดิม (staff/admin active) ...
+--   -- ... select cs.id, cs.customer_id, cs.employer_id, cs.establishment_id into v_case
+--   --     from public.cases cs where cs.id = p_case_id;  (เพิ่ม employer_id/establishment_id)
+--   -- ... ตรวจ item อยู่ในเคสนี้จริง (เดิม) ...
+--
+--   select d.id into v_doc
+--   from public.documents d
+--   where d.id = p_document_id
+--     and (
+--       -- (A) เอกสารลูกค้าเจ้าของเคส (เดิม)
+--       d.customer_id = v_case.customer_id
+--       or (d.owner_type = 'customer' and d.owner_id = v_case.customer_id)
+--       -- (A2 ใหม่) เอกสารของแรงงานใน Name List (§D) — ถ้ามีตาราง case_workers
+--       or (d.owner_type = 'customer' and d.owner_id in (
+--             select w.customer_id from public.case_workers w
+--             where w.case_id = v_case.id and w.is_active))
+--       or (d.customer_id in (
+--             select w.customer_id from public.case_workers w
+--             where w.case_id = v_case.id and w.is_active))
+--       -- (B) เอกสารของเคสนี้เอง (เดิม)
+--       or (d.owner_type = 'case' and d.owner_id = v_case.id)
+--       -- (C ใหม่) เอกสารนายจ้างเจ้าของเคส — ต้องมี employer_id
+--       or (d.owner_type = 'employer' and v_case.employer_id is not null
+--           and d.owner_id = v_case.employer_id)
+--       -- (D ใหม่) เอกสารสถานประกอบการใต้ employer ของเคส และ/หรือ = cases.establishment_id
+--       or (d.owner_type = 'establishment' and (
+--             (v_case.establishment_id is not null and d.owner_id = v_case.establishment_id)
+--             or d.owner_id in (
+--               select s.id from public.establishments s
+--               where v_case.employer_id is not null and s.employer_id = v_case.employer_id)
+--           ))
+--     );
+--   if v_doc is null then
+--     raise exception 'document_not_allowed' using errcode = 'P0003';
+--   end if;
+--
+--   -- ... insert case_documents idempotent (เดิม) + auto missing->received (เดิม) ...
+--   -- ❌ ไม่คืน storage_path/signed URL/base64 · เปิดไฟล์ผ่าน dcOpenDoc/document_id เท่านั้น
+-- DRAFT */
+--
+-- หมายเหตุ: payment proof และ tracking evidence "ไม่" เปลี่ยน — คงไหลผ่าน
+--   case_payments.proof_document_id / case_tracking_logs.evidence_document_id
+--   ด้วยกฎ ownership เดิม (ไม่เปิดช่อง owner ใหม่ที่นั่น)
+
+
+-- =====================================================================
+-- SECTION 5 — DRAFT CHECKLIST CONTENT UPDATE/INSERT APPROACH  [DO NOT APPLY]
+--   ผูกกับ Contract §B · ทำผ่าน RPC app_admin_save_case_template_item (audited,
+--   admin-only) ในสคริปต์ dry-run/ROLLBACK นอก supabase/migrations/
+--   (pattern เดียวกับ APPLY_CASE_TEMPLATE_APPROVED_CONTENT_20260704.sql)
+-- =====================================================================
+-- /* DRAFT — โครงสคริปต์เนื้อหาจริง (ยังไม่ใช่ค่าจริงครบ — ต้องเจ้าของยืนยัน)
+-- begin;
+-- do $$
+-- declare
+--   v_admin_username text := 'TODO_ADMIN_USERNAME';   -- แก้ก่อนรันจริง
+--   v_admin_id       text;
+--   v_tpl            bigint;
+-- begin
+--   select u.id::text into v_admin_id from public.app_users u
+--   where u.username = v_admin_username and lower(u.role)='admin'
+--     and coalesce(u.is_active,true)=true limit 1;
+--   if v_admin_id is null then raise exception 'admin not found'; end if;
+--
+--   -- ตัวอย่าง: เพิ่ม/แก้ item ของ MOU_MYANMAR_NEW ทีละรายการผ่าน RPC
+--   -- (RPC หา item เดิมด้วย p_item_id; สร้างใหม่เมื่อ p_item_id=null + p_template_id)
+--   select id into v_tpl from public.case_templates where template_code='MOU_MYANMAR_NEW';
+--   perform public.app_admin_save_case_template_item(
+--     v_admin_id, v_admin_username,
+--     null,                 -- p_item_id (null = สร้างใหม่ ถ้ายังไม่มี code นี้)
+--     v_tpl,                -- p_template_id
+--     'name_list_certified',-- p_item_code
+--     'Name List รับรองจากประเทศต้นทาง', -- p_item_name_th
+--     null,                 -- p_item_name_en
+--     null,                 -- p_doc_type
+--     true,                 -- p_is_required
+--     'case',               -- p_required_from
+--     'ต้องได้ก่อนยื่น บต.31/33', -- p_note
+--     25                    -- p_sort_order
+--   );
+--   -- ... ทำซ้ำต่อ item ที่อนุมัติ (ดู Contract §B.1–B.3) ...
+--   -- ⚠️ item NEED_REVIEW (เช่น notify_in_form ของ IN) — ยังไม่ใส่รหัสแบบฟอร์ม; ปล่อย note='NEED_REVIEW'
+-- end $$;
+--
+-- -- verification ก่อนตัดสิน COMMIT (ดู SECTION 7) ...
+-- rollback;   -- ⬅ dry-run เริ่มต้น; เปลี่ยนเป็น commit; เมื่อผลตรวจผ่าน + เจ้าของอนุมัติ
+-- DRAFT */
+--
+-- ทางเลือกปิด item generic ที่ไม่ใช้: ใช้ app_admin_set_case_template_active(...,'item',id,false)
+--   (soft — ไม่ hard delete) แทนการ DELETE แถว
+
+
+-- =====================================================================
+-- SECTION 6 — DRAFT ROLLBACK OUTLINE  [DO NOT APPLY]
+-- =====================================================================
+-- 6.1 เนื้อหา checklist (SECTION 5): รันทั้งหมดใน transaction เดียว → ROLLBACK คืนสภาพทันที
+--     (default ท้ายสคริปต์เป็น rollback; COMMIT เฉพาะเมื่อผ่าน verify + อนุมัติ)
+-- 6.2 schema additive (SECTION 2/3): additive ไม่มี rollback อัตโนมัติ — ถ้าต้องถอน:
+--     -- drop table if exists public.case_workers;                 -- (เฉพาะกรณีถอน §D)
+--     -- alter table public.cases drop column if exists mou_side;
+--     -- alter table public.cases drop column if exists establishment_id;
+--     -- alter table public.case_template_checklist_items drop column if exists mou_side;
+--     ⚠️ ถอน column ทำเฉพาะบน staging และเฉพาะเมื่อยังไม่มีข้อมูลใช้งานจริง
+-- 6.3 RPC (SECTION 4): เก็บ body เดิม (54A-4) ไว้เพื่อ create or replace กลับได้
+-- 6.4 ก่อน apply จริง production: มี backup/PITR ตาม SECTION 1 เสมอ
+
+
+-- =====================================================================
+-- SECTION 7 — DRAFT VERIFICATION QUERIES  [DO NOT APPLY]
+-- =====================================================================
+-- 7.1 นับ item จริงหลัง apply (เทียบ snapshot SECTION 1):
+--   select t.template_code, count(*) filter (where i.is_active) items_active
+--   from public.case_templates t
+--   left join public.case_template_checklist_items i on i.template_id=t.id
+--   where t.template_code in
+--     ('MOU_MYANMAR_NEW','MOU_LAOS_NEW','MOU_CAMBODIA_NEW',
+--      'EMPLOYER_NOTIFICATION_OUT','EMPLOYER_NOTIFICATION_IN')
+--   group by t.template_code order by t.template_code;
+--
+-- 7.2 ตรวจ required_from ครบ 6 กลุ่มถูกต้อง (ไม่มีค่าเพี้ยน):
+--   select distinct required_from from public.case_template_checklist_items
+--   where required_from not in ('worker','employer','establishment','case','payment','internal');
+--   -- ควรได้ 0 แถว
+--
+-- 7.3 (หลัง §E) เอกสาร employer อื่น ต้องถูกปฏิเสธ — ทดสอบผ่าน RPC บน staging:
+--   -- select public.app_link_case_document(<admin_id>,<admin_user>,<case_id>,<item_id>,<foreign_employer_doc_id>);
+--   -- คาดหวัง: raise 'document_not_allowed'
+--
+-- 7.4 ตรวจไม่มี path หลุด — RPC list ทุกตัวคืนเฉพาะ has_storage boolean:
+--   -- (code review + ทดสอบเรียกจริง — ไม่มีคอลัมน์ storage_path/signed URL ใน return)
+--
+-- 7.5 (หลัง §D) เคสเดี่ยวเดิม (ไม่มีแถว case_workers) ยังแสดงแรงงานหลัก:
+--   select cs.id, cs.customer_id,
+--          (select count(*) from public.case_workers w where w.case_id=cs.id and w.is_active) n_workers
+--   from public.cases cs order by cs.id desc limit 20;
+--   -- เคสเก่า n_workers = 0 → UI fallback ใช้ cases.customer_id
+
+
+-- =====================================================================
+-- END OF DRAFT — DO NOT APPLY
+-- ทุก SECTION ต้องผ่าน backup + staging verification + การอนุมัติของเจ้าของก่อนใช้จริง
+-- =====================================================================
