@@ -13924,7 +13924,7 @@ function _renderCaseDetail(){
   const wrap=document.getElementById('casesContent');if(!wrap||!_caseDetail)return;
   const k=_caseDetail.caseRow;
   // reset สถานะ ยุบ/ขยาย ต่อเคส (กันข้อมูลค้างจากเคสก่อนหน้า) — checklist เปิด, ที่เหลือรอ loader ตัดสิน
-  _CASE_SEC_OPEN={chk:true,pay:false,appt:false,trk:false,hist:false};_CASE_SEC_TOUCHED={};
+  _CASE_SEC_OPEN={nl:false,chk:true,pay:false,appt:false,trk:false,hist:false};_CASE_SEC_TOUCHED={};
   const fmtDT=s=>{if(!s)return'—';try{return new Date(s).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}};
   const logs=(_caseDetail.logs||[]).map((l,i)=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--g1)">
       <div style="width:17px;height:17px;border-radius:50%;background:${i===0?'var(--p)':'var(--grn)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:2px">${i===0?'●':'✓'}</div>
@@ -13966,6 +13966,7 @@ function _renderCaseDetail(){
     ${_caseNeedsReview(k)?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--rl);padding:8px 13px;margin-bottom:8px;font-size:12px;color:#92400e">⚠ เคสนี้สร้างจากแม่แบบที่ยังไม่เปิดใช้งานในช่วง Recovery — ต้องตรวจ checklist และเอกสารจริงก่อนใช้จริง</div>`:''}
     <div id="caseTplMeta"></div>
     <div id="caseRtsSec"></div>
+    ${_caseSecShell('nl','รายชื่อแรงงาน / Name List',`<div id="caseNlSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดรายชื่อแรงงาน...</div></div>`,false)}
     ${_caseSecShell('chk','Checklist เอกสาร',`<div id="caseChkSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดเช็กลิสต์...</div></div>`,true)}
     ${_caseSecShell('pay','งานการเงินของเคส',`<div id="casePaySec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดข้อมูลการชำระเงิน...</div></div>`,false)}
     ${_caseSecShell('appt','นัดหมายที่ต้องติดตาม',`<div id="caseApptSec"><div style="padding:8px;text-align:center;color:var(--g5);font-size:12.5px">กำลังโหลดนัดหมาย...</div></div>`,false)}
@@ -13974,6 +13975,8 @@ function _renderCaseDetail(){
   // ชิปสรุปประวัติสถานะที่หัวข้อ (ใช้ข้อมูลที่โหลดมาแล้ว — ไม่มี RPC เพิ่ม)
   const _hl=(_caseDetail.logs||[]);
   if(_hl.length)_caseSecSet('hist',_secChip(_hl.length+' รายการ','var(--g1)','var(--g6)')+_secChip('ล่าสุด: '+esc(_CTPL_STATUS[_hl[0].new_status]||_hl[0].new_status),'var(--pp)','var(--pd)'),false);
+  // STAGE 58J-A: โหลด Name List (case_workers) แบบ best-effort — production ยังไม่มี 58H → fallback แรงงานหลักเดิม ไม่พังหน้า
+  try{if(typeof _loadCaseWorkers==='function')_loadCaseWorkers(k.id);}catch(_e){}
   // STAGE 54A-4: โหลดเช็กลิสต์ของเคสแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
   try{if(typeof _loadCaseChecklist==='function')_loadCaseChecklist(k.id);}catch(_e){}
   // STAGE 54A-6A: โหลดข้อมูลการชำระเงินแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำ ไม่พังหน้า)
@@ -14001,8 +14004,10 @@ function _rtsRender(){
   const ICON={pass:'✅',warn:'⚠️',neutral:'•'},CLR={pass:'#059669',warn:'#b45309',neutral:'var(--g5)'};
   const rows=[],actions=[];
   const add=(label,st,detail)=>rows.push({label,st,detail:detail||''});
-  // 1) ข้อมูลแรงงาน
-  add('ข้อมูลแรงงาน',k.customer_name?'pass':'warn',k.customer_name?esc(k.customer_name):'ยังไม่มีข้อมูลแรงงาน');
+  // 1) ข้อมูลแรงงาน — STAGE 58J-A: เติมจำนวนรายชื่อแรงงาน (Name List) แบบ additive เมื่อโหลดแล้ว
+  const _cwHere=(typeof _cwCaseId!=='undefined')&&_cwCaseId===k.id&&Array.isArray(_cwRows)&&_cwRows.length>0;
+  add('ข้อมูลแรงงาน',k.customer_name?'pass':'warn',
+    k.customer_name?(esc(k.customer_name)+(_cwHere?' · รายชื่อแรงงาน '+_cwRows.length+' คน':'')):'ยังไม่มีข้อมูลแรงงาน');
   if(!k.customer_name)actions.push('ตรวจข้อมูลแรงงาน');
   // 2) นายจ้าง / บริษัท
   add('นายจ้าง / บริษัท',k.employer_name?'pass':'warn',k.employer_name?esc(k.employer_name):'ยังไม่ผูกนายจ้าง');
@@ -14276,6 +14281,66 @@ function caseFromCustomer(cid){
   openCaseCreate(cid);
 }
 
+// =============================================================
+// STAGE 58J-A — รายชื่อแรงงาน / Name List (case_workers, display only)
+//   * อ่านผ่าน RPC app_list_case_workers (58H) เท่านั้น — metadata เท่านั้น ไม่มี path/URL/base64
+//   * เคสเดี่ยวเดิม (0 แถว) หรือ RPC ยังไม่ apply (production) → fallback แสดงแรงงานหลักจาก case.customer_id
+//   * ❌ ไม่มีปุ่มเพิ่ม/ปิดใช้งานแรงงานใน stage นี้ — อ่านอย่างเดียว (เพิ่ม/ปิด = สเตจถัดไป)
+// =============================================================
+let _cwRows=[],_cwCaseId=null,_cwMissing=false;
+const _CW_ROLE={worker:'แรงงาน',dependent:'ผู้ติดตาม',other:'อื่น ๆ'};
+function _cwFallbackRow(k,note){
+  const name=k&&k.customer_name?esc(k.customer_name):'<span style="color:var(--g5)">ยังไม่มีข้อมูลแรงงาน</span>';
+  const pp=k&&k.passport_no?` <span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(k.passport_no)}</span>`:'';
+  return`<div class="crow">
+      <div style="flex:1;min-width:170px"><span class="crow-main">${name}${pp}</span>
+        <span style="font-size:10px;font-weight:700;color:var(--pd);background:var(--pp);border-radius:8px;padding:1px 6px;margin-left:5px;white-space:nowrap">แรงงานหลัก (legacy)</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--g5);padding:2px 2px 0;font-style:italic">${esc(note||'เคสนี้ยังไม่ได้ขยายเป็นรายชื่อแรงงานหลายคน (Name List)')}</div>`;
+}
+async function _loadCaseWorkers(caseId){
+  const sec=document.getElementById('caseNlSec');if(!sec||caseId==null)return;
+  _cwCaseId=caseId;_cwRows=[];_cwMissing=false;
+  const k=(_caseDetail&&_caseDetail.caseRow)?_caseDetail.caseRow:null;
+  let rows=[];
+  try{rows=await _delReqRpc('app_list_case_workers',{p_case_id:caseId,p_include_inactive:false});}
+  catch(e){
+    if(_cwCaseId!==caseId)return; // เคสถูกเปลี่ยนระหว่างโหลด — ไม่เรนเดอร์ทับ
+    _cwMissing=_caseMissing(e);
+    sec.innerHTML=_cwFallbackRow(k,_cwMissing
+      ?'ยังไม่ได้เปิดใช้รายชื่อแรงงานหลายคนในสภาพแวดล้อมนี้ — แสดงแรงงานหลักตามระบบเดิม'
+      :'โหลดรายชื่อแรงงานไม่สำเร็จ — แสดงแรงงานหลักตามระบบเดิม');
+    if(typeof _caseSecSet==='function')_caseSecSet('nl',_secChip('แรงงานหลักรายเดียว','var(--g1)','var(--g6)'),false);
+    return;
+  }
+  if(_cwCaseId!==caseId)return; // เคสถูกเปลี่ยนระหว่างโหลด — ไม่เรนเดอร์ทับ
+  _cwRows=Array.isArray(rows)?rows:[];
+  if(!_cwRows.length){
+    sec.innerHTML=_cwFallbackRow(k);
+    if(typeof _caseSecSet==='function')_caseSecSet('nl',_secChip('แรงงานหลักรายเดียว','var(--g1)','var(--g6)'),false);
+    return;
+  }
+  const cards=_cwRows.map(r=>{
+    const meta=[
+      r.nationality?esc(r.nationality):'',
+      r.passport_no?'พาสปอร์ต <span style="font-family:var(--mono)">'+esc(r.passport_no)+'</span>':'',
+      r.alien_id?'ต่างด้าว <span style="font-family:var(--mono)">'+esc(r.alien_id)+'</span>':'',
+      r.wp_no?'ใบอนุญาต <span style="font-family:var(--mono)">'+esc(r.wp_no)+'</span>':''
+    ].filter(Boolean).join(' · ');
+    return`<div class="crow">
+      <div style="flex:1;min-width:170px">
+        <span class="crow-main">${r.name_list_seq!=null?`<span style="font-family:var(--mono);font-size:11px;color:var(--g5)">${esc(String(r.name_list_seq))}.</span> `:''}${r.worker_name?esc(r.worker_name):'<span style="color:var(--g5)">(ไม่พบชื่อ)</span>'}</span>
+        ${r.is_primary?'<span style="font-size:10px;font-weight:700;color:var(--pd);background:var(--pp);border-radius:8px;padding:1px 6px;margin-left:5px;white-space:nowrap">แรงงานหลัก</span>':''}
+        ${r.role&&r.role!=='worker'?`<span style="font-size:10px;font-weight:700;color:var(--g6);background:var(--g1);border-radius:8px;padding:1px 6px;margin-left:4px;white-space:nowrap">${esc(_CW_ROLE[r.role]||r.role)}</span>`:''}
+        ${r.worker_deleted?'<span style="font-size:10px;font-weight:700;color:#dc2626;background:#fee2e2;border-radius:8px;padding:1px 6px;margin-left:4px;white-space:nowrap">⚠ ข้อมูลแรงงานถูกลบ</span>':''}
+        ${meta?`<div style="font-size:11px;color:var(--g5);margin-top:2px">${meta}</div>`:''}
+        ${r.note?`<div class="crow-note">📝 ${esc(r.note)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  sec.innerHTML=cards;
+  if(typeof _caseSecSet==='function')_caseSecSet('nl',_secChip(_cwRows.length+' คน','var(--pp)','var(--pd)'),false);
+}
 // =============================================================
 // STAGE 54A-4 — เช็กลิสต์เอกสารของเคส (checklist instance + link documents)
 //   * อ่าน/เขียนผ่าน RPC เท่านั้น (migration 20260803) — client เข้าตารางตรงไม่ได้
