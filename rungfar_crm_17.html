@@ -14282,12 +14282,15 @@ function caseFromCustomer(cid){
 }
 
 // =============================================================
-// STAGE 58J-A — รายชื่อแรงงาน / Name List (case_workers, display only)
+// STAGE 58J-A/B1 — รายชื่อแรงงาน / Name List (case_workers)
 //   * อ่านผ่าน RPC app_list_case_workers (58H) เท่านั้น — metadata เท่านั้น ไม่มี path/URL/base64
 //   * เคสเดี่ยวเดิม (0 แถว) หรือ RPC ยังไม่ apply (production) → fallback แสดงแรงงานหลักจาก case.customer_id
-//   * ❌ ไม่มีปุ่มเพิ่ม/ปิดใช้งานแรงงานใน stage นี้ — อ่านอย่างเดียว (เพิ่ม/ปิด = สเตจถัดไป)
+//   * 58J-B1: เพิ่มแรงงาน (app_add_case_worker) + ปิดใช้งานแรงงานรอง (app_set_case_worker_active soft)
+//     - แรงงานหลัก (is_primary) ปิดใช้งานไม่ได้ — server การ์ดซ้ำ (cannot_deactivate_primary_worker)
+//     - ❌ ไม่มี hard delete — ปิดใช้งาน = is_active=false เท่านั้น, ข้อมูลลูกค้าไม่ถูกแตะ
+//     - RPC ยังไม่ apply (production) → ซ่อน UI เขียนทั้งหมด, fallback อ่านอย่างเดิม ไม่พังหน้า
 // =============================================================
-let _cwRows=[],_cwCaseId=null,_cwMissing=false;
+let _cwRows=[],_cwCaseId=null,_cwMissing=false,_cwAvail=false,_cwAddSel=null;
 const _CW_ROLE={worker:'แรงงาน',dependent:'ผู้ติดตาม',other:'อื่น ๆ'};
 function _cwFallbackRow(k,note){
   const name=k&&k.customer_name?esc(k.customer_name):'<span style="color:var(--g5)">ยังไม่มีข้อมูลแรงงาน</span>';
@@ -14300,7 +14303,7 @@ function _cwFallbackRow(k,note){
 }
 async function _loadCaseWorkers(caseId){
   const sec=document.getElementById('caseNlSec');if(!sec||caseId==null)return;
-  _cwCaseId=caseId;_cwRows=[];_cwMissing=false;
+  _cwCaseId=caseId;_cwRows=[];_cwMissing=false;_cwAvail=false;_cwAddSel=null;
   const k=(_caseDetail&&_caseDetail.caseRow)?_caseDetail.caseRow:null;
   let rows=[];
   try{rows=await _delReqRpc('app_list_case_workers',{p_case_id:caseId,p_include_inactive:false});}
@@ -14314,9 +14317,10 @@ async function _loadCaseWorkers(caseId){
     return;
   }
   if(_cwCaseId!==caseId)return; // เคสถูกเปลี่ยนระหว่างโหลด — ไม่เรนเดอร์ทับ
+  _cwAvail=true; // RPC ตอบแล้ว (58H apply ในสภาพแวดล้อมนี้) → เปิด UI เขียนได้
   _cwRows=Array.isArray(rows)?rows:[];
   if(!_cwRows.length){
-    sec.innerHTML=_cwFallbackRow(k);
+    sec.innerHTML=_cwFallbackRow(k)+_cwAddPanelHtml();
     if(typeof _caseSecSet==='function')_caseSecSet('nl',_secChip('แรงงานหลักรายเดียว','var(--g1)','var(--g6)'),false);
     return;
   }
@@ -14336,10 +14340,122 @@ async function _loadCaseWorkers(caseId){
         ${meta?`<div style="font-size:11px;color:var(--g5);margin-top:2px">${meta}</div>`:''}
         ${r.note?`<div class="crow-note">📝 ${esc(r.note)}</div>`:''}
       </div>
+      ${(!r.is_primary&&r.is_active!==false)?`<button class="btn btn-g btn-sm btn-xs" style="color:var(--red)" onclick="cwDeactivate(${r.id})">ปิดใช้งานในเคสนี้</button>`:''}
     </div>`;
   }).join('');
-  sec.innerHTML=cards;
+  sec.innerHTML=cards+_cwAddPanelHtml();
   if(typeof _caseSecSet==='function')_caseSecSet('nl',_secChip(_cwRows.length+' คน','var(--pp)','var(--pd)'),false);
+}
+// ── STAGE 58J-B1: เพิ่มแรงงาน / ปิดใช้งานแรงงานรอง (เขียนผ่าน RPC 58H เท่านั้น) ──
+// แผงเพิ่มแรงงาน — แสดงเฉพาะเมื่อ RPC ตอบแล้ว (_cwAvail); production ที่ยังไม่มี 58H จะไม่เห็น UI เขียนเลย
+function _cwAddPanelHtml(){
+  if(!_cwAvail)return`<div style="font-size:11px;color:var(--g5);padding:4px 2px 0;font-style:italic">ยังไม่ได้เปิดใช้การจัดการรายชื่อแรงงานหลายคนในสภาพแวดล้อมนี้</div>`;
+  return`<div style="margin-top:7px">
+    <button class="btn btn-g btn-sm btn-xs" onclick="cwToggleAdd()">➕ เพิ่มแรงงานในรายชื่อนี้</button>
+    <div id="cwAddPanel" style="display:none;margin-top:6px;background:var(--g0);border:1px solid var(--g2);border-radius:var(--rl);padding:9px 11px">
+      <div style="position:relative;margin-bottom:8px">
+        <label class="fl">แรงงาน (เลือกจากลูกค้าที่มีอยู่) *</label>
+        <input class="fi2" id="cwf_search" placeholder="ค้นหาชื่อ / พาสปอร์ต / เลขต่างด้าว" oninput="cwFilterCust()" onblur="setTimeout(()=>{const r=document.getElementById('cwf_results');if(r)r.style.display='none';},150)" autocomplete="off">
+        <div id="cwf_results" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:30;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);max-height:220px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.08)"></div>
+        <div id="cwf_sel" style="display:none;margin-top:6px;font-size:12px;color:var(--pd);background:var(--pp);border-radius:7px;padding:5px 10px"></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div style="flex:1;min-width:130px"><label class="fl">บทบาท</label><select class="fi2" id="cwf_role"><option value="worker">แรงงาน</option><option value="dependent">ผู้ติดตาม</option><option value="other">อื่น ๆ</option></select></div>
+        <div style="width:120px"><label class="fl">ลำดับ (ไม่บังคับ)</label><input class="fi2" id="cwf_seq" type="number" min="1" step="1" placeholder="เช่น 2"></div>
+      </div>
+      <div style="margin-bottom:8px"><label class="fl">หมายเหตุ (ไม่บังคับ)</label><input class="fi2" id="cwf_note" placeholder="หมายเหตุภายใน"></div>
+      <div style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="btn btn-g btn-sm btn-xs" onclick="cwToggleAdd(false)">ยกเลิก</button>
+        <button class="btn btn-p btn-sm btn-xs" onclick="saveCwAdd()">บันทึกเข้ารายชื่อ</button>
+      </div>
+    </div>
+  </div>`;
+}
+function cwToggleAdd(force){
+  const p=document.getElementById('cwAddPanel');if(!p)return;
+  const open=(force==null)?(p.style.display==='none'):!!force;
+  p.style.display=open?'block':'none';
+  if(open){
+    _cwAddSel=null;
+    const s=document.getElementById('cwf_search');if(s)s.value='';
+    const sel=document.getElementById('cwf_sel');if(sel){sel.style.display='none';sel.innerHTML='';}
+    const rl=document.getElementById('cwf_results');if(rl)rl.style.display='none';
+    const ro=document.getElementById('cwf_role');if(ro)ro.value='worker';
+    const sq=document.getElementById('cwf_seq');if(sq)sq.value='';
+    const nt=document.getElementById('cwf_note');if(nt)nt.value='';
+    if(s)s.focus();
+  }
+}
+// typeahead เดียวกับตัวเลือกลูกค้าตอนสร้างเคส (ccfFilterCust) — ค้นจาก customers ที่โหลดแล้ว ไม่มี RPC เพิ่ม
+function cwFilterCust(){
+  const box=document.getElementById('cwf_results');if(!box)return;
+  const q=(document.getElementById('cwf_search').value||'').trim().toLowerCase();
+  _cwAddSel=null;const sel=document.getElementById('cwf_sel');if(sel)sel.style.display='none';
+  if(!q){box.style.display='none';return;}
+  const list=(typeof customers!=='undefined'?customers:[]).filter(c=>
+    (c.name&&c.name.toLowerCase().includes(q))||(c.name_th&&c.name_th.toLowerCase().includes(q))||
+    (c.passport_no&&c.passport_no.toLowerCase().includes(q))||(c.alien_id&&c.alien_id.toLowerCase().includes(q))
+  ).slice(0,20);
+  box.innerHTML=list.length?list.map(c=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--g1);font-size:13px" onmousedown="cwPickCust(${c.id})"><b>${esc(c.name)}</b>${c.passport_no?` <span style="color:var(--g5);font-family:var(--mono);font-size:11px">${esc(c.passport_no)}</span>`:''}</div>`).join(''):'<div style="padding:10px 12px;color:var(--g5);font-size:12px">ไม่พบลูกค้า</div>';
+  box.style.display='block';
+}
+function cwPickCust(id){
+  const c=(typeof customers!=='undefined'?customers:[]).find(x=>x.id===id);if(!c)return;
+  _cwAddSel=c;
+  const s=document.getElementById('cwf_search');if(s)s.value=c.name||'';
+  const sel=document.getElementById('cwf_sel');
+  if(sel){sel.innerHTML=`✓ ${esc(c.name)}${c.passport_no?' · '+esc(c.passport_no):''}`;sel.style.display='block';}
+  const box=document.getElementById('cwf_results');if(box)box.style.display='none';
+}
+async function saveCwAdd(){
+  if(!curUser){toast('กรุณาเข้าสู่ระบบก่อน','err');return;}
+  if(_cwCaseId==null){toast('กรุณาเลือกเคสก่อน','err');return;}
+  if(!_cwAddSel||_cwAddSel.id==null){toast('กรุณาเลือกแรงงานก่อน','err');return;}
+  if(!(await guardSession()))return;
+  const seqRaw=(document.getElementById('cwf_seq').value||'').trim();
+  const seq=seqRaw?parseInt(seqRaw,10):null;
+  if(seqRaw&&(!Number.isFinite(seq)||seq<1)){toast('ลำดับต้องเป็นตัวเลขตั้งแต่ 1 ขึ้นไป','err');return;}
+  showLoading('กำลังเพิ่มแรงงาน...');
+  try{
+    const r=await _delReqRpc('app_add_case_worker',{
+      p_case_id:_cwCaseId,
+      p_customer_id:_cwAddSel.id,
+      p_role:document.getElementById('cwf_role').value||'worker',
+      p_name_list_seq:seq,
+      p_note:(document.getElementById('cwf_note').value||'').trim()||null
+    });
+    // RPC เป็น idempotent: เพิ่มคนเดิมซ้ำ → คืนแถวเดิม (ไม่เพิ่มซ้ำ) — แจ้งแบบเป็นมิตร ไม่ใช่ error
+    const row=Array.isArray(r)?r[0]:r;
+    const dup=!!(row&&row.id!=null&&_cwRows.some(x=>String(x.id)===String(row.id)));
+    toast(dup?'มีรายชื่อนี้อยู่ในเคสแล้ว':'เพิ่มแรงงานในรายชื่อแล้ว');
+    await _loadCaseWorkers(_cwCaseId);
+  }catch(e){
+    if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else if(e&&e.message==='customer_not_found')toast('ไม่พบลูกค้า (อาจถูกลบไปแล้ว)','err');
+    else if(e&&e.message==='case_not_found')toast('ไม่พบเคสนี้','err');
+    else if(e&&e.message==='invalid_worker_role')toast('บทบาทไม่ถูกต้อง','err');
+    else if(_caseMissing(e))toast('ยังไม่ได้เปิดใช้การจัดการรายชื่อแรงงานหลายคนในสภาพแวดล้อมนี้','err');
+    else toast('เพิ่มแรงงานไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
+}
+async function cwDeactivate(workerId){
+  const r=_cwRows.find(x=>String(x.id)===String(workerId));
+  if(!r){toast('ไม่พบรายชื่อนี้','err');return;}
+  if(r.is_primary){toast('แรงงานหลักของเคสปิดใช้งานไม่ได้','err');return;}
+  if(!(await guardSession()))return;
+  if(!confirm('ปิดใช้งาน "'+(r.worker_name||('#'+r.customer_id))+'" ในเคสนี้?\n(นำออกจากรายชื่อของเคสนี้เท่านั้น — ข้อมูลลูกค้าไม่ถูกลบ และเปิดใช้งานคืนได้ภายหลัง)'))return;
+  showLoading('กำลังปิดใช้งาน...');
+  try{
+    await _delReqRpc('app_set_case_worker_active',{p_case_worker_id:r.id,p_is_active:false});
+    toast('ปิดใช้งานในเคสนี้แล้ว (ข้อมูลลูกค้ายังอยู่)');
+    await _loadCaseWorkers(_cwCaseId);
+  }catch(e){
+    if(e&&e.message==='cannot_deactivate_primary_worker')toast('แรงงานหลักของเคสปิดใช้งานไม่ได้','err');
+    else if(e&&e.message==='unauthorized')toast('ไม่มีสิทธิ์','err');
+    else if(e&&e.message==='case_worker_not_found')toast('ไม่พบรายชื่อนี้แล้ว','err');
+    else if(_caseMissing(e))toast('ยังไม่ได้เปิดใช้การจัดการรายชื่อแรงงานหลายคนในสภาพแวดล้อมนี้','err');
+    else toast('ปิดใช้งานไม่สำเร็จ: '+e.message,'err');
+  }finally{hideLoading();}
 }
 // =============================================================
 // STAGE 54A-4 — เช็กลิสต์เอกสารของเคส (checklist instance + link documents)
