@@ -1800,7 +1800,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
     <div id="chkLinkDocList" style="max-height:300px;overflow-y:auto;border:1px solid var(--g2);border-radius:var(--rl);margin-bottom:12px"></div>
     <div class="fgi"><label class="fl">หมายเหตุการลิงก์</label><input class="fi2" id="chf_link_note" placeholder="(ไม่บังคับ)"></div>
   </div>
-  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('chkLinkModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" onclick="saveChkLink()">🔗 ลิงก์เอกสาร</button></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('chkLinkModal').style.display='none'">ยกเลิก</button><button class="btn btn-p" id="chkLinkSaveBtn" onclick="saveChkLink()">🔗 ลิงก์เอกสาร</button></div>
 </div></div>
 
 <!-- MODAL: ADD/EDIT CASE PAYMENT (Stage 54A-6A, staff+admin) — ติดตามภายใน ไม่ใช่ใบเสร็จราชการ -->
@@ -14663,6 +14663,19 @@ async function openChkLink(itemId){
   }
   const load='<div style="padding:12px;text-align:center;color:var(--g5);font-size:11px">กำลังโหลด...</div>';
   const list=document.getElementById('chkLinkDocList');
+  // ── STAGE 58K-B3-FIX-PAYMENT-1: รายการชำระเงิน = แนะนำอย่างเดียว ──
+  //    ไม่แสดง document pool ใด ๆ (ไม่มี radio ทุกกลุ่ม) + ปุ่มลิงก์ถูก disabled
+  //    → เรียก app_link_case_document จาก selector ของรายการชำระเงินไม่ได้เลย
+  //      หลักฐานชำระเงินใช้ช่องทาง case_payments / proof picker เดิมเท่านั้น
+  //      (❌ ไม่มีการส่ง linked_owner_type='payment' จาก checklist selector)
+  const _payItem=r.required_from==='payment';
+  const saveBtn=document.getElementById('chkLinkSaveBtn');
+  if(saveBtn)saveBtn.disabled=_payItem;
+  if(_payItem){
+    list.innerHTML=_chkSecHdr('การชำระเงิน')+_chkSecMsg('หลักฐานชำระเงินจัดการที่ส่วน "การชำระเงิน" ของเคส');
+    document.getElementById('chkLinkModal').style.display='flex';
+    return;
+  }
   // ── STAGE 58K-B1-FIX-1: gate สภาพแวดล้อม owner-aware จาก state ที่โหลดไว้แล้วเท่านั้น — ❌ ไม่มี RPC probe / ไม่เขียนเพื่อทดสอบ ──
   //    ownerEnvReady = 58H ตอบแล้วสำหรับ "เคสนี้" (_cwAvail + _cwCaseId ตรง) — production ที่ไม่มี 58H/58K-A
   //    จะไม่ถูกส่งพารามิเตอร์ owner-aware เลยแม้แต่ครั้งเดียว (ไม่มี PGRST202 event / ไม่มี toast ความเข้ากันได้)
@@ -14687,7 +14700,6 @@ async function openChkLink(itemId){
     workerHtml=_chkSecHdr('แรงงาน')+`<div id="chkSecWorker">${load}</div>`;
   }
   list.innerHTML=
-    (r.required_from==='payment'?_chkSecHdr('การชำระเงิน')+_chkSecMsg('หลักฐานชำระเงินจัดการที่ส่วน "การชำระเงิน" ของเคส'):'')+
     workerHtml+
     _chkSecHdr('นายจ้าง / บริษัท')+`<div id="chkSecEmployer">${empId!=null?load:_chkSecMsg('ยังไม่มีนายจ้าง / บริษัทที่ผูกกับเคสนี้')}</div>`+
     _chkSecHdr('สถานประกอบการ')+`<div id="chkSecEst">${_chkSecMsg('ยังไม่รองรับการผูกเอกสารสถานประกอบการกับเคสในรอบนี้')}</div>`+
@@ -14730,6 +14742,11 @@ async function openChkLink(itemId){
 //   ❌ ไม่ส่ง p_linked_owner_id เด็ดขาด — server คำนวณ owner id ที่ถูกต้องเองเสมอ (ไม่เชื่อ client)
 async function saveChkLink(){
   if(_chkLinkItemId==null){toast('กรุณาเลือกรายการเช็กลิสต์ก่อน','err');return;}
+  // ── STAGE 58K-B3-FIX-PAYMENT-1: รายการชำระเงินลิงก์ผ่าน selector ไม่ได้ (ชั้นที่สองถัดจากปุ่ม disabled) ──
+  const _payRow=_chkRows.find(x=>x.id===_chkLinkItemId);
+  if(_payRow&&_payRow.required_from==='payment'){
+    toast('หลักฐานชำระเงินจัดการที่ส่วน "การชำระเงิน" ของเคส','err');return;
+  }
   const pick=(_chkDocPick&&typeof _chkDocPick==='object')?_chkDocPick:null;
   const docId=pick?parseInt(pick.docId,10):NaN;
   if(!docId){toast('กรุณาเลือกเอกสารก่อน','err');return;}
