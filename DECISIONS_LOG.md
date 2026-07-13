@@ -1,0 +1,313 @@
+# RUNGFA CRM — DECISIONS LOG
+
+> Durable product, architecture, safety, and workflow decisions. Use this to prevent a new chat/agent from reopening settled questions without new evidence.
+>
+> Dates reflect the known decision period; some decisions were formed across multiple sessions.
+
+## Decision format
+
+- **Decision** — what is settled.
+- **Reason** — why.
+- **Impact** — what future work must do.
+- **Reopen when** — conditions that justify reconsideration.
+
+---
+
+## 2026-06 to 2026-07 — One central data foundation, modular workflows
+
+**Decision:** Customer/worker/employer/document data remains in one shared foundation. Phase 2 case workflows are a separate module on top, not a separate disconnected database.
+
+**Reason:** Staff should enter data once and reuse it across MOU, CI, Passport, Visa/WP, entering/leaving work, 90-day reporting, and other cases.
+
+**Impact:** Avoid duplicating master data per case. Model relationships through cases, case workers, document ownership, and templates.
+
+**Reopen when:** A legal/security requirement demands hard tenant/database isolation.
+
+---
+
+## 2026-06 to 2026-07 — Phase 2 is an internal preparation center, not a government portal
+
+**Decision:** The product helps classify cases, legal basis, form code, required documents, readiness, and post-submission tracking. It does not claim to be e-WorkPermit and does not automatically submit applications by default.
+
+**Reason:** Direct government submission involves authentication, OTP, payment, identity confirmation, changing workflows, and high operational risk.
+
+**Impact:** Build strong preparation/checklist/tracking first. Keep human review and actual submission with staff.
+
+**Reopen when:** Official integration/API, legal approval, security review, and controlled operational acceptance are available.
+
+---
+
+## 2026-06 to 2026-07 — Reduce repetitive disclaimers
+
+**Decision:** Do not repeat “internal only / not a government form / not connected to government website” on every section and action. Keep one small help/info note where needed.
+
+**Reason:** Repetition makes the system feel defensive and difficult, reducing staff adoption.
+
+**Impact:** UX should emphasize clear work steps and readiness, not warnings.
+
+**Reopen when:** Legal counsel requires specific placement.
+
+---
+
+## 2026-06 to 2026-07 — Staff adoption over backend jargon
+
+**Decision:** User-facing Thai should be practical and easier than Excel. Technical English can appear in parentheses where useful.
+
+**Reason:** The primary users are operational staff, not developers.
+
+**Impact:** Use clear queues, compact status, missing-document explanations, and familiar business terms.
+
+---
+
+## 2026-06 to 2026-07 — Database stores metadata; Storage stores files
+
+**Decision:** Actual files belong in private Storage. Database stores metadata, owner, status, expiry, and file reference/path.
+
+**Reason:** Security, scalability, signed access, and avoiding base64/database bloat.
+
+**Impact:** File opens use signed URLs/permission checks. Audit must not expose storage paths or signed URLs.
+
+---
+
+## 2026-06 to 2026-07 — One implementer per stage
+
+**Decision:** Chat/Work controls direction; Claude Code or Codex is selected as the primary implementer for a stage. Do not let two coding agents edit the same branch simultaneously.
+
+**Reason:** Prevent conflicting assumptions, file states, and partial changes.
+
+**Impact:** A stage handoff must contain State Lock and exact next action before changing agent/machine.
+
+---
+
+## 2026-06 to 2026-07 — Staging first, Production separately approved
+
+**Decision:** All new migrations, fixtures, smoke tests, and destructive tests run on Staging first. Production smoke/deploy is a separate stage and approval.
+
+**Reason:** Protect real business data.
+
+**Impact:** Staging HTML must have zero Production refs. Any Production ref during a Staging stage is a HARD STOP.
+
+---
+
+## 2026-06 to 2026-07 — Operator-assisted mutation model
+
+**Decision:** For risky UI/data tests, Claude verifies and monitors; the user performs the real UI click or approved SQL action.
+
+**Reason:** Keeps human control over mutations and avoids accidental agent actions.
+
+**Impact:** Every action is pre-checked, performed once, then SELECT-verified. No silent retries.
+
+---
+
+## 2026-06 to 2026-07 — No commit/push/deploy without explicit approval
+
+**Decision:** Passing tests does not authorize commit, push, merge, or deploy.
+
+**Reason:** The user controls checkpoints and environment changes.
+
+**Impact:** Agent proposes exact files, diff, tests, risks, and commit message, then stops.
+
+---
+
+## 2026-06 to 2026-07 — PDF+Excel helper / LINE batch is frozen
+
+**Decision:** The completed helper is frozen during unrelated CRM/Phase 2 work.
+
+**Reason:** It is already in real use; incidental changes create unnecessary regression risk.
+
+**Impact:** Touch only under a dedicated approved stage.
+
+---
+
+## 2026-06 to 2026-07 — Use “LINE Messaging API”, not “LINE Notify”
+
+**Decision:** All system documentation and prompts use the correct integration name.
+
+**Reason:** The existing notification work uses LINE Messaging API; LINE Notify is a different/deprecated mechanism.
+
+---
+
+## 2026-07 — Attendance group notifications remain paused
+
+**Decision:** Keep LINE group attendance notifications paused until a controlled quota/testing window.
+
+**Reason:** Message quota and small-user testing concerns.
+
+**Impact:** Attendance core must function without relying on group notifications.
+
+**Reopen when:** New monthly quota/testing plan is approved.
+
+---
+
+## 2026-07 — Meta Ads remains local/manual CSV
+
+**Decision:** Current Meta analytics is not a live API integration.
+
+**Reason:** No token/security/data-sync stage has been approved.
+
+**Impact:** Do not describe it as live data or add API credentials casually.
+
+---
+
+## 2026-07 — Staff deletion requires controlled approval
+
+**Decision:** Staff should not freely delete business records; deletion should use request/approval with Admin control and audit.
+
+**Reason:** Reduce accidental loss and misuse.
+
+**Impact:** Security/role tests must confirm no unauthorized direct delete path.
+
+---
+
+## 2026-07 — Preserve user-facing zero glyph
+
+**Decision:** Do not use fonts/classes that render digit 0 with a dot or slash in user-facing UI; preserve the existing zero-fix behavior.
+
+**Reason:** The user explicitly requires normal readable zeros in CRM screens.
+
+---
+
+## 2026-07 — Owner-aware document attribution
+
+**Decision:** Document linkage records explicit context through `linked_owner_type`, server-computed `linked_owner_id`, and `linked_case_worker_id` where relevant.
+
+**Reason:** A case can contain primary/secondary workers, employer documents, case documents, and internal evidence. Attribution must not be guessed from document customer ID alone.
+
+**Impact:** Supported verified paths include worker, case, employer, and internal. Server computes owner IDs and validates membership/ownership.
+
+---
+
+## 2026-07 — `received` is not `approved`
+
+**Decision:** UI “ผ่าน” means `approved`, not `received`.
+
+**Reason:** `received` means a document/status has been received or linked; it has not necessarily passed review.
+
+**Impact:** Summary chips remain `missing`/`approved`/linked counts. Do not inflate “ผ่าน” using `received`.
+
+---
+
+## 2026-07 — Unlink does not automatically reset checklist status (G1)
+
+**Decision:** Stage 58K-C recorded current behavior without changing it: unlink removes the link but leaves checklist status `received` until manual reset.
+
+**Reason:** This was the deployed contract during the smoke test; changing it mid-test would mix product work with verification.
+
+**Impact:** Treat as a product decision/gap. A dedicated stage must decide whether auto-revert is desirable.
+
+**Reopen when:** Product owner chooses expected behavior and edge cases are specified (multiple links, manual statuses, approved items).
+
+---
+
+## 2026-07 — Reset to missing preserves check attribution (G2)
+
+**Decision:** Current Option B behavior keeps `checked_by_code` and `checked_at` when status is reset to `missing`.
+
+**Reason:** Backend code explicitly preserves these fields; Stage 58K-C verified it.
+
+**Impact:** UI/report may show stale attribution. Do not silently clear fields until product decision.
+
+---
+
+## 2026-07 — Audit strictness remains asymmetric (G4)
+
+**Decision:** Link/unlink audit is strict; checklist status update audit remains best-effort.
+
+**Reason:** This is the deployed behavior and was outside the smoke-test fix scope.
+
+**Impact:** Any consistency change needs a dedicated security/performance review.
+
+---
+
+## 2026-07 — T1–T13 canonical test mapping
+
+**Decision:** Use the final matrix in `TEST_PLAN.md`; do not derive T numbers from seed document order or partial chat memory.
+
+**Reason:** During the long session, early external-plan labels and seed order caused temporary numbering confusion.
+
+**Impact:** New sessions must read the Test Plan before referencing T numbers.
+
+---
+
+## 2026-07 — T7 negative rejection does not require an unsafe direct write probe
+
+**Decision:** UI visibility guard runtime evidence plus backend static contract was accepted for unrelated-document rejection.
+
+**Reason:** The UI correctly cannot emit the unrelated document; forcing a direct write was unnecessary for the stage.
+
+**Impact:** Classify honestly as UI-observed + backend static, not full live backend rejection.
+
+---
+
+## 2026-07 — T8 permission-layer failure is not a business-guard PASS
+
+**Decision:** The SQL connector’s `42501 permission denied` occurred before the RPC function body and therefore did not prove `case_worker_inactive` live.
+
+**Reason:** Security boundary blocked the call, but the intended business guard was not reached.
+
+**Impact:** Record T8 as static/UI-unreachable with zero mutation, not a live guard PASS. Do not bypass grants or impersonate roles to force the test.
+
+---
+
+## 2026-07 — Payment proof is a separate payment-specific path (F1)
+
+**Decision:** Do not force payment evidence through the normal checklist `app_link_case_document` selector.
+
+**Reason:** Payment checklist rows are guidance-only; real flow uses `case_payments`, payment save RPC, and proof-document linkage.
+
+**Impact:** Build a dedicated payment fixture/UI test stage.
+
+---
+
+## 2026-07 — Establishment link path is intentionally unsupported until 58L (F2)
+
+**Decision:** `owner_type='establishment'` remains rejected by `owner_link_not_supported`; frontend stays placeholder/read-only.
+
+**Reason:** Staging lacked the `employer_establishments` table while some write RPCs were deployed. The data model/schema must be reconciled first.
+
+**Impact:** Do not patch the selector or force an establishment link. Run Stage 58L separately.
+
+---
+
+## 2026-07-13 — Mandatory cleanup deletes only marker-scoped seed documents
+
+**Decision:** Stage 58K-C cleanup deleted exactly the five `TEST_58K_SEED` documents and retained audit, cases, customers, employers, case workers, and checklist items.
+
+**Reason:** Minimal cleanup was sufficient and safest. Synthetic entities may be reused by future payment/58L stages.
+
+**Impact:** Optional soft-deactivation remains pending; do not assume synthetic entities are gone.
+
+---
+
+## 2026-07-13 — Audit retention during cleanup
+
+**Decision:** Do not delete audit logs during routine fixture cleanup.
+
+**Reason:** Audit is append-only evidence. Raw document cleanup did not create a cleanup audit row, and keeping count 131 was expected.
+
+**Impact:** Future cleanup plans must distinguish test data deletion from audit retention policy.
+
+---
+
+## 2026-07-13 — Source-of-truth documentation pack before new chat
+
+**Decision:** Move to a new ChatGPT Project using a compact repository-backed handoff pack instead of copying the entire old chat.
+
+**Reason:** The long chat became slow and contained stale/intermediate states that could be mistaken for current truth.
+
+**Impact:** New chat reads `PROJECT_MASTER_HANDOFF.md`, `CURRENT_STATE_LOCK.md`, `ROADMAP.md`, `TEST_PLAN.md`, `DECISIONS_LOG.md`, and `AGENTS.md` before proposing work.
+
+---
+
+## Pending decisions
+
+These are not settled and require user approval:
+
+1. Whether F1 Payment Stage or F2/58L Establishment Stage comes first.
+2. Whether G1 unlink should auto-reset status, and how multiple links/approved statuses behave.
+3. Whether G2 should clear check attribution when resetting to missing.
+4. Whether checklist update audit should become strict.
+5. Whether/when to soft-deactivate retained synthetic entities.
+6. Exact Production smoke subset and deployment schedule.
+7. Exact user-facing final name for the Phase 2 module.
+8. When to re-enable LINE attendance notifications.

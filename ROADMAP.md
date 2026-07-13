@@ -1,0 +1,351 @@
+# RUNGFA CRM — ROADMAP
+
+> Product and technical roadmap after the 2026-07-13 handoff.
+>
+> This file states intended sequencing. `CURRENT_STATE_LOCK.md` states the latest verified reality. A roadmap item is not permission to start it.
+
+## 1. Product north star
+
+Build a practical internal system that is easier than Excel and supports the real operating flow of RUNGFA RUNGFA CO., LTD.:
+
+1. Keep one trusted profile for each worker/customer, employer, establishment, case, and document.
+2. Turn work into clear queues, statuses, missing-document lists, assignments, deadlines, and audit trails.
+3. Prepare complete case packages before staff submit them to e-WorkPermit or other government systems.
+4. Reduce repeated typing and document mistakes without pretending the CRM is the government system.
+5. Roll out safely: foundations → small-user test → fixes → 12-user production use.
+
+## 2. Roadmap status legend
+
+- ✅ **COMPLETE / CLOSED** — evidence and closeout recorded.
+- 🟢 **FOUNDATION EXISTS** — implemented historically, but may need readiness regression.
+- 🟡 **PARTIAL / NEXT** — important work remains.
+- ⚪ **PLANNED** — analyzed, not yet implemented.
+- ⏸ **DEFERRED / FROZEN** — intentionally paused.
+- 🔴 **BLOCKED / PREREQUISITE** — cannot safely proceed yet.
+
+## 3. Current position
+
+```text
+Stage 58K-C owner-aware document runtime smoke: ✅ closed
+Mandatory synthetic document cleanup: ✅ closed
+Production smoke/deploy: ⏸ not started
+Payment-specific test stage: 🟡 next candidate
+Establishment reconciliation (58L): 🟡 next candidate
+Phase 1 production readiness: 🟡 incomplete
+Phase 2 case-management product: 🟢 foundation + ⚪ remaining stages
+```
+
+## 4. Phase 0 — Repository and operational control
+
+### 0.1 Source-of-truth handoff pack — CURRENT
+
+Deliverables:
+
+- `PROJECT_MASTER_HANDOFF.md`
+- `AGENTS.md`
+- `CURRENT_STATE_LOCK.md`
+- `ROADMAP.md`
+- `TEST_PLAN.md`
+- `DECISIONS_LOG.md`
+
+Acceptance:
+
+- Files reviewed by user.
+- Copied to repo root.
+- Git diff contains documentation only.
+- Commit/push performed only after explicit approval.
+- New ChatGPT Project uses these files as primary context.
+
+### 0.2 Working protocol
+
+- Chat/Work = planning and control.
+- Claude Code/Codex = one primary implementer per stage.
+- Repo/DB = live truth.
+- State Lock updated after every closed stage.
+
+## 5. Phase 1 — Core CRM stability and production readiness
+
+### 1.1 Security, identity, sessions, and audit — 🟢 foundation / 🟡 acceptance pending
+
+Already present:
+
+- `app_users` and admin/staff roles.
+- RLS/session hardening.
+- Security/audit RPC foundations.
+- User-management and inactive-user concepts.
+
+Remaining:
+
+- End-to-end device/IP/session alert testing.
+- New-device/suspicious-login notification design.
+- Password-sharing reduction controls.
+- Confirm delete-request/approval workflow for customer/document records.
+- Verify audit access, retention, and privacy on production-like data.
+- Role matrix acceptance for admin/staff and future specialized roles.
+
+Exit criteria:
+
+- Security test plan passes on Staging.
+- No unauthorized direct write/delete path.
+- Production rollback and incident procedure documented.
+
+### 1.2 Attendance, GPS, and LINE Messaging API — 🟢 foundation / ⏸ notification paused
+
+Already present:
+
+- Check-in/out flow and attendance pages.
+- LINE group Flex notification was previously functional.
+
+Remaining:
+
+- Fix/verify aggregate absence notification that once showed zero until detail page was opened.
+- Test GPS/device/time handling on small-user group.
+- Re-enable LINE group notifications only after quota plan and controlled test.
+- Mobile browser and LINE in-app-browser behavior verification.
+
+Exit criteria:
+
+- 2–3-user pilot passes.
+- Quota and failure behavior understood.
+- Notification can be disabled without breaking attendance.
+
+### 1.3 Customer/worker and employer master data — 🟢 foundation / 🟡 profile completion
+
+Worker profile remaining fields/workflows:
+
+- Passport/CI, Visa, Work Permit and expiry dates/statuses.
+- e-WorkPermit account metadata (no password storage).
+- Thai address, employer/establishment history, case history.
+- Document completeness and notes.
+- Duplicate detection and merge policy.
+
+Employer profile remaining fields/workflows:
+
+- Company certificates, tax/VAT, commercial registration.
+- Authorized signatories and powers of attorney.
+- Establishments/branches and assigned workers.
+- Case history and expiring documents.
+
+Exit criteria:
+
+- One source of truth for worker and employer.
+- Import/export preserves identifiers and dates.
+- Mobile and desktop CRUD regression passes.
+
+### 1.4 Import/export and data quality — 🟢 foundation / 🟡 stress testing
+
+Remaining:
+
+- Large-file tests.
+- Duplicate and invalid-row handling.
+- Transaction/rollback behavior.
+- Date/ID/phone leading-zero preservation.
+- Excel scientific notation regression.
+- Clear error report and safe retry.
+
+### 1.5 Mobile readiness and UX cleanup — 🟡
+
+Remaining:
+
+- Fix pages/modals that cannot scroll on mobile.
+- Test shared sidebar/modal/table behavior across common screen sizes.
+- Compact labels and actions for staff use.
+- Preserve zero-fix typography.
+- Produce short user manual.
+
+### 1.6 Production readiness — 🔴 prerequisite before rollout
+
+Required:
+
+- Staging acceptance matrix.
+- Backup/restore and rollback plan.
+- Environment/ref verification.
+- Minimal Production smoke plan using non-destructive real/prod-safe data.
+- Monitoring/audit plan.
+- 2–3-user pilot plan, then 12-user rollout plan.
+
+No Production deploy is approved merely by completing Staging work.
+
+## 6. Phase 2 — Labor-document case center
+
+### Product identity
+
+User-facing direction:
+
+- “งานเอกสารแรงงาน”
+- “เคสเอกสารแรงงาน”
+- “ศูนย์งานเอกสารแรงงาน”
+
+Avoid presenting it as a government system. It is the internal preparation and tracking center before real submission.
+
+### 2.1 Document Vault / Storage Foundation — 🟢 existing foundation / 🟡 hardening
+
+Goals:
+
+- Private file storage with metadata and owner.
+- Signed URL access.
+- Expiry/status and duplicate rules.
+- Upload/open/download audit without secret/path leakage.
+- Consistent document ownership for worker, employer, case, internal, and later establishment/payment flows.
+
+Stage 58K-C owner-aware link/unlink testing is complete for worker, case, employer, and internal paths.
+
+### 2.2 Worker Profile Upgrade — ⚪
+
+Build the full worker record needed by all case types and document generation. Do not duplicate data per case when it belongs to the worker profile.
+
+### 2.3 Employer Profile Upgrade — ⚪
+
+Build full company, authorized-person, establishment/branch, worker-assignment, and document-expiry records.
+
+### 2.4 Basic Case Management — 🟢 foundation / 🟡 expand
+
+Core case workflow:
+
+```text
+create case
+→ choose case type / legal basis / form
+→ attach workers and employer/establishment
+→ generate checklist
+→ collect and review documents
+→ ready to submit
+→ record submission number/payment/appointment
+→ track corrections/approval/result
+→ close or cancel
+```
+
+Required features:
+
+- Case number, type, status, owner/assignee, priority, deadlines.
+- Multiple workers/Name List.
+- Notes, timeline, audit, payment, appointments, submission records.
+- Work queues and dashboard summaries.
+
+### 2.5 Checklist Templates from official PDFs — ⚪ high priority
+
+Templates to verify against current official manuals/files:
+
+- Foreign-worker registration.
+- MOU Section 41/46 and N.J.2.
+- MOU handover Section 43 / B.T.13.
+- Employer notice of worker entering/leaving work, including B.T.53-related flow.
+- Section 60 paragraph 2 / B.T.32.
+- B.T.31 / B.T.33 and related forms.
+- Case-specific Cabinet resolutions and supporting documents.
+
+Rules:
+
+- PDF/manual content must be verified; filenames/headings may be inconsistent.
+- Templates must be versioned and effective-dated.
+- Checklist should distinguish worker, employer, company, establishment, case, payment, and internal evidence.
+
+### 2.6 F1 Payment-specific Stage — 🟡 next technical candidate
+
+Reason:
+
+- Payment checklist items are guidance-only.
+- Real proof flow uses `case_payments` and `app_save_case_payment`/proof-document linkage.
+- Stage 58K-C T12 had no payment fixture and was not runtime-testable.
+
+Planned steps:
+
+1. Inspect current payment schema/RPC/UI.
+2. Define minimal synthetic payment fixture on Staging.
+3. Test same-case proof linking and wrong-case rejection.
+4. Verify no normal checklist `owner_type='payment'` path is exposed.
+5. Cleanup fixture and restore baseline.
+
+### 2.7 F2 / Stage 58L Establishment Schema Reconciliation — 🟡 next technical candidate
+
+Problem:
+
+- Some establishment write RPCs are deployed.
+- `employer_establishments` table was absent on Staging at handoff.
+- Checklist establishment document selector is intentionally read-only/unsupported.
+
+Planned steps:
+
+1. Compare migration history, Staging schema, and Production schema safely.
+2. Determine why RPCs exist without the table.
+3. Decide whether to apply/rewrite/defer the establishment migration.
+4. Model employer ↔ establishment ↔ case relationships.
+5. Add CRUD/status tests in a dedicated stage.
+6. Only later decide whether establishment-owned document linking is supported.
+
+### 2.8 Submission tracking and after-submission records — ⚪
+
+Store:
+
+- e-WorkPermit request number.
+- Receipt/payment proof.
+- Appointment.
+- Requests for correction/additional documents.
+- Approval/result documents.
+- Follow-up dates and final closure notes.
+
+Do not automate real submission until a separate security/legal/operational review.
+
+### 2.9 Document generator / Single-entry — ⚪ later
+
+Goal:
+
+- Enter worker/employer data once and generate controlled templates such as employment contracts, powers of attorney, cover sheets, MOU supporting documents, entering/leaving-work preparation forms, and 90-day reporting documents.
+
+Prerequisites:
+
+- Stable profiles.
+- Versioned templates.
+- Complete case/checklist mapping.
+- Human review before use/submission.
+
+### 2.10 OCR / AI Assist — ⚪ later
+
+Possible uses:
+
+- Read passport/CI/Visa/WP metadata.
+- Suggest document type and expiry date.
+- Flag missing/inconsistent fields.
+
+Human confirmation is mandatory. Do not auto-overwrite master data or submit government applications.
+
+## 7. Phase 3 — Customer upload portal / PWA — ⚪
+
+Planned after core readiness:
+
+- Customer/employer upload links.
+- Mobile photo capture and document status.
+- Secure limited access.
+- No access to unrelated customers/cases.
+- Audit, expiry, and notification integration.
+
+## 8. Deferred ideas
+
+- Decorative animated/pixel office with about 12 characters and speech bubbles — after CRM completion.
+- Live Meta Ads API integration — requires separate token/security/data stage.
+- Fully autonomous government-system submission — not approved.
+
+## 9. Recommended execution order from this handoff
+
+```text
+0. Review and commit the source-of-truth documentation pack
+1. Select F1 Payment Stage or F2/58L Establishment Stage
+2. Close the selected stage fully (pre-check → implementation/test → cleanup → docs → commit)
+3. Complete Phase 1 mobile/security/import-export/production-readiness gaps
+4. Run 2–3-user pilot
+5. Fix pilot findings
+6. Roll out to 12 users
+7. Continue Phase 2 checklist/profile/case-template expansion
+8. Add document generation/OCR/portal later
+```
+
+Do not run F1 and 58L simultaneously on the same branch.
+
+## 10. Roadmap update rule
+
+After every closed stage:
+
+- Move the item to its real status.
+- Add acceptance evidence/commit reference.
+- Add newly discovered dependency or risk.
+- Keep planned ideas separate from implemented features.
+- Update `CURRENT_STATE_LOCK.md`, `TEST_PLAN.md`, and `DECISIONS_LOG.md` in the same documentation closeout.
