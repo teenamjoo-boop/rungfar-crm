@@ -68,8 +68,8 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | --- | --- |
 | Repo | D:\dev\claude / Git Bash: /d/dev/claude |
 | Branch | feature-attendance |
-| HEAD | e9d035c (pre-closeout baseline) |
-| Working tree | documentation-only closeout edits ยังไม่ commit |
+| HEAD | bf40820 — F1 documentation closeout (commit + push แล้ว 2026-07-22) |
+| Working tree | clean ณ จุด bf40820; local = origin/feature-attendance |
 | Frontend หลัก | rungfar_crm_17.html |
 | Local Staging HTML | rungfar_crm_17.STAGING.local.html |
 | Staging Project Ref | bzwtknqvhvdmatangzqf |
@@ -110,7 +110,8 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | Staging local copy | rungfar_crm_17.STAGING.local.html |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production ref | magwqolbjmwymqxelizl |
-| Latest verified HEAD | e9d035c — Add CRM project handoff documentation (pre-closeout baseline) |
+| Latest verified HEAD | bf40820 — Record F1 payment-specific stage closeout in source-of-truth docs (pushed) |
+| Parent HEAD (historical) | e9d035c — Add CRM project handoff documentation; also the HEAD ที่ใช้ตอนทดสอบ F1 |
 | Prior HEAD (historical) | 54680ec — Add staging-only seed script for owner-aware document tests |
 
 ```text
@@ -296,7 +297,8 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 
 | Commit | ความหมาย |
 | --- | --- |
-| e9d035c | Add CRM project handoff documentation — HEAD ล่าสุดที่ยืนยัน (pre-closeout baseline) |
+| bf40820 | Record F1 payment-specific stage closeout in source-of-truth docs — HEAD ล่าสุดที่ยืนยัน (push แล้ว) |
+| e9d035c | Add CRM project handoff documentation — parent ของ bf40820 และเป็น HEAD ตอนทดสอบ F1 |
 | 54680ec | Add staging-only seed script for owner-aware document tests — code baseline ของ Stage 58K-C |
 | e9e6028 | Add strict audit logging to case document unlink |
 | 850117a | Make payment checklist items guidance-only in document selector |
@@ -309,7 +311,7 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 | fb542cc | Refactor customer modal and fix document upload save |
 | c7de1e9 / d7cc639 / 1e266ec | Meta Ads dashboard / CSV import / executive report builder |
 
-> **หมายเหตุ:** เอกสาร handoff รุ่นเก่าเคยระบุ 13e00ee เป็น latest commit และต่อมาระบุ 54680ec; ทั้งสองค่าถูก supersede โดย current verified HEAD e9d035c และห้ามใช้เป็นสถานะปัจจุบัน
+> **หมายเหตุ:** เอกสาร handoff รุ่นเก่าเคยระบุ 13e00ee เป็น latest commit ต่อมาระบุ 54680ec และ e9d035c ตามลำดับ; ทุกค่าถูก supersede โดย current verified HEAD bf40820 และห้ามใช้เป็นสถานะปัจจุบัน
 
 ### Stage 58K-C Runtime Smoke — Final Matrix
 
@@ -366,8 +368,8 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 
 | กลุ่ม | ค่าล่าสุด |
 | --- | --- |
-| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| e9d035c (pre-closeout baseline) |
-| Git | tracked tree clean ก่อนแก้เอกสาร; ปัจจุบันมี documentation-only closeout edits รอ commit |
+| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| bf40820 (F1 documentation closeout) |
+| Git | working tree clean; local = origin/feature-attendance ที่ bf40820 (0 ahead / 0 behind) |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production | magwqolbjmwymqxelizl — untouched |
@@ -466,8 +468,8 @@ Roadmap ต้องแยก “Business Phase” ออกจาก “Technic
 
 ### ลำดับงานแนะนำหลัง Handoff
 
-- Step A: สร้างเอกสาร Source of Truth ทั้งชุดและ commit หลังตรวจ — PROJECT_MASTER_HANDOFF, AGENTS, CURRENT_STATE_LOCK, ROADMAP, TEST_PLAN, DECISIONS_LOG
-- Step B: F1 Payment Stage ปิดแล้ว — immediate technical gate ถัดไปคือ F2/58L Establishment Reconciliation
+- Step A: ✅ เสร็จแล้ว — สร้างเอกสาร Source of Truth ครบชุดและ commit/push แล้ว (ล่าสุด bf40820 บันทึกผลปิด F1)
+- Step B: F1 Payment Stage ปิดแล้ว — candidate ถัดไปคือ **F2/58L Establishment Reconciliation ช่วงตรวจสอบแบบอ่านอย่างเดียว** ซึ่ง **ยังไม่เริ่ม** และ **ต้องได้รับอนุมัติจากเจ้าของระบบแยกต่างหากก่อน**
 - Step C: กลับมาปิด Phase 1 production-readiness backlog: delete/security/audit/alerts/mobile/import-export/manual
 - Step D: pilot 2–3 คน แล้วเก็บ bug/feedback
 - Step E: แก้และ rollout 12 คน
@@ -625,15 +627,16 @@ git log --oneline --decorate -10
 
 โครงการพร้อมย้ายไปแชทใหม่ในเชิงบริบทแล้ว เมื่อแชทใหม่ได้รับไฟล์นี้และไฟล์ Source of Truth ที่จะสร้างในขั้นถัดไป
 
-Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว ไม่ต้องย้อน T1–T13 ซ้ำ การทำงานถัดไปต้องเริ่มจากการสร้างไฟล์ AGENTS.md, CURRENT_STATE_LOCK.md, ROADMAP.md, TEST_PLAN.md และ DECISIONS_LOG.md จาก Handoff นี้ จากนั้นจึงเลือก Stage ใหม่โดยผู้ใช้อนุมัติ
+Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว ไม่ต้องย้อน T1–T13 ซ้ำ ไฟล์ Source of Truth ทั้งชุดถูกสร้างและ commit/push เรียบร้อยแล้ว (ล่าสุด bf40820) รวมถึงผลปิด F1 การทำงานถัดไปคือให้ผู้ใช้เลือกและอนุมัติ Stage ใหม่
 
 | หัวข้อ | Verdict |
 | --- | --- |
 | Master Handoff | READY |
 | Stage 58K-C | COMPLETE (historical) |
 | F1 Payment-specific Stage | COMPLETE — closed on Staging 2026-07-14 |
+| F1 documentation closeout | COMPLETE — commit bf40820, pushed 2026-07-22 |
 | Staging cleanup | COMPLETE (58K-C และ F1) |
-| F2 / Stage 58L | NOT STARTED |
+| F2 / Stage 58L | NOT STARTED — candidate ถัดไป (ช่วงตรวจสอบอ่านอย่างเดียว) ต้องอนุมัติแยก |
 | Production Smoke | NOT STARTED |
 | Next execution stage | NOT SELECTED — ต้องให้ผู้ใช้เลือก (F1 ไม่ใช่ตัวเลือกอีกต่อไป) |
 | New chat migration | READY AFTER FILE UPLOAD / PROJECT SETUP |

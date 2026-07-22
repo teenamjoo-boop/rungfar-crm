@@ -11,8 +11,9 @@ PROJECT: RUNGFA CRM
 REPO: D:\dev\claude
 GIT BASH: /d/dev/claude
 BRANCH: feature-attendance
-HEAD: e9d035c12921a7dddab9672ea028be304b153f36  (pre-closeout repository baseline)
-WORKING TREE: documentation-only closeout edits pending approval — see note below
+HEAD: bf40820ceef3a496f7ad0a729951d3d92c6b1242  (F1 documentation closeout — committed and pushed)
+REMOTE: origin/feature-attendance = bf40820 (verified equal; 0 ahead / 0 behind)
+WORKING TREE: clean as verified at the bf40820 milestone — see note below
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
@@ -32,11 +33,11 @@ PAYMENT-SPECIFIC STAGE: CLOSED on Staging
 58L ESTABLISHMENT RECONCILIATION: not started
 ```
 
-Working-tree note:
+Repository milestone note:
 
-- Pre-closeout repository baseline: HEAD `e9d035c12921a7dddab9672ea028be304b153f36` ("Add CRM project handoff documentation"). The tracked working tree was clean immediately before the F1 documentation closeout edits.
-- Current pre-commit state: the F1 documentation closeout modifies **only** the six source-of-truth Markdown files (`AGENTS.md`, `CURRENT_STATE_LOCK.md`, `DECISIONS_LOG.md`, `PROJECT_MASTER_HANDOFF.md`, `ROADMAP.md`, `TEST_PLAN.md`). No application code, HTML, migration, SQL, or configuration file is modified.
-- These documentation-only closeout edits remain uncommitted until separately reviewed and approved. Do not replace HEAD `e9d035c` with a future or guessed commit hash; update it only after the approved closeout commit is actually created.
+- The F1 documentation closeout was committed as `bf40820ceef3a496f7ad0a729951d3d92c6b1242` on 2026-07-22 and pushed to `origin/feature-attendance`. Local and remote were verified equal at that commit (0 ahead / 0 behind) and the working tree was clean.
+- That commit changed **only** the six source-of-truth Markdown files (`AGENTS.md`, `CURRENT_STATE_LOCK.md`, `DECISIONS_LOG.md`, `PROJECT_MASTER_HANDOFF.md`, `ROADMAP.md`, `TEST_PLAN.md`). No application code, HTML, migration, SQL, or configuration file was modified.
+- Historical note: `e9d035c` ("Add CRM project handoff documentation") is the parent/pre-closeout commit, and it is also the HEAD at which the F1 runtime test was executed on 2026-07-14. Both facts are historical evidence, not current state.
 - Historical note: `54680ec` was the code-baseline HEAD during Stage 58K-C and remains valid as historical evidence, not as current state.
 
 ## 2. Verified Staging database baseline after F1 cleanup
@@ -196,11 +197,10 @@ Do not fix these implicitly during another stage.
 
 No stage is automatically authorized by this lock. Candidate next stages, in recommended order, are:
 
-1. Review and commit the F1 documentation closeout (current pending work).
-2. F2 / Stage 58L Establishment Schema Reconciliation.
-3. Continue Phase 1 readiness backlog: mobile, import/export stress, security/IP/device, delete-approval acceptance, manuals, production readiness.
-4. Decide the open F1 follow-ups: payment create idempotency, and whether a proof-detach workflow is required.
-5. Continue Phase 2 product stages after foundations are stable.
+1. **F2 / Stage 58L Establishment Schema Reconciliation — read-only investigation phase.** This is the next candidate. It requires separate owner approval and **has not started**.
+2. Continue Phase 1 readiness backlog: mobile, import/export stress, security/IP/device, delete-approval acceptance, manuals, production readiness.
+3. Decide the open F1 follow-ups: payment create idempotency, and whether a proof-detach workflow is required.
+4. Continue Phase 2 product stages after foundations are stable.
 
 The F1 Payment-specific Stage is closed and must not be re-offered as an unstarted choice.
 

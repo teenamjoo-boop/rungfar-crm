@@ -30,7 +30,7 @@ Stage 58K-C owner-aware document runtime smoke: ✅ closed
 Mandatory synthetic document cleanup: ✅ closed
 F1 payment-specific test stage: ✅ closed on Staging 2026-07-14
 F1 fixture cleanup / baseline restore: ✅ closed
-F1 documentation closeout: 🟡 pending review and commit
+F1 documentation closeout: ✅ committed and pushed 2026-07-22 (bf40820)
 Production smoke/deploy: ⏸ not started
 Establishment reconciliation (58L): 🟡 next candidate
 Phase 1 production readiness: 🟡 incomplete
@@ -339,8 +339,8 @@ Planned after core readiness:
 ## 9. Recommended execution order from this handoff
 
 ```text
-0. Review and commit the F1 documentation closeout  ← immediate gate
-1. Select the next stage: F2/58L Establishment Stage, or Phase 1 readiness work
+0. F1 documentation closeout — done (bf40820, pushed 2026-07-22)
+1. F2/58L read-only investigation  ← next candidate; NOT STARTED; needs separate owner approval
 2. Close the selected stage fully (pre-check → implementation/test → cleanup → docs → commit)
 3. Complete Phase 1 mobile/security/import-export/production-readiness gaps
 4. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking

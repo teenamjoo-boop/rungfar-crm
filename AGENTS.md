@@ -35,7 +35,8 @@ Never guess a stage number, database baseline, test fixture, function signature,
 - Correct Git Bash path: `/d/dev/claude`
 - Forbidden old path: `C:\Users\Acer\OneDrive\Desktop\claude`
 - Current working branch at handoff: `feature-attendance`
-- Last verified HEAD (pre-closeout baseline): `e9d035c`
+- Last verified HEAD: `bf40820ceef3a496f7ad0a729951d3d92c6b1242` — F1 documentation closeout, committed and pushed to `origin/feature-attendance` on 2026-07-22
+- Parent commit (historical, pre-closeout): `e9d035c`
 - Prior code-baseline HEAD (historical, Stage 58K-C): `54680ec`
 - Main frontend: `rungfar_crm_17.html`
 - Local Staging frontend: `rungfar_crm_17.STAGING.local.html`
