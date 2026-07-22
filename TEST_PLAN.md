@@ -2,7 +2,7 @@
 
 > Test strategy, completed evidence, and future test matrix.
 >
-> Last verified closeout: Stage 58K-C, 2026-07-13. Live values must be re-checked before new tests.
+> Last verified closeout: F1 Payment-specific Stage, 2026-07-14 (prior: Stage 58K-C, 2026-07-13). Live values must be re-checked before new tests.
 
 ## 1. Testing principles
 
@@ -139,43 +139,86 @@ Manual reset to `missing` keeps existing `checked_by_code` and `checked_at` (Opt
 
 These are documented product decisions/gaps, not test failures for 58K-C.
 
-## 7. Next technical test plan — F1 Payment-specific Stage
+## 7. F1 Payment-specific Stage — COMPLETED TEST RECORD
 
-### Objective
+Closed 2026-07-14. Objective met: the real payment-proof path was proved **without** forcing `owner_type='payment'` through the normal checklist selector.
 
-Prove the real payment-proof path without forcing `owner_type='payment'` through the normal checklist selector.
+### Environment and fixture
 
-### Read-only discovery first
+```text
+Repo: D:\dev\claude
+Branch: feature-attendance
+HEAD: e9d035c12921a7dddab9672ea028be304b153f36
+Staging ref: bzwtknqvhvdmatangzqf
+Production ref in Staging HTML: 0 (Production never queried or touched)
+Connector: read-only Staging, re-fingerprinted before every gate
+Disposable case: CASE-20260710-000002 (id 2, cancelled, customer 3, employer 2)
+Fixture documents: id 11 same-case proof (customer 3), id 12 wrong-case proof (customer 4)
+  — both metadata-only, source=TEST_F1_PAYMENT, no storage_path/file_data/bucket/URL
+Fixture payment: id 1, case 2, service_fee, amount_due 100, amount_paid 0, initial status unpaid
+```
 
-- Inspect `case_payments` schema, constraints, and current rows.
-- Inspect `app_save_case_payment`, proof-document fields, and any proof picker/list RPC.
-- Inspect frontend payment section and disabled/guidance-only checklist behavior.
-- Confirm Staging/Production schema parity relevant to payment.
+The disposable case was reused rather than creating a new case. Technical suitability of a cancelled case was recorded explicitly as **not** an endorsement of adding payments to cancelled cases in normal business use.
 
-### Minimal fixture proposal (requires approval)
+### User action checkpoints (operator-assisted; one action → one verification)
 
-- One synthetic payment row linked to a synthetic/disposable case.
-- One metadata-only proof document with clearly scoped marker.
-- No real customer document or financial data.
+| Gate | Operator action | Agent role |
+| --- | --- | --- |
+| Seed | Ran the approved transaction-protected fixture SQL once in the Staging SQL Editor | Displayed SQL; did not execute it |
+| Step 2 | Created one payment through the real payment UI (single Save) | SELECT-only verification |
+| Step 3 | Linked same-case proof via the dedicated payment-proof UI | SELECT-only verification |
+| Step 4 | Observed wrong-case proof absent from the picker | No mutation attempted |
+| Step 5 | Updated the existing payment by ID (note only) | SELECT-only verification |
+| Step 6 | Changed status `unpaid → cancelled` | SELECT-only verification |
+| Cleanup | Ran the approved cleanup SQL once | Displayed SQL; SELECT-only post-verification |
 
-### Runtime cases
+Claude Code executed no write statement and no write RPC at any point.
 
-1. Save/update synthetic payment safely.
-2. Link same-case proof document through the actual payment UI/RPC.
-3. Verify `case_payments.proof_document_id` and UI display.
-4. Wrong-case proof rejection (`document_not_allowed`).
-5. Idempotent/replacement behavior if supported.
-6. Audit and privacy scan.
-7. Cleanup payment/proof fixture and restore baseline.
+### Results
 
-### Stop conditions
+| Case | Result | Evidence |
+| --- | --- | --- |
+| Payment create | PASS | Exactly 1 row; case 2; `service_fee`; due 100 / paid 0; status `unpaid`; `proof_document_id` null; `paid_at` null |
+| Same-case proof link | PASS | `case_payments.proof_document_id = 11`; **no** `case_documents` row created; dedicated payment path used |
+| Wrong-case protection | **UI runtime-observed + backend static verified; no forced live negative write** | Document 12 absent from picker (picker filters by the case's own customer); deployed `document_not_allowed` ownership check verified statically |
+| Update by ID | PASS | Same row modified in place; no duplicate; total remained 1 |
+| Proof preservation on update | PASS | Proof remained 11 after update with no proof argument supplied |
+| Status transition | PASS | `unpaid → cancelled`; same payment id; `paid_at` remained null; proof remained 11 |
+| Audit privacy | READ-ONLY PASS | Rows 204–207; forbidden-key scan (path/bucket/URL/file data/base64/token/credential/secret) = 0 hits |
+| Invariants | READ-ONLY PASS | `case_documents` 0 throughout; payment checklist item stayed guidance-only; original case id 1 held 17 items and 13/4/0 |
 
-- Missing/ambiguous function signature.
-- UI sends checklist link instead of payment-specific RPC.
-- Any real payment/customer row in fixture scope.
-- Proof document can cross cases.
-- Audit leaks path/URL/token/file data.
-- Production ref appears.
+Audit rows written (append-only, best-effort): `204 case.payment.create`, `205 case.payment.proof_link`, `206 case.payment.update`, `207 case.payment.cancel`.
+
+### Cleanup result
+
+| Check | Before | After | Result |
+| --- | ---: | ---: | --- |
+| `case_payments` | 1 | 0 | PASS |
+| `documents source='TEST_F1_PAYMENT'` | 2 | 0 | PASS |
+| Total `documents` | 2 | 0 | PASS |
+| `case_documents` | 0 | 0 | PASS |
+| Audit rows | 135 | 135 | retained / PASS |
+| Audit id range | 73–207 | 73–207 | retained / PASS |
+| Customers / employers / cases | 4 / 2 / 2 | 4 / 2 / 2 | unchanged |
+| Original case checklist | 13/4/0 | 13/4/0 | unchanged |
+| Disposable case id 2 | cancelled | cancelled | unchanged |
+| Production | untouched | untouched | PASS |
+
+Deleted exactly payment id 1 and documents 11 and 12. No customer, employer, case, worker, checklist, user, or audit row was deleted. No orphan reference to documents 11 or 12 remained.
+
+### Current constraints recorded (not defects fixed in this stage)
+
+- **No demonstrated create idempotency.** The payment create path has no proven duplicate protection; the operator submitted once only. Duplicate-create clicking was deliberately excluded from the test.
+- **Omitted/null proof on update preserves the existing proof.** Passing no proof argument keeps the current `proof_document_id`.
+- **Proof detach was not tested.** No detach/removal workflow exists or was approved in F1; because the save path treats null as "keep existing", detach is not reachable through the tested contract.
+- **Payment audit is best-effort.** Audit is written from inside the RPC body and a failure there does not fail the transaction.
+
+### Scope notes
+
+- No migration and no application-code change were required.
+- F1 did not modify G1–G4 or R1.
+- Production smoke remains not started.
+- The Stage 58K-C T12 result stands unchanged as historical evidence; F1 closed the runtime gap that T12 recorded, and T12 was not retroactively re-scored.
 
 ## 8. Next technical test plan — F2 / Stage 58L Establishment reconciliation
 

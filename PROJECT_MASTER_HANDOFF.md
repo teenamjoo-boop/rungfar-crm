@@ -62,19 +62,19 @@ RUNGFA CRM เป็นเว็บแอพภายในบริษัท �
 
 โครงปัจจุบันใช้ frontend หลักเป็นไฟล์ HTML ขนาดใหญ่และใช้ Supabase เป็น backend/database/storage/RPC โดยมีการแยก Staging กับ Production และมีแนวทาง SECURITY DEFINER, server-side validation, audit และ owner-aware document linking
 
-Stage ล่าสุดที่ปิดครบคือ Stage 58K-C Runtime Smoke: owner-aware document link/unlink ครบ T1–T13 ตามขอบเขต พร้อม cleanup เอกสารทดสอบ 5 รายการบน Staging แล้ว Production ไม่ถูกแตะ และ working tree clean
+Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specific Stage** (ปิดบน Staging 14 กรกฎาคม 2026): ทดสอบเส้นทาง payment/proof จริงผ่าน UI เฉพาะของงานการเงิน แล้ว cleanup fixture ครบ ก่อนหน้านั้นคือ Stage 58K-C Runtime Smoke: owner-aware document link/unlink ครบ T1–T13 ตามขอบเขต พร้อม cleanup เอกสารทดสอบ 5 รายการ ทั้งสอง stage ทำบน Staging เท่านั้น Production ไม่ถูกแตะ
 
 | หัวข้อ | สถานะล่าสุด |
 | --- | --- |
 | Repo | D:\dev\claude / Git Bash: /d/dev/claude |
 | Branch | feature-attendance |
-| HEAD | 54680ec |
-| Working tree | clean |
+| HEAD | e9d035c (pre-closeout baseline) |
+| Working tree | documentation-only closeout edits ยังไม่ commit |
 | Frontend หลัก | rungfar_crm_17.html |
 | Local Staging HTML | rungfar_crm_17.STAGING.local.html |
 | Staging Project Ref | bzwtknqvhvdmatangzqf |
 | Production Project Ref | magwqolbjmwymqxelizl — ห้ามแตะจนกว่าจะอนุมัติ |
-| Stage ล่าสุด | 58K-C Runtime Smoke + Mandatory Document Cleanup COMPLETE |
+| Stage ล่าสุด | F1 Payment-specific Stage CLOSED (Staging) + fixture cleanup COMPLETE |
 | สถานะ Rollout | ยังไม่ rollout 12 คน; ต้องจบ core readiness แล้วทดสอบ 2–3 คนก่อน |
 
 ## ข้อมูลธุรกิจและเป้าหมายผลิตภัณฑ์
@@ -110,7 +110,8 @@ Stage ล่าสุดที่ปิดครบคือ Stage 58K-C Runtime
 | Staging local copy | rungfar_crm_17.STAGING.local.html |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production ref | magwqolbjmwymqxelizl |
-| Latest verified HEAD | 54680ec — Add staging-only seed script for owner-aware document tests |
+| Latest verified HEAD | e9d035c — Add CRM project handoff documentation (pre-closeout baseline) |
+| Prior HEAD (historical) | 54680ec — Add staging-only seed script for owner-aware document tests |
 
 ```text
 cd /d/dev/claude
@@ -144,7 +145,7 @@ Backend ใช้ Supabase Database, RPC/Functions, Storage และ audit patt
 | documents | metadata เอกสารและ owner | owner_type ที่ใช้งาน: customer/case/employer; establishment/payment มีข้อจำกัดเฉพาะ |
 | case_documents | ลิงก์เอกสารกับ checklist item | เก็บ linked_owner_type, linked_owner_id, linked_case_worker_id |
 | audit_logs | ประวัติการกระทำ | append-only/retention; ห้ามลบระหว่าง cleanup |
-| case_payments | ข้อมูล payment/proof | table มี แต่ Stage T12 ยังไม่มี fixture จริง |
+| case_payments | ข้อมูล payment/proof | ทดสอบ runtime ครบใน F1 (2026-07-14); proof ผูกผ่าน `case_payments.proof_document_id` ไม่ผ่าน case_documents |
 | employer_establishments | สถานประกอบการ | บน Staging ล่าสุด table ยัง absent; RPC บางตัวถูก deploy แล้ว — ต้อง Stage 58L |
 
 ## ระบบที่ทำแล้ว — Phase 1 / Core CRM
@@ -295,7 +296,8 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 
 | Commit | ความหมาย |
 | --- | --- |
-| 54680ec | Add staging-only seed script for owner-aware document tests — HEAD ล่าสุดที่ยืนยัน |
+| e9d035c | Add CRM project handoff documentation — HEAD ล่าสุดที่ยืนยัน (pre-closeout baseline) |
+| 54680ec | Add staging-only seed script for owner-aware document tests — code baseline ของ Stage 58K-C |
 | e9e6028 | Add strict audit logging to case document unlink |
 | 850117a | Make payment checklist items guidance-only in document selector |
 | 504694f | Add owner-aware checklist document selector |
@@ -307,7 +309,7 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 | fb542cc | Refactor customer modal and fix document upload save |
 | c7de1e9 / d7cc639 / 1e266ec | Meta Ads dashboard / CSV import / executive report builder |
 
-> **หมายเหตุ:** เอกสาร handoff รุ่นเก่าเคยระบุ 13e00ee เป็น latest commit; ค่านี้ถูก supersede โดย current verified HEAD 54680ec และห้ามใช้เป็นสถานะปัจจุบัน
+> **หมายเหตุ:** เอกสาร handoff รุ่นเก่าเคยระบุ 13e00ee เป็น latest commit และต่อมาระบุ 54680ec; ทั้งสองค่าถูก supersede โดย current verified HEAD e9d035c และห้ามใช้เป็นสถานะปัจจุบัน
 
 ### Stage 58K-C Runtime Smoke — Final Matrix
 
@@ -338,19 +340,41 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 - audit_total คง 131 ตาม retention; customer/employer/case/case_worker/checklist ไม่ถูกแตะ
 - Production untouched, working tree clean
 
+### F1 Payment-specific Stage — CLOSED 2026-07-14
+
+Stage นี้ปิด runtime gap ที่ Stage 58K-C T12 บันทึกไว้ว่า “fixture not ready / UI runtime not testable” ผลของ T12 ในตารางด้านบนยังคงเป็นหลักฐานประวัติศาสตร์ตามเดิม ไม่ได้ถูกแก้ให้กลายเป็น PASS ย้อนหลัง
+
+Fixture ชั่วคราว (ลบออกแล้ว): disposable case id=2, documents id=11 (same-case proof, customer 3) และ id=12 (wrong-case proof, customer 4), payment id=1 (service_fee, due 100, paid 0, เริ่มต้น `unpaid`)
+
+| หัวข้อ | ผล |
+| --- | --- |
+| เส้นทางที่ใช้ | Dedicated payment path (`app_save_case_payment`) — ไม่ใช่ checklist document selector |
+| สร้าง payment | 1 แถวเท่านั้น; case/type/ยอด/สถานะถูกต้อง; `proof_document_id` null; `paid_at` null |
+| ผูก same-case proof | `proof_document_id=11` ผ่าน UI หลักฐานการชำระเงินโดยเฉพาะ; **ไม่มี** case_documents row |
+| ป้องกัน wrong-case | เอกสาร id=12 ไม่ปรากฏใน picker (กรองตามลูกค้าเจ้าของเคส) + backend `document_not_allowed` ตรวจแบบ static — **UI runtime-observed + backend static verified; ไม่มีการบังคับเขียนลบเชิงลบ** |
+| update-in-place | แก้ไขแถวเดิม id เดียวกัน; ไม่เกิดแถวซ้ำ |
+| การคงหลักฐาน | ส่ง proof เป็น null/ไม่ส่ง = คงค่าเดิม; proof ยังเป็น 11 หลัง update และหลัง cancel |
+| เปลี่ยนสถานะ | `unpaid → cancelled`; `paid_at` ยังเป็น null; ถือเป็น synthetic status-flow test เท่านั้น ไม่ใช่การชำระเงินจริง |
+| audit / privacy | rows 204–207 (create/proof_link/update/cancel) append-only; forbidden hits = 0 |
+| invariants | case_documents = 0 ตลอด; payment checklist item ยัง guidance-only; original case id=1 คง 17 items และ 13/4/0 |
+| cleanup | ลบเฉพาะ payment id=1 และ documents 11, 12; audit ถูกเก็บไว้; ไม่มี business record ใดถูกลบ |
+| code/migration | ไม่ต้องแก้โค้ดและไม่ต้องทำ migration |
+
+ข้อจำกัดที่บันทึกไว้ (ยังไม่แก้ในสเตจนี้): payment create ยังไม่มีการป้องกัน idempotency ที่พิสูจน์ได้ (ผู้ใช้กด Save ครั้งเดียวเท่านั้น), ยังไม่มี proof-detach workflow และยังไม่ได้ทดสอบ, payment audit เป็น best-effort
+
 ## สถานะ Git / DB ล่าสุด — CONFIRMED CURRENT
 
 | กลุ่ม | ค่าล่าสุด |
 | --- | --- |
-| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| 54680ec |
-| Git | working tree clean; origin เคยยืนยัน up to date |
+| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| e9d035c (pre-closeout baseline) |
+| Git | tracked tree clean ก่อนแก้เอกสาร; ปัจจุบันมี documentation-only closeout edits รอ commit |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production | magwqolbjmwymqxelizl — untouched |
 | seed_docs / documents total | 0 / 0 |
 | seed_links / total case_documents | 0 / 0 |
 | case_payments | 0 |
-| audit_total | 131, id range 73–203, retained |
+| audit_total | 135, id range 73–207, retained (รวม payment audit 204–207 จาก F1; ค่า 131/73–203 เป็นค่าประวัติศาสตร์ของ 58K-C) |
 | Original case | id=1, CASE-20260709-000001, draft, customer_id=1, employer_id=null |
 | Case workers | 2 active; primary customer 1, secondary customer 2; มี historical inactive row ของ customer 2 |
 | Checklist | 17 items; missing/received/approved=13/4/0 |
@@ -369,7 +393,10 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 | G3 | UI chip: ผ่าน=approved, ขาด=missing, ลิงก์=linked docs; received ไม่มี chip บนสรุป | ผู้ใช้สับสน received กับ passed | ปรับ wording/summary หลัง product decision |
 | G4 | checklist.update audit best-effort แต่ link/unlink strict | ความสม่ำเสมอของ audit ต่างกัน | review risk แล้วกำหนด contract ชัดเจน |
 | R1 | item17 คง checked_by/checked_at หลัง full-cycle reset | instance ของ G2 | บันทึกเป็น residue ห้ามลืม |
-| F1 | Payment-specific fixture/UI stage ยังไม่ทำ | T12 ยังไม่ runtime testable | สร้าง case_payments + proof flow และทดสอบ app_save_case_payment |
+| F1 | ~~Payment-specific fixture/UI stage~~ **CLOSED 2026-07-14** | runtime gap ของ T12 ถูกปิดแล้ว | ปิดแล้ว — ดูหัวข้อ F1 Payment-specific Stage |
+| F1a | payment create ยังไม่มี idempotency protection ที่พิสูจน์ได้ | กดซ้ำอาจสร้างรายการซ้ำ | ตัดสิน product/technical แล้วทำ Stage แยก |
+| F1b | ยังไม่มี proof-detach workflow และยังไม่ได้ทดสอบ | ถอดหลักฐานออกไม่ได้ผ่าน UI ปัจจุบัน | ตัดสินว่าจำเป็นหรือไม่ก่อนออกแบบ |
+| F1c | payment audit เป็น best-effort | audit อาจขาดได้โดยไม่ทำให้ธุรกรรมล้ม | review ร่วมกับ G4 |
 | F2 / 58L | RPC สถานประกอบการ deploy แต่ table employer_establishments absent | write RPC อาจ fail relation missing | ทำ schema reconciliation stage แยกก่อนใช้ |
 | N1 | Attendance notification summary เคยแสดง 0 จนเข้า subpage | ข้อมูลแจ้งเตือนอาจ stale | regression test notification aggregation |
 | M1 | Mobile viewport/scroll บางหน้า | ผู้ใช้มือถือมองไม่เห็นส่วนล่าง | ทดสอบหลายขนาดและแก้เฉพาะจุด |
@@ -377,8 +404,8 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 
 ## สิ่งที่ยังไม่ทำ / ยังไม่ถือว่าเสร็จ
 
-- Payment proof runtime stage ที่ใช้ case_payments fixture และ app_save_case_payment/proof จริง
 - Stage 58L Establishment Schema Reconciliation: apply/reconcile employer_establishments และ RPC ที่เกี่ยวข้องบน Staging ก่อน Production
+- ตัดสิน F1 follow-ups ที่ยังค้าง: payment create idempotency และความจำเป็นของ proof-detach workflow
 - Product decision + code สำหรับ G1–G4 โดยห้ามแอบแก้ระหว่าง smoke test
 - Delete request/approval end-to-end acceptance: Staff ขออนุมัติ, Admin อนุมัติ, audit/restore/error states
 - Security log, IP/device, suspicious/new device detection และการลด password sharing
@@ -440,7 +467,7 @@ Roadmap ต้องแยก “Business Phase” ออกจาก “Technic
 ### ลำดับงานแนะนำหลัง Handoff
 
 - Step A: สร้างเอกสาร Source of Truth ทั้งชุดและ commit หลังตรวจ — PROJECT_MASTER_HANDOFF, AGENTS, CURRENT_STATE_LOCK, ROADMAP, TEST_PLAN, DECISIONS_LOG
-- Step B: เลือก immediate technical gate เพียงหนึ่งรายการ: F1 Payment Stage หรือ F2/58L Establishment Reconciliation
+- Step B: F1 Payment Stage ปิดแล้ว — immediate technical gate ถัดไปคือ F2/58L Establishment Reconciliation
 - Step C: กลับมาปิด Phase 1 production-readiness backlog: delete/security/audit/alerts/mobile/import-export/manual
 - Step D: pilot 2–3 คน แล้วเก็บ bug/feedback
 - Step E: แก้และ rollout 12 คน
@@ -603,8 +630,10 @@ Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว �
 | หัวข้อ | Verdict |
 | --- | --- |
 | Master Handoff | READY |
-| Stage 58K-C | COMPLETE |
-| Staging cleanup | COMPLETE |
+| Stage 58K-C | COMPLETE (historical) |
+| F1 Payment-specific Stage | COMPLETE — closed on Staging 2026-07-14 |
+| Staging cleanup | COMPLETE (58K-C และ F1) |
+| F2 / Stage 58L | NOT STARTED |
 | Production Smoke | NOT STARTED |
-| Next execution stage | NOT SELECTED — ต้องให้ผู้ใช้เลือก |
+| Next execution stage | NOT SELECTED — ต้องให้ผู้ใช้เลือก (F1 ไม่ใช่ตัวเลือกอีกต่อไป) |
 | New chat migration | READY AFTER FILE UPLOAD / PROJECT SETUP |

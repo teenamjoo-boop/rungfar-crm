@@ -2,7 +2,7 @@
 
 > Repository-level instructions for ChatGPT Work, Claude Code, Codex, or any coding agent working on RUNGFA CRM.
 >
-> Last handoff baseline: 2026-07-13. These rules are persistent, but all Git/DB facts must be re-verified at the start of every session.
+> Last handoff baseline: 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage itself closed on Staging 2026-07-14. These rules are persistent, but all Git/DB facts must be re-verified at the start of every session.
 
 ## 1. Mission and role split
 
@@ -35,7 +35,8 @@ Never guess a stage number, database baseline, test fixture, function signature,
 - Correct Git Bash path: `/d/dev/claude`
 - Forbidden old path: `C:\Users\Acer\OneDrive\Desktop\claude`
 - Current working branch at handoff: `feature-attendance`
-- Last verified handoff HEAD: `54680ec`
+- Last verified HEAD (pre-closeout baseline): `e9d035c`
+- Prior code-baseline HEAD (historical, Stage 58K-C): `54680ec`
 - Main frontend: `rungfar_crm_17.html`
 - Local Staging frontend: `rungfar_crm_17.STAGING.local.html`
 - Staging project ref: `bzwtknqvhvdmatangzqf`
@@ -225,8 +226,8 @@ Do not touch without explicit scope:
 - G2: manual reset to `missing` keeps old `checked_by_code`/`checked_at`.
 - G3: UI chip semantics separate `approved`, `missing`, and linked documents; `received` has no dedicated top chip.
 - G4: checklist update audit is best-effort while link/unlink audit is strict.
-- F1: Payment proof needs a payment-specific fixture/UI stage.
-- F2/58L: Establishment RPC/table/schema reconciliation is a separate stage.
+- F1: **CLOSED on Staging 2026-07-14.** Payment proof uses the dedicated payment path (`app_save_case_payment`), not the normal checklist selector; the payment checklist item stays guidance-only. Payment audit is best-effort. Two constraints remain open and must not be silently changed: payment create has no demonstrated idempotency protection, and no proof-detach workflow exists or was tested.
+- F2/58L: Establishment RPC/table/schema reconciliation is a separate stage — **still pending, not started.**
 
 Any proposal to change these requires a product decision and a dedicated stage.
 

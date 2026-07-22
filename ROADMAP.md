@@ -28,8 +28,10 @@ Build a practical internal system that is easier than Excel and supports the rea
 ```text
 Stage 58K-C owner-aware document runtime smoke: ✅ closed
 Mandatory synthetic document cleanup: ✅ closed
+F1 payment-specific test stage: ✅ closed on Staging 2026-07-14
+F1 fixture cleanup / baseline restore: ✅ closed
+F1 documentation closeout: 🟡 pending review and commit
 Production smoke/deploy: ⏸ not started
-Payment-specific test stage: 🟡 next candidate
 Establishment reconciliation (58L): 🟡 next candidate
 Phase 1 production readiness: 🟡 incomplete
 Phase 2 case-management product: 🟢 foundation + ⚪ remaining stages
@@ -239,21 +241,31 @@ Rules:
 - Templates must be versioned and effective-dated.
 - Checklist should distinguish worker, employer, company, establishment, case, payment, and internal evidence.
 
-### 2.6 F1 Payment-specific Stage — 🟡 next technical candidate
+### 2.6 F1 Payment-specific Stage — ✅ CLOSED (Staging, 2026-07-14)
 
-Reason:
+Original reason for the stage:
 
 - Payment checklist items are guidance-only.
 - Real proof flow uses `case_payments` and `app_save_case_payment`/proof-document linkage.
 - Stage 58K-C T12 had no payment fixture and was not runtime-testable.
 
-Planned steps:
+Acceptance evidence:
 
-1. Inspect current payment schema/RPC/UI.
-2. Define minimal synthetic payment fixture on Staging.
-3. Test same-case proof linking and wrong-case rejection.
-4. Verify no normal checklist `owner_type='payment'` path is exposed.
-5. Cleanup fixture and restore baseline.
+- Payment created through the real payment UI on disposable case id 2: exactly one row, `service_fee`, due 100 / paid 0, status `unpaid`.
+- Same-case proof linked through the dedicated payment-proof UI: `case_payments.proof_document_id` set; **no** `case_documents` row created; the normal checklist `owner_type='payment'` path was never exposed or used.
+- Wrong-case proof protection: absent from the picker plus deployed `document_not_allowed` verified statically — classified as **UI runtime-observed + backend static verified, no forced live negative write**.
+- Update by ID modified the same row only and preserved the proof link; status transition `unpaid → cancelled` preserved the proof and left `paid_at` null.
+- Audit rows 204–207 append-only with zero forbidden-key hits; original case invariant 17 items / 13/4/0 held throughout.
+- Fixture cleanup deleted exactly one payment and two documents; audit retained; baseline restored (`case_payments` 0, documents 0, `case_documents` 0, audit 135 / ids 73–207).
+- No migration and no application-code change were required.
+
+Open follow-ups (not blocking; require a product/technical decision before any dedicated stage):
+
+- Payment create has no demonstrated idempotency protection.
+- No proof-detach workflow exists or was tested.
+- Payment audit remains best-effort.
+
+Full record: `TEST_PLAN.md` section 7.
 
 ### 2.7 F2 / Stage 58L Establishment Schema Reconciliation — 🟡 next technical candidate
 
@@ -327,18 +339,21 @@ Planned after core readiness:
 ## 9. Recommended execution order from this handoff
 
 ```text
-0. Review and commit the source-of-truth documentation pack
-1. Select F1 Payment Stage or F2/58L Establishment Stage
+0. Review and commit the F1 documentation closeout  ← immediate gate
+1. Select the next stage: F2/58L Establishment Stage, or Phase 1 readiness work
 2. Close the selected stage fully (pre-check → implementation/test → cleanup → docs → commit)
 3. Complete Phase 1 mobile/security/import-export/production-readiness gaps
-4. Run 2–3-user pilot
-5. Fix pilot findings
-6. Roll out to 12 users
-7. Continue Phase 2 checklist/profile/case-template expansion
-8. Add document generation/OCR/portal later
+4. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking
+5. Run 2–3-user pilot
+6. Fix pilot findings
+7. Roll out to 12 users
+8. Continue Phase 2 checklist/profile/case-template expansion
+9. Add document generation/OCR/portal later
 ```
 
-Do not run F1 and 58L simultaneously on the same branch.
+F1 is closed and must no longer be offered as an unstarted choice.
+
+Do not run F1 and 58L simultaneously on the same branch. This prohibition remains on record: if any F1 follow-up stage is ever opened, it must not overlap with 58L.
 
 ## 10. Roadmap update rule
 

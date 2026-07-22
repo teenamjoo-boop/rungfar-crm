@@ -299,15 +299,88 @@
 
 ---
 
+## 2026-07-14 — The dedicated payment path is the accepted runtime path (F1)
+
+**Decision:** Payment evidence is created and linked through `app_save_case_payment` and the dedicated payment-proof UI. This is now the verified, accepted runtime path.
+
+**Reason:** F1 proved the full cycle on Staging: create, same-case proof link, update, and status change all worked through the payment-specific path with no schema or application-code change.
+
+**Impact:** Future payment work builds on this path. `case_payments.proof_document_id` is the proof linkage; no `case_documents` row is produced by payment proof.
+
+---
+
+## 2026-07-14 — Payment proof must not be forced through the checklist selector (F1 confirmed)
+
+**Decision:** The earlier F1 direction is confirmed by runtime evidence: payment proof must never be routed through the normal checklist `app_link_case_document` selector, and the payment checklist item remains guidance-only.
+
+**Reason:** The dedicated path validates case-customer ownership server-side and keeps payment evidence out of the checklist link table. `case_documents` stayed 0 for the entire stage.
+
+**Impact:** Do not add an `owner_type='payment'` path to the checklist selector. Do not create payment-owned `case_documents` rows.
+
+---
+
+## 2026-07-14 — Wrong-case evidence classification (F1)
+
+**Decision:** Wrong-case proof protection is recorded as **UI runtime-observed plus backend static verification**, not a forced live negative write.
+
+**Reason:** The picker filters to the case's own customer, so the unrelated document was never selectable; the deployed `document_not_allowed` ownership check was read from the live function definition. Forcing a negative write was unnecessary and would have been an unsafe deliberate probe.
+
+**Impact:** Classify honestly. This follows the same precedent as the 58K-C T7 decision. Do not upgrade this to "live backend rejection" without a separately approved negative-path stage.
+
+---
+
+## 2026-07-14 — Omitting proof during update preserves the existing proof (F1)
+
+**Decision:** Passing no proof argument (or null) to the payment save path **keeps** the current `proof_document_id`. This is the accepted deployed behavior.
+
+**Reason:** Verified at runtime: the payment was updated with note-only changes and the proof link remained intact.
+
+**Impact:** A caller cannot clear a proof by omitting it. Any future detach capability needs an explicit, separately designed workflow.
+
+---
+
+## 2026-07-14 — Cancellation preserves the proof and leaves paid_at null (F1)
+
+**Decision:** A status transition to `cancelled` preserves `proof_document_id` and does not set `paid_at`.
+
+**Reason:** Verified at runtime on the synthetic payment. `paid_at` is set only on transition to `paid`.
+
+**Impact:** Cancellation is a soft status change, not a data-clearing operation. A cancelled synthetic payment must never be described as evidence of a real payment.
+
+---
+
+## 2026-07-14 — Payment audit remains best-effort; audit retained during cleanup (F1)
+
+**Decision:** Payment audit stays best-effort under the current deployed contract, and payment audit rows are retained during fixture cleanup.
+
+**Reason:** Audit is written inside the RPC body within an exception guard, so an audit failure does not fail the payment transaction. Audit is append-only evidence.
+
+**Impact:** Rows 204–207 (`create`, `proof_link`, `update`, `cancel`) were retained; the Staging audit baseline moved from 131 to 135 (ids 73–207). Do not delete audit during routine cleanup. Any move to strict payment audit needs a dedicated review alongside G4.
+
+---
+
+## 2026-07-14 — F1 cleanup scope (F1)
+
+**Decision:** F1 cleanup deleted only payment id 1 and documents 11 and 12.
+
+**Reason:** Minimal marker-and-ID-scoped cleanup is the safest pattern, consistent with the 58K-C cleanup precedent.
+
+**Impact:** No customer, employer, case, worker, checklist, user, or audit row was deleted. Synthetic entities (customers 1–4, employers 1–2, cases 1–2) remain and may be reused by a future stage. Baseline restored: `case_payments` 0, documents 0, `case_documents` 0, audit 135.
+
+---
+
 ## Pending decisions
 
 These are not settled and require user approval:
 
-1. Whether F1 Payment Stage or F2/58L Establishment Stage comes first.
-2. Whether G1 unlink should auto-reset status, and how multiple links/approved statuses behave.
-3. Whether G2 should clear check attribution when resetting to missing.
-4. Whether checklist update audit should become strict.
-5. Whether/when to soft-deactivate retained synthetic entities.
-6. Exact Production smoke subset and deployment schedule.
-7. Exact user-facing final name for the Phase 2 module.
-8. When to re-enable LINE attendance notifications.
+1. Whether payment creation needs idempotency protection, and what form it should take.
+2. Whether a dedicated proof-detach workflow is required, given that omitting proof preserves the existing value.
+3. Whether G1 unlink should auto-reset status, and how multiple links/approved statuses behave.
+4. Whether G2 should clear check attribution when resetting to missing.
+5. Whether checklist update audit should become strict, and whether payment audit should follow.
+6. Whether/when to soft-deactivate retained synthetic entities.
+7. Exact Production smoke subset and deployment schedule.
+8. Exact user-facing final name for the Phase 2 module.
+9. When to re-enable LINE attendance notifications.
+
+The earlier pending item "whether F1 Payment Stage or F2/58L Establishment Stage comes first" is resolved and removed: F1 is complete, and F2/58L remains the outstanding technical gate.
