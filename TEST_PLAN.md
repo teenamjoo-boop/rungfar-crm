@@ -93,7 +93,7 @@ Seed documents: five TEST_58K_SEED metadata-only documents
 | T10 | Audit privacy scrub | READ-ONLY PASS | zero forbidden key/value hits in link/unlink audit details |
 | T11 | Row count/original-case invariant | READ-ONLY PASS | original case, two active workers, 17 checklist items and synthetic row counts remained correct |
 | T12 | Payment proof | Code contract verified; UI runtime not testable; fixture not ready | checklist payment item is guidance-only; real flow requires `case_payments` fixture and payment proof UI |
-| T13 | Establishment rejection | Intentionally unsupported; static verification PASS | frontend placeholder + backend `owner_link_not_supported`; Staging table absent |
+| T13 | Establishment rejection | Intentionally unsupported; static verification PASS | frontend placeholder + backend `owner_link_not_supported`; repo defines `public.establishments` (migration 20260804, filename ≠ table name); live Staging deployment not re-verified — do not assume absent/deployed |
 
 ### Important historical numbering note
 
@@ -224,7 +224,7 @@ Deleted exactly payment id 1 and documents 11 and 12. No customer, employer, cas
 
 ### Objective
 
-Reconcile deployed establishment RPCs with the absent Staging `employer_establishments` table, then define a safe establishment data model and tests.
+Reconcile the repository establishment foundation with the live Staging schema, then define a safe establishment data model and tests. The repository defines the table `public.establishments` (migration `20260804_employer_establishments.sql` — the filename differs from the table name) with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal foundation. The live Staging deployment state was not re-verified; do not assume the table is absent or deployed, and do not use `public.employer_establishments` as the expected table name. F2 / Stage 58L remains **NOT STARTED**: a future read-only 58L pre-check must compare the repository foundation against live Staging before any schema action.
 
 ### Discovery
 
@@ -242,6 +242,20 @@ Reconcile deployed establishment RPCs with the absent Staging `employer_establis
 - Staging-only migration plan.
 - CRUD and active/inactive test matrix.
 - Explicit decision whether establishment-owned documents remain unsupported or get a later dedicated link path.
+
+## 8b. Repository Phase 2 foundations awaiting runtime acceptance
+
+These systems have repository implementation (tables + RPCs + frontend paths) but **no runtime acceptance evidence was found**, and their deployed database state was not queried in the 2026-07-24 documentation reconciliation pass. Each needs its own approved test stage. Do not classify any as Runtime PASS, Staging ready, or Production ready.
+
+| System | Repository evidence | Status |
+| --- | --- | --- |
+| Establishment reconciliation | table `public.establishments` (migration 20260804 — filename `employer_establishments` differs), `app_save_establishment`, `app_set_establishment_active`, frontend modal | Foundation exists; Staging deployment not re-verified; F2/58L not started |
+| Appointments | `case_appointments`, `app_save_case_appointment`, `app_set_case_appointment_status`, `app_case_appointment_summary`, frontend path | Implemented; runtime acceptance not found |
+| Government / e-WorkPermit tracking | `case_tracking_logs`, `app_add_case_tracking_log`, `app_list_case_tracking_logs`, request-number frontend path | Implemented; runtime acceptance not found |
+| Case status history | `case_status_logs`, `app_change_case_status` | Implemented; runtime acceptance not found |
+| Contact timeline / activity | `contact_logs`, `work_timeline`, `app_add_contact_log`, `app_add_work_timeline` (migration 20260717) | Implemented; runtime acceptance not found; operational use unconfirmed |
+
+Acceptance for each requires its own approved stage: live read-only pre-check, fixture/identity resolution, contract inspection, operator-assisted single action, SELECT-only verification, audit/privacy scan, cleanup, and baseline restore. This test plan records the verification need only — no test has been run and no completed result is claimed.
 
 ## 9. Phase 1 regression plan
 

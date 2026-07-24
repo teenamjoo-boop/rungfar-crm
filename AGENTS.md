@@ -35,9 +35,11 @@ Never guess a stage number, database baseline, test fixture, function signature,
 - Correct Git Bash path: `/d/dev/claude`
 - Forbidden old path: `C:\Users\Acer\OneDrive\Desktop\claude`
 - Current working branch at handoff: `feature-attendance`
-- Last verified HEAD: `bf40820ceef3a496f7ad0a729951d3d92c6b1242` — F1 documentation closeout, committed and pushed to `origin/feature-attendance` on 2026-07-22
-- Parent commit (historical, pre-closeout): `e9d035c`
-- Prior code-baseline HEAD (historical, Stage 58K-C): `54680ec`
+- **Current live HEAD: always read from Git pre-flight (`git rev-parse HEAD`). Do not treat any hash stored in this file as the permanent live HEAD.** The commit hashes below are historical stage evidence and dated snapshots, not a live-HEAD assertion:
+  - F1 runtime-test HEAD (historical): `e9d035c` — the commit at which the F1 payment runtime test was executed on 2026-07-14
+  - F1 documentation-closeout commit (historical): `bf40820` — recorded the F1 stage into the six documents, pushed 2026-07-22
+  - Last pre-reconciliation verified repository snapshot: `2c30070` — verified `local = origin`, `0 ahead / 0 behind`, working tree clean on 2026-07-23
+  - Prior code-baseline HEAD (historical, Stage 58K-C): `54680ec`
 - Main frontend: `rungfar_crm_17.html`
 - Local Staging frontend: `rungfar_crm_17.STAGING.local.html`
 - Staging project ref: `bzwtknqvhvdmatangzqf`
@@ -65,6 +67,8 @@ Then verify:
 - The local Staging HTML contains the Staging ref and contains **zero** Production refs.
 - The requested stage exists in `ROADMAP.md`/`TEST_PLAN.md`, or the user has explicitly defined a new stage.
 - `CURRENT_STATE_LOCK.md` matches the live repository/DB facts relevant to the task.
+
+**Live-HEAD vs stored snapshot:** obtain the current HEAD from Git, not from any stored Markdown value. A stored hash is stage evidence or a dated snapshot. A live HEAD that is newer than the stored snapshot is **not by itself** a HARD STOP — it is a HARD STOP only when the newer commit(s) or the working-tree state introduce a meaningful, unexplained difference (application code, schema/migration, HTML, configuration, environment, or a Stage-status change the documents do not record). A documentation-only commit that is newer than the snapshot does not invalidate recorded Stage evidence; reconcile the snapshot wording in a documentation pass — never create a commit solely to make a stored "current HEAD" field equal the commit being created.
 
 Do not ask the user to run `git status` again when a complete pre-flight result was already supplied in the current turn, unless state may have changed or a commit is about to be made.
 
@@ -227,8 +231,8 @@ Do not touch without explicit scope:
 - G2: manual reset to `missing` keeps old `checked_by_code`/`checked_at`.
 - G3: UI chip semantics separate `approved`, `missing`, and linked documents; `received` has no dedicated top chip.
 - G4: checklist update audit is best-effort while link/unlink audit is strict.
-- F1: **CLOSED on Staging 2026-07-14.** Payment proof uses the dedicated payment path (`app_save_case_payment`), not the normal checklist selector; the payment checklist item stays guidance-only. Payment audit is best-effort. Two constraints remain open and must not be silently changed: payment create has no demonstrated idempotency protection, and no proof-detach workflow exists or was tested.
-- F2/58L: Establishment RPC/table/schema reconciliation is a separate stage — **still pending, not started.**
+- F1: **CLOSED on Staging 2026-07-14.** Payment proof uses the dedicated payment path (`app_save_case_payment`), not the normal checklist selector; the payment checklist item stays guidance-only. Three F1 follow-ups remain open and must not be silently changed (they are not part of the completed F1 runtime stage): F1a payment create has no demonstrated idempotency protection; F1b no proof-detach workflow exists or was tested; F1c payment audit remains best-effort.
+- F2/58L: Establishment reconciliation is a separate stage — **not started.** The repository foundation exists: migration `20260804_employer_establishments.sql` defines the table `public.establishments` (note the filename differs from the table name), plus RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal. Repository migration evidence does **not** prove the table is deployed on Staging; live Staging schema was not re-verified. Do not claim the table is absent (an earlier check searched the wrong name `public.employer_establishments`) and do not claim it is deployed. 58L must compare repository definitions against live Staging read-only before any schema change.
 
 Any proposal to change these requires a product decision and a dedicated stage.
 

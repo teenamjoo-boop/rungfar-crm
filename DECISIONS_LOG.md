@@ -263,7 +263,7 @@
 
 **Decision:** `owner_type='establishment'` remains rejected by `owner_link_not_supported`; frontend stays placeholder/read-only.
 
-**Reason:** Staging lacked the `employer_establishments` table while some write RPCs were deployed. The data model/schema must be reconciled first.
+**Reason:** An earlier check reported Staging lacking a `public.employer_establishments` table while some write RPCs were deployed, so the data model/schema was treated as needing reconciliation first. **Correction (2026-07-24):** the repository migration `20260804_employer_establishments.sql` actually defines the table as `public.establishments` (the filename differs from the table name); the earlier "table lacking" reading came from searching the wrong name. Live Staging deployment of `public.establishments` was not re-verified and must not be assumed present or absent until a read-only 58L pre-check. See the 2026-07-24 decision "Establishment migration filename differs from the actual table name."
 
 **Impact:** Do not patch the selector or force an establishment link. Run Stage 58L separately.
 
@@ -366,6 +366,64 @@
 **Reason:** Minimal marker-and-ID-scoped cleanup is the safest pattern, consistent with the 58K-C cleanup precedent.
 
 **Impact:** No customer, employer, case, worker, checklist, user, or audit row was deleted. Synthetic entities (customers 1–4, employers 1–2, cases 1–2) remain and may be reused by a future stage. Baseline restored: `case_payments` 0, documents 0, `case_documents` 0, audit 135.
+
+---
+
+## 2026-07-24 — Live HEAD is read from Git, not frozen in documentation
+
+**Decision:** The current live HEAD is obtained from Git pre-flight (`git rev-parse HEAD`) every session. A commit hash written in any of the six documents is historical stage evidence or a dated snapshot, never an assertion of the permanent live HEAD.
+
+**Reason:** The prior pattern stored a "current HEAD" value in Markdown. Because the commit that records the value cannot contain its own future hash, the wording went stale immediately after every documentation commit (self-staling), forcing repeated HARD STOPs.
+
+**Impact:** Documents distinguish four roles — live HEAD (from Git), Stage test-evidence commit, documentation-closeout commit, and dated verified snapshot. Never create a commit solely to make a stored "current HEAD" field equal the commit being created.
+
+**Reopen when:** Never, unless a tooling change makes live Git HEAD unavailable at pre-flight.
+
+---
+
+## 2026-07-24 — A newer documentation-only commit is not automatically a Stage contradiction
+
+**Decision:** A live HEAD newer than the stored snapshot is a HARD STOP only when the newer commit(s) or working-tree state introduce a meaningful, unexplained difference — application code, schema/migration, HTML, configuration, environment, or an unrecorded Stage-status change. A documentation-only commit newer than the snapshot does not invalidate recorded Stage evidence.
+
+**Reason:** Distinguishes real drift from harmless snapshot aging.
+
+**Impact:** Pre-flight compares substance, not just hash equality. Reconcile snapshot wording in a documentation pass rather than chasing SHAs.
+
+---
+
+## 2026-07-24 — Establishment migration filename differs from the actual table name
+
+**Decision:** The migration `20260804_employer_establishments.sql` defines the table `public.establishments`. The filename `employer_establishments` must not be mistaken for the table name.
+
+**Reason:** An earlier check searched for `public.employer_establishments`, did not find it, and wrongly concluded "the table is absent." Repository evidence shows the table plus RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal.
+
+**Impact:** Do not state the table is absent based on the wrong name, and do not state it is deployed. Repository migration evidence does not prove live Staging deployment; live Staging schema was not re-verified. F2/58L remains not started and must reconcile repository definitions against live Staging read-only before any schema change. The unsupported establishment-owned checklist-link behavior (`owner_link_not_supported`) is preserved until a dedicated approved decision.
+
+**Reopen when:** A read-only 58L pre-check establishes the live Staging schema.
+
+---
+
+## 2026-07-24 — Repository foundation is not proof of deployment or runtime acceptance
+
+**Decision:** Across the documents, "repository implementation exists" is kept separate from "deployed on Staging" and from "runtime acceptance verified." A migration file does not prove deployment; UI code does not prove a runtime flow passed.
+
+**Reason:** The Recovery Inventory found several Phase 2 systems (appointments, government/e-WorkPermit tracking, case status history, contact timeline) with repository foundations but no runtime acceptance evidence, and no database was queried.
+
+**Impact:** These are recorded as repository foundations with runtime acceptance not found and deployed state not checked. Each requires its own approved test stage. None may be described as Runtime PASS, Staging ready, or Production ready. F1 remains closed; its cleanup database values remain documented historical evidence, not re-verified in this pass. 58K-C T7/T8 and F1 wrong-case classifications are unchanged (UI-observed + backend static; permission-blocked, not a live business-guard PASS). Production remains untouched and Production smoke remains not started.
+
+**Reopen when:** A dedicated approved stage records runtime acceptance for a given system.
+
+---
+
+## 2026-07-24 — SYSTEM_STATUS_MASTER.md remains cancelled; handoffs are evidence, not Source of Truth
+
+**Decision:** `SYSTEM_STATUS_MASTER.md` stays cancelled and absent from the working tree, tracked files, and Git history; it must not be recreated without explicit owner approval. The six existing files remain the only repository Source-of-Truth documents. `docs/handoffs/` is a historical archive only, and any external chat handoff (e.g. `RUNGFA_CRM_CHAT_HANDOFF_2026-07-23.md`) is historical evidence outside the repository, not current state. ChatGPT Project Sources are copies and may become stale.
+
+**Reason:** The seventh-file attempt duplicated `PROJECT_MASTER_HANDOFF.md`, expanded the Source-of-Truth set unnecessarily, and stalled real work before being restored cleanly. Current facts come from live Git and correctly identified live environments.
+
+**Impact:** Do not add a seventh Source-of-Truth file. `ai_autopost_system.html` is recorded as an unresolved inventory item: a standalone tracked repository file that is not currently classified as Core CRM, with its operational use, ownership, testing status, and future scope unconfirmed. Its final classification remains pending the owner's decision, and it is not currently an approved Core CRM product.
+
+**Reopen when:** The owner explicitly approves a new document or a classification for `ai_autopost_system.html`.
 
 ---
 

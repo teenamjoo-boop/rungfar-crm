@@ -11,9 +11,10 @@ PROJECT: RUNGFA CRM
 REPO: D:\dev\claude
 GIT BASH: /d/dev/claude
 BRANCH: feature-attendance
-HEAD: bf40820ceef3a496f7ad0a729951d3d92c6b1242  (F1 documentation closeout — committed and pushed)
-REMOTE: origin/feature-attendance = bf40820 (verified equal; 0 ahead / 0 behind)
-WORKING TREE: clean as verified at the bf40820 milestone — see note below
+CURRENT LIVE HEAD: read from Git every session (`git rev-parse HEAD`) — not frozen in this file
+LAST VERIFIED SNAPSHOT: 2c30070 on 2026-07-23 (local = origin/feature-attendance; 0 ahead / 0 behind; working tree clean)
+STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit
+WORKING TREE (at snapshot): clean — re-verify live before any write
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
@@ -33,16 +34,18 @@ PAYMENT-SPECIFIC STAGE: CLOSED on Staging
 58L ESTABLISHMENT RECONCILIATION: not started
 ```
 
-Repository milestone note:
+Repository HEAD/snapshot semantics:
 
-- The F1 documentation closeout was committed as `bf40820ceef3a496f7ad0a729951d3d92c6b1242` on 2026-07-22 and pushed to `origin/feature-attendance`. Local and remote were verified equal at that commit (0 ahead / 0 behind) and the working tree was clean.
-- That commit changed **only** the six source-of-truth Markdown files (`AGENTS.md`, `CURRENT_STATE_LOCK.md`, `DECISIONS_LOG.md`, `PROJECT_MASTER_HANDOFF.md`, `ROADMAP.md`, `TEST_PLAN.md`). No application code, HTML, migration, SQL, or configuration file was modified.
-- Historical note: `e9d035c` ("Add CRM project handoff documentation") is the parent/pre-closeout commit, and it is also the HEAD at which the F1 runtime test was executed on 2026-07-14. Both facts are historical evidence, not current state.
-- Historical note: `54680ec` was the code-baseline HEAD during Stage 58K-C and remains valid as historical evidence, not as current state.
+- **Current live HEAD is obtained from Git pre-flight, never from a value frozen in this file.** The hashes recorded here are dated snapshots and historical stage evidence.
+- Last pre-reconciliation verified snapshot: `2c30070` (2026-07-23) — `local = origin/feature-attendance`, 0 ahead / 0 behind, working tree clean. A live HEAD newer than this snapshot is only a HARD STOP when the newer commit(s)/working tree introduce a meaningful unexplained change (application code, schema/migration, HTML, configuration, environment, or an unrecorded Stage-status change). A documentation-only commit newer than the snapshot does not invalidate recorded Stage evidence.
+- Historical stage evidence: `bf40820` = F1 documentation-closeout commit (2026-07-22, six-doc edit, pushed). `e9d035c` = the HEAD at which the F1 runtime test was executed on 2026-07-14, and parent of `bf40820`. `54680ec` = code-baseline HEAD during Stage 58K-C. All are historical evidence, not current state.
+- Documentation-only commit `bf40820` changed **all six** source-of-truth Markdown files (`AGENTS.md`, `CURRENT_STATE_LOCK.md`, `DECISIONS_LOG.md`, `PROJECT_MASTER_HANDOFF.md`, `ROADMAP.md`, `TEST_PLAN.md`). Documentation-only commit `2c30070` changed **only four** of them (`AGENTS.md`, `CURRENT_STATE_LOCK.md`, `PROJECT_MASTER_HANDOFF.md`, `ROADMAP.md`). Neither commit modified application code, HTML, migration, SQL, or configuration.
 
 ## 2. Verified Staging database baseline after F1 cleanup
 
-Current baseline, re-verified read-only immediately after the F1 fixture cleanup on 2026-07-14:
+Baseline verified read-only immediately after the F1 fixture cleanup on 2026-07-14.
+
+> Note (2026-07-24 documentation reconciliation): the database values in this section are **documented historical evidence — not re-verified in this documentation pass** (no database was queried). Re-verify read-only before any dependent action.
 
 ```text
 total documents: 0
@@ -155,7 +158,7 @@ Constraints recorded (not defects fixed in this stage):
 - T7 Unrelated document: UI visibility guard runtime-observed; backend `document_not_allowed` statically verified. No deliberate negative write probe was required.
 - T8 Inactive/non-member worker: guard and UI-unreachability statically verified. Attempted SQL connector probe was blocked at permission layer (`42501`) before the business function; no mutation occurred. This is not counted as a live business-guard PASS.
 - T12 Payment proof: backend contract exists, checklist UI is guidance-only, and no `case_payments` fixture exists. Classified code-supported/UI-unreachable + fixture-not-ready.
-- T13 Establishment: checklist path intentionally unsupported (`owner_link_not_supported`); Staging `employer_establishments` table is absent while some establishment RPCs are deployed. Static verification only; separate 58L stage required.
+- T13 Establishment: checklist path intentionally unsupported (`owner_link_not_supported`); static verification only; separate 58L stage required. **Correction (2026-07-24):** the repository migration `20260804_employer_establishments.sql` defines the table as `public.establishments` (the filename differs from the table name), with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal. The earlier "table absent" reading came from searching the wrong name `public.employer_establishments`; live Staging deployment of `public.establishments` was **not re-verified** and must not be assumed present or absent until a read-only 58L pre-check.
 
 ## 5. Stage 58K-C cleanup result (historical)
 
@@ -180,7 +183,7 @@ F1 CLOSED 2026-07-14 — payment-specific fixture/UI stage completed on Staging.
 F1a payment create has no demonstrated idempotency protection (open).
 F1b no proof-detach workflow exists or was tested (open).
 F1c payment audit remains best-effort (open).
-F2/58L establishment table/RPC/schema reconciliation pending — NOT STARTED.
+F2/58L establishment reconciliation — NOT STARTED. Repository foundation exists (table `public.establishments` per migration 20260804, plus RPCs and UI); live Staging deployment not re-verified. Migration evidence does not prove deployment.
 ```
 
 Do not fix these implicitly during another stage.

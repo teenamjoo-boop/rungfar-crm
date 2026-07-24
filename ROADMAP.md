@@ -32,7 +32,10 @@ F1 payment-specific test stage: ✅ closed on Staging 2026-07-14
 F1 fixture cleanup / baseline restore: ✅ closed
 F1 documentation closeout: ✅ committed and pushed 2026-07-22 (bf40820)
 Production smoke/deploy: ⏸ not started
-Establishment reconciliation (58L): 🟡 next candidate
+Establishment foundation (public.establishments + RPC + UI): 🟢 exists in repo; Staging deployment not re-verified
+Establishment reconciliation (58L): 🟡 next candidate; NOT STARTED
+Appointments / tracking / case-status-history / contact-timeline: 🟢 repo foundation; ⚪ runtime acceptance not found
+ai_autopost_system.html: ⚪ standalone tracked file; scope/ownership/testing unconfirmed; not yet classified as Core CRM — final classification pending owner decision
 Phase 1 production readiness: 🟡 incomplete
 Phase 2 case-management product: 🟢 foundation + ⚪ remaining stages
 ```
@@ -271,9 +274,9 @@ Full record: `TEST_PLAN.md` section 7.
 
 Problem:
 
-- Some establishment write RPCs are deployed.
-- `employer_establishments` table was absent on Staging at handoff.
-- Checklist establishment document selector is intentionally read-only/unsupported.
+- Repository foundation exists: migration `20260804_employer_establishments.sql` defines table `public.establishments` (the filename differs from the table name), with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal.
+- Repository migration evidence does **not** prove the table is deployed on Staging; live Staging schema was not re-verified. Do not assume `public.establishments` is absent (an earlier check searched the wrong name `public.employer_establishments`) or that it is deployed.
+- Checklist establishment document selector is intentionally read-only/unsupported until a dedicated approved decision.
 
 Planned steps:
 
@@ -284,7 +287,9 @@ Planned steps:
 5. Add CRUD/status tests in a dedicated stage.
 6. Only later decide whether establishment-owned document linking is supported.
 
-### 2.8 Submission tracking and after-submission records — ⚪
+### 2.8 Submission tracking and after-submission records — 🟢 repository foundation / ⚪ runtime acceptance not found
+
+Repository foundation exists but no runtime acceptance evidence was found, and deployed database state was not queried: `case_tracking_logs` (`app_add_case_tracking_log`/`app_list_case_tracking_logs`), `case_appointments` (`app_save_case_appointment`/`app_set_case_appointment_status`/`app_case_appointment_summary`), `case_status_logs` (`app_change_case_status`), and contact timeline (`contact_logs`/`work_timeline`, `app_add_contact_log`/`app_add_work_timeline`). Each needs its own approved test stage — do not treat as Runtime PASS, Staging ready, or Production ready.
 
 Store:
 
@@ -335,6 +340,7 @@ Planned after core readiness:
 - Decorative animated/pixel office with about 12 characters and speech bubbles — after CRM completion.
 - Live Meta Ads API integration — requires separate token/security/data stage.
 - Fully autonomous government-system submission — not approved.
+- `ai_autopost_system.html` — a standalone tracked file that is not wired into the main CRM navigation; the Recovery Inventory (2026-07-24) flagged it as Meta content-planning/autopost. Its scope, ownership, operational use, and testing status are unconfirmed. It is not currently classified as Core CRM and is not Production-ready or completed; final classification is pending owner decision. Meta inside the CRM stays local/manual CSV and live Meta API remains not approved.
 
 ## 9. Recommended execution order from this handoff
 

@@ -68,8 +68,8 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | --- | --- |
 | Repo | D:\dev\claude / Git Bash: /d/dev/claude |
 | Branch | feature-attendance |
-| HEAD | bf40820 — F1 documentation closeout (commit + push แล้ว 2026-07-22) |
-| Working tree | clean ณ จุด bf40820; local = origin/feature-attendance |
+| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; snapshot ล่าสุดที่ยืนยัน = 2c30070 (2026-07-23) |
+| Working tree | clean ณ snapshot 2c30070; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
 | Frontend หลัก | rungfar_crm_17.html |
 | Local Staging HTML | rungfar_crm_17.STAGING.local.html |
 | Staging Project Ref | bzwtknqvhvdmatangzqf |
@@ -110,9 +110,9 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | Staging local copy | rungfar_crm_17.STAGING.local.html |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production ref | magwqolbjmwymqxelizl |
-| Latest verified HEAD | bf40820 — Record F1 payment-specific stage closeout in source-of-truth docs (pushed) |
-| Parent HEAD (historical) | e9d035c — Add CRM project handoff documentation; also the HEAD ที่ใช้ตอนทดสอบ F1 |
-| Prior HEAD (historical) | 54680ec — Add staging-only seed script for owner-aware document tests |
+| Current live HEAD | อ่านจาก Git pre-flight เท่านั้น — ไม่ frozen ในเอกสาร |
+| Last verified snapshot | 2c30070 (2026-07-23) — local = origin, 0/0, tree clean |
+| Stage evidence (historical) | e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 54680ec = Stage 58K-C code baseline |
 
 ```text
 cd /d/dev/claude
@@ -147,7 +147,11 @@ Backend ใช้ Supabase Database, RPC/Functions, Storage และ audit patt
 | case_documents | ลิงก์เอกสารกับ checklist item | เก็บ linked_owner_type, linked_owner_id, linked_case_worker_id |
 | audit_logs | ประวัติการกระทำ | append-only/retention; ห้ามลบระหว่าง cleanup |
 | case_payments | ข้อมูล payment/proof | ทดสอบ runtime ครบใน F1 (2026-07-14); proof ผูกผ่าน `case_payments.proof_document_id` ไม่ผ่าน case_documents |
-| employer_establishments | สถานประกอบการ | บน Staging ล่าสุด table ยัง absent; RPC บางตัวถูก deploy แล้ว — ต้อง Stage 58L |
+| establishments (ไฟล์ migration ชื่อ employer_establishments) | สถานประกอบการใต้นายจ้าง | Repo foundation มีจริง: ตาราง `public.establishments` (migration 20260804 — ชื่อไฟล์ต่างจากชื่อตาราง) + RPC `app_save_establishment`/`app_set_establishment_active` + modal frontend. Migration ไม่พิสูจน์ว่า deploy แล้ว; Staging schema ยังไม่ re-verify — ต้อง Stage 58L read-only ก่อน |
+| case_appointments | นัดหมายของเคส | Repo foundation: RPC `app_save_case_appointment`/`app_set_case_appointment_status`/`app_case_appointment_summary` + frontend path; ยังไม่พบหลักฐาน runtime acceptance; DB ไม่ตรวจในรอบนี้ |
+| case_tracking_logs | ติดตามราชการ/e-WorkPermit (เลขคำขอ/สถานะยื่น) | Repo foundation: RPC `app_add_case_tracking_log`/`app_list_case_tracking_logs` + frontend; ยังไม่พบ runtime acceptance |
+| case_status_logs | ประวัติสถานะเคส | Repo foundation: `app_change_case_status` เขียน log; ยังไม่พบ runtime acceptance |
+| contact_logs / work_timeline | บันทึกการติดต่อ / ไทม์ไลน์กิจกรรม | Repo foundation: RPC `app_add_contact_log`/`app_add_work_timeline` (migration 20260717); ยังไม่พบ runtime acceptance; ไม่ยืนยันการใช้งานจริง |
 
 ## ระบบที่ทำแล้ว — Phase 1 / Core CRM
 
@@ -205,6 +209,7 @@ Backend ใช้ Supabase Database, RPC/Functions, Storage และ audit patt
 - มี Executive Report, Copy report, Export .txt/.csv
 - ไม่มี Meta API จริง ไม่มี token และยังห้ามตีความว่าเป็น live integration
 - ห้าม deploy/push หรือเพิ่ม API จริงโดยไม่มี Stage ออกแบบ security/token/data mapping แยก
+- หมายเหตุ inventory (2026-07-24): มีไฟล์ standalone `ai_autopost_system.html` ถูก track ใน repo อยู่ **นอก navigation หลักของ CRM** — Recovery Inventory ระบุว่าเป็นระบบวางแผน/โพสต์เนื้อหา Meta แบบแยกเดี่ยว การใช้งานจริง เจ้าของ สถานะการทดสอบ และขอบเขตอนาคต **ยังไม่ยืนยัน** ตอนนี้ **ยังไม่จัดเป็น Core CRM — การจัดประเภทสุดท้ายรอการตัดสินใจของเจ้าของ** ห้ามอธิบายว่าเสร็จแล้ว, Production-ready หรือ deploy ใช้งานจริงอยู่; Meta Ads ใน CRM ยังเป็น local/manual CSV และ live Meta API ยังไม่อนุมัติ
 
 ### Login, User Management, Security, RLS และ Audit
 
@@ -297,7 +302,7 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 
 | Commit | ความหมาย |
 | --- | --- |
-| bf40820 | Record F1 payment-specific stage closeout in source-of-truth docs — HEAD ล่าสุดที่ยืนยัน (push แล้ว) |
+| bf40820 | Record F1 payment-specific stage closeout in source-of-truth docs — F1 documentation-closeout commit (historical stage evidence) |
 | e9d035c | Add CRM project handoff documentation — parent ของ bf40820 และเป็น HEAD ตอนทดสอบ F1 |
 | 54680ec | Add staging-only seed script for owner-aware document tests — code baseline ของ Stage 58K-C |
 | e9e6028 | Add strict audit logging to case document unlink |
@@ -311,7 +316,7 @@ Product concept ที่ถูกต้องคือ “CRM รุ่งฟ�
 | fb542cc | Refactor customer modal and fix document upload save |
 | c7de1e9 / d7cc639 / 1e266ec | Meta Ads dashboard / CSV import / executive report builder |
 
-> **หมายเหตุ:** เอกสาร handoff รุ่นเก่าเคยระบุ 13e00ee เป็น latest commit ต่อมาระบุ 54680ec และ e9d035c ตามลำดับ; ทุกค่าถูก supersede โดย current verified HEAD bf40820 และห้ามใช้เป็นสถานะปัจจุบัน
+> **หมายเหตุ:** เอกสาร handoff รุ่นเก่าเคยระบุ 13e00ee, 54680ec, e9d035c และ bf40820 เป็น "latest commit" ตามลำดับ — ทั้งหมดเป็น stage evidence/historical เท่านั้น **current live HEAD ต้องอ่านจาก Git ทุกครั้ง** ห้ามตรึงค่า HEAD ปัจจุบันในเอกสาร
 
 ### Stage 58K-C Runtime Smoke — Final Matrix
 
@@ -364,12 +369,12 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 
 ข้อจำกัดที่บันทึกไว้ (ยังไม่แก้ในสเตจนี้): payment create ยังไม่มีการป้องกัน idempotency ที่พิสูจน์ได้ (ผู้ใช้กด Save ครั้งเดียวเท่านั้น), ยังไม่มี proof-detach workflow และยังไม่ได้ทดสอบ, payment audit เป็น best-effort
 
-## สถานะ Git / DB ล่าสุด — CONFIRMED CURRENT
+## สถานะ Git / DB — LAST VERIFIED SNAPSHOT (ต้องตรวจสดก่อนนำไปใช้)
 
 | กลุ่ม | ค่าล่าสุด |
 | --- | --- |
-| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| bf40820 (F1 documentation closeout) |
-| Git | working tree clean; local = origin/feature-attendance ที่ bf40820 (0 ahead / 0 behind) |
+| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; snapshot ยืนยันล่าสุด 2c30070 (2026-07-23) |
+| Git | working tree clean ณ snapshot; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production | magwqolbjmwymqxelizl — untouched |
@@ -382,7 +387,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 | Checklist | 17 items; missing/received/approved=13/4/0 |
 | Key items | item5 missing, item6 missing, item13 payment_receipt missing, item17 submit_result_note received with 0 active links |
 | Synthetic entities | customers 1–4 active; employer id=2 active; disposable case id=2 cancelled |
-| Establishment | public.employer_establishments absent on Staging |
+| Establishment | Repo foundation มี: ตาราง `public.establishments` (migration 20260804) + RPC + UI; live Staging deployment ยังไม่ re-verify (migration ≠ deployed) |
 
 > **หมายเหตุ:** ค่าชุดนี้เป็น Staging fixture snapshot หลัง cleanup ไม่ใช่ข้อมูล Production และต้องยืนยันใหม่ก่อน Stage ถัดไป
 
@@ -399,7 +404,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 | F1a | payment create ยังไม่มี idempotency protection ที่พิสูจน์ได้ | กดซ้ำอาจสร้างรายการซ้ำ | ตัดสิน product/technical แล้วทำ Stage แยก |
 | F1b | ยังไม่มี proof-detach workflow และยังไม่ได้ทดสอบ | ถอดหลักฐานออกไม่ได้ผ่าน UI ปัจจุบัน | ตัดสินว่าจำเป็นหรือไม่ก่อนออกแบบ |
 | F1c | payment audit เป็น best-effort | audit อาจขาดได้โดยไม่ทำให้ธุรกรรมล้ม | review ร่วมกับ G4 |
-| F2 / 58L | RPC สถานประกอบการ deploy แต่ table employer_establishments absent | write RPC อาจ fail relation missing | ทำ schema reconciliation stage แยกก่อนใช้ |
+| F2 / 58L | ยังไม่เริ่ม; repo มีตาราง `public.establishments` + RPC + UI แต่ deployment บน Staging ยังไม่ re-verify (ชื่อไฟล์ migration = employer_establishments ต่างจากชื่อตาราง) | สมมติผิดว่าตาราง absent/deployed อาจนำไปสู่ schema ผิด | Stage 58L read-only reconciliation ก่อน mutation |
 | N1 | Attendance notification summary เคยแสดง 0 จนเข้า subpage | ข้อมูลแจ้งเตือนอาจ stale | regression test notification aggregation |
 | M1 | Mobile viewport/scroll บางหน้า | ผู้ใช้มือถือมองไม่เห็นส่วนล่าง | ทดสอบหลายขนาดและแก้เฉพาะจุด |
 | S1 | Security/device/IP/delete approval ยังไม่ผ่าน rollout acceptance | เสี่ยง password sharing/ลบข้อมูลผิด | จบ production-readiness gate ก่อนผู้ใช้ 12 คน |
