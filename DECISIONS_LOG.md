@@ -489,6 +489,26 @@
 
 ---
 
+## 2026-07-26 — Employer CRUD acceptance is scoped to the Admin create/read/edit path
+
+**Decision:** Employer Admin Runtime Acceptance is **PASS** on Staging (create → read → full-page reload persistence → single low-risk field edit → server audit + privacy → relationship invariants → exact fixture cleanup → baseline restoration). The accepted scope is deliberately **Admin create/read/edit only**. Employer **delete** and Employer **active/inactive** are confirmed **not implemented** in the current contract and are explicitly **out of scope**, not failures. Employer **Staff** runtime remains **NOT TESTABLE** (0 active Staff) and is recorded as neither PASS nor FAIL.
+
+**Reason:** The repository contract has no employer delete RPC, no UI delete control, and no active/inactive or soft-delete column on `employers`; the establishments FK is intentionally non-cascading. Testing a capability that does not exist would produce a false FAIL. No active Staff fixture exists, matching the same limitation already recorded for F2/58L.
+
+**Impact:** Do not report the Employer workstream as complete, and do not report F2/58L as closed — F2/58L overall remains PARTIAL. Adding employer delete or active/inactive requires its own product decision and a dedicated stage, including how it interacts with the delete-request/approval workflow and the non-cascading establishments FK. Full evidence: `TEST_PLAN.md` section 8d.
+
+---
+
+## 2026-07-26 — Employer duplicate prevention recorded as a gap, not fixed during acceptance
+
+**Decision:** The Employer duplicate-prevention gap (**E1**) is recorded and carried forward, **not fixed** during the acceptance stage. The current contract **does not guarantee duplicate prevention**: no database uniqueness guarantee on `public.employers` and no proven double-submit guard on the Employer save path were established. The operator submitted once only; **duplicate creation was not runtime-tested in this stage** and duplicate-click was deliberately excluded.
+
+**Reason:** Testing-principle 8 forbids fixing a product gap during a smoke test unless that gap is the explicit stage objective. The stage objective was acceptance of the existing contract, and a uniqueness or in-flight-guard change would alter application code and schema mid-acceptance.
+
+**Impact:** Because neither safeguard was established, duplicate Employer records **may occur** — including through the indirect creation paths (new customer with a typed company name, and Excel import) — but this was **not runtime-tested in this stage**, so no observed-duplicate claim is made. Decide before multi-user rollout whether to add a database uniqueness rule, a frontend in-flight/disable guard (the pattern already applied to the establishment toggle), or both. Until then, treat employer duplicates as an unverified operational risk, not an accepted design.
+
+---
+
 ## Pending decisions
 
 These are not settled and require user approval:
@@ -502,5 +522,8 @@ These are not settled and require user approval:
 7. Exact Production smoke subset and deployment schedule.
 8. Exact user-facing final name for the Phase 2 module.
 9. When to re-enable LINE attendance notifications.
+10. Whether Employer duplicate prevention (E1) needs a database uniqueness rule, a frontend double-submit guard, or both.
+11. Whether Employer delete (E2) should exist at all, and if so whether it routes through the delete-request/approval workflow given the non-cascading establishments FK.
+12. Whether Employer active/inactive (E3) is needed for employers who stop trading, and how it should interact with linked workers and cases.
 
 The earlier pending item "whether F1 Payment Stage or F2/58L Establishment Stage comes first" is resolved and removed: F1 is complete, and F2/58L remains the outstanding technical gate.

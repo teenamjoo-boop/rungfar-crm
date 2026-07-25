@@ -12,9 +12,9 @@ REPO: D:\dev\claude
 GIT BASH: /d/dev/claude
 BRANCH: feature-attendance
 CURRENT LIVE HEAD: read from Git every session (`git rev-parse HEAD`) — not frozen in this file
-LAST COMMITTED CHECKPOINT: 81f03b9 "Harden establishment toggle and document 58L acceptance" (verified committed + pushed; local = origin/feature-attendance; 0 ahead / 0 behind; working tree clean at the verified post-push check). This is a checkpoint fact — read live HEAD from Git every session, do not treat this hash as a permanent current HEAD.
-STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 2c30070 = post-closeout metadata sync; 80dcafe = recovery-inventory doc reconciliation; 81f03b9 = post-F2/58L Establishment Admin checkpoint (frontend toggle guard + migration 20260813 + F2/58L documentation)
-WORKING TREE (at verified post-push check): clean — the F2/58L package (rungfar_crm_17.html toggle guard, migration 20260813, and the F2/58L documentation) was committed and pushed as 81f03b9. The local-only patched rungfar_crm_17.STAGING.local.html remains untracked/excluded. Re-verify live before any write.
+LAST COMMITTED CHECKPOINT: fbcf624 "Reconcile post-push project control pointers" (verified live on 2026-07-26: local = origin/feature-attendance; 0 ahead / 0 behind; working tree and index clean; no untracked files). This is a time-specific checkpoint fact — read live HEAD from Git every session, do not treat this hash as a permanent current HEAD.
+STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 2c30070 = post-closeout metadata sync; 80dcafe = recovery-inventory doc reconciliation; 81f03b9 = post-F2/58L Establishment Admin checkpoint (frontend toggle guard + migration 20260813 + F2/58L documentation); fbcf624 = post-push control-pointer reconciliation (documentation-only)
+WORKING TREE (at the 2026-07-26 verified pre-check for this documentation stage): clean — the F2/58L package (rungfar_crm_17.html toggle guard, migration 20260813, and the F2/58L documentation) was committed and pushed as 81f03b9, followed by documentation-only commit fbcf624. The local-only patched rungfar_crm_17.STAGING.local.html remains untracked/excluded. Re-verify live before any write.
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
@@ -33,13 +33,17 @@ PRODUCTION SMOKE: not started
 PAYMENT-SPECIFIC STAGE: CLOSED on Staging
 CANONICAL ESTABLISHMENT TABLE: public.establishments (deployed on Staging) — NOT public.employer_establishments
 F2/58L ESTABLISHMENT: PARTIAL — Establishment Admin runtime acceptance PASS; duplicate-toggle fix PASS; same-state backend no-op PASS; fixture cleanup PASS
-F2/58L STAFF RUNTIME: NOT TESTABLE — no active Staff fixture (0 active staff on Staging)
-F2/58L EMPLOYER FULL CRUD: pending (separate controlled stage)
+F2/58L STAFF RUNTIME: NOT TESTABLE — no active Staff fixture (0 active staff on Staging); applies to both Establishment and Employer
+EMPLOYER CRUD (ADMIN): PASS — Employer Admin Runtime Acceptance closed on Staging 2026-07-26 (create / read / reload / single-field edit / audit + privacy / invariants / exact fixture cleanup / baseline restoration). Scope was Admin create-read-edit only
+EMPLOYER CRUD (STAFF): NOT TESTABLE — 0 active Staff on Staging; recorded as neither PASS nor FAIL
+EMPLOYER DELETE: not implemented — no delete RPC and no UI delete control; not tested
+EMPLOYER ACTIVE/INACTIVE: not implemented — employers has no active/inactive or soft-delete concept; not tested
+EMPLOYER DUPLICATE PREVENTION: PARTIAL — no database uniqueness guarantee and no proven double-submit guard
 ESTABLISHMENT↔CASE BINDING: not implemented (cases.establishment_id absent)
 ESTABLISHMENT-OWNED DOCUMENT LINK: unsupported/deferred (owner_link_not_supported)
 MIGRATION 20260813 (same-state no-op): deployed via Staging SQL Editor ("Success. No rows returned") — migration-history registration UNVERIFIED
 IDENT-1 IDENTITY/SESSION: design complete, implementation PARKED (not started)
-CURRENT STAGE: POST-PUSH-DOC-1 post-push documentation reconciliation
+CURRENT STAGE: EMPLOYER-CRUD-DOC documentation-only closeout of the Employer Admin runtime acceptance
 ```
 
 Repository HEAD/snapshot semantics:
@@ -54,6 +58,8 @@ Repository HEAD/snapshot semantics:
 Baseline verified read-only immediately after the F1 fixture cleanup on 2026-07-14.
 
 > Note (2026-07-24 documentation reconciliation): the database values in this section are **documented historical evidence — not re-verified in this documentation pass** (no database was queried). Re-verify read-only before any dependent action.
+>
+> Note (2026-07-26): this section remains the **F1-era historical baseline**. The **current** verified Staging baseline is recorded in section 5c after the Employer CRUD stage (`audit_logs 144`, `audit max id 216`; entity counts unchanged). The audit progression is continuous: F1 closing `135` (max id 207) → `+7` retained `establishment/1` rows from F2/58L → `142` (max id 214) → `+2` retained `employer` rows from the Employer CRUD stage → `144` (max id 216).
 
 ```text
 total documents: 0
@@ -193,7 +199,46 @@ Reconciled from operator-assisted Staging runtime + SELECT-only verification (ev
 
 **Migration 20260813** was applied once via the confirmed Staging SQL Editor ("Success. No rows returned"); function deployment is proven but **migration-history registration is UNVERIFIED** (run through SQL Editor, no manual history row added) — an unresolved traceability point, not a failed migration.
 
-**Still pending / not implemented:** Staff runtime acceptance (NOT TESTABLE — 0 active staff; static contract allows active staff to create/edit under role-not-null, toggle is Admin-only); Employer full CRUD acceptance; establishment↔case binding (`cases.establishment_id` absent); establishment-owned document linking (`owner_link_not_supported`, deferred). Production: not started.
+**Still pending / not implemented:** Staff runtime acceptance (NOT TESTABLE — 0 active staff; static contract allows active staff to create/edit under role-not-null, toggle is Admin-only); establishment↔case binding (`cases.establishment_id` absent); establishment-owned document linking (`owner_link_not_supported`, deferred). Production: not started. (Employer CRUD acceptance was pending at the time of this section; the Admin path has since closed PASS — see section 5c.)
+
+## 5c. Employer CRUD Admin runtime acceptance (current)
+
+Executed operator-assisted on Staging (`rungfar-crm-staging`, ref `bzwtknqvhvdmatangzqf`) with SELECT-only verification, closed 2026-07-26. Production ref `magwqolbjmwymqxelizl` was **not queried and not touched**. Full evidence: `TEST_PLAN.md` section 8d.
+
+**Employer Admin Runtime Acceptance — PASS.** Create through the real Employer UI (`employers` 2 → 3, exactly one fixture row, blank optional fields persisted as null); detail/read PASS; full-page reload persistence PASS; single-field edit PASS (among business fields only `phase2_note` changed, to `EMPCRUD_EDITED_1`; `updated_at` advanced automatically as expected; no other business field changed); create audit id `215` (`employer.phase2.create`, actor role admin, detail `{"internal_only": true}`) and update audit id `216` (`employer.phase2.save`, exactly one save row) both privacy-safe; relationship invariants held; exact fixture cleanup PASS; baseline restoration PASS.
+
+Synthetic fixture (created and removed within the stage):
+
+```text
+employer id=3  ZZ_TEST_EMPCRUD_20260726_A  employer_kind=company
+related customers / establishments / cases / documents: 0 / 0 / 0 / 0
+```
+
+Baseline before → after:
+
+```text
+employers 2 → 2        customers 4 → 4        establishments 0 → 0
+cases 2 → 2            documents 0 → 0
+audit_logs 142 → 144   audit max id 214 → 216
+exact marker count 0 → 1 → 0   marker-name count 0 → 1 → 0
+```
+
+Cleanup: the operator ran the approved marker-and-id-scoped transaction once in the Staging SQL Editor, deleting exactly employer id 3 with the exact marker name. All four relation guards (customers / establishments / cases / documents referencing that employer) were zero. **No audit row was deleted**; ids `215` and `216` are retained append-only evidence.
+
+Protected invariants held throughout:
+
+```text
+employer id 1 unchanged; employer id 2 unchanged
+customer/worker id 3 still linked to employer id 2
+employer id 2 establishments: 0
+case id 1: draft, employer_id null
+case id 2: cancelled, employer_id 2
+case id 1 checklist: total 17, missing 13, received 4, approved 0
+```
+
+**Staff:** active users total 1, active Admin 1, **active Staff 0** → Employer Staff Runtime **NOT TESTABLE**, recorded as neither PASS nor FAIL. No Staff account was created.
+
+**Not in scope / not implemented:** employer delete (no delete RPC, no UI control) and employer active/inactive (no such column or concept) — neither was tested. Duplicate prevention remains PARTIAL (no database uniqueness guarantee, no proven double-submit guard; the operator submitted once only). Audit remains best-effort and its detail does not identify the changed field. Migration-history registration remains UNVERIFIED. Production not started. **F2/58L overall remains PARTIAL** — this stage closes the Employer Admin path only.
 
 ## 6. Known product gaps carried forward
 
@@ -207,7 +252,11 @@ F1 CLOSED 2026-07-14 — payment-specific fixture/UI stage completed on Staging.
 F1a payment create has no demonstrated idempotency protection (open).
 F1b no proof-detach workflow exists or was tested (open).
 F1c payment audit remains best-effort (open).
-F2/58L establishment reconciliation — PARTIAL (see section 5b). Canonical table `public.establishments` is deployed on Staging; Establishment Admin runtime acceptance PASS. Staff runtime NOT TESTABLE (no active staff); Employer full CRUD pending; establishment↔case binding and establishment-owned document link remain not implemented/unsupported.
+F2/58L establishment reconciliation — PARTIAL (see section 5b). Canonical table `public.establishments` is deployed on Staging; Establishment Admin runtime acceptance PASS. Staff runtime NOT TESTABLE (no active staff); establishment↔case binding and establishment-owned document link remain not implemented/unsupported.
+E1 Employer duplicate prevention is PARTIAL — no database uniqueness guarantee on employers and no proven double-submit guard on the save path (open).
+E2 Employer delete is not implemented — no delete RPC and no UI delete control, so **no normal user-facing Employer delete workflow exists**. The marker-scoped SQL cleanup run in the Employer CRUD stage was approved **only for the exact synthetic fixture** and is not a delete path for real employers; deleting a real Employer record requires a separate product/control decision and approval (open).
+E3 Employer active/inactive is not implemented — employers has no active/inactive or soft-delete concept (open).
+E4 Employer audit is best-effort and its detail does not identify which field changed; field-level proof requires SELECT comparison (open, related to G4).
 ```
 
 Do not fix these implicitly during another stage.
@@ -224,12 +273,12 @@ Do not fix these implicitly during another stage.
 
 No stage is automatically authorized by this lock. The immediate next action is:
 
-1. **POST-PUSH-DOC-2 — final exact documentation diff and commit preparation** for this post-push documentation reconciliation. This is a review/commit-prep action, not a new implementation stage. (The F2/58L frontend/migration/documentation package itself is already committed and pushed as 81f03b9.)
+1. **Owner diff review of the EMPLOYER-CRUD-DOC documentation closeout**, then a separate commit approval. This is a review action, not a new implementation stage. (The F2/58L frontend/migration/documentation package itself is already committed and pushed as 81f03b9, followed by documentation-only commit fbcf624.)
 
 Subsequent candidate stages, requiring separate owner approval:
 
-2. **Employer CRUD Runtime Acceptance** — the next business candidate after this documentation checkpoint (not yet approved/started).
-3. F2/58L Staff runtime acceptance — requires creating/enabling an active Staff fixture first (out of scope here).
+2. **Staff runtime acceptance (Establishment + Employer)** — requires creating/enabling an active Staff fixture first; currently NOT TESTABLE with 0 active Staff.
+3. **Employer duplicate-prevention decision (E1)** — whether to add a database uniqueness rule and/or a double-submit guard on the Employer save path.
 4. Establishment↔case binding model, and the establishment-owned document-link decision — separate product stages.
 5. Continue Phase 1 readiness backlog: mobile, import/export stress, security/IP/device, delete-approval acceptance, manuals, production readiness.
 6. Decide the open F1 follow-ups (payment create idempotency, proof-detach) — F1 itself is closed and must not be re-offered as unstarted.

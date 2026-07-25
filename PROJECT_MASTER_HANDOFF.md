@@ -62,19 +62,19 @@ RUNGFA CRM เป็นเว็บแอพภายในบริษัท �
 
 โครงปัจจุบันใช้ frontend หลักเป็นไฟล์ HTML ขนาดใหญ่และใช้ Supabase เป็น backend/database/storage/RPC โดยมีการแยก Staging กับ Production และมีแนวทาง SECURITY DEFINER, server-side validation, audit และ owner-aware document linking
 
-Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specific Stage** (ปิดบน Staging 14 กรกฎาคม 2026): ทดสอบเส้นทาง payment/proof จริงผ่าน UI เฉพาะของงานการเงิน แล้ว cleanup fixture ครบ ก่อนหน้านั้นคือ Stage 58K-C Runtime Smoke: owner-aware document link/unlink ครบ T1–T13 ตามขอบเขต พร้อม cleanup เอกสารทดสอบ 5 รายการ ทั้งสอง stage ทำบน Staging เท่านั้น Production ไม่ถูกแตะ
+Stage ควบคุมล่าสุดที่ปิดครบคือ **Employer CRUD Admin Runtime Acceptance** — **PASS** บน Staging (2026-07-26) ซึ่งปิด **เฉพาะเส้นทาง Admin create/read/edit ของนายจ้างเท่านั้น** ไม่ใช่ทั้งงานนายจ้าง · **F2/58L โดยรวมยังคงเป็น PARTIAL** · **Production ยังไม่ถูกแตะ** ก่อนหน้านั้นคือ **F1 Payment-specific Stage** (ปิดบน Staging 14 กรกฎาคม 2026): ทดสอบเส้นทาง payment/proof จริงผ่าน UI เฉพาะของงานการเงิน แล้ว cleanup fixture ครบ และก่อนหน้านั้นคือ Stage 58K-C Runtime Smoke: owner-aware document link/unlink ครบ T1–T13 ตามขอบเขต พร้อม cleanup เอกสารทดสอบ 5 รายการ ทุก stage ทำบน Staging เท่านั้น
 
 | หัวข้อ | สถานะล่าสุด |
 | --- | --- |
 | Repo | D:\dev\claude / Git Bash: /d/dev/claude |
 | Branch | feature-attendance |
-| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; verified committed+pushed checkpoint = 81f03b9 "Harden establishment toggle and document 58L acceptance" (local = origin, 0/0, working tree clean ณ การตรวจ post-push) |
-| Working tree | clean at the verified post-push check for checkpoint 81f03b9; local = origin/feature-attendance (0/0) at that check — re-verify live Git before work |
+| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; verified committed+pushed checkpoint = fbcf624 "Reconcile post-push project control pointers" (ตรวจสดเมื่อ 2026-07-26: local = origin, 0/0, working tree + index สะอาด, ไม่มีไฟล์ untracked) |
+| Working tree | clean ณ การตรวจสด 2026-07-26 สำหรับ checkpoint fbcf624; local = origin/feature-attendance (0/0) ณ การตรวจนั้น — re-verify live Git ก่อนทำงานทุกครั้ง |
 | Frontend หลัก | rungfar_crm_17.html |
 | Local Staging HTML | rungfar_crm_17.STAGING.local.html |
 | Staging Project Ref | bzwtknqvhvdmatangzqf |
 | Production Project Ref | magwqolbjmwymqxelizl — ห้ามแตะจนกว่าจะอนุมัติ |
-| Stage ล่าสุด | F2/58L Establishment PARTIAL — Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS (Staging); committed+pushed 81f03b9; ก่อนหน้า F1 CLOSED |
+| Stage ล่าสุด | **Employer CRUD (Admin) — PASS** ปิดบน Staging 2026-07-26 (create/read/reload/edit หนึ่งฟิลด์/audit+privacy/invariant/cleanup/baseline restore); Staff NOT TESTABLE; ก่อนหน้า F2/58L Establishment PARTIAL (Admin acceptance PASS, committed+pushed 81f03b9) และ F1 CLOSED |
 | สถานะ Rollout | ยังไม่ rollout 12 คน; ต้องจบ core readiness แล้วทดสอบ 2–3 คนก่อน |
 
 ## ข้อมูลธุรกิจและเป้าหมายผลิตภัณฑ์
@@ -111,8 +111,8 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production ref | magwqolbjmwymqxelizl |
 | Current live HEAD | อ่านจาก Git pre-flight เท่านั้น — ไม่ frozen ในเอกสาร |
-| Last verified committed/pushed checkpoint | 81f03b9 (2026-07-25) — local = origin, 0/0, and tree clean at that verified check; re-verify live Git every session |
-| Stage evidence (historical) | e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 54680ec = Stage 58K-C code baseline |
+| Last verified committed/pushed checkpoint | fbcf624 (ตรวจสด 2026-07-26) — local = origin, 0/0, tree clean ณ การตรวจนั้น; re-verify live Git every session |
+| Stage evidence (historical) | e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 54680ec = Stage 58K-C code baseline; 81f03b9 = F2/58L Establishment package |
 
 ```text
 cd /d/dev/claude
@@ -170,6 +170,9 @@ Backend ใช้ Supabase Database, RPC/Functions, Storage และ audit patt
 
 - มีเมนูและข้อมูลนายจ้าง/บริษัทเป็น master data
 - ใช้เป็นฐานของเคส เอกสารนายจ้าง และแรงงานในสังกัด
+- **ทดสอบใช้งานจริงผ่านแล้ว (Staging 2026-07-26) สำหรับผู้ดูแลระบบ:** เพิ่มนายจ้างใหม่ → เปิดดูรายละเอียด (เห็นแรงงานในสังกัด สาขา/สถานประกอบการ และจำนวนเอกสารบริษัท) → รีเฟรชหน้าแล้วข้อมูลยังอยู่ → แก้ไขข้อมูลทีละช่อง โดยในบรรดาช่องข้อมูลธุรกิจมีเพียง `phase2_note` ที่เปลี่ยนเป็น `EMPCRUD_EDITED_1` ส่วน `updated_at` ขยับเองอัตโนมัติตามที่คาด และไม่มีช่องข้อมูลธุรกิจอื่นเปลี่ยน → มี audit ฝั่ง server ที่ปลอดภัยต่อความเป็นส่วนตัว → ลบข้อมูลทดสอบออกและระบบกลับสู่สภาพเดิมครบถ้วน (Employer Admin Runtime Acceptance = **PASS**)
+- **ยังทำไม่ได้/ยังไม่ทดสอบ:** ลบนายจ้างผ่านหน้าจอ (ยังไม่มีในระบบ), เปิด/ปิดใช้งานนายจ้าง (ยังไม่มีในระบบ), การใช้งานโดยพนักงาน staff (ยังทดสอบไม่ได้เพราะไม่มีบัญชี staff ที่เปิดใช้งาน)
+- **ข้อควรระวังธุรกิจ:** contract ปัจจุบัน**ไม่รับประกันว่าจะกันข้อมูลนายจ้างซ้ำได้** — ข้อมูลซ้ำ**อาจเกิดขึ้นได้** เพราะยังไม่มีการรับประกันความไม่ซ้ำระดับฐานข้อมูล และยังไม่มี double-submit guard ที่พิสูจน์แล้ว · **สเตจนี้ไม่ได้ทดสอบการสร้างข้อมูลซ้ำแบบ runtime** — ต้องตัดสินใจเชิงผลิตภัณฑ์ก่อนเปิดใช้จริงหลายผู้ใช้
 - ยังต้องเพิ่ม/ตรวจ profile fields เช่น เอกสารบริษัท ผู้มีอำนาจ สถานประกอบการ/สาขา ประวัติเคส และเอกสารใกล้หมดอายุ
 - ห้ามเปลี่ยน schema เดิมเพื่อรองรับ Phase 2 โดยไม่ audit production data และ foreign keys
 
@@ -373,21 +376,22 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 
 | กลุ่ม | ค่าล่าสุด |
 | --- | --- |
-| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; verified committed+pushed checkpoint 81f03b9; working tree clean ณ การตรวจ post-push |
-| Git | working tree clean ณ snapshot; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
+| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; verified committed+pushed checkpoint fbcf624 (ตรวจสด 2026-07-26); working tree clean ณ การตรวจนั้น |
+| Git | working tree clean ณ snapshot 2026-07-26; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production | magwqolbjmwymqxelizl — untouched |
 | seed_docs / documents total | 0 / 0 |
 | seed_links / total case_documents | 0 / 0 |
 | case_payments | 0 |
-| audit_total | 135, id range 73–207, retained (รวม payment audit 204–207 จาก F1; ค่า 131/73–203 เป็นค่าประวัติศาสตร์ของ 58K-C) |
+| audit_total | **144, max id 216** (ค่าปัจจุบันหลังปิด Employer CRUD 2026-07-26) — ลำดับต่อเนื่อง: 135/207 หลัง F1 → +7 แถวของ `establishment/1` จาก F2/58L = 142/214 → +2 แถว employer (215 create, 216 save) = 144/216; ทุกแถว retained append-only (ค่า 131/73–203 และ 135/73–207 เป็นค่าประวัติศาสตร์) |
 | Original case | id=1, CASE-20260709-000001, draft, customer_id=1, employer_id=null |
 | Case workers | 2 active; primary customer 1, secondary customer 2; มี historical inactive row ของ customer 2 |
 | Checklist | 17 items; missing/received/approved=13/4/0 |
 | Key items | item5 missing, item6 missing, item13 payment_receipt missing, item17 submit_result_note received with 0 active links |
 | Synthetic entities | customers 1–4 active; employer id=2 active; disposable case id=2 cancelled |
 | Establishment | ตาราง `public.establishments` deployed บน Staging + RPC + UI; Admin runtime acceptance PASS; toggle duplicate-fix + same-state no-op (migration 20260813) PASS; fixture cleanup PASS (baseline 0); Staff runtime NOT TESTABLE; migration-history UNVERIFIED |
+| Employer CRUD | **Admin runtime acceptance PASS** (Staging 2026-07-26): create/read/reload/single-field edit/audit+privacy/invariant/cleanup/baseline restore; fixture `employer id=3 ZZ_TEST_EMPCRUD_20260726_A` สร้างและลบครบในสเตจเดียว; audit 215 create + 216 save retained; Staff NOT TESTABLE (0 active staff); delete + active/inactive ยังไม่มีในระบบ; duplicate prevention PARTIAL |
 
 > **หมายเหตุ:** ค่าชุดนี้เป็น Staging fixture snapshot หลัง cleanup ไม่ใช่ข้อมูล Production และต้องยืนยันใหม่ก่อน Stage ถัดไป
 
@@ -404,7 +408,11 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 | F1a | payment create ยังไม่มี idempotency protection ที่พิสูจน์ได้ | กดซ้ำอาจสร้างรายการซ้ำ | ตัดสิน product/technical แล้วทำ Stage แยก |
 | F1b | ยังไม่มี proof-detach workflow และยังไม่ได้ทดสอบ | ถอดหลักฐานออกไม่ได้ผ่าน UI ปัจจุบัน | ตัดสินว่าจำเป็นหรือไม่ก่อนออกแบบ |
 | F1c | payment audit เป็น best-effort | audit อาจขาดได้โดยไม่ทำให้ธุรกรรมล้ม | review ร่วมกับ G4 |
-| F2 / 58L | PARTIAL; `public.establishments` deployed + Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS; ยังเหลือ Staff runtime (ไม่มี active staff), Employer full CRUD, est.↔case, est.-owned document, migration-history registration | สมมติผิดว่าเสร็จทั้งหมดจะข้าม gap ที่ยังค้าง | F2/58L package committed+pushed (81f03b9); ทำ POST-PUSH-DOC-2 (final doc diff/commit prep) แล้วเปิด stage ย่อยที่เหลือแยกอนุมัติ (business candidate ถัดไป = Employer CRUD) |
+| F2 / 58L | PARTIAL; `public.establishments` deployed + Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS; ยังเหลือ Staff runtime (ไม่มี active staff), est.↔case, est.-owned document, migration-history registration | สมมติผิดว่าเสร็จทั้งหมดจะข้าม gap ที่ยังค้าง | F2/58L package committed+pushed (81f03b9); เปิด stage ย่อยที่เหลือแยกอนุมัติ |
+| E1 | Employer duplicate prevention PARTIAL — contract ปัจจุบันไม่รับประกันการกันข้อมูลซ้ำ: ไม่มี uniqueness ระดับฐานข้อมูล และไม่มี double-submit guard ที่พิสูจน์แล้ว | ข้อมูลนายจ้างซ้ำ**อาจเกิดขึ้นได้**จากช่องว่างทั้งสองข้อนี้; **สเตจนี้ไม่ได้ทดสอบการสร้างข้อมูลซ้ำแบบ runtime** | ตัดสินเชิงผลิตภัณฑ์ก่อน rollout หลายผู้ใช้ แล้วทำเป็น Stage แยก |
+| E2 | Employer delete ยังไม่มีในระบบ (ไม่มี RPC และไม่มีปุ่มบนหน้าจอ) — **ไม่มี workflow ลบนายจ้างสำหรับผู้ใช้งานปกติเลย** | ลบนายจ้างจริงยังทำไม่ได้; SQL cleanup ในสเตจ Employer CRUD อนุมัติไว้**เฉพาะ fixture สังเคราะห์ที่ระบุตัวตนแน่นอน**เท่านั้น ไม่ใช่ทางลบข้อมูลจริง | การลบข้อมูลนายจ้างจริงต้องมีการตัดสินเชิงผลิตภัณฑ์/การควบคุมและการอนุมัติแยกต่างหาก (เช่น จะทำ delete-request workflow หรือไม่) |
+| E3 | Employer active/inactive ยังไม่มีในระบบ | ปิดใช้งานนายจ้างที่เลิกจ้างไม่ได้ | ตัดสินร่วมกับ E2 |
+| E4 | Employer audit เป็น best-effort และ detail ไม่ระบุว่าฟิลด์ไหนเปลี่ยน | ตรวจย้อนหลังระดับฟิลด์จาก audit ไม่ได้ | review ร่วมกับ G4 |
 | N1 | Attendance notification summary เคยแสดง 0 จนเข้า subpage | ข้อมูลแจ้งเตือนอาจ stale | regression test notification aggregation |
 | M1 | Mobile viewport/scroll บางหน้า | ผู้ใช้มือถือมองไม่เห็นส่วนล่าง | ทดสอบหลายขนาดและแก้เฉพาะจุด |
 | S1 | Security/device/IP/delete approval ยังไม่ผ่าน rollout acceptance | เสี่ยง password sharing/ลบข้อมูลผิด | จบ production-readiness gate ก่อนผู้ใช้ 12 คน |
@@ -474,7 +482,7 @@ Roadmap ต้องแยก “Business Phase” ออกจาก “Technic
 ### ลำดับงานแนะนำหลัง Handoff
 
 - Step A: ✅ เสร็จแล้ว — สร้างเอกสาร Source of Truth ครบชุดและ commit/push แล้ว (ล่าสุด bf40820 บันทึกผลปิด F1)
-- Step B: F2/58L Establishment = **PARTIAL** — Admin runtime acceptance + duplicate-toggle fix + same-state no-op + fixture cleanup ผ่านบน Staging และ **committed+pushed แล้ว (81f03b9)** immediate control action ถัดไปคือ **POST-PUSH-DOC-2** (final exact documentation diff + commit prep) จากนั้น business candidate ถัดไปคือ **Employer CRUD Runtime Acceptance** แล้วเปิด stage ย่อยที่เหลือ (Staff runtime, est.↔case, est.-owned document, migration-history) แยกอนุมัติ; IDENT-1 identity/session เป็น **parked design backlog**
+- Step B: F2/58L Establishment = **PARTIAL** — Admin runtime acceptance + duplicate-toggle fix + same-state no-op + fixture cleanup ผ่านบน Staging และ **committed+pushed แล้ว (81f03b9)** · **Employer CRUD (Admin) = PASS** ปิดบน Staging 2026-07-26 (เอกสารรออนุมัติ diff/commit) · stage ย่อยที่เหลือ (Staff runtime ทั้ง Establishment และ Employer, est.↔case, est.-owned document, migration-history, การตัดสิน E1–E3) แยกอนุมัติทีละรายการ; IDENT-1 identity/session เป็น **parked design backlog**
 - Step C: กลับมาปิด Phase 1 production-readiness backlog: delete/security/audit/alerts/mobile/import-export/manual
 - Step D: pilot 2–3 คน แล้วเก็บ bug/feedback
 - Step E: แก้และ rollout 12 คน
@@ -641,8 +649,11 @@ Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว �
 | F1 Payment-specific Stage | COMPLETE — closed on Staging 2026-07-14 |
 | F1 documentation closeout | COMPLETE — commit bf40820, pushed 2026-07-22 |
 | Staging cleanup | COMPLETE (58K-C และ F1) |
-| F2 / Stage 58L | **PARTIAL** — Establishment Admin runtime acceptance PASS + duplicate-toggle fix PASS + same-state no-op PASS + fixture cleanup PASS บน Staging; Staff runtime NOT TESTABLE (ไม่มี active staff); Employer full CRUD pending; est.↔case + est.-owned document ยังไม่ทำ/unsupported; migration-history UNVERIFIED (ดู section "สถานะ F2/58L") |
+| F2 / Stage 58L | **PARTIAL** — Establishment Admin runtime acceptance PASS + duplicate-toggle fix PASS + same-state no-op PASS + fixture cleanup PASS บน Staging; Staff runtime NOT TESTABLE (ไม่มี active staff); est.↔case + est.-owned document ยังไม่ทำ/unsupported; migration-history UNVERIFIED (ดู section "สถานะ F2/58L") |
+| Employer CRUD (Admin) | **COMPLETE — PASS** ปิดบน Staging 2026-07-26 (create/read/reload/single-field edit/audit+privacy/invariant/cleanup/baseline restore); หลักฐานเต็มใน `TEST_PLAN.md` section 8d |
+| Employer CRUD (Staff) | **NOT TESTABLE** — 0 active staff บน Staging; ไม่บันทึกเป็น PASS หรือ FAIL |
+| Employer delete / active-inactive | **NOT IMPLEMENTED** — ไม่มีในระบบและไม่ได้ทดสอบ |
 | IDENT-1 identity/session | DESIGN COMPLETE — implementation PARKED (ไม่ใช่ Stage ถัดไป) |
 | Production Smoke | NOT STARTED |
-| Next execution stage | POST-PUSH-DOC-2 — final exact documentation diff + commit preparation (F2/58L package already committed+pushed 81f03b9); business candidate ถัดไป = Employer CRUD Runtime Acceptance |
+| Next execution stage | Owner diff review ของ EMPLOYER-CRUD-DOC แล้วขออนุมัติ commit แยก; หลังจากนั้น candidate = Staff runtime fixture (Establishment + Employer) และการตัดสิน E1–E3 |
 | New chat migration | READY AFTER FILE UPLOAD / PROJECT SETUP |

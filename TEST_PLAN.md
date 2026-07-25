@@ -228,8 +228,8 @@ F2/58L is now **PARTIAL** — see section 8c for the executed runtime acceptance
 
 ### Remaining test plan (separate approved stages)
 
-- Active Staff fixture + Staff runtime permission acceptance (create/edit under role-not-null; Admin-only toggle) — currently NOT TESTABLE (0 active staff).
-- Employer full CRUD acceptance (create/update/permission-matrix/audit).
+- Active Staff fixture + Staff runtime permission acceptance (create/edit under role-not-null; Admin-only toggle) — currently NOT TESTABLE (0 active staff). Applies to both Establishment and Employer.
+- Employer CRUD acceptance — **Admin path closed PASS, see section 8d.** Remaining: Staff runtime permission matrix; employer delete and employer active/inactive are not implemented and are out of scope until a product decision.
 - Migration-history registration decision/evidence (deployment proven; history UNVERIFIED).
 - Establishment↔case relationship model (`cases.establishment_id` absent) and the establishment-owned document-link decision (`owner_link_not_supported`).
 - Production plan (separate, not started).
@@ -276,7 +276,7 @@ Executed operator-assisted on Staging (`rungfar-crm-staging`, ref `bzwtknqvhvdma
 | Open Employer fixture (id=2 `TEST_58K_EMPLOYER`) detail | PASS | Operator-assisted Staging (read) |
 | Render workers + establishment count/section | PASS | Operator-assisted + SELECT-only |
 | Refresh/reopen persistence | PASS | Operator-assisted |
-| **Full Employer CRUD (create/update/permission/audit)** | **PENDING** | separate controlled stage |
+| **Full Employer CRUD (create/update/permission/audit)** | **Superseded — see section 8d.** Employer Admin Runtime Acceptance PASS on Staging; Staff runtime still NOT TESTABLE | separate controlled stage, executed |
 
 ### Establishment Admin flow (fixture id=1 `ZZ_TEST_58L_EST_20260724_A`, employer id=2)
 
@@ -315,12 +315,116 @@ Staging user baseline: 1 active user, 1 active Admin, 0 active Staff. Static rep
 
 ### Gaps
 
-- Employer full CRUD acceptance — pending.
+- Employer CRUD acceptance — Admin path closed PASS (section 8d); Staff path still pending; employer delete and active/inactive not implemented.
 - Staff runtime acceptance — pending (needs active Staff fixture).
 - Establishment↔case binding — not implemented (`cases.establishment_id` absent).
 - Establishment-owned document linking — unsupported/deferred (`owner_link_not_supported`).
 - Migration-history registration — UNVERIFIED (function deployed via SQL Editor; no manual history row).
 - Production testing — not started.
+
+## 8d. Employer CRUD runtime acceptance — canonical result
+
+Executed operator-assisted on Staging (`rungfar-crm-staging`, ref `bzwtknqvhvdmatangzqf`) with SELECT-only verification. Production ref `magwqolbjmwymqxelizl` was **not queried and not touched**. Scope was Admin create / read / reload / single-field edit / audit / invariants / cleanup — **not** delete and **not** active/inactive (neither is implemented).
+
+This section supersedes the `PENDING` row for "Full Employer CRUD (create/update/permission/audit)" in section 8c for the **Admin** path only. Staff remains untested.
+
+### Environment and fixture
+
+```text
+Staging project: rungfar-crm-staging (ref bzwtknqvhvdmatangzqf)
+Production: magwqolbjmwymqxelizl — not queried, not touched
+Fixture employer id: 3
+Fixture name: ZZ_TEST_EMPCRUD_20260726_A
+employer_kind: company
+Optional fields left blank intentionally → persisted as null
+Related customers / establishments / cases / documents for id 3: 0 / 0 / 0 / 0
+```
+
+### Baseline before the test (SELECT-only)
+
+| Item | Value |
+| --- | ---: |
+| employers | 2 |
+| customers | 4 |
+| establishments | 0 |
+| cases | 2 |
+| documents | 0 |
+| audit_logs | 142 |
+| audit max id | 214 |
+| fixture marker count | 0 |
+
+Audit-baseline reconciliation: the F1 closing baseline was `135` audit rows with max id `207` (section 7). The F2/58L Establishment stage added exactly the seven retained rows for entity `establishment/1` (create 1 + update 1 + set_active 5, section 8c), giving `135 + 7 = 142` and max id `207 + 7 = 214`. The Employer CRUD baseline above is therefore continuous with the recorded history — no unexplained audit rows.
+
+### Results
+
+| Case | Result | Evidence |
+| --- | --- | --- |
+| Employer Admin create | PASS | `employers` 2 → 3; exactly one fixture row; blank optional fields persisted as null |
+| Employer detail / read | PASS | Detail opened; workers 0, establishments 0, employer documents 0 |
+| Full-page reload and persistence | PASS | Fixture still visible after full refresh; detail reopened successfully |
+| Single-field edit | PASS | Among business fields, only `phase2_note` changed, to `EMPCRUD_EDITED_1`; `updated_at` advanced automatically as expected; no other business field changed; `employers` remained 3; marker count remained 1 |
+| Create audit + privacy | PASS | Audit id `215`, action `employer.phase2.create`, actor role `admin`, detail `{"internal_only": true}`; privacy scan PASS |
+| Update audit + privacy | PASS | Audit id `216`, action `employer.phase2.save`, **exactly one** save audit row; privacy scan PASS; no duplicate submit observed |
+| Relationship invariant verification | PASS | See invariant table below |
+| Exact fixture cleanup | PASS | Operator ran the approved marker-and-id-scoped transaction once in the Staging SQL Editor; deleted exactly employer id 3 with the exact marker name; all four relation guards were zero; no audit row deleted |
+| Baseline restoration | PASS | See restored baseline below |
+
+**Employer Admin Runtime Acceptance verdict: PASS.**
+
+Audit rows written (append-only, best-effort under the current contract): `215 employer.phase2.create`, `216 employer.phase2.save`.
+
+### Restored baseline after cleanup
+
+| Check | Before | After | Result |
+| --- | ---: | ---: | --- |
+| employers | 2 | 2 | PASS |
+| customers | 4 | 4 | unchanged |
+| establishments | 0 | 0 | unchanged |
+| cases | 2 | 2 | unchanged |
+| documents | 0 | 0 | unchanged |
+| audit_logs | 142 | 144 | retained / PASS |
+| audit max id | 214 | 216 | retained / PASS |
+| exact marker count (id + name) | 1 | 0 | PASS |
+| marker-name count | 1 | 0 | PASS |
+| Production | untouched | untouched | PASS |
+
+Retained audit ids `215` and `216` remain after cleanup — raw row deletion has no cleanup audit trigger and audit retention is intentional, consistent with the 58K-C and F1 precedents.
+
+### Protected invariants — all held
+
+```text
+employer id 1: unchanged
+employer id 2: unchanged
+customer/worker id 3: still linked to employer id 2
+employer id 2 establishments: 0
+case id 1: draft, employer_id null
+case id 2: cancelled, employer_id 2
+case id 1 checklist: total 17, missing 13, received 4, approved 0
+```
+
+### Staff flow
+
+```text
+NOT TESTABLE — NO ACTIVE STAFF FIXTURE
+```
+Staging user baseline at the time of the test: 1 active user total, 1 active Admin, 0 active Staff. Employer Staff Runtime is recorded as **neither PASS nor FAIL**. No Staff account was created. The static repository contract (unchanged) allows an active Staff user to create/edit employers under the `role is not null` save contract.
+
+### Scope boundaries and gaps recorded (not defects fixed in this stage)
+
+- **Employer delete through the UI is not implemented and was not tested.** No delete RPC and no UI delete control exist for employers.
+- **Employer active/inactive is not implemented and was not tested.** `employers` has no active/inactive or soft-delete concept.
+- **Duplicate prevention remains PARTIAL** — there is no database uniqueness guarantee on employers and no proven double-submit guard on the save path. The operator submitted once only; duplicate-click was deliberately excluded from the test.
+- **Audit remains best-effort** under the current deployed contract, and the audit detail does not identify which field changed — field-level change proof comes from SELECT comparison only.
+- **Staff runtime remains NOT TESTABLE** (needs an active Staff fixture, a separately approved stage).
+- **Migration-history registration remains UNVERIFIED** (carried forward from section 8c; unchanged by this stage).
+- **Production remains NOT STARTED / untouched.**
+- **F2/58L overall remains PARTIAL** — this stage closes the Employer **Admin** runtime path only.
+
+### Scope notes
+
+- No migration and no application-code change were required or made.
+- This stage did not modify G1–G4, R1, or the F1 follow-ups.
+- The completed Establishment (section 8c) and F1 (section 7) evidence is unchanged and was not rewritten.
 
 ## 9. Phase 1 regression plan
 
