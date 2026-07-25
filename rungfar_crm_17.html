@@ -15300,7 +15300,7 @@ function _renderEmpPhase2(){
         </div>
         <span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;${s.is_active?'background:#ecfdf5;color:#059669':'background:#f3f4f6;color:#6b7280'}">${s.is_active?esc(T('estActive')):esc(T('estInactive'))}</span>
         <button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="openEstForm(${s.id})">${T('btnEdit')}</button>
-        ${isAdmin?`<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="estToggleActive(${s.id},${!!s.is_active})">${s.is_active?esc(T('estBtnOff')):esc(T('estBtnOn'))}</button>`:''}
+        ${isAdmin?`<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px" onclick="estToggleActive(${s.id},${!!s.is_active},this)">${s.is_active?esc(T('estBtnOff')):esc(T('estBtnOn'))}</button>`:''}
       </div>
     </div>`).join('');
   const docsN=Number((_emp2Detail.documents_summary&&_emp2Detail.documents_summary.employer_documents)||0);
@@ -15393,20 +15393,32 @@ async function saveEstForm(){
   }finally{hideLoading();}
 }
 // ── เปิด/ปิดใช้งานสถานประกอบการ (admin เท่านั้น — soft toggle, ไม่มี hard delete) ──
-async function estToggleActive(id,curActive){
+// F2/58L-FIX-1A: in-flight guard ต่อสถานประกอบการ กันหนึ่งคลิกกลายเป็นสอง invocation/สอง dialog/สอง RPC
+const _estToggleBusy=new Set();
+async function estToggleActive(id,curActive,btn){
+  const key=Number(id);
+  if(id==null||isNaN(key)){toast('กรุณาเลือกสถานประกอบการก่อน','err');return;}
+  // acquire guard ที่จุดแรกสุด — ก่อน guardSession (await แรก) และก่อน confirm() — invocation ที่สองออกเงียบก่อนแสดง dialog ซ้ำ
+  if(_estToggleBusy.has(key))return;
   if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
-  if(id==null||isNaN(Number(id))){toast('กรุณาเลือกสถานประกอบการก่อน','err');return;}
-  if(!(await guardSession()))return;
-  if(!confirm(curActive?'ปิดใช้งานสถานประกอบการนี้? (ปิดชั่วคราว ไม่ลบข้อมูล — เปิดกลับได้)':'เปิดใช้งานสถานประกอบการนี้?'))return;
-  showLoading('กำลังบันทึก...');
+  _estToggleBusy.add(key);
+  if(btn)btn.disabled=true;
   try{
-    await _delReqRpc('app_set_establishment_active',{p_establishment_id:Number(id),p_is_active:!curActive});
-    toast(curActive?'ปิดใช้งานแล้ว':'เปิดใช้งานแล้ว');
-    await _loadEmpPhase2(_emp2CurId);
-  }catch(e){
-    if(e&&e.message==='unauthorized')toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');
-    else toast('ไม่สำเร็จ: '+e.message,'err');
-  }finally{hideLoading();}
+    if(!(await guardSession()))return;
+    if(!confirm(curActive?'ปิดใช้งานสถานประกอบการนี้? (ปิดชั่วคราว ไม่ลบข้อมูล — เปิดกลับได้)':'เปิดใช้งานสถานประกอบการนี้?'))return;
+    showLoading('กำลังบันทึก...');
+    try{
+      await _delReqRpc('app_set_establishment_active',{p_establishment_id:key,p_is_active:!curActive});
+      toast(curActive?'ปิดใช้งานแล้ว':'เปิดใช้งานแล้ว');
+      await _loadEmpPhase2(_emp2CurId);
+    }catch(e){
+      if(e&&e.message==='unauthorized')toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');
+      else toast('ไม่สำเร็จ: '+e.message,'err');
+    }finally{hideLoading();}
+  }finally{
+    _estToggleBusy.delete(key);
+    if(btn&&btn.isConnected)btn.disabled=false; // re-enable เฉพาะเมื่อปุ่มยังอยู่ (re-render หลัง reload จะแทนที่ปุ่มเอง)
+  }
 }
 
 async function ctplToggleActive(target,id,curActive){

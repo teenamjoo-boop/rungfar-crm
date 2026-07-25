@@ -220,19 +220,27 @@ Deleted exactly payment id 1 and documents 11 and 12. No customer, employer, cas
 - Production smoke remains not started.
 - The Stage 58K-C T12 result stands unchanged as historical evidence; F1 closed the runtime gap that T12 recorded, and T12 was not retroactively re-scored.
 
-## 8. Next technical test plan — F2 / Stage 58L Establishment reconciliation
+## 8. F2 / Stage 58L Establishment — status and remaining test plan
 
-### Objective
+### Status (superseded original objective)
 
-Reconcile the repository establishment foundation with the live Staging schema, then define a safe establishment data model and tests. The repository defines the table `public.establishments` (migration `20260804_employer_establishments.sql` — the filename differs from the table name) with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal foundation. The live Staging deployment state was not re-verified; do not assume the table is absent or deployed, and do not use `public.employer_establishments` as the expected table name. F2 / Stage 58L remains **NOT STARTED**: a future read-only 58L pre-check must compare the repository foundation against live Staging before any schema action.
+F2/58L is now **PARTIAL** — see section 8c for the executed runtime acceptance. The deployed canonical table `public.establishments` was confirmed on Staging (RPCs `app_save_establishment`/`app_set_establishment_active`/`app_get_employer_detail`/`app_list_employers_phase2` + Establishment UI); `public.employer_establishments` is only the migration filename, not a deployed table. Establishment Admin runtime acceptance PASS; duplicate-toggle fix + same-state no-op (migration 20260813) PASS; fixture cleanup PASS. The original "reconcile whether the table is deployed" objective is resolved.
 
-### Discovery
+### Remaining test plan (separate approved stages)
 
-- Compare migration files and applied migration history.
+- Active Staff fixture + Staff runtime permission acceptance (create/edit under role-not-null; Admin-only toggle) — currently NOT TESTABLE (0 active staff).
+- Employer full CRUD acceptance (create/update/permission-matrix/audit).
+- Migration-history registration decision/evidence (deployment proven; history UNVERIFIED).
+- Establishment↔case relationship model (`cases.establishment_id` absent) and the establishment-owned document-link decision (`owner_link_not_supported`).
+- Production plan (separate, not started).
+
+### Discovery notes (for the remaining stages)
+
+- Compare migration files and applied migration history (registration currently unverified).
 - Inspect Staging and Production schema separately and read-only.
-- Inspect `app_save_establishment` and `app_set_establishment_active` definitions/grants.
+- Inspect `app_save_establishment` and `app_set_establishment_active` definitions/grants (as deployed).
 - Confirm expected relationships with employer and case.
-- Determine whether 20260804 migration should be applied, revised, or superseded.
+- Determine whether an additive migration is needed for establishment↔case binding.
 
 ### Acceptance before any write
 
@@ -249,13 +257,70 @@ These systems have repository implementation (tables + RPCs + frontend paths) bu
 
 | System | Repository evidence | Status |
 | --- | --- | --- |
-| Establishment reconciliation | table `public.establishments` (migration 20260804 — filename `employer_establishments` differs), `app_save_establishment`, `app_set_establishment_active`, frontend modal | Foundation exists; Staging deployment not re-verified; F2/58L not started |
+| Establishment reconciliation | table `public.establishments` (migration 20260804 — filename `employer_establishments` differs), `app_save_establishment`, `app_set_establishment_active`, frontend modal | **Superseded — see section 8c.** Canonical table `public.establishments` confirmed deployed on Staging; Establishment Admin runtime acceptance PASS (F2/58L PARTIAL) |
 | Appointments | `case_appointments`, `app_save_case_appointment`, `app_set_case_appointment_status`, `app_case_appointment_summary`, frontend path | Implemented; runtime acceptance not found |
 | Government / e-WorkPermit tracking | `case_tracking_logs`, `app_add_case_tracking_log`, `app_list_case_tracking_logs`, request-number frontend path | Implemented; runtime acceptance not found |
 | Case status history | `case_status_logs`, `app_change_case_status` | Implemented; runtime acceptance not found |
 | Contact timeline / activity | `contact_logs`, `work_timeline`, `app_add_contact_log`, `app_add_work_timeline` (migration 20260717) | Implemented; runtime acceptance not found; operational use unconfirmed |
 
 Acceptance for each requires its own approved stage: live read-only pre-check, fixture/identity resolution, contract inspection, operator-assisted single action, SELECT-only verification, audit/privacy scan, cleanup, and baseline restore. This test plan records the verification need only — no test has been run and no completed result is claimed.
+
+## 8c. F2/58L Establishment runtime acceptance — canonical result
+
+Executed operator-assisted on Staging (`rungfar-crm-staging`, ref `bzwtknqvhvdmatangzqf`) with SELECT-only verification; evidence supplied by Project Control (2026-07-24/25). Canonical table is `public.establishments` (deployed); `public.employer_establishments` is not a deployed table. Production not queried or modified.
+
+### Employer support / read path (part of the Establishment test)
+
+| Step | Result | Evidence type |
+| --- | --- | --- |
+| Open Employer fixture (id=2 `TEST_58K_EMPLOYER`) detail | PASS | Operator-assisted Staging (read) |
+| Render workers + establishment count/section | PASS | Operator-assisted + SELECT-only |
+| Refresh/reopen persistence | PASS | Operator-assisted |
+| **Full Employer CRUD (create/update/permission/audit)** | **PENDING** | separate controlled stage |
+
+### Establishment Admin flow (fixture id=1 `ZZ_TEST_58L_EST_20260724_A`, employer id=2)
+
+| Step | Result | Evidence type |
+| --- | --- | --- |
+| Create establishment | PASS | Operator-assisted Staging mutation |
+| Post-create SELECT verify (count 0→1, employer_id=2, is_active=true) | PASS | SELECT-only |
+| Create audit present + privacy-safe | PASS | SELECT-only |
+| Reload persistence | PASS | Operator-assisted |
+| Edit one field (`branch_name` → `F2_58L_EDITED_1`) | PASS | Operator-assisted Staging mutation |
+| Post-edit SELECT verify (only intended field changed) | PASS | SELECT-only |
+| Update audit present + privacy-safe | PASS | SELECT-only |
+| Admin inactive toggle | PASS | Operator-assisted Staging mutation |
+| Reload inactive persistence | PASS | Operator-assisted |
+| Admin active restore | PASS | Operator-assisted Staging mutation |
+| Post-fix inactive regression (1 action / 1 dialog / 1 audit) | PASS | Operator-assisted + SELECT-only |
+| Post-fix active regression (1 action / 1 dialog / 1 audit) | PASS | Operator-assisted + SELECT-only |
+| Same-state active→active direct RPC no-op (no `updated_at`/`updated_by_code` change, no new audit) | PASS | SELECT-only |
+| Cleanup (delete exactly the marked establishment row) | PASS | Operator-assisted Staging mutation |
+| Baseline restoration (establishments under employer id=2 = 0) | PASS | Cleanup verification (SELECT-only) |
+
+**Establishment Admin Runtime Acceptance verdict: PASS.**
+
+### Duplicate-toggle incident + fix (historical evidence, resolved)
+
+Before the fix, one intended inactive→active flow presented two confirmation dialogs and recorded two `establishment.set_active` audit rows (`is_active=true`); final state correct. Confirmed defects: frontend lacked duplicate/in-flight protection; backend was not audit-idempotent for same-state. The exact second-invocation trigger was **not fully reproduced** (no fully proven event-binding root cause claimed). Fix — frontend per-establishment in-flight guard (acquired before `guardSession()`, first await, and `confirm()`) + button disable; backend migration `20260813` same-state no-op (no UPDATE/timestamp/actor/audit on same state; one UPDATE + one audit on real change), applied once via Staging SQL Editor ("Success. No rows returned"). The two pre-fix duplicate audit rows are **retained append-only historical evidence**, not an active failure after the fix.
+
+Final retained audit for entity `establishment/1`: create 1, update 1, set_active 5 (original inactive + two pre-fix duplicates + one inactive + one active after fix), total 7. Same-state no-op created no audit. Details privacy-safe (only `employer_id`/`is_active`/`soft_toggle`/`internal_only`).
+
+### Staff flow
+
+```text
+NOT TESTABLE — NO ACTIVE STAFF FIXTURE
+```
+Staging user baseline: 1 active user, 1 active Admin, 0 active Staff. Static repository contract only: active Staff may create/edit establishments under the current role-not-null save contract; active toggle is Admin-only (frontend + server RPC). Runtime Staff acceptance remains pending — do not record as PASS or FAIL. (No Staff account was created in the documentation stage.)
+
+### Gaps
+
+- Employer full CRUD acceptance — pending.
+- Staff runtime acceptance — pending (needs active Staff fixture).
+- Establishment↔case binding — not implemented (`cases.establishment_id` absent).
+- Establishment-owned document linking — unsupported/deferred (`owner_link_not_supported`).
+- Migration-history registration — UNVERIFIED (function deployed via SQL Editor; no manual history row).
+- Production testing — not started.
 
 ## 9. Phase 1 regression plan
 

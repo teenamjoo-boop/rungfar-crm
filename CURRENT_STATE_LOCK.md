@@ -12,9 +12,9 @@ REPO: D:\dev\claude
 GIT BASH: /d/dev/claude
 BRANCH: feature-attendance
 CURRENT LIVE HEAD: read from Git every session (`git rev-parse HEAD`) — not frozen in this file
-LAST VERIFIED SNAPSHOT: 2c30070 on 2026-07-23 (local = origin/feature-attendance; 0 ahead / 0 behind; working tree clean)
-STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit
-WORKING TREE (at snapshot): clean — re-verify live before any write
+LAST COMMITTED CHECKPOINT: 80dcafe (local = origin/feature-attendance; 0 ahead / 0 behind at last check)
+STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 2c30070 = post-closeout metadata sync; 80dcafe = recovery-inventory doc reconciliation
+WORKING TREE (F2/58L-CLOSE-1, uncommitted by intent): modified rungfar_crm_17.html (establishment toggle in-flight guard); new migration supabase/migrations/20260813_establishment_set_active_same_state_noop.sql; this Stage's documentation edits; local-only patched rungfar_crm_17.STAGING.local.html. No commit/push yet.
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
@@ -31,7 +31,15 @@ F1 PAYMENT FIXTURE CLEANUP: complete
 OPTIONAL SOFT-DEACTIVATION: not performed
 PRODUCTION SMOKE: not started
 PAYMENT-SPECIFIC STAGE: CLOSED on Staging
-58L ESTABLISHMENT RECONCILIATION: not started
+CANONICAL ESTABLISHMENT TABLE: public.establishments (deployed on Staging) — NOT public.employer_establishments
+F2/58L ESTABLISHMENT: PARTIAL — Establishment Admin runtime acceptance PASS; duplicate-toggle fix PASS; same-state backend no-op PASS; fixture cleanup PASS
+F2/58L STAFF RUNTIME: NOT TESTABLE — no active Staff fixture (0 active staff on Staging)
+F2/58L EMPLOYER FULL CRUD: pending (separate controlled stage)
+ESTABLISHMENT↔CASE BINDING: not implemented (cases.establishment_id absent)
+ESTABLISHMENT-OWNED DOCUMENT LINK: unsupported/deferred (owner_link_not_supported)
+MIGRATION 20260813 (same-state no-op): deployed via Staging SQL Editor ("Success. No rows returned") — migration-history registration UNVERIFIED
+IDENT-1 IDENTITY/SESSION: design complete, implementation PARKED (not started)
+CURRENT STAGE: F2/58L-CLOSE-1 documentation update (uncommitted)
 ```
 
 Repository HEAD/snapshot semantics:
@@ -158,7 +166,7 @@ Constraints recorded (not defects fixed in this stage):
 - T7 Unrelated document: UI visibility guard runtime-observed; backend `document_not_allowed` statically verified. No deliberate negative write probe was required.
 - T8 Inactive/non-member worker: guard and UI-unreachability statically verified. Attempted SQL connector probe was blocked at permission layer (`42501`) before the business function; no mutation occurred. This is not counted as a live business-guard PASS.
 - T12 Payment proof: backend contract exists, checklist UI is guidance-only, and no `case_payments` fixture exists. Classified code-supported/UI-unreachable + fixture-not-ready.
-- T13 Establishment: checklist path intentionally unsupported (`owner_link_not_supported`); static verification only; separate 58L stage required. **Correction (2026-07-24):** the repository migration `20260804_employer_establishments.sql` defines the table as `public.establishments` (the filename differs from the table name), with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal. The earlier "table absent" reading came from searching the wrong name `public.employer_establishments`; live Staging deployment of `public.establishments` was **not re-verified** and must not be assumed present or absent until a read-only 58L pre-check.
+- T13 Establishment: checklist path intentionally unsupported (`owner_link_not_supported`); static verification only; separate 58L stage required. **Correction (2026-07-24):** the repository migration `20260804_employer_establishments.sql` defines the table as `public.establishments` (the filename differs from the table name), with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal. The earlier "table absent" reading came from searching the wrong name `public.employer_establishments`; live Staging deployment of `public.establishments` was **not re-verified** and must not be assumed present or absent until a read-only 58L pre-check. **Update (2026-07-25):** This earlier deployment uncertainty is superseded by the verified F2/58L Staging review. `public.establishments` is the deployed canonical table and Establishment Admin Runtime Acceptance is PASS. F2/58L remains PARTIAL (Staff Runtime NOT TESTABLE, Employer CRUD pending); see section 5b for the current result and remaining gaps.
 
 ## 5. Stage 58K-C cleanup result (historical)
 
@@ -170,6 +178,22 @@ Mandatory document cleanup completed successfully in Staging SQL Editor:
 - Customers, employers, cases, case workers, checklist items, and audit logs were not changed.
 - Audit count stayed 131 because raw document deletion has no cleanup audit trigger and audit retention was intentional.
 - Optional soft-deactivation of synthetic customers/employer was deliberately not performed.
+
+## 5b. F2/58L Establishment runtime acceptance (current)
+
+Reconciled from operator-assisted Staging runtime + SELECT-only verification (evidence supplied by Project Control on 2026-07-24/25). Canonical table is `public.establishments` (deployed on Staging); `public.employer_establishments` is **not** a deployed table (it is only the migration filename).
+
+**Establishment Admin Runtime Acceptance — PASS.** Employer fixture detail loaded (workers + establishments rendered); establishment create succeeded (count 0→1, `employer_id=2`, `is_active=true`, privacy-safe create audit); refresh preserved it; admin edit of `branch_name` changed only the intended field (privacy-safe update audit); admin inactive toggle + reload + active restore succeeded.
+
+**Duplicate-toggle incident (historical) + fix — PASS.** Before the fix, one intended inactive→active flow produced two confirmation dialogs and two `establishment.set_active` audit rows (`is_active=true`); final state was correct. Confirmed defects: frontend lacked duplicate/in-flight protection; backend was not audit-idempotent for same-state. The exact second-invocation trigger was **not fully reproduced** (do not claim a fully proven event-binding root cause). Fix: frontend per-establishment in-flight guard (acquired before `guardSession()`, before first await, before `confirm()`) + button disable; backend migration `20260813` makes same-state a no-op (no UPDATE, no `updated_at`/`updated_by_code` change, no audit) while a real change performs exactly one UPDATE + one audit.
+
+**Post-fix Admin regression — PASS.** active→inactive and inactive→active each: one action, one dialog, one state change, one audit. Same-state active→active direct RPC: returned `id=1, is_active=true`, `updated_at`/`updated_by_code` unchanged, `set_active` audit count unchanged — PASS.
+
+**Fixture cleanup — PASS.** Synthetic establishment `ZZ_TEST_58L_EST_20260724_A` (id=1) deleted; establishments under employer id=2 = 0; employer fixture id=2 and worker fixture retained; audit rows retained append-only. Final audit for entity `establishment/1`: create 1, update 1, set_active 5 (original inactive + two pre-fix duplicates + one inactive + one active after fix), total 7; the same-state no-op created no audit. Audit details privacy-safe (only `employer_id`/`is_active`/`soft_toggle`/`internal_only`).
+
+**Migration 20260813** was applied once via the confirmed Staging SQL Editor ("Success. No rows returned"); function deployment is proven but **migration-history registration is UNVERIFIED** (run through SQL Editor, no manual history row added) — an unresolved traceability point, not a failed migration.
+
+**Still pending / not implemented:** Staff runtime acceptance (NOT TESTABLE — 0 active staff; static contract allows active staff to create/edit under role-not-null, toggle is Admin-only); Employer full CRUD acceptance; establishment↔case binding (`cases.establishment_id` absent); establishment-owned document linking (`owner_link_not_supported`, deferred). Production: not started.
 
 ## 6. Known product gaps carried forward
 
@@ -183,7 +207,7 @@ F1 CLOSED 2026-07-14 — payment-specific fixture/UI stage completed on Staging.
 F1a payment create has no demonstrated idempotency protection (open).
 F1b no proof-detach workflow exists or was tested (open).
 F1c payment audit remains best-effort (open).
-F2/58L establishment reconciliation — NOT STARTED. Repository foundation exists (table `public.establishments` per migration 20260804, plus RPCs and UI); live Staging deployment not re-verified. Migration evidence does not prove deployment.
+F2/58L establishment reconciliation — PARTIAL (see section 5b). Canonical table `public.establishments` is deployed on Staging; Establishment Admin runtime acceptance PASS. Staff runtime NOT TESTABLE (no active staff); Employer full CRUD pending; establishment↔case binding and establishment-owned document link remain not implemented/unsupported.
 ```
 
 Do not fix these implicitly during another stage.
@@ -198,14 +222,19 @@ Do not fix these implicitly during another stage.
 
 ## 8. Next work — not yet approved
 
-No stage is automatically authorized by this lock. Candidate next stages, in recommended order, are:
+No stage is automatically authorized by this lock. The immediate next action is:
 
-1. **F2 / Stage 58L Establishment Schema Reconciliation — read-only investigation phase.** This is the next candidate. It requires separate owner approval and **has not started**.
-2. Continue Phase 1 readiness backlog: mobile, import/export stress, security/IP/device, delete-approval acceptance, manuals, production readiness.
-3. Decide the open F1 follow-ups: payment create idempotency, and whether a proof-detach workflow is required.
-4. Continue Phase 2 product stages after foundations are stable.
+1. **F2/58L-CLOSE-2 — final exact diff / test-evidence review and commit preparation** for the current uncommitted working tree (frontend toggle guard, migration 20260813, and this documentation update). This is a review/commit-prep action, not a new implementation stage.
 
-The F1 Payment-specific Stage is closed and must not be re-offered as an unstarted choice.
+Subsequent candidate stages, requiring separate owner approval:
+
+2. F2/58L Staff runtime acceptance — requires creating/enabling an active Staff fixture first (out of scope here).
+3. F2/58L Employer full CRUD acceptance — separate controlled stage.
+4. Establishment↔case binding model, and the establishment-owned document-link decision — separate product stages.
+5. Continue Phase 1 readiness backlog: mobile, import/export stress, security/IP/device, delete-approval acceptance, manuals, production readiness.
+6. Decide the open F1 follow-ups (payment create idempotency, proof-detach) — F1 itself is closed and must not be re-offered as unstarted.
+
+IDENT-1 identity/session hardening is a **parked design backlog**, not the active next stage.
 
 The user must select and approve the next stage.
 

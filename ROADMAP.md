@@ -32,8 +32,8 @@ F1 payment-specific test stage: ✅ closed on Staging 2026-07-14
 F1 fixture cleanup / baseline restore: ✅ closed
 F1 documentation closeout: ✅ committed and pushed 2026-07-22 (bf40820)
 Production smoke/deploy: ⏸ not started
-Establishment foundation (public.establishments + RPC + UI): 🟢 exists in repo; Staging deployment not re-verified
-Establishment reconciliation (58L): 🟡 next candidate; NOT STARTED
+Establishment foundation (public.establishments + RPC + UI): ✅ deployed on Staging (canonical table public.establishments)
+F2/58L Establishment: 🟡 PARTIAL — Admin runtime acceptance ✅ PASS; duplicate-toggle fix ✅ PASS; same-state backend no-op (migration 20260813) ✅ PASS; fixture cleanup ✅ PASS; Staff runtime ⚪ NOT TESTABLE (no active staff); Employer full CRUD 🟡 pending
 Appointments / tracking / case-status-history / contact-timeline: 🟢 repo foundation; ⚪ runtime acceptance not found
 ai_autopost_system.html: ⚪ standalone tracked file; scope/ownership/testing unconfirmed; not yet classified as Core CRM — final classification pending owner decision
 Phase 1 production readiness: 🟡 incomplete
@@ -270,22 +270,27 @@ Open follow-ups (not blocking; require a product/technical decision before any d
 
 Full record: `TEST_PLAN.md` section 7.
 
-### 2.7 F2 / Stage 58L Establishment Schema Reconciliation — 🟡 next technical candidate
+### 2.7 F2 / Stage 58L Establishment — 🟡 PARTIAL (Admin acceptance + toggle hardening complete on Staging)
 
-Problem:
+Canonical fact: the deployed table is `public.establishments` (migration filename `20260804_employer_establishments.sql` differs from the table name). It exists on Staging with RPCs `app_save_establishment`/`app_set_establishment_active`/`app_get_employer_detail`/`app_list_employers_phase2` and an Establishment UI inside Employer detail. `public.employer_establishments` is **not** a deployed table.
 
-- Repository foundation exists: migration `20260804_employer_establishments.sql` defines table `public.establishments` (the filename differs from the table name), with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal.
-- Repository migration evidence does **not** prove the table is deployed on Staging; live Staging schema was not re-verified. Do not assume `public.establishments` is absent (an earlier check searched the wrong name `public.employer_establishments`) or that it is deployed.
-- Checklist establishment document selector is intentionally read-only/unsupported until a dedicated approved decision.
+**Completed on Staging:**
 
-Planned steps:
+- Canonical table/RPC reconciliation (public.establishments confirmed deployed).
+- Establishment Admin runtime acceptance: create → SELECT verify → audit/privacy → reload → edit → update audit → inactive toggle → active restore — PASS.
+- Frontend duplicate-toggle guard (per-establishment in-flight guard + button disable) — PASS.
+- Backend same-state no-op (migration `20260813_establishment_set_active_same_state_noop.sql`, applied once via Staging SQL Editor) — PASS.
+- Post-fix Admin runtime regression (active↔inactive single-audit; same-state active→active no-op audit-free) — PASS.
+- Synthetic fixture cleanup (baseline establishments under employer id=2 back to 0; audit retained) — PASS.
 
-1. Compare migration history, Staging schema, and Production schema safely.
-2. Determine why RPCs exist without the table.
-3. Decide whether to apply/rewrite/defer the establishment migration.
-4. Model employer ↔ establishment ↔ case relationships.
-5. Add CRUD/status tests in a dedicated stage.
-6. Only later decide whether establishment-owned document linking is supported.
+**Remaining:**
+
+1. Active Staff test fixture + Staff runtime permission acceptance (currently NOT TESTABLE — 0 active staff; static contract: active staff may create/edit under role-not-null, toggle is Admin-only).
+2. Employer full CRUD acceptance (create/update/permission-matrix/audit) — separate controlled stage.
+3. Migration-history registration decision/evidence (deployment proven; history registration UNVERIFIED — SQL Editor run, no manual history row).
+4. Establishment↔case model (`cases.establishment_id` absent → binding not implemented).
+5. Establishment-owned document-link decision/stage (`owner_link_not_supported`, deferred).
+6. Production plan and approval (not started).
 
 ### 2.8 Submission tracking and after-submission records — 🟢 repository foundation / ⚪ runtime acceptance not found
 
@@ -345,16 +350,17 @@ Planned after core readiness:
 ## 9. Recommended execution order from this handoff
 
 ```text
-0. F1 documentation closeout — done (bf40820, pushed 2026-07-22)
-1. F2/58L read-only investigation  ← next candidate; NOT STARTED; needs separate owner approval
-2. Close the selected stage fully (pre-check → implementation/test → cleanup → docs → commit)
-3. Complete Phase 1 mobile/security/import-export/production-readiness gaps
-4. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking
-5. Run 2–3-user pilot
-6. Fix pilot findings
-7. Roll out to 12 users
-8. Continue Phase 2 checklist/profile/case-template expansion
-9. Add document generation/OCR/portal later
+0. F1 documentation closeout — done (bf40820); recovery-inventory doc reconciliation — done (80dcafe)
+1. F2/58L Establishment — PARTIAL: Admin runtime acceptance + duplicate-toggle hardening + same-state no-op + cleanup done on Staging (uncommitted)
+2. F2/58L-CLOSE-2 — final exact diff / evidence review and commit preparation  ← immediate next action (review/commit-prep, not new implementation)
+3. F2/58L remaining: Staff runtime (needs active staff fixture), Employer full CRUD, migration-history decision, establishment↔case + establishment-owned document decisions
+4. Complete Phase 1 mobile/security/import-export/production-readiness gaps
+5. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking
+6. Run 2–3-user pilot → fix findings → roll out to 12 users
+7. Continue Phase 2 checklist/profile/case-template expansion
+8. Add document generation/OCR/portal later
+
+IDENT-1 identity/session hardening remains a parked design backlog (not the active next stage).
 ```
 
 F1 is closed and must no longer be offered as an unstarted choice.

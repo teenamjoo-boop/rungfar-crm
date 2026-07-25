@@ -68,13 +68,13 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | --- | --- |
 | Repo | D:\dev\claude / Git Bash: /d/dev/claude |
 | Branch | feature-attendance |
-| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; snapshot ล่าสุดที่ยืนยัน = 2c30070 (2026-07-23) |
+| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; last committed checkpoint = 80dcafe; working tree ปัจจุบันมีงาน F2/58L ที่ยังไม่ commit (frontend toggle guard + migration 20260813 + doc update) |
 | Working tree | clean ณ snapshot 2c30070; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
 | Frontend หลัก | rungfar_crm_17.html |
 | Local Staging HTML | rungfar_crm_17.STAGING.local.html |
 | Staging Project Ref | bzwtknqvhvdmatangzqf |
 | Production Project Ref | magwqolbjmwymqxelizl — ห้ามแตะจนกว่าจะอนุมัติ |
-| Stage ล่าสุด | F1 Payment-specific Stage CLOSED (Staging) + fixture cleanup COMPLETE |
+| Stage ล่าสุด | F2/58L Establishment PARTIAL — Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS (Staging, ยังไม่ commit); ก่อนหน้า F1 CLOSED |
 | สถานะ Rollout | ยังไม่ rollout 12 คน; ต้องจบ core readiness แล้วทดสอบ 2–3 คนก่อน |
 
 ## ข้อมูลธุรกิจและเป้าหมายผลิตภัณฑ์
@@ -147,7 +147,7 @@ Backend ใช้ Supabase Database, RPC/Functions, Storage และ audit patt
 | case_documents | ลิงก์เอกสารกับ checklist item | เก็บ linked_owner_type, linked_owner_id, linked_case_worker_id |
 | audit_logs | ประวัติการกระทำ | append-only/retention; ห้ามลบระหว่าง cleanup |
 | case_payments | ข้อมูล payment/proof | ทดสอบ runtime ครบใน F1 (2026-07-14); proof ผูกผ่าน `case_payments.proof_document_id` ไม่ผ่าน case_documents |
-| establishments (ไฟล์ migration ชื่อ employer_establishments) | สถานประกอบการใต้นายจ้าง | Repo foundation มีจริง: ตาราง `public.establishments` (migration 20260804 — ชื่อไฟล์ต่างจากชื่อตาราง) + RPC `app_save_establishment`/`app_set_establishment_active` + modal frontend. Migration ไม่พิสูจน์ว่า deploy แล้ว; Staging schema ยังไม่ re-verify — ต้อง Stage 58L read-only ก่อน |
+| establishments (ไฟล์ migration ชื่อ employer_establishments) | สถานประกอบการใต้นายจ้าง | **Canonical table `public.establishments` — deployed บน Staging** (ชื่อไฟล์ migration 20260804 ต่างจากชื่อตาราง; `public.employer_establishments` ไม่ใช่ตารางที่ deploy) + RPC `app_save_establishment`/`app_set_establishment_active`/`app_get_employer_detail`/`app_list_employers_phase2` + modal ใน Employer detail. Establishment **Admin runtime acceptance = PASS** (F2/58L PARTIAL) |
 | case_appointments | นัดหมายของเคส | Repo foundation: RPC `app_save_case_appointment`/`app_set_case_appointment_status`/`app_case_appointment_summary` + frontend path; ยังไม่พบหลักฐาน runtime acceptance; DB ไม่ตรวจในรอบนี้ |
 | case_tracking_logs | ติดตามราชการ/e-WorkPermit (เลขคำขอ/สถานะยื่น) | Repo foundation: RPC `app_add_case_tracking_log`/`app_list_case_tracking_logs` + frontend; ยังไม่พบ runtime acceptance |
 | case_status_logs | ประวัติสถานะเคส | Repo foundation: `app_change_case_status` เขียน log; ยังไม่พบ runtime acceptance |
@@ -373,7 +373,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 
 | กลุ่ม | ค่าล่าสุด |
 | --- | --- |
-| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; snapshot ยืนยันล่าสุด 2c30070 (2026-07-23) |
+| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; last committed checkpoint 80dcafe; working tree มีงาน F2/58L ยังไม่ commit |
 | Git | working tree clean ณ snapshot; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
@@ -387,7 +387,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 | Checklist | 17 items; missing/received/approved=13/4/0 |
 | Key items | item5 missing, item6 missing, item13 payment_receipt missing, item17 submit_result_note received with 0 active links |
 | Synthetic entities | customers 1–4 active; employer id=2 active; disposable case id=2 cancelled |
-| Establishment | Repo foundation มี: ตาราง `public.establishments` (migration 20260804) + RPC + UI; live Staging deployment ยังไม่ re-verify (migration ≠ deployed) |
+| Establishment | ตาราง `public.establishments` deployed บน Staging + RPC + UI; Admin runtime acceptance PASS; toggle duplicate-fix + same-state no-op (migration 20260813) PASS; fixture cleanup PASS (baseline 0); Staff runtime NOT TESTABLE; migration-history UNVERIFIED |
 
 > **หมายเหตุ:** ค่าชุดนี้เป็น Staging fixture snapshot หลัง cleanup ไม่ใช่ข้อมูล Production และต้องยืนยันใหม่ก่อน Stage ถัดไป
 
@@ -404,7 +404,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 | F1a | payment create ยังไม่มี idempotency protection ที่พิสูจน์ได้ | กดซ้ำอาจสร้างรายการซ้ำ | ตัดสิน product/technical แล้วทำ Stage แยก |
 | F1b | ยังไม่มี proof-detach workflow และยังไม่ได้ทดสอบ | ถอดหลักฐานออกไม่ได้ผ่าน UI ปัจจุบัน | ตัดสินว่าจำเป็นหรือไม่ก่อนออกแบบ |
 | F1c | payment audit เป็น best-effort | audit อาจขาดได้โดยไม่ทำให้ธุรกรรมล้ม | review ร่วมกับ G4 |
-| F2 / 58L | ยังไม่เริ่ม; repo มีตาราง `public.establishments` + RPC + UI แต่ deployment บน Staging ยังไม่ re-verify (ชื่อไฟล์ migration = employer_establishments ต่างจากชื่อตาราง) | สมมติผิดว่าตาราง absent/deployed อาจนำไปสู่ schema ผิด | Stage 58L read-only reconciliation ก่อน mutation |
+| F2 / 58L | PARTIAL; `public.establishments` deployed + Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS; ยังเหลือ Staff runtime (ไม่มี active staff), Employer full CRUD, est.↔case, est.-owned document, migration-history registration | สมมติผิดว่าเสร็จทั้งหมดจะข้าม gap ที่ยังค้าง | ทำ F2/58L-CLOSE-2 (diff/commit prep) แล้วเปิด stage ย่อยที่เหลือแยกอนุมัติ |
 | N1 | Attendance notification summary เคยแสดง 0 จนเข้า subpage | ข้อมูลแจ้งเตือนอาจ stale | regression test notification aggregation |
 | M1 | Mobile viewport/scroll บางหน้า | ผู้ใช้มือถือมองไม่เห็นส่วนล่าง | ทดสอบหลายขนาดและแก้เฉพาะจุด |
 | S1 | Security/device/IP/delete approval ยังไม่ผ่าน rollout acceptance | เสี่ยง password sharing/ลบข้อมูลผิด | จบ production-readiness gate ก่อนผู้ใช้ 12 คน |
@@ -474,7 +474,7 @@ Roadmap ต้องแยก “Business Phase” ออกจาก “Technic
 ### ลำดับงานแนะนำหลัง Handoff
 
 - Step A: ✅ เสร็จแล้ว — สร้างเอกสาร Source of Truth ครบชุดและ commit/push แล้ว (ล่าสุด bf40820 บันทึกผลปิด F1)
-- Step B: F1 Payment Stage ปิดแล้ว — candidate ถัดไปคือ **F2/58L Establishment Reconciliation ช่วงตรวจสอบแบบอ่านอย่างเดียว** ซึ่ง **ยังไม่เริ่ม** และ **ต้องได้รับอนุมัติจากเจ้าของระบบแยกต่างหากก่อน**
+- Step B: F2/58L Establishment = **PARTIAL** — Admin runtime acceptance + duplicate-toggle fix + same-state no-op + fixture cleanup ผ่านบน Staging (ยังไม่ commit) ถัดไปคือ **F2/58L-CLOSE-2** (final exact diff/evidence review + commit prep) แล้วเปิด stage ย่อยที่เหลือ (Staff runtime, Employer full CRUD, est.↔case, est.-owned document, migration-history) แยกอนุมัติ; IDENT-1 identity/session เป็น **parked design backlog**
 - Step C: กลับมาปิด Phase 1 production-readiness backlog: delete/security/audit/alerts/mobile/import-export/manual
 - Step D: pilot 2–3 คน แล้วเก็บ bug/feedback
 - Step E: แก้และ rollout 12 คน
@@ -641,7 +641,8 @@ Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว �
 | F1 Payment-specific Stage | COMPLETE — closed on Staging 2026-07-14 |
 | F1 documentation closeout | COMPLETE — commit bf40820, pushed 2026-07-22 |
 | Staging cleanup | COMPLETE (58K-C และ F1) |
-| F2 / Stage 58L | NOT STARTED — candidate ถัดไป (ช่วงตรวจสอบอ่านอย่างเดียว) ต้องอนุมัติแยก |
+| F2 / Stage 58L | **PARTIAL** — Establishment Admin runtime acceptance PASS + duplicate-toggle fix PASS + same-state no-op PASS + fixture cleanup PASS บน Staging; Staff runtime NOT TESTABLE (ไม่มี active staff); Employer full CRUD pending; est.↔case + est.-owned document ยังไม่ทำ/unsupported; migration-history UNVERIFIED (ดู section "สถานะ F2/58L") |
+| IDENT-1 identity/session | DESIGN COMPLETE — implementation PARKED (ไม่ใช่ Stage ถัดไป) |
 | Production Smoke | NOT STARTED |
-| Next execution stage | NOT SELECTED — ต้องให้ผู้ใช้เลือก (F1 ไม่ใช่ตัวเลือกอีกต่อไป) |
+| Next execution stage | F2/58L-CLOSE-2 — final exact diff/evidence review + commit preparation (working tree ปัจจุบันยังไม่ commit) |
 | New chat migration | READY AFTER FILE UPLOAD / PROJECT SETUP |

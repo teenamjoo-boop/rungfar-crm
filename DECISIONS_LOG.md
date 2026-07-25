@@ -399,6 +399,8 @@
 
 **Impact:** Do not state the table is absent based on the wrong name, and do not state it is deployed. Repository migration evidence does not prove live Staging deployment; live Staging schema was not re-verified. F2/58L remains not started and must reconcile repository definitions against live Staging read-only before any schema change. The unsupported establishment-owned checklist-link behavior (`owner_link_not_supported`) is preserved until a dedicated approved decision.
 
+**Update (2026-07-25):** The stated F2/58L pre-check and reconciliation condition has now been satisfied, followed by Establishment Admin Runtime Acceptance on Staging. `public.establishments` is confirmed as the deployed canonical table. Current status is **F2/58L PARTIAL**; Staff Runtime and Employer CRUD remain pending. See the 2026-07-25 decisions for the canonical current status.
+
 **Reopen when:** A read-only 58L pre-check establishes the live Staging schema.
 
 ---
@@ -424,6 +426,66 @@
 **Impact:** Do not add a seventh Source-of-Truth file. `ai_autopost_system.html` is recorded as an unresolved inventory item: a standalone tracked repository file that is not currently classified as Core CRM, with its operational use, ownership, testing status, and future scope unconfirmed. Its final classification remains pending the owner's decision, and it is not currently an approved Core CRM product.
 
 **Reopen when:** The owner explicitly approves a new document or a classification for `ai_autopost_system.html`.
+
+---
+
+## 2026-07-25 — Canonical Establishment table is public.establishments (F2/58L)
+
+**Decision:** `public.establishments` is the canonical current Establishment table, confirmed deployed on Staging. `public.employer_establishments` is **not** the deployed canonical table (it is only the migration filename `20260804_employer_establishments.sql`).
+
+**Reason:** Operator-assisted Staging runtime + SELECT-only verification confirmed the deployed table, RPCs, and UI. An earlier "table absent" reading came from searching the wrong name.
+
+**Impact:** Future code/docs/tests must reference `public.establishments` unless a separately approved migration changes the model. Supersedes the earlier "table absent / deployment not re-verified" wording.
+
+---
+
+## 2026-07-25 — Establishment active-toggle duplicate defense at both layers (F2/58L)
+
+**Decision:** Protect the Establishment active toggle at both layers: frontend per-establishment in-flight guard + button disable (guard acquired before `guardSession()`, before the first await, and before `confirm()`); backend `app_set_establishment_active` same-state no-op (migration `20260813`) that performs no UPDATE, no `updated_at`/`updated_by_code` change, and no audit when requested state equals current state, while a real change performs exactly one UPDATE and one audit.
+
+**Reason:** One intended inactive→active flow previously produced two confirmation dialogs and two `set_active` audit rows. Confirmed defects: frontend lacked duplicate/in-flight protection; backend was not audit-idempotent for same-state. The exact second-invocation trigger was **not fully reproduced** — no fully proven event-binding root cause is claimed.
+
+**Impact:** Real state changes create exactly one audit; same-state calls return success without audit noise. Backend defense is defense-in-depth and does not replace the frontend guard. Admin-only toggle and create/edit behavior are unchanged.
+
+---
+
+## 2026-07-25 — F2/58L Establishment Admin acceptance PASS; overall PARTIAL
+
+**Decision:** Establishment Admin Runtime Acceptance is **PASS** on Staging (create/edit/reload/toggle + audit/privacy + fixture cleanup, and post-fix regression + same-state no-op). F2/58L **overall remains PARTIAL**.
+
+**Reason:** No active Staff fixture exists (0 active staff → Staff runtime NOT TESTABLE, recorded as neither PASS nor FAIL), and full Employer CRUD acceptance was not completed. Establishment↔case binding is not implemented (`cases.establishment_id` absent) and establishment-owned document linking remains unsupported (`owner_link_not_supported`).
+
+**Impact:** Do not report Employer/Establishment as fully complete or F2/58L as fully closed. Staff runtime and Employer full CRUD require separately approved continuation stages.
+
+---
+
+## 2026-07-25 — Establishment fixture cleanup and audit retention (F2/58L)
+
+**Decision:** The synthetic Establishment fixture (`ZZ_TEST_58L_EST_20260724_A`, id=1) is deleted after testing (establishments under employer id=2 back to 0; employer/worker fixtures retained). Audit remains append-only and retained, including the two historical pre-fix duplicate `set_active` rows.
+
+**Reason:** Marker-scoped cleanup is the safest pattern (consistent with 58K-C/F1); audit is evidence and must not be deleted during routine cleanup.
+
+**Impact:** The two pre-fix duplicate audit rows are retained historical evidence, not an active failure after the fix. Establishment table has no hard-delete RPC (soft active/inactive only), so row removal used an approved marker-scoped delete, not the app UI.
+
+---
+
+## 2026-07-25 — Migration 20260813 deployed via SQL Editor; history registration unverified
+
+**Decision:** Migration `20260813_establishment_set_active_same_state_noop.sql` was applied once through the confirmed Staging SQL Editor ("Success. No rows returned"). Function deployment is proven; **migration-history registration is UNVERIFIED** (run through SQL Editor, no manual `supabase_migrations` row added).
+
+**Reason:** SQL-Editor application does not register migration history automatically, and no manual history row was written.
+
+**Impact:** Record honestly as an unresolved traceability point, not a failed migration. Do not manually write to migration-history tables. Reconcile deployment evidence later; do not convert into a separate migration-history repair stage.
+
+---
+
+## 2026-07-25 — Identity/session hardening remains parked during F2/58L acceptance
+
+**Decision:** System-wide identity/session hardening (IDENT-1, opaque server-side session token) remains a **separate parked design backlog**. It was not required to block controlled operator-assisted Establishment Staging acceptance, and no IDENT-1 implementation occurred.
+
+**Reason:** The frontend-asserted identity model is the same one under which 58K-C and F1 were accepted; a controlled Admin operator-assisted test on Staging does not worsen that systemic risk.
+
+**Impact:** IDENT-1 is not the active next stage. It stays on record as designed-but-parked; opening it is a separate owner decision.
 
 ---
 
