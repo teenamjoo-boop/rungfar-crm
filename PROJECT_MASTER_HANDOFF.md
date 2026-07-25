@@ -68,13 +68,13 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | --- | --- |
 | Repo | D:\dev\claude / Git Bash: /d/dev/claude |
 | Branch | feature-attendance |
-| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; last committed checkpoint = 80dcafe; working tree ปัจจุบันมีงาน F2/58L ที่ยังไม่ commit (frontend toggle guard + migration 20260813 + doc update) |
-| Working tree | clean ณ snapshot 2c30070; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
+| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; verified committed+pushed checkpoint = 81f03b9 "Harden establishment toggle and document 58L acceptance" (local = origin, 0/0, working tree clean ณ การตรวจ post-push) |
+| Working tree | clean at the verified post-push check for checkpoint 81f03b9; local = origin/feature-attendance (0/0) at that check — re-verify live Git before work |
 | Frontend หลัก | rungfar_crm_17.html |
 | Local Staging HTML | rungfar_crm_17.STAGING.local.html |
 | Staging Project Ref | bzwtknqvhvdmatangzqf |
 | Production Project Ref | magwqolbjmwymqxelizl — ห้ามแตะจนกว่าจะอนุมัติ |
-| Stage ล่าสุด | F2/58L Establishment PARTIAL — Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS (Staging, ยังไม่ commit); ก่อนหน้า F1 CLOSED |
+| Stage ล่าสุด | F2/58L Establishment PARTIAL — Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS (Staging); committed+pushed 81f03b9; ก่อนหน้า F1 CLOSED |
 | สถานะ Rollout | ยังไม่ rollout 12 คน; ต้องจบ core readiness แล้วทดสอบ 2–3 คนก่อน |
 
 ## ข้อมูลธุรกิจและเป้าหมายผลิตภัณฑ์
@@ -111,7 +111,7 @@ Stage ล่าสุดที่ปิดครบคือ **F1 Payment-specif
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production ref | magwqolbjmwymqxelizl |
 | Current live HEAD | อ่านจาก Git pre-flight เท่านั้น — ไม่ frozen ในเอกสาร |
-| Last verified snapshot | 2c30070 (2026-07-23) — local = origin, 0/0, tree clean |
+| Last verified committed/pushed checkpoint | 81f03b9 (2026-07-25) — local = origin, 0/0, and tree clean at that verified check; re-verify live Git every session |
 | Stage evidence (historical) | e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 54680ec = Stage 58K-C code baseline |
 
 ```text
@@ -373,7 +373,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 
 | กลุ่ม | ค่าล่าสุด |
 | --- | --- |
-| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; last committed checkpoint 80dcafe; working tree มีงาน F2/58L ยังไม่ commit |
+| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; verified committed+pushed checkpoint 81f03b9; working tree clean ณ การตรวจ post-push |
 | Git | working tree clean ณ snapshot; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
@@ -404,7 +404,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 | F1a | payment create ยังไม่มี idempotency protection ที่พิสูจน์ได้ | กดซ้ำอาจสร้างรายการซ้ำ | ตัดสิน product/technical แล้วทำ Stage แยก |
 | F1b | ยังไม่มี proof-detach workflow และยังไม่ได้ทดสอบ | ถอดหลักฐานออกไม่ได้ผ่าน UI ปัจจุบัน | ตัดสินว่าจำเป็นหรือไม่ก่อนออกแบบ |
 | F1c | payment audit เป็น best-effort | audit อาจขาดได้โดยไม่ทำให้ธุรกรรมล้ม | review ร่วมกับ G4 |
-| F2 / 58L | PARTIAL; `public.establishments` deployed + Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS; ยังเหลือ Staff runtime (ไม่มี active staff), Employer full CRUD, est.↔case, est.-owned document, migration-history registration | สมมติผิดว่าเสร็จทั้งหมดจะข้าม gap ที่ยังค้าง | ทำ F2/58L-CLOSE-2 (diff/commit prep) แล้วเปิด stage ย่อยที่เหลือแยกอนุมัติ |
+| F2 / 58L | PARTIAL; `public.establishments` deployed + Admin runtime acceptance PASS + toggle fix/no-op PASS + cleanup PASS; ยังเหลือ Staff runtime (ไม่มี active staff), Employer full CRUD, est.↔case, est.-owned document, migration-history registration | สมมติผิดว่าเสร็จทั้งหมดจะข้าม gap ที่ยังค้าง | F2/58L package committed+pushed (81f03b9); ทำ POST-PUSH-DOC-2 (final doc diff/commit prep) แล้วเปิด stage ย่อยที่เหลือแยกอนุมัติ (business candidate ถัดไป = Employer CRUD) |
 | N1 | Attendance notification summary เคยแสดง 0 จนเข้า subpage | ข้อมูลแจ้งเตือนอาจ stale | regression test notification aggregation |
 | M1 | Mobile viewport/scroll บางหน้า | ผู้ใช้มือถือมองไม่เห็นส่วนล่าง | ทดสอบหลายขนาดและแก้เฉพาะจุด |
 | S1 | Security/device/IP/delete approval ยังไม่ผ่าน rollout acceptance | เสี่ยง password sharing/ลบข้อมูลผิด | จบ production-readiness gate ก่อนผู้ใช้ 12 คน |
@@ -474,7 +474,7 @@ Roadmap ต้องแยก “Business Phase” ออกจาก “Technic
 ### ลำดับงานแนะนำหลัง Handoff
 
 - Step A: ✅ เสร็จแล้ว — สร้างเอกสาร Source of Truth ครบชุดและ commit/push แล้ว (ล่าสุด bf40820 บันทึกผลปิด F1)
-- Step B: F2/58L Establishment = **PARTIAL** — Admin runtime acceptance + duplicate-toggle fix + same-state no-op + fixture cleanup ผ่านบน Staging (ยังไม่ commit) ถัดไปคือ **F2/58L-CLOSE-2** (final exact diff/evidence review + commit prep) แล้วเปิด stage ย่อยที่เหลือ (Staff runtime, Employer full CRUD, est.↔case, est.-owned document, migration-history) แยกอนุมัติ; IDENT-1 identity/session เป็น **parked design backlog**
+- Step B: F2/58L Establishment = **PARTIAL** — Admin runtime acceptance + duplicate-toggle fix + same-state no-op + fixture cleanup ผ่านบน Staging และ **committed+pushed แล้ว (81f03b9)** immediate control action ถัดไปคือ **POST-PUSH-DOC-2** (final exact documentation diff + commit prep) จากนั้น business candidate ถัดไปคือ **Employer CRUD Runtime Acceptance** แล้วเปิด stage ย่อยที่เหลือ (Staff runtime, est.↔case, est.-owned document, migration-history) แยกอนุมัติ; IDENT-1 identity/session เป็น **parked design backlog**
 - Step C: กลับมาปิด Phase 1 production-readiness backlog: delete/security/audit/alerts/mobile/import-export/manual
 - Step D: pilot 2–3 คน แล้วเก็บ bug/feedback
 - Step E: แก้และ rollout 12 คน
@@ -644,5 +644,5 @@ Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว �
 | F2 / Stage 58L | **PARTIAL** — Establishment Admin runtime acceptance PASS + duplicate-toggle fix PASS + same-state no-op PASS + fixture cleanup PASS บน Staging; Staff runtime NOT TESTABLE (ไม่มี active staff); Employer full CRUD pending; est.↔case + est.-owned document ยังไม่ทำ/unsupported; migration-history UNVERIFIED (ดู section "สถานะ F2/58L") |
 | IDENT-1 identity/session | DESIGN COMPLETE — implementation PARKED (ไม่ใช่ Stage ถัดไป) |
 | Production Smoke | NOT STARTED |
-| Next execution stage | F2/58L-CLOSE-2 — final exact diff/evidence review + commit preparation (working tree ปัจจุบันยังไม่ commit) |
+| Next execution stage | POST-PUSH-DOC-2 — final exact documentation diff + commit preparation (F2/58L package already committed+pushed 81f03b9); business candidate ถัดไป = Employer CRUD Runtime Acceptance |
 | New chat migration | READY AFTER FILE UPLOAD / PROJECT SETUP |

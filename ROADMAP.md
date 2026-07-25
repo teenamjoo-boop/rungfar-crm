@@ -351,14 +351,15 @@ Planned after core readiness:
 
 ```text
 0. F1 documentation closeout — done (bf40820); recovery-inventory doc reconciliation — done (80dcafe)
-1. F2/58L Establishment — PARTIAL: Admin runtime acceptance + duplicate-toggle hardening + same-state no-op + cleanup done on Staging (uncommitted)
-2. F2/58L-CLOSE-2 — final exact diff / evidence review and commit preparation  ← immediate next action (review/commit-prep, not new implementation)
-3. F2/58L remaining: Staff runtime (needs active staff fixture), Employer full CRUD, migration-history decision, establishment↔case + establishment-owned document decisions
-4. Complete Phase 1 mobile/security/import-export/production-readiness gaps
-5. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking
-6. Run 2–3-user pilot → fix findings → roll out to 12 users
-7. Continue Phase 2 checklist/profile/case-template expansion
-8. Add document generation/OCR/portal later
+1. F2/58L Establishment — PARTIAL: Admin runtime acceptance + duplicate-toggle hardening + same-state no-op + cleanup done on Staging — **committed + pushed (81f03b9)**
+2. POST-PUSH-DOC-2 — final exact documentation diff and commit preparation  ← immediate control action (review/commit-prep of the post-push documentation reconciliation, not new implementation)
+3. Employer CRUD Runtime Acceptance — next business candidate after the documentation checkpoint (not yet approved/started)
+4. F2/58L remaining: Staff runtime (needs active staff fixture), migration-history decision, establishment↔case + establishment-owned document decisions
+5. Complete Phase 1 mobile/security/import-export/production-readiness gaps
+6. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking
+7. Run 2–3-user pilot → fix findings → roll out to 12 users
+8. Continue Phase 2 checklist/profile/case-template expansion
+9. Add document generation/OCR/portal later
 
 IDENT-1 identity/session hardening remains a parked design backlog (not the active next stage).
 ```

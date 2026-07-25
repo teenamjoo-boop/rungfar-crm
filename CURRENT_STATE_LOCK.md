@@ -12,9 +12,9 @@ REPO: D:\dev\claude
 GIT BASH: /d/dev/claude
 BRANCH: feature-attendance
 CURRENT LIVE HEAD: read from Git every session (`git rev-parse HEAD`) — not frozen in this file
-LAST COMMITTED CHECKPOINT: 80dcafe (local = origin/feature-attendance; 0 ahead / 0 behind at last check)
-STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 2c30070 = post-closeout metadata sync; 80dcafe = recovery-inventory doc reconciliation
-WORKING TREE (F2/58L-CLOSE-1, uncommitted by intent): modified rungfar_crm_17.html (establishment toggle in-flight guard); new migration supabase/migrations/20260813_establishment_set_active_same_state_noop.sql; this Stage's documentation edits; local-only patched rungfar_crm_17.STAGING.local.html. No commit/push yet.
+LAST COMMITTED CHECKPOINT: 81f03b9 "Harden establishment toggle and document 58L acceptance" (verified committed + pushed; local = origin/feature-attendance; 0 ahead / 0 behind; working tree clean at the verified post-push check). This is a checkpoint fact — read live HEAD from Git every session, do not treat this hash as a permanent current HEAD.
+STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 2c30070 = post-closeout metadata sync; 80dcafe = recovery-inventory doc reconciliation; 81f03b9 = post-F2/58L Establishment Admin checkpoint (frontend toggle guard + migration 20260813 + F2/58L documentation)
+WORKING TREE (at verified post-push check): clean — the F2/58L package (rungfar_crm_17.html toggle guard, migration 20260813, and the F2/58L documentation) was committed and pushed as 81f03b9. The local-only patched rungfar_crm_17.STAGING.local.html remains untracked/excluded. Re-verify live before any write.
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
@@ -39,7 +39,7 @@ ESTABLISHMENT↔CASE BINDING: not implemented (cases.establishment_id absent)
 ESTABLISHMENT-OWNED DOCUMENT LINK: unsupported/deferred (owner_link_not_supported)
 MIGRATION 20260813 (same-state no-op): deployed via Staging SQL Editor ("Success. No rows returned") — migration-history registration UNVERIFIED
 IDENT-1 IDENTITY/SESSION: design complete, implementation PARKED (not started)
-CURRENT STAGE: F2/58L-CLOSE-1 documentation update (uncommitted)
+CURRENT STAGE: POST-PUSH-DOC-1 post-push documentation reconciliation
 ```
 
 Repository HEAD/snapshot semantics:
@@ -224,12 +224,12 @@ Do not fix these implicitly during another stage.
 
 No stage is automatically authorized by this lock. The immediate next action is:
 
-1. **F2/58L-CLOSE-2 — final exact diff / test-evidence review and commit preparation** for the current uncommitted working tree (frontend toggle guard, migration 20260813, and this documentation update). This is a review/commit-prep action, not a new implementation stage.
+1. **POST-PUSH-DOC-2 — final exact documentation diff and commit preparation** for this post-push documentation reconciliation. This is a review/commit-prep action, not a new implementation stage. (The F2/58L frontend/migration/documentation package itself is already committed and pushed as 81f03b9.)
 
 Subsequent candidate stages, requiring separate owner approval:
 
-2. F2/58L Staff runtime acceptance — requires creating/enabling an active Staff fixture first (out of scope here).
-3. F2/58L Employer full CRUD acceptance — separate controlled stage.
+2. **Employer CRUD Runtime Acceptance** — the next business candidate after this documentation checkpoint (not yet approved/started).
+3. F2/58L Staff runtime acceptance — requires creating/enabling an active Staff fixture first (out of scope here).
 4. Establishment↔case binding model, and the establishment-owned document-link decision — separate product stages.
 5. Continue Phase 1 readiness backlog: mobile, import/export stress, security/IP/device, delete-approval acceptance, manuals, production readiness.
 6. Decide the open F1 follow-ups (payment create idempotency, proof-detach) — F1 itself is closed and must not be re-offered as unstarted.
