@@ -49,7 +49,7 @@
 
 | ป้ายสถานะ | ความหมาย |
 | --- | --- |
-| CONFIRMED CURRENT | ตรวจยืนยันจากรายงานล่าสุดในแชทนี้ หลัง Stage 58K-C cleanup |
+| CONFIRMED CURRENT | หลักฐานล่าสุดที่ลงวันที่ไว้ในชุดเอกสาร Source of Truth — ต้องตรวจ Git/DB สดก่อนลงมือทำเสมอ |
 | CONFIRMED HISTORICAL | เคยทำ/เคย commit/push จริง แต่ต้องเช็ก regression ก่อนใช้งานจริง |
 | PARTIAL / NEEDS VERIFY | มีฐานหรือเคยทดสอบบางส่วน แต่ยังไม่ผ่าน production readiness |
 | PLANNED | วิเคราะห์และกำหนดทิศทางแล้ว แต่ยังไม่ถือว่าพัฒนาเสร็จ |
@@ -68,8 +68,8 @@ Stage ควบคุมล่าสุดที่ปิดครบคือ *
 | --- | --- |
 | Repo | D:\dev\claude / Git Bash: /d/dev/claude |
 | Branch | feature-attendance |
-| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; verified committed+pushed checkpoint = fbcf624 "Reconcile post-push project control pointers" (ตรวจสดเมื่อ 2026-07-26: local = origin, 0/0, working tree + index สะอาด, ไม่มีไฟล์ untracked) |
-| Working tree | clean ณ การตรวจสด 2026-07-26 สำหรับ checkpoint fbcf624; local = origin/feature-attendance (0/0) ณ การตรวจนั้น — re-verify live Git ก่อนทำงานทุกครั้ง |
+| HEAD | อ่านสดจาก Git ทุก session (`git rev-parse HEAD`) — ไม่ตรึงค่าในเอกสาร; **LATEST VERIFIED PRE-EDIT COMMITTED CHECKPOINT: 4c8b45e** ตรวจเมื่อ 2026-08-05 ก่อนแก้เอกสารชุด 6 ไฟล์ (local = origin, 0/0, working tree + index สะอาด, ไม่มีไฟล์ untracked) — เป็นหลักฐานย้อนหลังที่ลงวันที่ไว้ ไม่ใช่ค่า live HEAD ถาวร; checkpoint เก่ากว่า (fbcf624, 81f03b9, bf40820) เก็บไว้เป็นหลักฐานประวัติศาสตร์ |
+| Working tree | clean ณ การตรวจ 2026-08-05 ก่อนเริ่มแก้เอกสารชุด 6 ไฟล์ สำหรับ checkpoint 4c8b45e; local = origin/feature-attendance (0/0) ณ การตรวจนั้น — เป็นหลักฐานย้อนหลัง ต้อง re-verify live Git ก่อนทำงานทุกครั้ง |
 | Frontend หลัก | rungfar_crm_17.html |
 | Local Staging HTML | rungfar_crm_17.STAGING.local.html |
 | Staging Project Ref | bzwtknqvhvdmatangzqf |
@@ -111,7 +111,7 @@ Stage ควบคุมล่าสุดที่ปิดครบคือ *
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production ref | magwqolbjmwymqxelizl |
 | Current live HEAD | อ่านจาก Git pre-flight เท่านั้น — ไม่ frozen ในเอกสาร |
-| Last verified committed/pushed checkpoint | fbcf624 (ตรวจสด 2026-07-26) — local = origin, 0/0, tree clean ณ การตรวจนั้น; re-verify live Git every session |
+| Latest verified pre-edit committed checkpoint | 4c8b45e — ตรวจ 2026-08-05 ก่อนแก้เอกสารชุด 6 ไฟล์: local = origin, 0/0, tree clean; หลักฐานย้อนหลังลงวันที่ ไม่ใช่ live HEAD ถาวร; checkpoint เก่ากว่า fbcf624 (2026-07-26) และ 2c30070 (2026-07-23) เก็บเป็นหลักฐานประวัติศาสตร์; re-verify live Git every session |
 | Stage evidence (historical) | e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 54680ec = Stage 58K-C code baseline; 81f03b9 = F2/58L Establishment package |
 
 ```text
@@ -194,8 +194,25 @@ Backend ใช้ Supabase Database, RPC/Functions, Storage และ audit patt
 ### เอกสารจาก LINE และ PDF+Excel Helper
 
 - ระบบ PDF+Excel helper / LINE batch ทำเสร็จและใช้งานจริงได้แล้ว
-- ระบบนี้ถูกกำหนดเป็น FROZEN — ห้ามแตะระหว่างทำงาน Phase 2 หรือ smoke test อื่น
+- ระบบนี้ถูกกำหนดเป็น FROZEN — ห้ามแตะระหว่างทำงาน Phase 2 หรือ smoke test อื่น **และยังคง FROZEN ต่อไป**
 - คำเรียก integration ต้องเป็น LINE Messaging API ไม่ใช่ LINE Notify
+
+#### งานใหม่ที่อนุมัติแล้วเฉพาะระดับการออกแบบ — LINE PDF-to-images dual mode
+
+สถานะ: **DESIGN PASS — ยังไม่เริ่มลงมือทำ และยังไม่อนุมัติให้ลงมือทำ**
+
+- ผู้ใช้ส่งไฟล์ PDF เข้ากลุ่ม LINE แล้วพิมพ์ `จบ` เพื่อรับหน้าเอกสารเป็นรูปภาพ LINE ตามปกติ
+- ใช้ **กลุ่มปฏิบัติงานเดิม** เป็นเป้าหมายที่ต้องการ โดยยังต้องตรวจสอบ router และ environment ในขั้น pre-check แยกต่างหาก
+- **Saving Mode เป็นค่าเริ่มต้น** สำหรับกลุ่มที่ยังไม่ได้ตั้งค่า
+- **Auto Mode ควบคุมโดยสิทธิ์ผู้ดูแลที่เก็บในฐานข้อมูล และผูกกับกลุ่มต้นทางของงานนั้น**
+- ส่งรูปเป็นชุด **ไม่เกิน 5 รูปต่อชุด**
+- **ชุดแรกส่งด้วย Reply**; ชุดที่เหลือใน Auto Mode ส่งด้วย **Push**
+- **หนึ่งกลุ่มมีสายการส่งได้ครั้งละหนึ่งงานเท่านั้น** เพื่อกันรูปจากคนละไฟล์ปนกัน
+- ความไม่แน่นอนของ **Reply กับ Push ใช้วิธีกู้คืนคนละแบบ**
+- เลือกใช้ **converter worker ภายนอกบน Cloud Run** สำหรับการออกแบบ MVP
+- **การส่งข้ามกลุ่มอยู่นอกขอบเขต**
+- การลงมือทำจริงและ Production ถูกกั้นด้วยการอนุมัติแยกต่างหาก
+- ขั้นตอนทางเทคนิคถัดไปหลังปิดงานเอกสารคือ **implementation pre-check** ซึ่งเป็นการตรวจอ่านอย่างเดียว ไม่ใช่การลงมือทำ
 
 ### ระบบตอกบัตร / Attendance
 
@@ -376,8 +393,8 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 
 | กลุ่ม | ค่าล่าสุด |
 | --- | --- |
-| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; verified committed+pushed checkpoint fbcf624 (ตรวจสด 2026-07-26); working tree clean ณ การตรวจนั้น |
-| Git | working tree clean ณ snapshot 2026-07-26; local = origin/feature-attendance (0/0) — re-verify สดก่อนเขียน |
+| Repo / Branch / HEAD | D:\dev\claude \| feature-attendance \| current HEAD อ่านจาก Git; latest verified pre-edit committed checkpoint 4c8b45e (ตรวจ 2026-08-05 ก่อนแก้เอกสารชุด 6 ไฟล์); working tree clean ณ การตรวจนั้น — หลักฐานย้อนหลัง ไม่ใช่ live HEAD ถาวร |
+| Git | working tree clean ณ snapshot 2026-08-05 ก่อนเริ่มแก้เอกสาร; local = origin/feature-attendance (0/0) ณ การตรวจนั้น — re-verify สดก่อนเขียน |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
 | Production | magwqolbjmwymqxelizl — untouched |
@@ -481,8 +498,8 @@ Roadmap ต้องแยก “Business Phase” ออกจาก “Technic
 
 ### ลำดับงานแนะนำหลัง Handoff
 
-- Step A: ✅ เสร็จแล้ว — สร้างเอกสาร Source of Truth ครบชุดและ commit/push แล้ว (ล่าสุด bf40820 บันทึกผลปิด F1)
-- Step B: F2/58L Establishment = **PARTIAL** — Admin runtime acceptance + duplicate-toggle fix + same-state no-op + fixture cleanup ผ่านบน Staging และ **committed+pushed แล้ว (81f03b9)** · **Employer CRUD (Admin) = PASS** ปิดบน Staging 2026-07-26 (เอกสารรออนุมัติ diff/commit) · stage ย่อยที่เหลือ (Staff runtime ทั้ง Establishment และ Employer, est.↔case, est.-owned document, migration-history, การตัดสิน E1–E3) แยกอนุมัติทีละรายการ; IDENT-1 identity/session เป็น **parked design backlog**
+- Step A: ✅ เสร็จแล้ว — ชุดเอกสาร Source of Truth มีครบและต้องรักษาให้ตรงกันเสมอ; documentation checkpoint ย้อนหลังได้แก่ bf40820 (ปิด F1) และ 4c8b45e (Employer CRUD acceptance); สถานะ commit/push สดต้องอ่านจาก Git
+- Step B: F2/58L Establishment = **PARTIAL** — Admin runtime acceptance + duplicate-toggle fix + same-state no-op + fixture cleanup ผ่านบน Staging และ **committed+pushed แล้ว (81f03b9)** · **Employer CRUD (Admin) = PASS** ปิดบน Staging 2026-07-26 (เอกสารปิดงานแล้วและ committed เป็น 4c8b45e) · stage ย่อยที่เหลือ (Staff runtime ทั้ง Establishment และ Employer, est.↔case, est.-owned document, migration-history, การตัดสิน E1–E3) แยกอนุมัติทีละรายการ; IDENT-1 identity/session เป็น **parked design backlog**
 - Step C: กลับมาปิด Phase 1 production-readiness backlog: delete/security/audit/alerts/mobile/import-export/manual
 - Step D: pilot 2–3 คน แล้วเก็บ bug/feedback
 - Step E: แก้และ rollout 12 คน
@@ -640,7 +657,7 @@ git log --oneline --decorate -10
 
 โครงการพร้อมย้ายไปแชทใหม่ในเชิงบริบทแล้ว เมื่อแชทใหม่ได้รับไฟล์นี้และไฟล์ Source of Truth ที่จะสร้างในขั้นถัดไป
 
-Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว ไม่ต้องย้อน T1–T13 ซ้ำ ไฟล์ Source of Truth ทั้งชุดถูกสร้างและ commit/push เรียบร้อยแล้ว (ล่าสุด bf40820) รวมถึงผลปิด F1 การทำงานถัดไปคือให้ผู้ใช้เลือกและอนุมัติ Stage ใหม่
+Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว ไม่ต้องย้อน T1–T13 ซ้ำ ชุดเอกสาร Source of Truth มีครบทั้งหกไฟล์และต้องรักษาให้ตรงกันเสมอ; documentation checkpoint ย้อนหลังได้แก่ bf40820 (ปิด F1) และ 4c8b45e (Employer CRUD acceptance) — สถานะ commit/push สดต้องอ่านจาก Git ไม่ใช่จากเอกสารนี้ ชุดเอกสารหกไฟล์ปิดงานได้ตามเงื่อนไข DOCUMENTATION PACKAGE CLOSURE CONDITION ด้านล่างเท่านั้น การทำงานถัดไปคือให้ผู้ใช้เลือกและอนุมัติ Stage ใหม่
 
 | หัวข้อ | Verdict |
 | --- | --- |
@@ -655,5 +672,7 @@ Stage 58K-C ปิดครบและ cleanup สำเร็จแล้ว �
 | Employer delete / active-inactive | **NOT IMPLEMENTED** — ไม่มีในระบบและไม่ได้ทดสอบ |
 | IDENT-1 identity/session | DESIGN COMPLETE — implementation PARKED (ไม่ใช่ Stage ถัดไป) |
 | Production Smoke | NOT STARTED |
-| Next execution stage | Owner diff review ของ EMPLOYER-CRUD-DOC แล้วขออนุมัติ commit แยก; หลังจากนั้น candidate = Staff runtime fixture (Establishment + Employer) และการตัดสิน E1–E3 |
+| LINE PDF-to-images dual mode | **DESIGN PASS** — อนุมัติเฉพาะระดับการออกแบบ; **ยังไม่เริ่มลงมือทำ** และยังไม่อนุมัติ implementation / GCP / Staging runtime / Production |
+| DOCUMENTATION PACKAGE CLOSURE CONDITION | All six approved files must be present together in one owner-approved commit verified on `origin/feature-attendance`. ยังไม่ถือว่า commit หรือ push แล้ว — อ่านสถานะสดจาก Git |
+| NEXT TECHNICAL CANDIDATE AFTER CLOSURE | A separately approved **LINE implementation pre-check** — not implementation; candidate อื่นที่ยังค้าง = Staff runtime fixture (Establishment + Employer) และการตัดสิน E1–E3 |
 | New chat migration | READY AFTER FILE UPLOAD / PROJECT SETUP |

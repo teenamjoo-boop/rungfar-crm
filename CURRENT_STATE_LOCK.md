@@ -1,8 +1,8 @@
 # RUNGFA CRM — CURRENT STATE LOCK
 
-> Canonical handoff snapshot after the F1 Payment-specific Stage and its cleanup.
+> Canonical handoff lock. It records verified history through the Employer CRUD (Admin) runtime acceptance on Staging, plus the closed `LINE-PDF-DUAL-MODE-DESIGN` design review. The LINE work is documented at design level only — no LINE runtime, implementation, or deployment is recorded or approved here.
 >
-> Snapshot date: 2026-07-22 (Thailand time context) — documentation closeout. The F1 Payment-specific Stage runtime test and cleanup were executed and verified on Staging 2026-07-14; the database values below are that verified baseline. This file records the last verified state, not a substitute for live pre-flight. Re-verify Git and DB before every new mutation.
+> Snapshot date: 2026-08-05 (Thailand time context) — LINE-PDF-DOC-CONSISTENCY-CORRECTION, documentation-only. Prior snapshots: 2026-07-26 (Employer CRUD Admin runtime acceptance) and 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage runtime test and cleanup were executed and verified on Staging 2026-07-14; the section 2 database values are that historical baseline, superseded by section 5c. This file records the last verified state, not a substitute for live pre-flight. Re-verify Git and DB before every new mutation.
 
 ## 1. Canonical status
 
@@ -12,9 +12,11 @@ REPO: D:\dev\claude
 GIT BASH: /d/dev/claude
 BRANCH: feature-attendance
 CURRENT LIVE HEAD: read from Git every session (`git rev-parse HEAD`) — not frozen in this file
-LAST COMMITTED CHECKPOINT: fbcf624 "Reconcile post-push project control pointers" (verified live on 2026-07-26: local = origin/feature-attendance; 0 ahead / 0 behind; working tree and index clean; no untracked files). This is a time-specific checkpoint fact — read live HEAD from Git every session, do not treat this hash as a permanent current HEAD.
-STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 2c30070 = post-closeout metadata sync; 80dcafe = recovery-inventory doc reconciliation; 81f03b9 = post-F2/58L Establishment Admin checkpoint (frontend toggle guard + migration 20260813 + F2/58L documentation); fbcf624 = post-push control-pointer reconciliation (documentation-only)
-WORKING TREE (at the 2026-07-26 verified pre-check for this documentation stage): clean — the F2/58L package (rungfar_crm_17.html toggle guard, migration 20260813, and the F2/58L documentation) was committed and pushed as 81f03b9, followed by documentation-only commit fbcf624. The local-only patched rungfar_crm_17.STAGING.local.html remains untracked/excluded. Re-verify live before any write.
+LATEST VERIFIED PRE-EDIT COMMITTED CHECKPOINT: 4c8b45e "Record Employer CRUD staging acceptance"
+  Verification evidence — verified on 2026-08-05 before this documentation edit: local = origin/feature-attendance; 0 ahead / 0 behind; working tree and index clean before the six-file edit; no untracked files.
+  This is HISTORICAL PRE-EDIT EVIDENCE for one dated verification, not a permanent current-HEAD field. Live HEAD and live working-tree state must always be read from Git (`git rev-parse HEAD`, `git status`) at the start of every session.
+STAGE EVIDENCE COMMITS (historical): e9d035c = F1 runtime-test HEAD; bf40820 = F1 documentation-closeout commit; 2c30070 = post-closeout metadata sync; 80dcafe = recovery-inventory doc reconciliation; 81f03b9 = post-F2/58L Establishment Admin checkpoint (frontend toggle guard + migration 20260813 + F2/58L documentation); fbcf624 = post-push control-pointer reconciliation (documentation-only); 4c8b45e = Employer CRUD acceptance documentation commit (2026-07-26, five of the six documents)
+WORKING TREE (historical pre-edit observation, 2026-08-05): clean before the six-file documentation edit began. The F2/58L package (rungfar_crm_17.html toggle guard, migration 20260813, and the F2/58L documentation) was committed and pushed as 81f03b9, followed by documentation-only commits fbcf624 and 4c8b45e. The local-only patched rungfar_crm_17.STAGING.local.html remains untracked/excluded. Re-verify live before any write.
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
@@ -23,8 +25,9 @@ LOCAL STAGING HTML: rungfar_crm_17.STAGING.local.html
 PRODUCTION REF COUNT IN STAGING HTML: 0 (safety gate — must stay 0)
 STAGING REF COUNT IN STAGING HTML: 4 (informational snapshot — re-report if the file changes)
 
-LATEST CLOSED STAGE: F1 Payment-specific Stage (Staging) — closed 2026-07-14
-PRIOR CLOSED STAGE: Stage 58K-C Runtime Smoke (historical)
+LATEST CLOSED RUNTIME STAGE: Employer CRUD (Admin) — PASS on Staging 2026-07-26
+LATEST CLOSED DESIGN STAGE: LINE-PDF-DUAL-MODE-DESIGN — DESIGN PASS on 2026-08-05 (design only; no runtime, no implementation)
+PRIOR CLOSED RUNTIME STAGES (historical): F2/58L Establishment Admin acceptance (2026-07-25, F2/58L overall PARTIAL); F1 Payment-specific Stage — closed 2026-07-14; Stage 58K-C Runtime Smoke
 RUNTIME/STATIC MATRIX: T1–T13 recorded (58K-C)
 MANDATORY TEST DOCUMENT CLEANUP: complete (58K-C)
 F1 PAYMENT FIXTURE CLEANUP: complete
@@ -43,13 +46,14 @@ ESTABLISHMENT↔CASE BINDING: not implemented (cases.establishment_id absent)
 ESTABLISHMENT-OWNED DOCUMENT LINK: unsupported/deferred (owner_link_not_supported)
 MIGRATION 20260813 (same-state no-op): deployed via Staging SQL Editor ("Success. No rows returned") — migration-history registration UNVERIFIED
 IDENT-1 IDENTITY/SESSION: design complete, implementation PARKED (not started)
-CURRENT STAGE: EMPLOYER-CRUD-DOC documentation-only closeout of the Employer Admin runtime acceptance
+CURRENT CONTROL STATUS: LINE-PDF-DUAL-MODE-DESIGN is documented at DESIGN PASS level; LINE implementation remains unauthorized.
+LINE PDF-TO-IMAGES DUAL MODE: DESIGN PASS — implementation not started, not approved
 ```
 
 Repository HEAD/snapshot semantics:
 
 - **Current live HEAD is obtained from Git pre-flight, never from a value frozen in this file.** The hashes recorded here are dated snapshots and historical stage evidence.
-- Last pre-reconciliation verified snapshot: `2c30070` (2026-07-23) — `local = origin/feature-attendance`, 0 ahead / 0 behind, working tree clean. A live HEAD newer than this snapshot is only a HARD STOP when the newer commit(s)/working tree introduce a meaningful unexplained change (application code, schema/migration, HTML, configuration, environment, or an unrecorded Stage-status change). A documentation-only commit newer than the snapshot does not invalidate recorded Stage evidence.
+- Latest verified pre-edit snapshot: `4c8b45e` (2026-08-05) — `local = origin/feature-attendance`, 0 ahead / 0 behind, working tree clean before the six-file documentation edit. Earlier historical snapshots: `fbcf624` (2026-07-26) and `2c30070` (2026-07-23), each verified `local = origin`, 0 ahead / 0 behind, working tree clean on its own date. None of these is a permanent current-HEAD field. A live HEAD newer than the latest snapshot is only a HARD STOP when the newer commit(s)/working tree introduce a meaningful unexplained change (application code, schema/migration, HTML, configuration, environment, or an unrecorded Stage-status change). A documentation-only commit newer than the snapshot does not invalidate recorded Stage evidence.
 - Historical stage evidence: `bf40820` = F1 documentation-closeout commit (2026-07-22, six-doc edit, pushed). `e9d035c` = the HEAD at which the F1 runtime test was executed on 2026-07-14, and parent of `bf40820`. `54680ec` = code-baseline HEAD during Stage 58K-C. All are historical evidence, not current state.
 - Documentation-only commit `bf40820` changed **all six** source-of-truth Markdown files (`AGENTS.md`, `CURRENT_STATE_LOCK.md`, `DECISIONS_LOG.md`, `PROJECT_MASTER_HANDOFF.md`, `ROADMAP.md`, `TEST_PLAN.md`). Documentation-only commit `2c30070` changed **only four** of them (`AGENTS.md`, `CURRENT_STATE_LOCK.md`, `PROJECT_MASTER_HANDOFF.md`, `ROADMAP.md`). Neither commit modified application code, HTML, migration, SQL, or configuration.
 
@@ -113,7 +117,7 @@ disposable case id=2: CASE-20260710-000002 — cancelled; customer_id=3; employe
 
 A separate non-58K employer row (`employer id=1`, name recorded in prior reports) exists and must not be touched by synthetic cleanup.
 
-## 3. F1 Payment-specific Stage result — CLOSED (current)
+## 3. F1 Payment-specific Stage result — CLOSED (historical verified record)
 
 Closed on Staging 2026-07-14. Operator-assisted runtime; Claude Code read-only throughout. No migration and no application-code change were required.
 
@@ -264,16 +268,29 @@ Do not fix these implicitly during another stage.
 ## 7. Completed/frozen work relevant to continuation
 
 - Owner-aware document link/unlink contract and audits have passed Stage 58K-C.
-- PDF+Excel helper / LINE batch is completed and frozen.
+- The existing PDF+Excel helper / LINE batch is completed and **remains frozen** from unrelated work.
+- **LINE PDF-to-images dual mode — DESIGN PASS (design stage only).** Summary of the approved design: a person sends a PDF into the existing operational LINE group and types `จบ` to receive the pages as ordinary LINE image messages. The same existing group is the **preferred** target, subject to router and environment verification in a later pre-check. **Saving Mode is the default** for unconfigured groups; **Auto Mode is controlled by database-backed admin authority and is bound to the job's original group**. Pages are delivered in ranges of **up to five images**; the **first range uses Reply**, and remaining **Auto ranges use Push**. **One delivery stream per LINE group.** Reply and Push ambiguity use **different** recovery rules. An **external Cloud Run converter worker** was selected for the MVP design. Cross-group routing is **out of scope**. **No implementation has started**; no database object, GCP resource, Staging runtime, quota window, or Production action is approved by this design.
 - Attendance LINE group notification is paused pending quota/new testing window.
 - Meta Ads analytics remains local/manual CSV; no live Meta API.
 - No Production smoke or deployment has been approved.
 
 ## 8. Next work — not yet approved
 
-No stage is automatically authorized by this lock. The immediate next action is:
+No stage is automatically authorized by this lock.
 
-1. **Owner diff review of the EMPLOYER-CRUD-DOC documentation closeout**, then a separate commit approval. This is a review action, not a new implementation stage. (The F2/58L frontend/migration/documentation package itself is already committed and pushed as 81f03b9, followed by documentation-only commit fbcf624.)
+```text
+DOCUMENTATION PACKAGE CLOSURE CONDITION:
+This six-file documentation package is closed only when all six approved files
+are committed together and verified on origin/feature-attendance.
+
+NEXT TECHNICAL CANDIDATE AFTER CLOSURE:
+A separately owner-approved LINE implementation pre-check.
+Implementation is not automatically authorized.
+```
+
+The documentation package procedure is: documentation edit → read-only verification → owner diff review and approval → commit → push → verify on `origin/feature-attendance`. That is a procedure, not an assertion about which step is currently in progress; read live Git to determine that. (The Employer Admin runtime acceptance and its documentation closeout are complete and committed as `4c8b45e`; the F2/58L frontend/migration/documentation package was committed and pushed as `81f03b9`, followed by documentation-only commit `fbcf624`.)
+
+**Implementation remains blocked.** No implementation approval, no migration approval, no Edge Function or Cloud Run deployment approval, no GCP resource approval, no Staging runtime approval, no quota window, and no Production approval exists.
 
 Subsequent candidate stages, requiring separate owner approval:
 

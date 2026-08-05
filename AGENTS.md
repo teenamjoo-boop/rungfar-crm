@@ -2,7 +2,7 @@
 
 > Repository-level instructions for ChatGPT Work, Claude Code, Codex, or any coding agent working on RUNGFA CRM.
 >
-> Last handoff baseline: 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage itself closed on Staging 2026-07-14. These rules are persistent, but all Git/DB facts must be re-verified at the start of every session.
+> Last documentation snapshot: 2026-08-05 (LINE-PDF-DOC-CONSISTENCY-CORRECTION). Prior snapshots: 2026-07-26 (Employer CRUD Admin runtime acceptance) and 2026-07-22 (F1 documentation closeout); the F1 Payment-specific Stage itself closed on Staging 2026-07-14. These are dated documentation snapshots, not a live-HEAD assertion. These rules are persistent, but all Git/DB facts must be re-verified at the start of every session.
 
 ## 1. Mission and role split
 
@@ -38,7 +38,8 @@ Never guess a stage number, database baseline, test fixture, function signature,
 - **Current live HEAD: always read from Git pre-flight (`git rev-parse HEAD`). Do not treat any hash stored in this file as the permanent live HEAD.** The commit hashes below are historical stage evidence and dated snapshots, not a live-HEAD assertion:
   - F1 runtime-test HEAD (historical): `e9d035c` — the commit at which the F1 payment runtime test was executed on 2026-07-14
   - F1 documentation-closeout commit (historical): `bf40820` — recorded the F1 stage into the six documents, pushed 2026-07-22
-  - Last pre-reconciliation verified repository snapshot: `2c30070` — verified `local = origin`, `0 ahead / 0 behind`, working tree clean on 2026-07-23
+  - Employer CRUD acceptance documentation commit (historical): `4c8b45e` — recorded the Employer Admin runtime acceptance into five of the six documents, 2026-07-26
+  - Earlier verified repository snapshots (historical): `fbcf624` — verified `local = origin`, `0 ahead / 0 behind`, working tree clean on 2026-07-26; `2c30070` — same verification on 2026-07-23
   - Prior code-baseline HEAD (historical, Stage 58K-C): `54680ec`
 - Main frontend: `rungfar_crm_17.html`
 - Local Staging frontend: `rungfar_crm_17.STAGING.local.html`
@@ -207,7 +208,8 @@ Protect these unless a specifically approved stage changes them:
 
 Do not touch without explicit scope:
 
-- PDF+Excel helper / LINE batch flow — completed and frozen.
+- Existing PDF+Excel helper / LINE batch flow — completed and **frozen from unrelated work**. It stays frozen; only a dedicated approved stage may touch it.
+- LINE PDF-to-images dual mode (`LINE-PDF-DUAL-MODE-DESIGN`) — **DESIGN PASS** as a dedicated owner-approved design stage. **Implementation has not started and is not approved.** Any router-adjacent or helper-adjacent change requires a separate implementation pre-check and its own approval.
 - Attendance LINE group notification — temporarily paused due to quota/testing policy.
 - Meta Ads live API — not implemented; current page is local/manual CSV only.
 - Production/Netlify deployment — deferred until explicit approval.
@@ -232,7 +234,8 @@ Do not touch without explicit scope:
 - G3: UI chip semantics separate `approved`, `missing`, and linked documents; `received` has no dedicated top chip.
 - G4: checklist update audit is best-effort while link/unlink audit is strict.
 - F1: **CLOSED on Staging 2026-07-14.** Payment proof uses the dedicated payment path (`app_save_case_payment`), not the normal checklist selector; the payment checklist item stays guidance-only. Three F1 follow-ups remain open and must not be silently changed (they are not part of the completed F1 runtime stage): F1a payment create has no demonstrated idempotency protection; F1b no proof-detach workflow exists or was tested; F1c payment audit remains best-effort.
-- F2/58L: Establishment reconciliation is a separate stage — **not started.** The repository foundation exists: migration `20260804_employer_establishments.sql` defines the table `public.establishments` (note the filename differs from the table name), plus RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal. Repository migration evidence does **not** prove the table is deployed on Staging; live Staging schema was not re-verified. Do not claim the table is absent (an earlier check searched the wrong name `public.employer_establishments`) and do not claim it is deployed. 58L must compare repository definitions against live Staging read-only before any schema change.
+- F2/58L: Establishment reconciliation is **PARTIAL** — not closed. `public.establishments` was **confirmed deployed on Staging** during the completed stage (migration `20260804_employer_establishments.sql` defines the table; note the filename differs from the table name), with RPCs `app_save_establishment`/`app_set_establishment_active` and a frontend modal. **Establishment Admin runtime acceptance = PASS** (create/read/reload/edit/toggle + audit/privacy + fixture cleanup, plus the duplicate-toggle fix and the same-state no-op migration `20260813`). Still open: **Staff runtime NOT TESTABLE** (0 active Staff), **migration-history registration UNVERIFIED**, establishment↔case binding not implemented (`cases.establishment_id` absent), and establishment-owned document linking unsupported/deferred (`owner_link_not_supported`). Do not report F2/58L as closed. Historical note: an earlier check searched the wrong name `public.employer_establishments` and wrongly concluded the table was absent.
+- Employer CRUD: **Admin path PASS on Staging 2026-07-26** (create / read / full-page reload / single-field edit / audit + privacy / relationship invariants / exact fixture cleanup / baseline restoration). Still open: **Staff runtime NOT TESTABLE** (0 active Staff, recorded as neither PASS nor FAIL); **employer delete NOT IMPLEMENTED** (no delete RPC, no UI control); **employer active/inactive NOT IMPLEMENTED**; **duplicate prevention remains PARTIAL** (no database uniqueness guarantee, no proven double-submit guard). Do not report the Employer workstream as complete.
 
 Any proposal to change these requires a product decision and a dedicated stage.
 

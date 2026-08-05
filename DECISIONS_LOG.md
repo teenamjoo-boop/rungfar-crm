@@ -509,6 +509,18 @@
 
 ---
 
+## 2026-08-05 — LINE PDF-to-images dual mode approved at design level only
+
+**Decision:** A dedicated **LINE PDF-to-images dual-mode** stage is approved **at design level only** (`LINE-PDF-DUAL-MODE-DESIGN` = DESIGN PASS). The target is the **same existing operational LINE group**, subject to implementation pre-check evidence. **Saving Mode is the default.** **Auto Mode is controlled by database-backed admin authority with original-group binding.** An **external Cloud Run converter worker** is selected for the MVP design **over in-Edge WASM rasterisation**. **One active PDF delivery stream per group.** The **first range of up to five page images uses Reply**; **remaining Auto ranges use Push**. **Reply ambiguity requires explicit user resolution.** **Push retry keys are time-bounded 24-hour retry episodes**, and **Push retries reuse the exact persisted original payload**; **ambiguity surviving the retry window requires an explicit human decision**. **Retry keys, signed URLs, payload snapshots, lane tokens, secrets, and raw LINE IDs must not appear in audit, logs, reports, screenshots, or handoff documents.** **Cross-group routing is out of scope.** **Production implementation and deployment remain separately gated.**
+
+**Reason:** Supabase Edge runtime limits, WASM packaging constraints, and unproven PDF rasterisation performance make in-Edge rasterisation unsuitable for the approved MVP without a separate feasibility proof. Reply messages are not counted toward the monthly message count while Push messages are counted per recipient, so a Saving-Mode default with an admin-gated Auto Mode is the quota-safe posture, consistent with the standing decision to keep LINE group notifications paused pending a quota plan. A single group transcript makes interleaved page streams from two documents a real, user-visible defect, so one delivery stream per group is required. Reply has no platform-level retry-key idempotency while Push does, so the two ambiguity cases cannot share one recovery rule. `AGENTS.md` sections 6 and 10 forbid tokens, signed URLs, and credentials in audit details, reports, and handoff documents.
+
+**Impact:** Implementation **remains blocked** until this documentation correction is verified, owner-approved, committed, and pushed. GCP resources, migrations, Edge Functions, router integration, Staging runtime selection, any Auto-Mode quota window, and Production each remain **separately gated**. The existing PDF+Excel helper **remains frozen**; any adjacent router integration requires a separate implementation pre-check and its own approval. This documentation stage queried no environment; the implementation and Staging runtime target must be selected and re-verified in that separate pre-check. Production implementation and deployment remain unapproved and untouched by this stage.
+
+**Reopen when:** LINE platform limits or pricing behaviour change materially; the owner declines external converter hosting; or a runtime proof of concept invalidates a stated design assumption.
+
+---
+
 ## Pending decisions
 
 These are not settled and require user approval:

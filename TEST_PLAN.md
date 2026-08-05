@@ -2,7 +2,11 @@
 
 > Test strategy, completed evidence, and future test matrix.
 >
-> Last verified closeout: F1 Payment-specific Stage, 2026-07-14 (prior: Stage 58K-C, 2026-07-13). Live values must be re-checked before new tests.
+> Latest verified **runtime** closeout: Employer CRUD (Admin), Staging 2026-07-26 — see section 8d.
+>
+> Latest verified **design** closeout: `LINE-PDF-DUAL-MODE-DESIGN`, 2026-08-05 — design review only, **no runtime test executed** — see section 8e.
+>
+> Prior historical closeouts: F1 Payment-specific Stage, 2026-07-14 (section 7); Stage 58K-C, 2026-07-13 (section 4). Live values must be re-checked before new tests.
 
 ## 1. Testing principles
 
@@ -425,6 +429,48 @@ Staging user baseline at the time of the test: 1 active user total, 1 active Adm
 - No migration and no application-code change were required or made.
 - This stage did not modify G1–G4, R1, or the F1 follow-ups.
 - The completed Establishment (section 8c) and F1 (section 7) evidence is unchanged and was not rewritten.
+
+## 8e. LINE PDF-to-images dual mode — DESIGN APPROVED / NOT RUNTIME TESTED
+
+**Classification: design review complete. No test has been executed.** This section records planned test areas only. It is not evidence of any verified behaviour.
+
+### What this stage did and did not do
+
+- Design review is **complete** and recorded as `LINE-PDF-DUAL-MODE-DESIGN` = DESIGN PASS (2026-08-05).
+- **No runtime test was executed.**
+- **No database object exists from this stage** — no table, index, constraint, function, trigger, or migration was created or applied.
+- **No Cloud Run resource was created**, and no GCP resource of any kind was created or configured.
+- **No LINE message was sent**, and no LINE API was called.
+- **No quota, delivery-lane, retry, router, group, or conversion behaviour is classified as PASS.**
+- No environment was queried in the documentation stage that recorded this section.
+- The **implementation and Staging test environment must be selected and re-verified in a separate implementation pre-check** before any test in this section can be planned in detail.
+
+None of the taxonomy verdicts in section 3 — `Runtime full-cycle PASS`, `Runtime PASS`, `READ-ONLY PASS`, `UI-guard runtime-observed + backend static verified`, `Static verified`, or `Not runtime-testable / fixture not ready` — applies to any row below. Nothing here is fixture-ready. Do not upgrade any row without its own approved stage.
+
+### Planned test areas (summary level only)
+
+| Area | Intended coverage — none executed |
+| --- | --- |
+| Routing compatibility | Existing image upload and existing `จบ` batch finalization must still reach the frozen helper unchanged; a PDF file event must not enter the image workflow; unapproved groups stay ignored |
+| Conversion | Page-count boundaries, Thai scanned documents, mixed page orientation, password-protected, corrupt, oversized, and very large page dimensions |
+| Saving Mode | First range by Reply; subsequent ranges by user action; final-range composition; concurrent and repeated user actions; **no Push request issued for page delivery** |
+| Auto Mode | First range by Reply, remaining ranges by Push; page order; partial-failure handling; quota pre-check and fallback behaviour |
+| Job association | One sender's document never reaches another sender; multiple documents from one sender; expiry; duplicate and delayed webhooks |
+| Group delivery stream | One delivery stream per group; a second sender receives a busy response and no images; different groups unaffected |
+| Reply ambiguity | Explicit user resolution path, authorization, and idempotency |
+| Push retry | Time-bounded retry episodes, exact-payload reuse, accepted-request reconciliation, and behaviour after the retry window |
+| Mode control | Default mode for unconfigured groups; admin-only mode change; unauthorized attempt |
+| Security and privacy | Signature boundary, internal-call authentication, original-group binding, and the audit/log privacy scan |
+| Regression | Existing PDF+Excel card generation, existing commands, existing rotations, existing auto-finalize cron, existing document inbox |
+| Mobile acceptance | Multi-select forwarding of returned images on Android and iPhone LINE |
+
+### Prerequisites before any of the above can be executed
+
+1. This documentation correction verified, owner-approved, committed, and pushed.
+2. A separate LINE **implementation pre-check** (read-only).
+3. Selection and verification of the implementation and Staging runtime environment.
+4. Separate approvals for migration, function deployment, GCP resource creation, router activation, and any Auto-Mode quota window.
+5. Production remains unapproved and untouched.
 
 ## 9. Phase 1 regression plan
 

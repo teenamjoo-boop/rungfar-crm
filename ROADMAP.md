@@ -38,6 +38,7 @@ Employer CRUD (Admin) runtime acceptance: ✅ PASS — closed on Staging 2026-07
 Employer CRUD (Staff) runtime acceptance: ⚪ NOT TESTABLE — no active Staff fixture
 Employer delete / active-inactive: ⚪ NOT IMPLEMENTED — out of scope until a product decision
 Employer duplicate prevention: 🟡 PARTIAL — no database uniqueness guarantee, no proven double-submit guard
+LINE PDF-to-images dual mode: 🟡 DESIGN PASS (2026-08-05) — implementation not started, not approved; no GCP, Staging runtime, or Production approval
 Appointments / tracking / case-status-history / contact-timeline: 🟢 repo foundation; ⚪ runtime acceptance not found
 ai_autopost_system.html: ⚪ standalone tracked file; scope/ownership/testing unconfirmed; not yet classified as Core CRM — final classification pending owner decision
 Phase 1 production readiness: 🟡 incomplete
@@ -359,6 +360,62 @@ Possible uses:
 
 Human confirmation is mandatory. Do not auto-overwrite master data or submit government applications.
 
+## Operational LINE Document Automation
+
+A separate operational workstream, **not** part of the Phase 2 labor-document product. It is listed here between Phase 2 and Phase 3 without renumbering the product phases.
+
+### LINE PDF-to-images dual mode — 🟡 DESIGN PASS / implementation gated
+
+**Status: design approved on 2026-08-05. Implementation has not started and is not approved.**
+
+Approved design, at summary level:
+
+- **Same existing operational group is the preferred target**, subject to router and environment verification in a separate implementation pre-check.
+- **Saving Mode is the default** for unconfigured groups.
+- **Auto Mode is controlled by database-backed admin authority** and is bound to the job's original group.
+- Commands: `โหมดประหยัด` / `โหมดออโต้` / `ดูโหมด`.
+- A PDF sent into the group is converted to **page images**.
+- Pages are delivered in ranges of **up to five images**.
+- The **first range uses Reply**.
+- Remaining **Auto ranges use Push**.
+- **One group-wide delivery stream**, so pages from two documents cannot interleave in one group.
+- An **external Cloud Run converter worker** was selected for the MVP design.
+- **Reply ambiguity requires explicit user resolution.**
+- **Push uses time-bounded retry episodes and exact-payload reuse.**
+- **Cross-group automation is out of scope.**
+
+Not approved by this design stage:
+
+- No implementation, no code change, no migration.
+- No GCP resource creation, no Cloud Run deployment.
+- No Staging runtime environment selection — that requires a separate decision and pre-check.
+- No Production implementation or deployment.
+
+Gates, each requiring its own owner approval, in order:
+
+```text
+1. Six-file documentation package — closed only when all six approved files are
+   committed together and verified on origin/feature-attendance
+2. LINE implementation pre-check (read-only)
+3. Local implementation and container proof of concept
+4. Owner review of measured proof-of-concept evidence
+5. Approval to create and configure GCP resources
+6. If the implementation pre-check proves a migration is required: prepare the
+   exact Staging migration plan and obtain separate approval; the owner runs it
+   once only after Staging target proof
+7. Deploy only to the separately approved Staging/test environment, initially
+   unreferenced; verify without changing any live Production router
+8. Router canary on an owner-approved isolated test target. A new LINE group is
+   not required by default; the target must be selected during the
+   implementation pre-check
+9. Saving-mode runtime test
+10. Auto-mode runtime test inside an owner-approved quota window
+11. Regression verification of the existing frozen helper
+12. Rollback readiness verification
+13. Documentation update, commit, push
+14. Separate production-wide enablement approval
+```
+
 ## 7. Phase 3 — Customer upload portal / PWA — ⚪
 
 Planned after core readiness:
@@ -381,14 +438,17 @@ Planned after core readiness:
 ```text
 0. F1 documentation closeout — done (bf40820); recovery-inventory doc reconciliation — done (80dcafe)
 1. F2/58L Establishment — PARTIAL: Admin runtime acceptance + duplicate-toggle hardening + same-state no-op + cleanup done on Staging — **committed + pushed (81f03b9)**
-2. Employer CRUD Runtime Acceptance (Admin) — ✅ closed PASS on Staging 2026-07-26; documentation closeout awaiting owner diff review and a separate commit approval  ← immediate control action
-3. Employer remaining: Staff runtime (needs active staff fixture), and the delete / active-inactive / duplicate-prevention (E1–E3) product decisions
-4. F2/58L remaining: Staff runtime (same fixture prerequisite), migration-history decision, establishment↔case + establishment-owned document decisions
-5. Complete Phase 1 mobile/security/import-export/production-readiness gaps
-6. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking
-7. Run 2–3-user pilot → fix findings → roll out to 12 users
-8. Continue Phase 2 checklist/profile/case-template expansion
-9. Add document generation/OCR/portal later
+2. Employer CRUD Runtime Acceptance (Admin) — ✅ closed PASS on Staging 2026-07-26; documentation closeout ✅ complete and committed (4c8b45e)
+3. LINE-PDF-DUAL-MODE-DESIGN — ✅ DESIGN PASS 2026-08-05 (design only; implementation not started, not approved)
+4. Six-file documentation package (LINE-PDF-DOC-CONSISTENCY-CORRECTION) — a prerequisite to the LINE implementation pre-check. It is CLOSED only when all six approved files are committed together and verified on origin/feature-attendance
+5. After that closure condition is met: the next candidate is a separately approved LINE implementation pre-check (read-only). Implementation is NOT automatically approved
+6. Employer remaining: Staff runtime (needs active staff fixture), and the delete / active-inactive / duplicate-prevention (E1–E3) product decisions
+7. F2/58L remaining: Staff runtime (same fixture prerequisite), migration-history decision, establishment↔case + establishment-owned document decisions
+8. Complete Phase 1 mobile/security/import-export/production-readiness gaps
+9. Decide the open F1 follow-ups (create idempotency, proof-detach) if they become blocking
+10. Run 2–3-user pilot → fix findings → roll out to 12 users
+11. Continue Phase 2 checklist/profile/case-template expansion
+12. Add document generation/OCR/portal later
 
 IDENT-1 identity/session hardening remains a parked design backlog (not the active next stage).
 ```
