@@ -470,7 +470,94 @@ None of the taxonomy verdicts in section 3 — `Runtime full-cycle PASS`, `Runti
 2. A separate LINE **implementation pre-check** (read-only).
 3. Selection and verification of the implementation and Staging runtime environment.
 4. Separate approvals for migration, function deployment, GCP resource creation, router activation, and any Auto-Mode quota window.
-5. Production remains unapproved and untouched.
+5. Production deployment and runtime remain unapproved. Production was not mutated; see section 8f for the separately approved owner-assisted read-only export of two static icons.
+
+## 8f. LINE Staging asset foundation (AP-1 … AP-4) — STORAGE FOUNDATION ONLY
+
+**Classification: Staging Storage foundation. This is NOT a LINE runtime test, NOT helper runtime acceptance, and NOT implementation acceptance.** No LINE message was sent, no LINE API was called, no Edge Function was deployed or invoked, and no application code was changed.
+
+### Branch A decision and its limits
+
+The owner selected **Branch A**: preserve and later restore the existing frozen PDF+Excel helper on Staging **after** removing its Production asset dependency under a dedicated approved stage. Branch A is **not** code-change approval, **not** deployment approval, and **not** Production approval. The existing helper remains **FROZEN**, and LINE PDF-to-images remains **DESIGN PASS — IMPLEMENTATION NOT STARTED** (section 8e is unchanged by this section).
+
+### Environment and target proof
+
+```text
+Staging project: rungfar-crm-staging (ref bzwtknqvhvdmatangzqf)
+Target proof: get_project_url returned https://bzwtknqvhvdmatangzqf.supabase.co, re-proven in each Gate
+Repository HEAD during all four Gates: unchanged; working tree clean; no repository file modified
+```
+
+**Production classification for this workstream:** Production ref `magwqolbjmwymqxelizl` was **NOT MUTATED** — no connector query, no deployment, and no schema/data/Storage/policy/configuration change. The owner located the two static icon files in the protected Production `line-assets` bucket and performed **one separately approved read-only export/download of exactly those two files**. Production **was** accessed for that export. Do not describe Production as untouched throughout this workstream.
+
+### Local source assets (owner attestation)
+
+```text
+PDF icon    ChatGPT Image Jun 3, 2026, 02_52_40 PM.png   PNG RGB 1254x1254     734,889 bytes
+            SHA-256 77f5483899b0258c07317400bb4d6c2458a547a2b8049a84dd8e351bda793d7d
+Excel icon  ChatGPT Image Jun 3, 2026, 09_14_20 PM.png   PNG RGB 1254x1254   1,031,644 bytes
+            SHA-256 1b99ddbcab857f7ad423936fe52cd2dc33d41dd7c987400657706d7403b3a1e4
+```
+
+Both files were opened and visually verified locally. They were **not proven byte-identical to the Production objects**. Neither file was copied into the repository.
+
+### Gate results
+
+| Gate | Type | Result | Evidence |
+| --- | --- | --- | --- |
+| AP-1 | READ-ONLY metadata check | **HISTORICAL GATE EVIDENCE — pre-creation state, not current state** | Staging target `bzwtknqvhvdmatangzqf`; exactly one SELECT-only statement; bucket `line-assets` absent; both required objects absent; no Storage mutation; Production not queried |
+| AP-3 | **OWNER-ASSISTED STAGING STORAGE MUTATION** | Executed | Owner created exactly one bucket through the Supabase Dashboard: id/name `line-assets`, public true, displayed size limit 2 MB, allowed MIME type `image/png`; no folder, no object upload, no policy action |
+| AP-4 | **READ-ONLY PASS** | Verified | Target re-proven; exactly one SELECT-only statement; all values matched — see Expected vs Actual |
+
+### AP-4 Expected vs Actual
+
+| Item | Expected | Actual | Result |
+| --- | --- | --- | --- |
+| bucket row count | 1 | 1 | PASS |
+| bucket id / name | `line-assets` | `line-assets` | PASS |
+| public | true | true | PASS |
+| file_size_limit | 2000000 or 2097152 | **2097152** | PASS |
+| allowed_mime_types | exactly one entry `image/png` | one entry, `image/png` | PASS |
+| object count in bucket | 0 | 0 | PASS |
+| total Staging bucket count | 3 | 3 | PASS |
+| public Staging bucket count | 1 | 1 | PASS |
+| line-assets-specific Storage policy count | 0 | 0 | PASS |
+| total `storage.objects` policy count | recorded | 0 | recorded |
+| created_at | recorded | 2026-08-05 15:31:03.675746+00 | recorded |
+| updated_at | recorded | 2026-08-05 15:31:03.675746+00 | recorded |
+
+Timestamp reading: **created_at and updated_at were equal at AP-4 verification; no post-creation bucket update was observed in that metadata snapshot.**
+
+AP-4 performed no database write, no Storage mutation, no object upload or download, no signed or public URL request, no policy change, no deployment, no commit, no push, and no Production query.
+
+### Public-access statement
+
+- The bucket is **configured public** for non-sensitive static UI icons.
+- **Public write is not approved.**
+- **No `line-assets`-specific Storage policy existed at AP-4.**
+- **Public object retrieval remains untested.**
+
+### Scope limitations
+
+- **PDF icon: NOT UPLOADED. Excel icon: NOT UPLOADED.** The bucket contains zero objects.
+- **LINE image rendering remains untested.**
+- `line-ai-excel-helper` (four Production asset references) and `line-ai-excel-finalize-due` (three Production asset references) remain **BLOCKED FROM DEPLOYMENT**.
+- **No asset-decoupling code edit has been performed.** No Edge Function has been deployed.
+- The **final asset URL construction strategy is UNRESOLVED** and requires a separately approved stage.
+- No Production deployment is approved.
+
+### Next test sequence — none started, each separately approved
+
+1. Read-only pre-check for uploading only the PDF icon.
+2. Upload the PDF icon (one operator action).
+3. Read-only verification of that object.
+4. Upload the Excel icon (one operator action).
+5. Read-only verification of that object.
+6. Asset-decoupling code edit under the dedicated frozen-helper stage.
+7. Static verification of that edit.
+8. Each Edge Function deployment separately, each preceded by a Production-reference zero check.
+9. Webhook activation.
+10. Runtime regression of the existing frozen helper.
 
 ## 9. Phase 1 regression plan
 

@@ -1,6 +1,6 @@
 # RUNGFA CRM — CURRENT STATE LOCK
 
-> Canonical handoff lock. It records verified history through the Employer CRUD (Admin) runtime acceptance on Staging, plus the closed `LINE-PDF-DUAL-MODE-DESIGN` design review. The LINE work is documented at design level only — no LINE runtime, implementation, or deployment is recorded or approved here.
+> Canonical handoff lock. It records verified history through the Employer CRUD (Admin) runtime acceptance on Staging, plus the closed `LINE-PDF-DUAL-MODE-DESIGN` design review. The LINE PDF-to-images product remains at **DESIGN PASS — IMPLEMENTATION NOT STARTED**, with no LINE runtime or deployment recorded or approved. Separately, the Staging LINE asset foundation AP-1 through AP-4 is **PARTIAL**: the `line-assets` Storage bucket was created on Staging through one approved owner-assisted action and verified by a read-only metadata check; it still contains zero objects and does not constitute LINE runtime or implementation acceptance.
 >
 > Snapshot date: 2026-08-05 (Thailand time context) — LINE-PDF-DOC-CONSISTENCY-CORRECTION, documentation-only. Prior snapshots: 2026-07-26 (Employer CRUD Admin runtime acceptance) and 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage runtime test and cleanup were executed and verified on Staging 2026-07-14; the section 2 database values are that historical baseline, superseded by section 5c. This file records the last verified state, not a substitute for live pre-flight. Re-verify Git and DB before every new mutation.
 
@@ -20,7 +20,7 @@ WORKING TREE (historical pre-edit observation, 2026-08-05): clean before the six
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
-PRODUCTION: untouched
+PRODUCTION: NOT MUTATED — no connector query, deployment, schema/data/Storage/policy change, or configuration change occurred. One separately approved owner-assisted read-only export of exactly two static icon files from the Production `line-assets` bucket was performed on 2026-08-05. Do not describe Production as untouched throughout this LINE asset workstream.
 LOCAL STAGING HTML: rungfar_crm_17.STAGING.local.html
 PRODUCTION REF COUNT IN STAGING HTML: 0 (safety gate — must stay 0)
 STAGING REF COUNT IN STAGING HTML: 4 (informational snapshot — re-report if the file changes)
@@ -48,6 +48,24 @@ MIGRATION 20260813 (same-state no-op): deployed via Staging SQL Editor ("Success
 IDENT-1 IDENTITY/SESSION: design complete, implementation PARKED (not started)
 CURRENT CONTROL STATUS: LINE-PDF-DUAL-MODE-DESIGN is documented at DESIGN PASS level; LINE implementation remains unauthorized.
 LINE PDF-TO-IMAGES DUAL MODE: DESIGN PASS — implementation not started, not approved
+
+LINE STAGING ASSET FOUNDATION (AP-1…AP-4, 2026-08-05): PARTIAL
+BRANCH A: selected — preserve and later restore the existing PDF+Excel helper on Staging after removing its Production asset dependency. Branch A is NOT code-change approval, NOT deployment approval, and NOT Production approval
+STAGING BUCKET line-assets: VERIFIED ON STAGING — created by one OWNER-ASSISTED MUTATION (AP-3), then verified READ-ONLY PASS (AP-4)
+  public=true; file_size_limit=2097152 bytes; allowed_mime_types=[image/png]; object_count=0
+  line-assets-specific Storage policy count=0; total Staging buckets=3; public Staging buckets=1
+  created_at and updated_at were equal at AP-4 verification; no post-creation bucket update was observed in that metadata snapshot
+BUCKET PURPOSE: configured public for non-sensitive static UI icons only; public write is NOT approved; public object retrieval remains untested
+PDF ICON OBJECT: NOT UPLOADED
+EXCEL ICON OBJECT: NOT UPLOADED
+LINE IMAGE RENDERING: untested
+line-ai-excel-helper: BLOCKED FROM DEPLOYMENT — four Production asset references remain in tracked source
+line-ai-excel-finalize-due: BLOCKED FROM DEPLOYMENT — three Production asset references remain in tracked source
+ASSET-DECOUPLING CODE EDIT: not performed
+LINE EDGE FUNCTION DEPLOYMENT: none
+ASSET URL STRATEGY: UNRESOLVED — pending a separately approved stage
+EXISTING PDF+EXCEL HELPER: FROZEN
+LINE PDF-TO-IMAGES DUAL MODE (unchanged by this foundation): DESIGN PASS — IMPLEMENTATION NOT STARTED
 ```
 
 Repository HEAD/snapshot semantics:
@@ -286,6 +304,25 @@ are committed together and verified on origin/feature-attendance.
 NEXT TECHNICAL CANDIDATE AFTER CLOSURE:
 A separately owner-approved LINE implementation pre-check.
 Implementation is not automatically authorized.
+```
+
+```text
+NEXT CONTROLLED DEPENDENCY (LINE asset foundation):
+A separately approved read-only pre-check for uploading only the PDF icon as the
+first Staging `line-assets` object.
+
+Each of the following remains its own separate approval:
+  PDF icon upload
+  PDF icon verification
+  Excel icon upload
+  Excel icon verification
+  asset-decoupling code edit
+  static verification
+  each Edge Function deployment
+  webhook activation
+  every runtime test
+  documentation commit
+  push
 ```
 
 The documentation package procedure is: documentation edit → read-only verification → owner diff review and approval → commit → push → verify on `origin/feature-attendance`. That is a procedure, not an assertion about which step is currently in progress; read live Git to determine that. (The Employer Admin runtime acceptance and its documentation closeout are complete and committed as `4c8b45e`; the F2/58L frontend/migration/documentation package was committed and pushed as `81f03b9`, followed by documentation-only commit `fbcf624`.)

@@ -62,7 +62,7 @@ RUNGFA CRM เป็นเว็บแอพภายในบริษัท �
 
 โครงปัจจุบันใช้ frontend หลักเป็นไฟล์ HTML ขนาดใหญ่และใช้ Supabase เป็น backend/database/storage/RPC โดยมีการแยก Staging กับ Production และมีแนวทาง SECURITY DEFINER, server-side validation, audit และ owner-aware document linking
 
-Stage ควบคุมล่าสุดที่ปิดครบคือ **Employer CRUD Admin Runtime Acceptance** — **PASS** บน Staging (2026-07-26) ซึ่งปิด **เฉพาะเส้นทาง Admin create/read/edit ของนายจ้างเท่านั้น** ไม่ใช่ทั้งงานนายจ้าง · **F2/58L โดยรวมยังคงเป็น PARTIAL** · **Production ยังไม่ถูกแตะ** ก่อนหน้านั้นคือ **F1 Payment-specific Stage** (ปิดบน Staging 14 กรกฎาคม 2026): ทดสอบเส้นทาง payment/proof จริงผ่าน UI เฉพาะของงานการเงิน แล้ว cleanup fixture ครบ และก่อนหน้านั้นคือ Stage 58K-C Runtime Smoke: owner-aware document link/unlink ครบ T1–T13 ตามขอบเขต พร้อม cleanup เอกสารทดสอบ 5 รายการ ทุก stage ทำบน Staging เท่านั้น
+Stage ควบคุมล่าสุดที่ปิดครบคือ **Employer CRUD Admin Runtime Acceptance** — **PASS** บน Staging (2026-07-26) ซึ่งปิด **เฉพาะเส้นทาง Admin create/read/edit ของนายจ้างเท่านั้น** ไม่ใช่ทั้งงานนายจ้าง · **F2/58L โดยรวมยังคงเป็น PARTIAL** · Production **ไม่ได้ถูกแก้ไข (NOT MUTATED)** — ไม่มี connector query, deploy หรือการเปลี่ยน schema/data/Storage/policy/configuration; มีเพียงการเข้าถึงแบบ owner-assisted read-only ที่อนุมัติแยกเพื่อ export ไอคอน static สองไฟล์เมื่อ 2026-08-05 ก่อนหน้านั้นคือ **F1 Payment-specific Stage** (ปิดบน Staging 14 กรกฎาคม 2026): ทดสอบเส้นทาง payment/proof จริงผ่าน UI เฉพาะของงานการเงิน แล้ว cleanup fixture ครบ และก่อนหน้านั้นคือ Stage 58K-C Runtime Smoke: owner-aware document link/unlink ครบ T1–T13 ตามขอบเขต พร้อม cleanup เอกสารทดสอบ 5 รายการ ทุก stage ทำบน Staging เท่านั้น
 
 | หัวข้อ | สถานะล่าสุด |
 | --- | --- |
@@ -397,7 +397,7 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 | Git | working tree clean ณ snapshot 2026-08-05 ก่อนเริ่มแก้เอกสาร; local = origin/feature-attendance (0/0) ณ การตรวจนั้น — re-verify สดก่อนเขียน |
 | Staging HTML | rungfar_crm_17.STAGING.local.html; Production ref occurrences=0 |
 | Staging ref | bzwtknqvhvdmatangzqf |
-| Production | magwqolbjmwymqxelizl — untouched |
+| Production | magwqolbjmwymqxelizl — ยังเป็น environment ที่ถูกป้องกัน · **NOT MUTATED**: ไม่มี connector query, ไม่ deploy, ไม่เปลี่ยน schema/data/Storage/policy/configuration · มี **owner-assisted read-only export ไฟล์ไอคอน static 2 ไฟล์** ที่อนุมัติแยกไว้ เมื่อ 2026-08-05 · **ห้ามเขียนว่า Production untouched throughout** สำหรับงานสาย LINE asset นี้ |
 | seed_docs / documents total | 0 / 0 |
 | seed_links / total case_documents | 0 / 0 |
 | case_payments | 0 |

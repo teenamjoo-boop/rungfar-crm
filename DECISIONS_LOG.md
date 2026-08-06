@@ -521,6 +521,29 @@
 
 ---
 
+## 2026-08-05 — Branch A: decouple the Production asset dependency before any Staging restore
+
+**Decision:** The owner selected **Branch A** — the existing frozen PDF+Excel helper will be preserved and later restored on Staging, but only after every Production asset reference is removed from its deployment source under a **dedicated approved frozen-helper stage**. Deploying unchanged while accepting the Production asset dependency **is not an allowed option and must not be reoffered**. Branch A is **not** code-change approval, **not** deployment approval, and **not** Production approval.
+
+Settled by this decision:
+
+1. **A Production project reference inside the exact Staging deployment source is a deployment blocker.** `line-ai-excel-helper` remains **BLOCKED FROM DEPLOYMENT** with four such references, and `line-ai-excel-finalize-due` remains **BLOCKED FROM DEPLOYMENT** with three.
+2. **Staging uses its own `line-assets` bucket.**
+3. **The bucket's purpose is limited to non-sensitive static UI icons** used by LINE Flex messages. It is not approved for customer, worker, employer, or company documents, generated PDFs or Excel files, batch images, OCR inputs or outputs, Doc Inbox files, credentials, or any private business data.
+4. **Bucket contract:** `public = true`, `file_size_limit = 2097152`, `allowed_mime_types = [image/png]`. Changing any of these requires its own approval.
+5. **Public write is not approved.** No `line-assets`-specific Storage policy existed at AP-4, and **public object retrieval is untested**.
+6. **The owner-assisted two-file Production export was a one-time controlled read-only source-recovery action**, separately approved. **Production was not mutated** — no connector query, deployment, or schema/data/Storage/policy/configuration change. It establishes no general permission to read Production, and Production must not be described as untouched throughout this workstream.
+7. **The final asset URL construction method remains UNRESOLVED.**
+8. The existing helper remains **FROZEN**, and LINE PDF-to-images remains **DESIGN PASS — IMPLEMENTATION NOT STARTED**.
+
+**Reason:** Environment separation and Production protection require that a Staging deployment artifact not carry a Production project reference. Such references would make Staging runtime clients depend on Production Storage, which is not an acceptable Staging posture. The frozen-helper boundary means the asset correction cannot ride along inside a restoration or deployment Gate and needs its own approved stage. A Staging-local, non-sensitive static-icon foundation is therefore required before any restore.
+
+**Impact:** Every icon upload, the asset-decoupling code edit, static verification, each Edge Function deployment, webhook activation, every runtime test, the documentation commit, and the push each remain **separately approved**. Full evidence: `TEST_PLAN.md` section 8f.
+
+**Reopen when:** The owner changes Branch A, or later evidence makes the bucket contract or the URL-construction decision obsolete.
+
+---
+
 ## Pending decisions
 
 These are not settled and require user approval:
@@ -537,5 +560,6 @@ These are not settled and require user approval:
 10. Whether Employer duplicate prevention (E1) needs a database uniqueness rule, a frontend double-submit guard, or both.
 11. Whether Employer delete (E2) should exist at all, and if so whether it routes through the delete-request/approval workflow given the non-cascading establishments FK.
 12. Whether Employer active/inactive (E3) is needed for employers who stop trading, and how it should interact with linked workers and cases.
+13. The final asset URL construction method for the frozen helper Flex-card icons is UNRESOLVED and requires a separately approved stage.
 
 The earlier pending item "whether F1 Payment Stage or F2/58L Establishment Stage comes first" is resolved and removed: F1 is complete, and F2/58L remains the outstanding technical gate.

@@ -39,6 +39,7 @@ Employer CRUD (Staff) runtime acceptance: ⚪ NOT TESTABLE — no active Staff f
 Employer delete / active-inactive: ⚪ NOT IMPLEMENTED — out of scope until a product decision
 Employer duplicate prevention: 🟡 PARTIAL — no database uniqueness guarantee, no proven double-submit guard
 LINE PDF-to-images dual mode: 🟡 DESIGN PASS (2026-08-05) — implementation not started, not approved; no GCP, Staging runtime, or Production approval
+LINE Staging asset foundation (AP-1…AP-4, 2026-08-05): 🟡 PARTIAL — Branch A selected; Staging bucket `line-assets` created by one owner-assisted action and verified READ-ONLY PASS (public, 2,097,152-byte limit, image/png only, 0 objects); icon uploads, asset-decoupling code edit, Edge Function deployments, webhook activation, and runtime tests remain pending
 Appointments / tracking / case-status-history / contact-timeline: 🟢 repo foundation; ⚪ runtime acceptance not found
 ai_autopost_system.html: ⚪ standalone tracked file; scope/ownership/testing unconfirmed; not yet classified as Core CRM — final classification pending owner decision
 Phase 1 production readiness: 🟡 incomplete
@@ -390,6 +391,21 @@ Not approved by this design stage:
 - No GCP resource creation, no Cloud Run deployment.
 - No Staging runtime environment selection — that requires a separate decision and pre-check.
 - No Production implementation or deployment.
+
+#### Staging asset foundation progress (AP-1…AP-4, 2026-08-05) — 🟡 PARTIAL
+
+**Storage-foundation progress only.** It does not change the design status above and is not implementation, deployment, or runtime acceptance.
+
+- **Branch A selected:** preserve and later restore the existing frozen helper on Staging after removing its Production asset dependency, under a dedicated approved stage. **Not code-change, deployment, or Production approval.**
+- Staging Storage bucket `line-assets`: **VERIFIED ON STAGING** — created by one owner-assisted Dashboard action, then verified read-only: `public = true`, `file_size_limit = 2,097,152` bytes, `allowed_mime_types = [image/png]`, **0 objects**, 0 `line-assets`-specific Storage policies.
+- Bucket purpose: configured public for non-sensitive static UI icons only. **Public write is not approved. Public object retrieval remains untested. LINE image rendering remains untested.**
+- **PDF icon: NOT UPLOADED. Excel icon: NOT UPLOADED.**
+- `line-ai-excel-helper` (four Production asset references) and `line-ai-excel-finalize-due` (three Production asset references): **BLOCKED FROM DEPLOYMENT**.
+- **No asset-decoupling code edit has been performed.** **Asset URL strategy: UNRESOLVED.**
+- **Production NOT MUTATED** — no connector query, deployment, or schema/data/Storage/policy/configuration change. One separately approved owner-assisted read-only export of two static icon files was performed on 2026-08-05; do not describe Production as untouched throughout this workstream.
+- All remaining icon uploads, code edits, Edge Function deployments, webhook changes, and runtime tests **require separate approval**.
+
+Full evidence: `TEST_PLAN.md` section 8f.
 
 Gates, each requiring its own owner approval, in order:
 
