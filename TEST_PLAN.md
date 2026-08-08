@@ -6,6 +6,8 @@
 >
 > Latest verified **design** closeout: `LINE-PDF-DUAL-MODE-DESIGN`, 2026-08-05 — design review only, **no runtime test executed** — see section 8e.
 >
+> Latest verified **Staging Storage** evidence: PDF icon upload (owner Dashboard action, 2026-08-06) + read-only object verification (2026-08-07) — Storage foundation only, **not** a LINE runtime or helper acceptance — see section 8g.
+>
 > Prior historical closeouts: F1 Payment-specific Stage, 2026-07-14 (section 7); Stage 58K-C, 2026-07-13 (section 4). Live values must be re-checked before new tests.
 
 ## 1. Testing principles
@@ -539,25 +541,82 @@ AP-4 performed no database write, no Storage mutation, no object upload or downl
 
 ### Scope limitations
 
-- **PDF icon: NOT UPLOADED. Excel icon: NOT UPLOADED.** The bucket contains zero objects.
+- **At AP-4 (2026-08-05) the bucket contained zero objects: PDF icon NOT UPLOADED, Excel icon NOT UPLOADED.** That is the dated AP-4 state and it must stay recorded as such. **Superseded for the PDF icon only** by section 8g (uploaded 2026-08-06, verified 2026-08-07, bucket object count now 1). **Excel icon remains NOT UPLOADED.**
 - **LINE image rendering remains untested.**
 - `line-ai-excel-helper` (four Production asset references) and `line-ai-excel-finalize-due` (three Production asset references) remain **BLOCKED FROM DEPLOYMENT**.
 - **No asset-decoupling code edit has been performed.** No Edge Function has been deployed.
 - The **final asset URL construction strategy is UNRESOLVED** and requires a separately approved stage.
 - No Production deployment is approved.
 
-### Next test sequence — none started, each separately approved
+### Next test sequence — steps 1–3 complete, the rest not started and each separately approved
 
-1. Read-only pre-check for uploading only the PDF icon.
-2. Upload the PDF icon (one operator action).
-3. Read-only verification of that object.
-4. Upload the Excel icon (one operator action).
-5. Read-only verification of that object.
-6. Asset-decoupling code edit under the dedicated frozen-helper stage.
-7. Static verification of that edit.
-8. Each Edge Function deployment separately, each preceded by a Production-reference zero check.
-9. Webhook activation.
-10. Runtime regression of the existing frozen helper.
+1. ✅ Read-only pre-check for uploading only the PDF icon — PASS (section 8g).
+2. ✅ Upload the PDF icon (one operator action) — executed 2026-08-06 (section 8g).
+3. ✅ Read-only verification of that object — PASS (section 8g).
+4. Read-only pre-check for uploading only the Excel icon.
+5. Upload the Excel icon (one operator action).
+6. Read-only verification of that object.
+7. Asset-decoupling code edit under the dedicated frozen-helper stage.
+8. Static verification of that edit.
+9. Each Edge Function deployment separately, each preceded by a Production-reference zero check.
+10. Webhook activation.
+11. Runtime regression of the existing frozen helper.
+
+## 8g. LINE Staging PDF icon — upload and read-only verification (2026-08-06/07)
+
+**Classification: Staging Storage foundation, first object only. NOT a LINE runtime test, NOT helper runtime acceptance, NOT implementation acceptance.** No LINE message was sent, no LINE API was called, no Edge Function was deployed or invoked, no application code was changed, and no public or signed URL was requested. **Production was not accessed** during the upload or either verification stage.
+
+### Environment and target proof
+
+```text
+Staging project ref: bzwtknqvhvdmatangzqf
+Target proof: get_project_url returned https://bzwtknqvhvdmatangzqf.supabase.co
+              — re-proven at the start of every gate below
+Bucket: line-assets (bucket root; no folder created)
+Repository during all gates: branch feature-attendance,
+              HEAD 926f976090ebe73e6336f5b26440f9e57a5ac656 = origin, tree/index clean,
+              Production ref count in Staging local HTML = 0
+```
+
+### Gates
+
+| Gate | Type | Result | Evidence |
+| --- | --- | --- | --- |
+| Upload pre-check (first attempt) | READ-ONLY | **PARTIAL — local source path required** | Six-file read and Git precheck passed; the exact local source-file path was not available from session evidence or from any document, so the stage stopped before connector proof. One SELECT-only statement was withheld; zero queries executed |
+| Upload pre-check (resumed) | **READ-ONLY PASS** | Verified | Owner supplied `D:\PDFExcelicons`. Exactly one candidate matched the required basename prefix: `ChatGPT Image Jun 3, 2026, 02_52_40 PM - สำเนา.png`. Size 734,889 bytes and SHA-256 `77f5483899b0258c07317400bb4d6c2458a547a2b8049a84dd8e351bda793d7d` matched the locked contract exactly; PNG signature + IHDR gave 1254 × 1254, bit depth 8, colour type 2 (RGB), non-interlaced; file readable, outside the repository, not tracked/staged/present in the working tree. Exactly one SELECT-only statement confirmed the bucket contract and **object count 0 / exact target object count 0** |
+| PDF icon upload | **OWNER-ASSISTED STAGING STORAGE MUTATION** | Executed | Owner uploaded exactly one file through the Supabase Dashboard into `line-assets`; one object created; no folder, no policy action, no second file |
+| Post-upload verification (first statement) | READ-ONLY | **BLOCKED — exact target object not found** | Bucket contract unchanged; bucket object count 1; but the count for the pre-approved name `ChatGPT Image Jun 3, 2026, 02_52_40 PM.png` was **0** and its metadata columns were null. Stopped on the mismatch with no retry and no second query in that stage |
+| Actual-name verification | **READ-ONLY PASS** | Verified | Exactly one SELECT-only statement returned exactly one row and identified the stored object — see below |
+
+### Verified object state (read-only, 2026-08-07)
+
+| Item | Value |
+| --- | --- |
+| bucket_id | `line-assets` |
+| bucket public / file_size_limit / allowed_mime_types | true / 2097152 / `["image/png"]` — unchanged from AP-4 |
+| total object count in bucket | 1 |
+| stored object name | `ChatGPT Image Jun 3, 2026, 02_52_40 PM.png.png` |
+| mimetype | `image/png` |
+| size | 734889 bytes |
+| created_at | 2026-08-06 17:49:17.996475+00 |
+| updated_at | 2026-08-06 17:49:17.996475+00 |
+| Excel icon object | absent |
+
+`created_at` equals `updated_at`, so this snapshot shows one insert and no post-upload object update. No historical inference is drawn beyond the returned snapshot.
+
+### Name discrepancy and its resolution
+
+The pre-approved target object name was `ChatGPT Image Jun 3, 2026, 02_52_40 PM.png`. The stored name carries a **doubled `.png` extension**, consistent with the Windows Explorer hidden-extension behaviour recorded during the pre-check (the local copy suffix ` - สำเนา` was removed, and a second `.png` was appended). The **owner explicitly accepted the doubled-extension name as the permanent object name**; no rename, delete, replacement, or re-upload is required. Recorded as a durable decision in `DECISIONS_LOG.md` (2026-08-07).
+
+### Limits of this evidence
+
+- `object_size` 734889 and `mimetype` `image/png` match the approved local source asset, and 734889 differs from the Excel icon's 1,031,644 bytes. Storage metadata exposes **no checksum**, so this is a size-and-MIME match, **not** a SHA-256 byte-identity proof of the stored object.
+- The local source asset was never proven byte-identical to the protected Production object; that classification is unchanged.
+- **Public object retrieval remains UNTESTED** — no public or signed URL was requested. **LINE image rendering remains UNTESTED.**
+- The **asset URL construction strategy remains UNRESOLVED** and needs its own approved stage.
+- `line-ai-excel-helper` (four Production asset references) and `line-ai-excel-finalize-due` (three Production asset references) remain **BLOCKED FROM DEPLOYMENT**. **No asset-decoupling code edit has been performed.**
+- **Excel icon: NOT UPLOADED.** LINE PDF-to-images remains **DESIGN PASS — IMPLEMENTATION NOT STARTED**, and the existing PDF+Excel helper remains **FROZEN**.
+- The AP-4 zero-object evidence in section 8f remains valid dated history for 2026-08-05 and was not rewritten.
 
 ## 9. Phase 1 regression plan
 

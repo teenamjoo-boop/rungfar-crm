@@ -1,8 +1,8 @@
 # RUNGFA CRM — CURRENT STATE LOCK
 
-> Canonical handoff lock. It records verified history through the Employer CRUD (Admin) runtime acceptance on Staging, plus the closed `LINE-PDF-DUAL-MODE-DESIGN` design review. The LINE PDF-to-images product remains at **DESIGN PASS — IMPLEMENTATION NOT STARTED**, with no LINE runtime or deployment recorded or approved. Separately, the Staging LINE asset foundation AP-1 through AP-4 is **PARTIAL**: the `line-assets` Storage bucket was created on Staging through one approved owner-assisted action and verified by a read-only metadata check; it still contains zero objects and does not constitute LINE runtime or implementation acceptance.
+> Canonical handoff lock. It records verified history through the Employer CRUD (Admin) runtime acceptance on Staging, plus the closed `LINE-PDF-DUAL-MODE-DESIGN` design review. The LINE PDF-to-images product remains at **DESIGN PASS — IMPLEMENTATION NOT STARTED**, with no LINE runtime or deployment recorded or approved. Separately, the Staging LINE asset foundation is **PARTIAL**: the `line-assets` Storage bucket was created on Staging through one approved owner-assisted action and verified by a read-only metadata check (AP-1…AP-4, 2026-08-05), and it has since received its first object — the PDF icon, uploaded by the owner through the Dashboard and read-only verified on 2026-08-07. The bucket held **zero** objects at AP-4 and now holds exactly **one**. None of this constitutes LINE runtime, helper runtime, or implementation acceptance.
 >
-> Snapshot date: 2026-08-05 (Thailand time context) — LINE-PDF-DOC-CONSISTENCY-CORRECTION, documentation-only. Prior snapshots: 2026-07-26 (Employer CRUD Admin runtime acceptance) and 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage runtime test and cleanup were executed and verified on Staging 2026-07-14; the section 2 database values are that historical baseline, superseded by section 5c. This file records the last verified state, not a substitute for live pre-flight. Re-verify Git and DB before every new mutation.
+> Snapshot date: 2026-08-07 (Thailand time context) — LINE-PDF-STAGING-PDF-ICON-STATUS-DOC-SYNC, documentation-only. Prior snapshots: 2026-08-05 (LINE-PDF-DOC-CONSISTENCY-CORRECTION, documentation-only), 2026-07-26 (Employer CRUD Admin runtime acceptance) and 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage runtime test and cleanup were executed and verified on Staging 2026-07-14; the section 2 database values are that historical baseline, superseded by section 5c. This file records the last verified state, not a substitute for live pre-flight. Re-verify Git and DB before every new mutation.
 
 ## 1. Canonical status
 
@@ -20,7 +20,7 @@ WORKING TREE (historical pre-edit observation, 2026-08-05): clean before the six
 
 STAGING REF: bzwtknqvhvdmatangzqf
 PRODUCTION REF: magwqolbjmwymqxelizl
-PRODUCTION: NOT MUTATED — no connector query, deployment, schema/data/Storage/policy change, or configuration change occurred. One separately approved owner-assisted read-only export of exactly two static icon files from the Production `line-assets` bucket was performed on 2026-08-05. Do not describe Production as untouched throughout this LINE asset workstream.
+PRODUCTION: NOT MUTATED — no connector query, deployment, schema/data/Storage/policy change, or configuration change occurred. One separately approved owner-assisted read-only export of exactly two static icon files from the Production `line-assets` bucket was performed on 2026-08-05. Production was NOT accessed during the PDF icon upload or during either PDF icon verification stage (2026-08-06/07). Do not describe Production as untouched throughout this LINE asset workstream.
 LOCAL STAGING HTML: rungfar_crm_17.STAGING.local.html
 PRODUCTION REF COUNT IN STAGING HTML: 0 (safety gate — must stay 0)
 STAGING REF COUNT IN STAGING HTML: 4 (informational snapshot — re-report if the file changes)
@@ -49,14 +49,21 @@ IDENT-1 IDENTITY/SESSION: design complete, implementation PARKED (not started)
 CURRENT CONTROL STATUS: LINE-PDF-DUAL-MODE-DESIGN is documented at DESIGN PASS level; LINE implementation remains unauthorized.
 LINE PDF-TO-IMAGES DUAL MODE: DESIGN PASS — implementation not started, not approved
 
-LINE STAGING ASSET FOUNDATION (AP-1…AP-4, 2026-08-05): PARTIAL
+LINE STAGING ASSET FOUNDATION (AP-1…AP-4 on 2026-08-05; PDF icon upload 2026-08-06 + read-only verification 2026-08-07): PARTIAL
 BRANCH A: selected — preserve and later restore the existing PDF+Excel helper on Staging after removing its Production asset dependency. Branch A is NOT code-change approval, NOT deployment approval, and NOT Production approval
 STAGING BUCKET line-assets: VERIFIED ON STAGING — created by one OWNER-ASSISTED MUTATION (AP-3), then verified READ-ONLY PASS (AP-4)
-  public=true; file_size_limit=2097152 bytes; allowed_mime_types=[image/png]; object_count=0
-  line-assets-specific Storage policy count=0; total Staging buckets=3; public Staging buckets=1
+  public=true; file_size_limit=2097152 bytes; allowed_mime_types=[image/png] — re-verified unchanged on 2026-08-07
+  object_count=0 at AP-4 (2026-08-05, HISTORICAL pre-upload evidence) → object_count=1 verified read-only on 2026-08-07
+  line-assets-specific Storage policy count=0; total Staging buckets=3; public Staging buckets=1 (AP-4 snapshot, 2026-08-05; not re-queried in the PDF icon stages)
   created_at and updated_at were equal at AP-4 verification; no post-creation bucket update was observed in that metadata snapshot
 BUCKET PURPOSE: configured public for non-sensitive static UI icons only; public write is NOT approved; public object retrieval remains untested
-PDF ICON OBJECT: NOT UPLOADED
+PDF ICON OBJECT: UPLOADED AND READ-ONLY VERIFIED on Staging (ref bzwtknqvhvdmatangzqf, bucket line-assets, bucket root)
+  ACCEPTED PERMANENT OBJECT NAME: ChatGPT Image Jun 3, 2026, 02_52_40 PM.png.png
+    The doubled `.png` extension is explicitly ACCEPTED by the owner as the permanent object name. No rename, delete, replacement, or re-upload is required. Any later name change is a separate owner-approved mutation.
+  mimetype=image/png; size=734889 bytes
+  created_at=2026-08-06 17:49:17.996475+00; updated_at=2026-08-06 17:49:17.996475+00 (equal — one insert, no post-upload object update observed in that snapshot)
+  size and MIME match the approved local source asset; Storage metadata exposes no checksum, so this is NOT a SHA-256 byte-identity proof of the stored object
+  PUBLIC OBJECT RETRIEVAL: UNTESTED — no public or signed URL was requested during upload or verification
 EXCEL ICON OBJECT: NOT UPLOADED
 LINE IMAGE RENDERING: untested
 line-ai-excel-helper: BLOCKED FROM DEPLOYMENT — four Production asset references remain in tracked source
@@ -307,13 +314,17 @@ Implementation is not automatically authorized.
 ```
 
 ```text
+COMPLETED CONTROLLED DEPENDENCIES (LINE asset foundation, 2026-08-06/07):
+  PDF icon upload pre-check      — PASS (read-only)
+  PDF icon upload                — executed by the owner, one Dashboard action
+  PDF icon read-only verification — PASS (object identified and accepted)
+
 NEXT CONTROLLED DEPENDENCY (LINE asset foundation):
-A separately approved read-only pre-check for uploading only the PDF icon as the
-first Staging `line-assets` object.
+A separately approved read-only pre-check for uploading only the Excel icon as
+the second Staging `line-assets` object. It is not approved by this lock.
 
 Each of the following remains its own separate approval:
-  PDF icon upload
-  PDF icon verification
+  Excel icon upload pre-check
   Excel icon upload
   Excel icon verification
   asset-decoupling code edit

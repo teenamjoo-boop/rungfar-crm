@@ -544,6 +544,18 @@ Settled by this decision:
 
 ---
 
+## 2026-08-07 — The Staging PDF icon keeps its doubled-extension object name
+
+**Decision:** The first object in the Staging `line-assets` bucket is permanently named **`ChatGPT Image Jun 3, 2026, 02_52_40 PM.png.png`**. The owner explicitly **accepted the doubled `.png` extension** as the permanent object name. **No rename, delete, replacement, or re-upload is required or approved.** Any future change to this object name is a separate owner-approved Storage mutation, and any code that references the icon must use this exact stored name.
+
+**Reason:** The owner uploaded the approved local source asset through the Supabase Dashboard on 2026-08-06 while Windows Explorer was hiding file extensions, so a second `.png` was appended to the intended name `ChatGPT Image Jun 3, 2026, 02_52_40 PM.png`. Read-only verification on 2026-08-07 proved the object is otherwise exactly as approved — `image/png`, 734,889 bytes, one object in the bucket, bucket contract unchanged (`public = true`, `file_size_limit = 2097152`, `allowed_mime_types = [image/png]`). Renaming would require an extra Storage mutation on a correct object for cosmetic reasons only, which is a worse risk trade than accepting the name.
+
+**Impact:** The accepted name becomes part of the asset contract recorded in `CURRENT_STATE_LOCK.md` and `TEST_PLAN.md` section 8g. The still-unresolved asset URL construction strategy (pending decision 13) must be resolved **against this exact name**. Nothing else changes: the Excel icon remains **NOT UPLOADED**, public object retrieval and LINE image rendering remain **UNTESTED**, `line-ai-excel-helper` and `line-ai-excel-finalize-due` remain **BLOCKED FROM DEPLOYMENT**, no asset-decoupling code edit has been performed, the existing PDF+Excel helper remains **FROZEN**, and LINE PDF-to-images remains **DESIGN PASS — IMPLEMENTATION NOT STARTED**. Production was not accessed during the upload or either verification stage. Storage metadata exposes no checksum, so the stored object is verified by size and MIME only — **not** by SHA-256 byte identity.
+
+**Reopen when:** The Excel icon or a later asset makes a consistent naming convention across `line-assets` objects necessary, or the chosen URL-construction method cannot handle the doubled extension.
+
+---
+
 ## Pending decisions
 
 These are not settled and require user approval:
