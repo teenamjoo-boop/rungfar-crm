@@ -133,6 +133,22 @@ Backend ใช้ Supabase Database, RPC/Functions, Storage และ audit patt
 - ไฟล์ต้องเปิดผ่าน signed URL ชั่วคราวและ ownership/permission check; ห้ามส่ง storage_path, file_data, base64 หรือ permanent URL ออกสู่ report/audit
 - Audit ของ link/unlink เป็น strict; checklist status update เป็น best-effort ตาม contract ที่ทดสอบแล้ว
 
+**Automation Integration surface (N8N-001A — READ-ONLY V1, STAGING RUNTIME ACCEPTED 2026-08-10)**
+
+ระบบมีช่องทางอ่านข้อมูลสำหรับ automation ภายนอก (n8n) แยกต่างหากจากเส้นทางของมนุษย์:
+
+```text
+n8n machine token → n8n-read-api Edge Function → integration_n8n_* SECURITY INVOKER RPCs → CRM tables
+```
+
+- V1 มี **3 actions เท่านั้น**: `health.v1`, `management.summary.v1`, `cases.readiness.v1`
+- **Machine identity แยกจาก `public.app_users` โดยสิ้นเชิง** — ไม่มีการสวมสิทธิ์ผู้ใช้, ไม่ใช้ session, ไม่ส่ง user_id
+- `verify_jwt=false` ใช้ได้เพราะ Edge Function ทำ **custom machine authentication เองแบบบังคับ** (Bearer token → SHA-256 → constant-time compare) และ fail closed
+- n8n ถือ **opaque token เท่านั้น**; Edge เก็บเฉพาะ **SHA-256 verifier** (`N8N_READ_API_TOKEN_SHA256`); **service_role key ไม่เคยส่งให้ n8n**
+- RPC ทั้ง 5 ตัวเป็น **SECURITY INVOKER** + `search_path=''` + **EXECUTE เฉพาะ service_role** (ต่างจาก `app_*` ที่เป็น SECURITY DEFINER เพราะต้องตรวจ identity ของมนุษย์)
+- `integration_request_logs`: **RLS เปิด, 0 policies**; service_role มีสิทธิ์ **SELECT/INSERT/UPDATE เท่านั้น**
+- **ไม่มี generic table/RPC/SQL proxy** และ **ไม่มีการเขียนข้อมูลธุรกิจเลย (zero business writes)**
+
 ### โมเดลข้อมูลหลักที่ยืนยัน/ใช้งานอยู่
 
 | Entity/Table | หน้าที่ | สถานะ/ข้อสังเกต |
@@ -450,6 +466,8 @@ Fixture ชั่วคราว (ลบออกแล้ว): disposable case 
 - Checklist templates จาก PDF จริงครบทุกประเภท พร้อม versioning และ validation
 - e-WorkPermit tracking, reports, document generator, portal/PWA, OCR/AI
 - Production Smoke — ยังไม่เริ่ม และต้องมีแผน subset แยกหลัง Staging ผ่านพร้อมอนุมัติใหม่
+- N8N-001A ที่ยังค้าง (ไม่ถือว่าเสร็จ): T15 cap = STATIC VERIFIED เพราะ Staging มี open case < 100 และไม่ได้ seed เพิ่ม; T19 timeout = STATIC VERIFIED; T23 token replacement = NOT EXERCISED; n8n-side credential rotation = NOT EXERCISED (**ห้ามอ้าง zero-downtime rotation**); migration registry reconciliation เป็น ticket แยกในอนาคต; `supabase/.temp/linked-project.json` ยังชี้ไป **Production** จึงเป็น CLI hazard ถาวร (ต้องระบุ `--project-ref` ทุกครั้ง)
+- N8N-001B — **ยังไม่เริ่ม**: `cases.list.v1`, `appointments.upcoming.v1`, `expiries.candidates.v1`, `tracking.followups.v1` อยู่นอกขอบเขตจนกว่าจะอนุมัติแยก; AI Agent ยังไม่อนุมัติ
 
 ## ข้อห้ามและ Safety Rules
 

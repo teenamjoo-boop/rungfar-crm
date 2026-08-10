@@ -556,6 +556,90 @@ Settled by this decision:
 
 ---
 
+## 2026-08-10 — Automation reads go through dedicated integration RPCs, never a generic proxy (N8N-001A)
+
+**Decision:** External automation (n8n) reaches CRM data only through this fixed chain: n8n machine token → `n8n-read-api` Edge Function → dedicated `integration_n8n_*` RPCs → CRM tables. V1 exposes **exactly three** actions — `health.v1`, `management.summary.v1`, `cases.readiness.v1` — resolved by a static allowlist with hard-coded per-action RPC dispatch.
+
+**Reason:** A generic proxy (`rpc(body.rpc)`, `from(body.table)`, `execute(body.sql)`, dynamic procedure lookup) would make the machine credential equivalent to arbitrary database access. A fixed allowlist keeps the blast radius of a leaked machine token bounded to three read-only, explicitly-shaped payloads.
+
+**Impact:** Any new automation capability requires a new named `integration_n8n_*` RPC, a new allowlist entry, and its own approval — it can never be added by passing a parameter. N8N-001B (`cases.list.v1`, `appointments.upcoming.v1`, `expiries.candidates.v1`, `tracking.followups.v1`) is **NOT STARTED** and out of scope. No AI Agent is approved.
+
+**Reopen when:** A future ticket demonstrates a read need that cannot be expressed as a named, shape-fixed action.
+
+---
+
+## 2026-08-10 — Machine identity is separate from human identity (N8N-001A)
+
+**Decision:** The automation client has its own machine identity (`client_code = 'n8n-staging-readonly'`) with no relationship to `public.app_users`. It never impersonates a human user, never uses a session, and never supplies a `user_id`/`username`. Human authentication and IDENT-1 are untouched.
+
+**Reason:** Reusing a human account for machine access would corrupt audit attribution, couple automation uptime to a person's account lifecycle, and give a machine the full privilege surface of a staff member.
+
+**Impact:** Integration activity is audited in `public.integration_request_logs`, deliberately **separate** from the CRM `audit_logs` trail (which the integration path does not write). Do not "unify" the two trails without a decision — they answer different questions and have different privacy contracts.
+
+**Reopen when:** A future requirement needs per-human attribution of automation-triggered actions, which would be a write-path change requiring its own design.
+
+---
+
+## 2026-08-10 — `verify_jwt=false` is acceptable only with mandatory custom machine auth (N8N-001A)
+
+**Decision:** `n8n-read-api` is deployed with `verify_jwt=false`, and this is acceptable **only** because the function implements its own mandatory authentication: `Authorization: Bearer <opaque token>` → SHA-256 → constant-time comparison against the `N8N_READ_API_TOKEN_SHA256` Edge secret, failing closed to 401 before any database call.
+
+**Reason:** The client is a machine holding a dedicated opaque credential, not a Supabase end-user JWT. Disabling gateway JWT verification without a replacement would be an open endpoint; disabling it *with* a mandatory in-function check is a deliberate substitution, not a weakening.
+
+**Impact:** `verify_jwt=false` must never be treated as a general pattern. Any future function deployed this way must carry equivalent fail-closed custom authentication, verified at runtime. Runtime evidence for this one: missing, invalid, and malformed credentials all returned 401 with zero business RPC execution.
+
+**Reopen when:** Supabase offers first-class machine credentials that make custom verification redundant.
+
+---
+
+## 2026-08-10 — n8n receives only an opaque token; the service-role key never leaves the server (N8N-001A)
+
+**Decision:** n8n holds a dedicated opaque random token (≥256 bits) and nothing else. The repository and the Edge secret store **only the SHA-256 verifier** — never the raw token. The `service_role` key stays server-side inside the Edge runtime and is never returned, logged, or forwarded to n8n.
+
+**Reason:** A leaked service-role key is a total database compromise. A leaked machine token costs only three read-only actions and is revocable by replacing one hash.
+
+**Impact:** The raw token must never appear in the repository, migrations, Edge source, reports, audit rows, or screenshots. **V1 has exactly one active verifier** — there is no dual-hash, grace period, or overlapping-key support, so **zero-downtime rotation must never be claimed**. Rotation is the operator sequence: pause n8n workflows → generate token B → replace the stored hash → update the n8n credential → resume. T23 verifier replacement and the n8n-side rotation were **NOT EXERCISED** at acceptance.
+
+**Reopen when:** Rotation frequency makes a brief pause operationally unacceptable, which would require a deliberate dual-verifier design.
+
+---
+
+## 2026-08-10 — Integration RPCs are SECURITY INVOKER, not SECURITY DEFINER (N8N-001A)
+
+**Decision:** All five `integration_n8n_*` functions are **SECURITY INVOKER** with `SET search_path = ''`, fully-qualified relations, and EXECUTE granted **only** to `service_role`. No `SECURITY DEFINER` was introduced, and **no new privilege was granted on any existing business table**.
+
+**Reason:** `service_role` already held SELECT on `cases`/`customers`/`employers`/`case_checklist_items` and carries `rolbypassrls = true`, so INVOKER was sufficient. SECURITY DEFINER would have created a privilege-escalation surface for no benefit; escalating table grants would have widened access for every other consumer of those tables.
+
+**Impact:** This contrasts deliberately with the existing `app_*` RPCs, which are SECURITY DEFINER because they validate a human identity server-side. Integration RPCs have no such need. If a future integration function appears to require DEFINER or a new business-table grant, that is a **HARD STOP** for redesign, not a change to make in passing.
+
+**Reopen when:** A required read genuinely cannot be served under the caller's existing privileges.
+
+---
+
+## 2026-08-10 — The integration audit table is append-and-finalize, and its ACL must be pinned explicitly (N8N-001A)
+
+**Decision:** `public.integration_request_logs` has RLS **enabled with zero policies**, no access for `anon`/`authenticated`/`PUBLIC`, and `service_role` privileges of **exactly SELECT/INSERT/UPDATE**. DELETE was never granted, and TRUNCATE/REFERENCES/TRIGGER/MAINTAIN were explicitly revoked by an owner-approved amendment now carried in the migration source.
+
+**Reason:** This project carries a database-wide `ALTER DEFAULT PRIVILEGES` rule that auto-grants `Dxtm` to `service_role` on **every** new table in `public`. TRUNCATE would let the machine role wipe its own audit trail, which contradicts append-and-finalize semantics. Granting SELECT/INSERT/UPDATE alone is therefore not sufficient — the inherited privileges must be revoked explicitly.
+
+**Impact:** Any future audit-style table in this project must revoke the inherited `Dxtm` set, not merely grant the intended privileges. Verified end state: `relacl service_role=arw`. The audit row contains no token, hash, Authorization header, request/response payload, or PII — enforced by schema shape and CHECK allowlists, and confirmed by a privacy scan cross-checked against live customer values.
+
+**Reopen when:** A retention policy requires deletion, which would need its own approved mechanism rather than a broad DELETE/TRUNCATE grant.
+
+---
+
+## 2026-08-10 — The database clock is authoritative for integration timing (N8N-001A)
+
+**Decision:** All integration timestamps and rate decisions come from the database. The Edge layer never submits `created_at`, `finished_at`, or a current time. `integration_n8n_admit_request_v1` takes one `pg_catalog.clock_timestamp()` per execution under a **fixed** transaction advisory lock (`4820260814`, never client-derived) and uses it for every rolling window and the inserted `created_at`; `duration_ms` is derived in-database from `finished_at − created_at`. `client_request_id` is informational only and affects nothing.
+
+**Reason:** A client-supplied timestamp would let the caller defeat rate limiting outright, and a client-supplied lock key would let it bypass serialization.
+
+**Impact:** Thresholds are 5/rolling second, 30/minute, 300/hour, tested as `>= N` against **prior** admissions so at most N are admitted per window. A rejected request inserts **no** row and runs **no** business RPC. Runtime-verified: a 201 ms burst produced occupancy 0,1,2,3,4 and a sixth request rejected with HTTP 429 leaving no row, with normal admission after the window. An earlier burst attempt spanned 1,578 ms and was correctly classified as a **test-harness timing artefact, not a limiter defect** — a burst test must fire concurrently from one warm process.
+
+**Reopen when:** Thresholds prove operationally wrong under real n8n load.
+
+---
+
 ## Pending decisions
 
 These are not settled and require user approval:

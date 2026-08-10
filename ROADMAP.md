@@ -40,6 +40,8 @@ Employer delete / active-inactive: ⚪ NOT IMPLEMENTED — out of scope until a 
 Employer duplicate prevention: 🟡 PARTIAL — no database uniqueness guarantee, no proven double-submit guard
 LINE PDF-to-images dual mode: 🟡 DESIGN PASS (2026-08-05) — implementation not started, not approved; no GCP, Staging runtime, or Production approval
 LINE Staging asset foundation (AP-1…AP-4 2026-08-05; PDF icon 2026-08-06/07): 🟡 PARTIAL — Branch A selected; Staging bucket `line-assets` created by one owner-assisted action and verified READ-ONLY PASS (public, 2,097,152-byte limit, image/png only; 0 objects at AP-4); PDF icon ✅ uploaded and read-only verified (bucket object count now 1, accepted name `ChatGPT Image Jun 3, 2026, 02_52_40 PM.png.png`, image/png, 734,889 bytes); Excel icon upload, asset-decoupling code edit, Edge Function deployments, webhook activation, public retrieval, and all runtime tests remain pending
+N8N-001A Automation Integration Foundation (READ-ONLY V1): ✅ STAGING RUNTIME ACCEPTED 2026-08-10 — n8n machine token → n8n-read-api Edge Function → integration_n8n_* SECURITY INVOKER RPCs → CRM tables; exactly 3 actions (health.v1, management.summary.v1, cases.readiness.v1); zero business writes; implementation files uncommitted at acceptance
+N8N-001B Automation read expansion (cases.list.v1 / appointments.upcoming.v1 / expiries.candidates.v1 / tracking.followups.v1): ⚪ NOT STARTED — out of scope, requires its own approval
 Appointments / tracking / case-status-history / contact-timeline: 🟢 repo foundation; ⚪ runtime acceptance not found
 ai_autopost_system.html: ⚪ standalone tracked file; scope/ownership/testing unconfirmed; not yet classified as Core CRM — final classification pending owner decision
 Phase 1 production readiness: 🟡 incomplete
@@ -360,6 +362,37 @@ Possible uses:
 - Flag missing/inconsistent fields.
 
 Human confirmation is mandatory. Do not auto-overwrite master data or submit government applications.
+
+## Operational Automation Integration (n8n)
+
+A separate operational workstream, **not** part of the Phase 2 labor-document product. Listed here without renumbering the product phases.
+
+### N8N-001A — Automation Integration Foundation (READ-ONLY V1) — ✅ STAGING RUNTIME ACCEPTED (2026-08-10)
+
+Deployed architecture:
+
+```text
+n8n machine token → n8n-read-api Edge Function → integration_n8n_* SECURITY INVOKER RPCs → CRM tables
+```
+
+Exactly three V1 actions: `health.v1`, `management.summary.v1`, `cases.readiness.v1`.
+
+Accepted properties:
+
+- Machine identity is **separate from `public.app_users`** — no impersonation, no human session.
+- `verify_jwt=false` is correct **only** because the Edge Function implements mandatory custom machine authentication itself and fails closed.
+- n8n holds a **dedicated opaque token** only; Edge stores **only the SHA-256 verifier**; the **service-role key is never exposed to n8n**.
+- All five integration RPCs are **SECURITY INVOKER** with `search_path=''` and **service_role-only EXECUTE**.
+- `integration_request_logs` has **RLS enabled with zero policies**; service_role privileges are **exactly SELECT/INSERT/UPDATE**.
+- **No generic table/RPC/SQL proxy**; static action allowlist only. **Zero business-data writes.**
+
+Runtime evidence: valid actions HTTP 200; invalid action rejected with no audit row; authenticated oversized body HTTP 413; repeated readiness call identical; rate limiter **5 admitted + 1 HTTP 429** in a true sub-second burst; audit lifecycle and audit privacy verified; business/CRM invariants unchanged; **Production access zero**.
+
+Deferred: T15 cap **STATIC VERIFIED** (Staging has <100 open cases; none seeded); T19 timeout **STATIC VERIFIED**; T23 token replacement **NOT EXERCISED**; n8n-side credential rotation **NOT EXERCISED** (no zero-downtime rotation claimed); migration-registry reconciliation is a **separate future ticket**; `supabase/.temp/linked-project.json` still points at **Production** and remains a standing CLI hazard.
+
+### N8N-001B — Automation read expansion — ⚪ NOT STARTED
+
+Out of scope until separately approved: `cases.list.v1`, `appointments.upcoming.v1`, `expiries.candidates.v1`, `tracking.followups.v1`. No AI Agent is approved or started.
 
 ## Operational LINE Document Automation
 

@@ -2,7 +2,7 @@
 
 > Canonical handoff lock. It records verified history through the Employer CRUD (Admin) runtime acceptance on Staging, plus the closed `LINE-PDF-DUAL-MODE-DESIGN` design review. The LINE PDF-to-images product remains at **DESIGN PASS — IMPLEMENTATION NOT STARTED**, with no LINE runtime or deployment recorded or approved. Separately, the Staging LINE asset foundation is **PARTIAL**: the `line-assets` Storage bucket was created on Staging through one approved owner-assisted action and verified by a read-only metadata check (AP-1…AP-4, 2026-08-05), and it has since received its first object — the PDF icon, uploaded by the owner through the Dashboard and read-only verified on 2026-08-07. The bucket held **zero** objects at AP-4 and now holds exactly **one**. None of this constitutes LINE runtime, helper runtime, or implementation acceptance.
 >
-> Snapshot date: 2026-08-07 (Thailand time context) — LINE-PDF-STAGING-PDF-ICON-STATUS-DOC-SYNC, documentation-only. Prior snapshots: 2026-08-05 (LINE-PDF-DOC-CONSISTENCY-CORRECTION, documentation-only), 2026-07-26 (Employer CRUD Admin runtime acceptance) and 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage runtime test and cleanup were executed and verified on Staging 2026-07-14; the section 2 database values are that historical baseline, superseded by section 5c. This file records the last verified state, not a substitute for live pre-flight. Re-verify Git and DB before every new mutation.
+> Snapshot date: 2026-08-10 (Thailand time context) — N8N-001A-DOC-SYNC, recording the N8N-001A Automation Integration Foundation (READ-ONLY V1) as STAGING RUNTIME ACCEPTED (section 5d). Prior snapshots: 2026-08-07 (LINE-PDF-STAGING-PDF-ICON-STATUS-DOC-SYNC, documentation-only); 2026-08-05 (LINE-PDF-DOC-CONSISTENCY-CORRECTION, documentation-only), 2026-07-26 (Employer CRUD Admin runtime acceptance) and 2026-07-22 (F1 documentation closeout). The F1 Payment-specific Stage runtime test and cleanup were executed and verified on Staging 2026-07-14; the section 2 database values are that historical baseline, superseded by section 5c. This file records the last verified state, not a substitute for live pre-flight. Re-verify Git and DB before every new mutation.
 
 ## 1. Canonical status
 
@@ -25,7 +25,8 @@ LOCAL STAGING HTML: rungfar_crm_17.STAGING.local.html
 PRODUCTION REF COUNT IN STAGING HTML: 0 (safety gate — must stay 0)
 STAGING REF COUNT IN STAGING HTML: 4 (informational snapshot — re-report if the file changes)
 
-LATEST CLOSED RUNTIME STAGE: Employer CRUD (Admin) — PASS on Staging 2026-07-26
+LATEST CLOSED RUNTIME STAGE: N8N-001A Automation Integration Foundation (READ-ONLY V1) — PASS on Staging 2026-08-10 (see section 5d)
+PRIOR CLOSED RUNTIME STAGE: Employer CRUD (Admin) — PASS on Staging 2026-07-26
 LATEST CLOSED DESIGN STAGE: LINE-PDF-DUAL-MODE-DESIGN — DESIGN PASS on 2026-08-05 (design only; no runtime, no implementation)
 PRIOR CLOSED RUNTIME STAGES (historical): F2/58L Establishment Admin acceptance (2026-07-25, F2/58L overall PARTIAL); F1 Payment-specific Stage — closed 2026-07-14; Stage 58K-C Runtime Smoke
 RUNTIME/STATIC MATRIX: T1–T13 recorded (58K-C)
@@ -73,6 +74,24 @@ LINE EDGE FUNCTION DEPLOYMENT: none
 ASSET URL STRATEGY: UNRESOLVED — pending a separately approved stage
 EXISTING PDF+EXCEL HELPER: FROZEN
 LINE PDF-TO-IMAGES DUAL MODE (unchanged by this foundation): DESIGN PASS — IMPLEMENTATION NOT STARTED
+
+N8N-001A AUTOMATION INTEGRATION FOUNDATION (READ-ONLY V1): STAGING RUNTIME ACCEPTED 2026-08-10
+  Architecture: n8n machine token → n8n-read-api Edge Function → integration_n8n_* SECURITY INVOKER RPCs → CRM tables
+  V1 ACTIONS (exactly 3): health.v1, management.summary.v1, cases.readiness.v1
+  STAGING EDGE FUNCTIONS: 1 (n8n-read-api, ACTIVE, verify_jwt=false) — was 0 before this ticket
+  DB OBJECTS: public.integration_request_logs + integration_request_logs_client_created_idx + 5 integration_n8n_* functions
+  MACHINE IDENTITY: fully separate from public.app_users — no impersonation, no human session, no user_id path
+  EDGE SECRET: N8N_READ_API_TOKEN_SHA256 (SHA-256 verifier only; raw token never in repo/source/report/audit)
+  service_role key: never exposed to n8n; stays server-side inside the Edge runtime
+  INTEGRATION RPCs: SECURITY INVOKER, search_path='', service_role-only EXECUTE (5/5)
+  integration_request_logs: RLS ENABLED, 0 policies; service_role privileges EXACTLY select/insert/update
+    (TRUNCATE/REFERENCES/TRIGGER/MAINTAIN revoked by approved amendment; DELETE never granted)
+  NO generic table/RPC/SQL proxy; static action allowlist only
+  BUSINESS WRITES: ZERO — read-only integration surface
+  MIGRATION: 20260814_n8n_read_integration_foundation.sql applied once via Staging SQL Editor
+    migration-history registration NOT PERFORMED (supabase_migrations schema is ABSENT on Staging — same as all 63 predecessors)
+  REPOSITORY: implementation files remain UNCOMMITTED at acceptance time
+  N8N-001B: NOT STARTED — cases.list.v1 / appointments.upcoming.v1 / expiries.candidates.v1 / tracking.followups.v1 remain out of scope
 ```
 
 Repository HEAD/snapshot semantics:
@@ -268,6 +287,82 @@ case id 1 checklist: total 17, missing 13, received 4, approved 0
 **Staff:** active users total 1, active Admin 1, **active Staff 0** → Employer Staff Runtime **NOT TESTABLE**, recorded as neither PASS nor FAIL. No Staff account was created.
 
 **Not in scope / not implemented:** employer delete (no delete RPC, no UI control) and employer active/inactive (no such column or concept) — neither was tested. Duplicate prevention remains PARTIAL (no database uniqueness guarantee, no proven double-submit guard; the operator submitted once only). Audit remains best-effort and its detail does not identify the changed field. Migration-history registration remains UNVERIFIED. Production not started. **F2/58L overall remains PARTIAL** — this stage closes the Employer Admin path only.
+
+## 5d. N8N-001A Automation Integration Foundation (READ-ONLY V1) — STAGING RUNTIME ACCEPTED
+
+**Date:** 2026-08-10. **Environment:** Staging `bzwtknqvhvdmatangzqf` only. **Production access: zero.**
+
+**Purpose.** A minimal, hard-allowlisted, read-only integration surface that lets an external automation client (n8n) read CRM management/readiness summaries without any human credential and without any write capability.
+
+**Deployed architecture**
+
+```text
+n8n (holds ONLY an opaque machine token, >=256 bits)
+  → HTTPS POST → n8n-read-api Edge Function (Staging, verify_jwt=false)
+      → custom machine auth: SHA-256 of presented token, constant-time compare vs N8N_READ_API_TOKEN_SHA256
+      → integration_n8n_admit_request_v1  (rate admission + audit insert)
+      → integration_n8n_{health,management_summary,case_readiness}_v1  (SECURITY INVOKER reads)
+      → integration_n8n_finish_request_v1 (audit finalize, DB clock)
+  → public.cases / customers / employers / case_checklist_items (READ ONLY)
+```
+
+**V1 actions — exactly three.** `health.v1`, `management.summary.v1`, `cases.readiness.v1`.
+
+**Security facts (all verified on Staging)**
+
+```text
+Machine identity is separate from public.app_users; no impersonation, no session, no user_id path.
+verify_jwt=false is correct ONLY because the Edge Function implements mandatory custom machine
+  authentication itself and fails closed on missing/invalid/malformed credentials.
+n8n holds a dedicated opaque token only. It never receives the service-role key, any Supabase
+  admin credential, a CRM username/password, an app session, or a database credential.
+Edge stores ONLY the SHA-256 verifier (N8N_READ_API_TOKEN_SHA256). No raw token in repo/source/audit/report.
+service_role credential stays server-side inside the Edge runtime; never returned, never logged.
+All 5 integration_n8n_* functions: SECURITY INVOKER, SET search_path = '', EXECUTE granted to service_role only.
+  No SECURITY DEFINER was introduced anywhere.
+No new privilege was granted on any existing business table. service_role already held SELECT and
+  carries rolbypassrls=true, so SECURITY INVOKER was sufficient.
+public.integration_request_logs: RLS ENABLED with ZERO policies; anon/authenticated/PUBLIC have no access;
+  service_role privileges are EXACTLY select/insert/update (relacl service_role=arw).
+No generic table/RPC/SQL proxy. Static action allowlist with hard-coded per-action RPC dispatch.
+Business-data writes: ZERO.
+```
+
+**Runtime evidence (Staging, 2026-08-10)**
+
+```text
+health.v1 / management.summary.v1 / cases.readiness.v1 ............ HTTP 200, payloads matched independent SQL
+invalid action (app_save_customer) ............................... HTTP 400, NO audit row, no DB contact
+missing / invalid / malformed Authorization ...................... HTTP 401, zero business RPC
+GET and non-JSON content type .................................... HTTP 405 / 415, Cache-Control: no-store
+authenticated oversized body (>8 KiB) ............................ HTTP 413 (cap enforced before JSON parsing)
+cases.readiness.v1 repeated call ................................. IDENTICAL output (deterministic ordering)
+rate limiter, true sub-second burst (span 201.382 ms) ............ 5 admitted (HTTP 200) + 1 HTTP 429
+  rolling-window occupancy at admission: 0,1,2,3,4 → 6th saw 5 prior → rate_limited_second
+  the rejected request created NO integration_request_logs row
+post-window request ~88.6 s later ................................ admitted normally (limiter recovers)
+audit lifecycle .................................................. 20/20 rows terminal, 0 stuck at 'started',
+  20 distinct server-generated UUID v4 request_ids, duration_ms reconciled to finished_at - created_at
+audit privacy scan ............................................... 0 hits for token/header/payload/URL/storage
+  and 0 hits when cross-checked against live customer names / passport / alien ID / WP / visa values
+business + CRM invariants ........................................ unchanged (see below)
+Production access ................................................ ZERO
+```
+
+**Invariants at acceptance:** customers 4 (4 active), employers 2, cases 2, documents 0, case_checklist_items 34, case_payments 0, case_appointments 0, case_tracking_logs 0, app_users 1, audit_logs 144 (max id 216) — all identical to the pre-migration baseline. `app_*` function count 67 unchanged; existing business-table grants and RLS unchanged; `rungfar_crm_17.html` unchanged.
+
+**Deferred / not exercised (do not report as complete)**
+
+```text
+T15 readiness cap 100 ......... STATIC VERIFIED — Staging holds <100 open cases (1); no cases were seeded.
+T19 timeout guard ............. STATIC VERIFIED — no test-only sleep endpoint was created by design.
+T23 token replacement ......... NOT EXERCISED — requires a separate approved secret change.
+n8n-side credential rotation .. NOT EXERCISED — operator-controlled. No zero-downtime rotation is claimed.
+Migration registry ............ supabase_migrations schema ABSENT on Staging; reconciliation is a SEPARATE future ticket.
+supabase/.temp/linked-project.json points to PRODUCTION (magwqolbjmwymqxelizl) — gitignored, but any future
+  Supabase CLI use from this repo MUST pass --project-ref explicitly. Standing CLI hazard.
+N8N-001B ...................... NOT STARTED.
+```
 
 ## 6. Known product gaps carried forward
 

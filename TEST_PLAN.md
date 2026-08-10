@@ -618,6 +618,88 @@ The pre-approved target object name was `ChatGPT Image Jun 3, 2026, 02_52_40 PM.
 - **Excel icon: NOT UPLOADED.** LINE PDF-to-images remains **DESIGN PASS — IMPLEMENTATION NOT STARTED**, and the existing PDF+Excel helper remains **FROZEN**.
 - The AP-4 zero-object evidence in section 8f remains valid dated history for 2026-08-05 and was not rewritten.
 
+## 8h. N8N-001A Automation Integration Foundation (READ-ONLY V1) — canonical runtime result
+
+**Verdict: PASS — STAGING RUNTIME ACCEPTED, 2026-08-10.** Environment: Staging `bzwtknqvhvdmatangzqf` only; **Production access zero**. Implementation files were left **uncommitted** at acceptance.
+
+### Architecture under test
+
+```text
+n8n machine token → n8n-read-api Edge Function → integration_n8n_* SECURITY INVOKER RPCs → CRM tables
+```
+
+Exactly three V1 actions: `health.v1`, `management.summary.v1`, `cases.readiness.v1`.
+
+### Baseline (SELECT-only, before mutation)
+
+```text
+customers 4 (4 active)   employers 2   cases 2   documents 0
+case_checklist_items 34  case_payments 0  case_appointments 0  case_tracking_logs 0
+audit_logs 144 (max id 216)   app_users 1
+Staging Edge Functions 0   public.integration_request_logs ABSENT   integration_n8n_* ABSENT
+DB TimeZone UTC   app_list_cases canonical ordering cs.created_at DESC
+service_role SELECT on cases/customers/employers/case_checklist_items = true (rolbypassrls = true)
+```
+
+### T1–T26 matrix
+
+| Test | Expected | Actual | Verdict |
+| --- | --- | --- | --- |
+| T1 Environment/deployment | Staging only | `bzwtknqvhvdmatangzqf`; exactly 1 Edge Function; 0 Production access | RUNTIME VERIFIED |
+| T2 SECURITY INVOKER | prosecdef=false, search_path='' | 5/5 both; live service_role execution succeeded without new grants | RUNTIME VERIFIED |
+| T3 Human isolation | no app_users touch | app_users 1 unchanged; no session/user_id path exists | RUNTIME VERIFIED |
+| T4 Missing Authorization | 401, zero business RPC | 401 + `no-store`; 0 audit rows | RUNTIME VERIFIED |
+| T5 Invalid token | 401 | 401; malformed scheme also 401 | RUNTIME VERIFIED |
+| T6 Valid token + invalid action | 400 | 400 `invalid_action`; **no** audit row, no DB contact | RUNTIME VERIFIED |
+| T7 Generic proxy attacks | rejected | `rpc`/`sql`/`app_save_customer`/unknown `table` all rejected; zero mutation | RUNTIME VERIFIED |
+| T8 client_request_id | stored; distinct server id | `n8n-test-001` stored verbatim; server `request_id` a distinct UUID v4 | RUNTIME VERIFIED |
+| T9 Body cap | 413 before JSON parsing | authenticated >8 KiB → **HTTP 413**; unauthenticated 16 KiB → 401 (auth precedes body read) | RUNTIME VERIFIED |
+| T10 Method/content-type/cache | rejected + no-store | GET→405, text/plain→415, `Cache-Control: no-store` on all | RUNTIME VERIFIED |
+| T11 health.v1 | 5 safe fields only | HTTP 200; business_date matched independent Bangkok SQL | RUNTIME VERIFIED |
+| T12 management.summary.v1 | matches independent SQL | HTTP 200; open 1, draft 1, cancelled 1, due_soon_7 0, overdue 0, required_items 12, remaining 12, missing 10, blocked 1, customers 4, employers 2 | RUNTIME VERIFIED |
+| T13 cases.readiness.v1 | open only, no PII | HTTP 200; 1 open case; 12 = 10 missing + 2 received; zero PII/storage fields | RUNTIME VERIFIED |
+| T14 Deterministic ordering | identical on repeat | repeated call **IDENTICAL**; `created_at DESC, id DESC`; items `sort_order ASC, id ASC` | RUNTIME VERIFIED |
+| T15 Cap contract | cap 100 + truncation meta | `LIMIT 100` + `total_open_cases`/`returned_count`/`truncated`; Staging has 1 open case, **no cases seeded** | STATIC VERIFIED |
+| T16 Bangkok boundary | 6 boundary cases | 16:59:59Z→2026-08-10; 17:00:00Z→2026-08-11; due 08-10 overdue, 08-11/08-18 due_soon, 08-19 outside | RUNTIME VERIFIED (SQL) |
+| T17 DB clock authority | DB-only timestamps | `duration_ms` reconciled to `finished_at − created_at` on every row; no timestamp parameter exists | RUNTIME VERIFIED |
+| T18 Rate limiter | 5 admitted, 6th 429 | **5×200 + 1×429** in a 201.382 ms burst; occupancy 0,1,2,3,4 → 6th saw 5 prior; 429 created **no** row; recovery confirmed after the window | RUNTIME VERIFIED |
+| T19 Timeout guard | 8s deadline, no retry | AbortController budgets present in deployed source; **no test-only sleep endpoint created by design** | STATIC VERIFIED |
+| T20 Audit lifecycle | one row, terminal | 20/20 terminal `success`; 0 stuck at `started`; 20 distinct UUID v4 ids | RUNTIME VERIFIED |
+| T21 Audit privacy | no secrets/PII | 0 hits for token/header/payload/URL/storage and 0 hits cross-checked against live customer name/passport/alien ID/WP/visa | RUNTIME VERIFIED |
+| T22 Response privacy | no forbidden keys | payloads contain none of passport_no/alien_id/wp_no/visa_no/photo/storage_*/URL/token/secret | RUNTIME VERIFIED |
+| T23 Token replacement | B→200, A→401 | **NOT EXERCISED** — requires a separate approved secret change | NOT EXERCISED |
+| T24 Business invariants | identical | identical before/after (see below) | RUNTIME VERIFIED |
+| T25 CRM invariants | unchanged | `app_*` 67 unchanged; existing grants/RLS unchanged; `rungfar_crm_17.html` unchanged | RUNTIME VERIFIED |
+| T26 Repository diff | exactly 2 files | exactly 2 implementation files; 0 tracked files modified | PASS |
+
+### Business invariants — before / after
+
+| Table | Before | After | Result |
+| --- | ---: | ---: | --- |
+| customers (active/all) | 4 / 4 | 4 / 4 | unchanged |
+| employers | 2 | 2 | unchanged |
+| cases | 2 | 2 | unchanged |
+| documents | 0 | 0 | unchanged |
+| case_checklist_items | 34 | 34 | unchanged |
+| case_payments | 0 | 0 | unchanged |
+| case_appointments | 0 | 0 | unchanged |
+| case_tracking_logs | 0 | 0 | unchanged |
+| app_users | 1 | 1 | unchanged |
+| audit_logs | 144 (max id 216) | 144 (max id 216) | unchanged |
+| Production | untouched | untouched | PASS |
+
+Only `public.integration_request_logs` grew (0 → 20 rows). The CRM `audit_logs` trail was **not** written by the integration path — integration auditing is deliberately separate.
+
+### Privilege-hardening amendment (approved, applied separately)
+
+Supabase's project-wide `ALTER DEFAULT PRIVILEGES` on schema `public` auto-grants `Dxtm` (TRUNCATE/REFERENCES/TRIGGER/MAINTAIN) to `service_role` on every new table. For an append-and-finalize audit table TRUNCATE is equivalent to wiping the trail, so an owner-approved amendment revoked those four privileges. Verified result: `relacl service_role=arw` — **exactly SELECT/INSERT/UPDATE**, DELETE never granted. The migration source was updated to reproduce this ACL on replay.
+
+### Constraints recorded (not defects)
+
+- **T15** and **T19** remain STATIC VERIFIED by design — no business cases were seeded to exceed the 100 cap, and no test-only sleep endpoint was created to force a timeout.
+- **T23** and **n8n-side credential rotation** were NOT EXERCISED. V1 has exactly one active verifier; **no zero-downtime rotation is claimed**.
+- The migration was applied via the Staging SQL Editor and is **not registered** in `supabase_migrations` — that schema is **absent** on Staging, as it is for all 63 predecessors. Reconciliation is a separate future ticket.
+
 ## 9. Phase 1 regression plan
 
 ### Customer/worker CRUD
