@@ -9,9 +9,9 @@
 //   B) กลุ่มใน LINE_PDF_HELPER_GROUP_IDS / PDF_ALLOWED_GROUP_IDS / LINE_AI_CONTROL_GROUP_ID
 //                                        → forward raw body + x-line-signature เดิม
 //                                          ไปยัง line-ai-excel-helper (ของเดิม ไม่แตะ internals)
-//   C) ข้อความในกลุ่ม MITANG_COMMAND_GROUP_IDS ที่ขึ้นต้นด้วย "มีตัง"
+//   C) ข้อความจาก LINE group เมื่อ MITANG_COMMAND_MODE=all_groups และขึ้นต้นด้วย "มีตัง"
 //                                        → ตอบคำสั่งพื้นฐานแบบ deterministic (ไม่ใช้ AI)
-//   D) ข้อความทั่วไป / กลุ่มอื่น         → เงียบ (200)
+//   D) ข้อความทั่วไป / user หรือ room source → เงียบ (200)
 //
 // หมายเหตุสำคัญ:
 //   * Attendance notify เป็น "ขาออก" (CRM → LINE push) — ไม่เกี่ยวกับ webhook นี้
@@ -215,8 +215,8 @@ Deno.serve(async (req: Request) => {
 
   // routing config
   const docinboxSet = parseGroupSet(Deno.env.get('LINE_DOCINBOX_GROUP_IDS'));
-  // แยกจาก doc-inbox โดยตั้งใจ; ไม่ตั้งค่าหรือค่าว่าง = ไม่มี command group (fail-closed)
-  const meetangCommandSet = parseGroupSet(Deno.env.get('MITANG_COMMAND_GROUP_IDS'));
+  // เปิดคำสั่งเฉพาะ explicit mode เท่านั้น; unset/unknown = ปิดทั้งหมด (fail-closed)
+  const meetangCommandMode = Deno.env.get('MITANG_COMMAND_MODE')?.trim();
   const pdfSet = parseGroupSet(
     Deno.env.get('LINE_PDF_HELPER_GROUP_IDS'),
     Deno.env.get('PDF_ALLOWED_GROUP_IDS'),
@@ -263,8 +263,8 @@ Deno.serve(async (req: Request) => {
       docinboxEvents.push(ev);
     } else if (pdfSet.has(gid)) hasPdfGroupEvent = true;
 
-    // command allowlist เป็นอิสระจาก doc-inbox; Set ว่างจะไม่ผ่านเงื่อนไขนี้ทั้งหมด
-    if (meetangCommandSet.has(gid)) {
+    // global group mode ยังจำกัดเฉพาะ LINE group; user/room source จะไม่รับคำสั่ง
+    if (meetangCommandMode === 'all_groups' && ev.source?.type === 'group') {
       const command = ev.message?.type === 'text'
         ? parseMeetangCommand(ev.message.text)
         : null;
@@ -316,7 +316,7 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── C) มีตัง: ตอบเฉพาะข้อความที่ขึ้นต้นด้วยชื่อ ใน command group ที่อนุญาต ──
+  // ── C) มีตัง: ตอบเฉพาะข้อความที่ขึ้นต้นด้วยชื่อจาก LINE group เมื่อเปิด all_groups ──
   // ข้อความทั่วไปไม่มี entry ใน meetangEvents จึงเงียบเหมือนเดิม
   if (meetangEvents.length > 0) {
     if (!channelAccessToken) {
