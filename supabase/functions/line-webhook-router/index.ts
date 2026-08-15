@@ -38,6 +38,22 @@ interface MeetangCommandEvent {
   replyToken: string;
 }
 
+type LineGroupRegistryActionKind = 'join' | 'command' | 'leave';
+
+interface LineGroupRegistryAction {
+  kind: LineGroupRegistryActionKind;
+  groupId: string;
+}
+
+interface LineGroupSummary {
+  groupName: string | null;
+  pictureUrl: string | null;
+}
+
+interface StoredLineGroup {
+  joined_at?: string | null;
+}
+
 const MEETANG_HELP = [
   'มีตัง 🐱💰 พร้อมช่วยงานแบบคำสั่งพื้นฐาน',
   '',
@@ -162,6 +178,194 @@ async function replyLineText(replyToken: string, text: string, channelAccessToke
   if (!res.ok) throw new Error(`LINE reply HTTP ${res.status}`);
 }
 
+class RegistryHttpError extends Error {
+  status: number;
+
+  constructor(status: number) {
+    super('registry HTTP request failed');
+    this.status = status;
+  }
+}
+
+const REGISTRY_FETCH_TIMEOUT_MS = 4_000;
+
+function registryHeaders(serviceKey: string): Record<string, string> {
+  return {
+    'Authorization': `Bearer ${serviceKey}`,
+    'apikey': serviceKey,
+    'Content-Type': 'application/json',
+  };
+}
+
+async function fetchLineGroupSummary(
+  groupId: string,
+  channelAccessToken: string | undefined,
+): Promise<LineGroupSummary> {
+  if (!channelAccessToken) throw new Error('LINE channel access token unavailable');
+
+  const res = await fetch(
+    `https://api.line.me/v2/bot/group/${encodeURIComponent(groupId)}/summary`,
+    {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${channelAccessToken}` },
+      signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+    },
+  );
+  if (!res.ok) throw new RegistryHttpError(res.status);
+
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new Error('invalid LINE group summary');
+  }
+  if (!body || typeof body !== 'object') throw new Error('invalid LINE group summary');
+
+  const summary = body as Record<string, unknown>;
+  return {
+    groupName: typeof summary.groupName === 'string' ? summary.groupName : null,
+    pictureUrl: typeof summary.pictureUrl === 'string' ? summary.pictureUrl : null,
+  };
+}
+
+async function findStoredLineGroup(
+  supabaseUrl: string,
+  serviceKey: string,
+  groupId: string,
+): Promise<StoredLineGroup | null> {
+  const url = `${supabaseUrl}/rest/v1/line_bot_groups` +
+    `?select=joined_at&group_id=eq.${encodeURIComponent(groupId)}&limit=1`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: registryHeaders(serviceKey),
+    signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new RegistryHttpError(res.status);
+
+  let rows: unknown;
+  try {
+    rows = await res.json();
+  } catch {
+    throw new Error('invalid registry response');
+  }
+  if (!Array.isArray(rows)) throw new Error('invalid registry response');
+  return rows.length > 0 && rows[0] && typeof rows[0] === 'object'
+    ? rows[0] as StoredLineGroup
+    : null;
+}
+
+async function upsertLineBotGroup(
+  supabaseUrl: string,
+  serviceKey: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const res = await fetch(`${supabaseUrl}/rest/v1/line_bot_groups?on_conflict=group_id`, {
+    method: 'POST',
+    headers: {
+      ...registryHeaders(serviceKey),
+      'Prefer': 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(values),
+    signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new RegistryHttpError(res.status);
+}
+
+async function updateLineBotGroup(
+  supabaseUrl: string,
+  serviceKey: string,
+  groupId: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const url = `${supabaseUrl}/rest/v1/line_bot_groups` +
+    `?group_id=eq.${encodeURIComponent(groupId)}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      ...registryHeaders(serviceKey),
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(values),
+    signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new RegistryHttpError(res.status);
+}
+
+async function syncLineGroupRegistryAction(
+  action: LineGroupRegistryAction,
+  supabaseUrl: string,
+  serviceKey: string,
+  channelAccessToken: string | undefined,
+): Promise<void> {
+  const seenAt = new Date().toISOString();
+
+  if (action.kind === 'leave') {
+    await upsertLineBotGroup(supabaseUrl, serviceKey, {
+      group_id: action.groupId,
+      is_active: false,
+      left_at: seenAt,
+      last_seen_at: seenAt,
+      updated_at: seenAt,
+    });
+    return;
+  }
+
+  if (action.kind === 'command') {
+    const existing = await findStoredLineGroup(supabaseUrl, serviceKey, action.groupId);
+    if (existing) {
+      await updateLineBotGroup(supabaseUrl, serviceKey, action.groupId, {
+        last_seen_at: seenAt,
+        updated_at: seenAt,
+      });
+      return;
+    }
+
+    const summary = await fetchLineGroupSummary(action.groupId, channelAccessToken);
+    await upsertLineBotGroup(supabaseUrl, serviceKey, {
+      group_id: action.groupId,
+      group_name: summary.groupName,
+      picture_url: summary.pictureUrl,
+      is_active: true,
+      last_seen_at: seenAt,
+      updated_at: seenAt,
+    });
+    return;
+  }
+
+  const summary = await fetchLineGroupSummary(action.groupId, channelAccessToken);
+  const existing = await findStoredLineGroup(supabaseUrl, serviceKey, action.groupId);
+  await upsertLineBotGroup(supabaseUrl, serviceKey, {
+    group_id: action.groupId,
+    group_name: summary.groupName,
+    picture_url: summary.pictureUrl,
+    is_active: true,
+    joined_at: existing?.joined_at || seenAt,
+    left_at: null,
+    last_seen_at: seenAt,
+    updated_at: seenAt,
+  });
+}
+
+function logRegistryFailure(action: LineGroupRegistryAction, error: unknown): void {
+  const httpStatus = error instanceof RegistryHttpError ? ` HTTP ${error.status}` : '';
+  console.error(`[line-router] group registry ${action.kind} failed${httpStatus}`);
+}
+
+async function syncLineGroupRegistry(
+  actions: LineGroupRegistryAction[],
+  supabaseUrl: string,
+  serviceKey: string,
+  channelAccessToken: string | undefined,
+): Promise<void> {
+  for (const action of actions) {
+    try {
+      await syncLineGroupRegistryAction(action, supabaseUrl, serviceKey, channelAccessToken);
+    } catch (error) {
+      logRegistryFailure(action, error);
+    }
+  }
+}
+
 // ─── Signature validation (Base64(HMAC-SHA256(channelSecret, rawBody))) ───────
 //    timing-safe compare — ต้องคำนวณจาก raw body ตรง ๆ (ห้าม re-serialize)
 async function validateSignature(
@@ -254,10 +458,18 @@ Deno.serve(async (req: Request) => {
   // ── split events by destination ──
   const docinboxEvents: LineEvent[] = [];
   const meetangEvents: MeetangCommandEvent[] = [];
+  const registryActions: LineGroupRegistryAction[] = [];
+  const registryCommandGroups = new Set<string>();
   let hasPdfGroupEvent = false;
   for (const ev of events) {
     const gid = ev.source?.groupId || '';
     if (!gid) continue;
+
+    if (ev.source?.type === 'group') {
+      if (ev.type === 'join') registryActions.push({ kind: 'join', groupId: gid });
+      else if (ev.type === 'leave') registryActions.push({ kind: 'leave', groupId: gid });
+    }
+
     if (docinboxSet.has(gid)) {
       // คง flow เดิมครบทุก event; line-doc-inbox จะเลือกเก็บเฉพาะ image/file เอง
       docinboxEvents.push(ev);
@@ -268,17 +480,32 @@ Deno.serve(async (req: Request) => {
       const command = ev.message?.type === 'text'
         ? parseMeetangCommand(ev.message.text)
         : null;
-      if (command && ev.replyToken) {
-        meetangEvents.push({
-          command,
-          groupId: gid,
-          userId: ev.source?.userId || '',
-          replyToken: ev.replyToken,
-        });
+      if (command) {
+        if (!registryCommandGroups.has(gid)) {
+          registryCommandGroups.add(gid);
+          registryActions.push({ kind: 'command', groupId: gid });
+        }
+        if (ev.replyToken) {
+          meetangEvents.push({
+            command,
+            groupId: gid,
+            userId: ev.source?.userId || '',
+            replyToken: ev.replyToken,
+          });
+        }
       }
     }
     // อื่น ๆ: เงียบ
   }
+
+  // Registry discovery is best-effort and runs alongside existing routes.
+  // Every failure is caught and sanitized inside syncLineGroupRegistry.
+  const registrySync = syncLineGroupRegistry(
+    registryActions,
+    supabaseUrl,
+    serviceKey,
+    channelAccessToken,
+  );
 
   // ── A) doc-inbox: ส่ง subset ให้ worker (internal, service-role auth) ──
   if (docinboxEvents.length > 0) {
@@ -338,6 +565,8 @@ Deno.serve(async (req: Request) => {
       }
     }
   }
+
+  await registrySync;
 
   console.log(
     `[line-router] events=${events.length} docinbox=${docinboxEvents.length} ` +
