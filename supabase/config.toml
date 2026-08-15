@@ -1,0 +1,4 @@
+project_id = "rungfar-crm"
+
+[functions.line-webhook-router]
+verify_jwt = false
