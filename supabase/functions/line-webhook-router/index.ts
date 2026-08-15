@@ -38,11 +38,11 @@ interface MeetangCommandEvent {
   replyToken: string;
 }
 
-type LineGroupRegistryActionKind = 'join' | 'command' | 'leave';
-
-interface LineGroupRegistryAction {
-  kind: LineGroupRegistryActionKind;
+interface LineGroupRegistryPlan {
   groupId: string;
+  hasJoin: boolean;
+  hasCommand: boolean;
+  hasLeave: boolean;
 }
 
 interface LineGroupSummary {
@@ -51,6 +51,7 @@ interface LineGroupSummary {
 }
 
 interface StoredLineGroup {
+  group_id: string;
   joined_at?: string | null;
 }
 
@@ -188,6 +189,8 @@ class RegistryHttpError extends Error {
 }
 
 const REGISTRY_FETCH_TIMEOUT_MS = 4_000;
+const REGISTRY_LOOKUP_BATCH_SIZE = 100;
+const REGISTRY_SUMMARY_MAX_CONCURRENCY = 3;
 
 function registryHeaders(serviceKey: string): Record<string, string> {
   return {
@@ -228,30 +231,47 @@ async function fetchLineGroupSummary(
   };
 }
 
-async function findStoredLineGroup(
+function quotePostgrestValue(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+async function findStoredLineGroups(
   supabaseUrl: string,
   serviceKey: string,
-  groupId: string,
-): Promise<StoredLineGroup | null> {
-  const url = `${supabaseUrl}/rest/v1/line_bot_groups` +
-    `?select=joined_at&group_id=eq.${encodeURIComponent(groupId)}&limit=1`;
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: registryHeaders(serviceKey),
-    signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) throw new RegistryHttpError(res.status);
+  groupIds: string[],
+): Promise<Map<string, StoredLineGroup>> {
+  const stored = new Map<string, StoredLineGroup>();
 
-  let rows: unknown;
-  try {
-    rows = await res.json();
-  } catch {
-    throw new Error('invalid registry response');
+  for (let i = 0; i < groupIds.length; i += REGISTRY_LOOKUP_BATCH_SIZE) {
+    const chunk = groupIds.slice(i, i + REGISTRY_LOOKUP_BATCH_SIZE);
+    const params = new URLSearchParams({
+      select: 'group_id,joined_at',
+      group_id: `in.(${chunk.map(quotePostgrestValue).join(',')})`,
+    });
+    const res = await fetch(`${supabaseUrl}/rest/v1/line_bot_groups?${params}`, {
+      method: 'GET',
+      headers: registryHeaders(serviceKey),
+      signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new RegistryHttpError(res.status);
+
+    let rows: unknown;
+    try {
+      rows = await res.json();
+    } catch {
+      throw new Error('invalid registry response');
+    }
+    if (!Array.isArray(rows)) throw new Error('invalid registry response');
+
+    for (const row of rows) {
+      if (!row || typeof row !== 'object') throw new Error('invalid registry response');
+      const groupId = (row as Record<string, unknown>).group_id;
+      if (typeof groupId !== 'string') throw new Error('invalid registry response');
+      stored.set(groupId, row as StoredLineGroup);
+    }
   }
-  if (!Array.isArray(rows)) throw new Error('invalid registry response');
-  return rows.length > 0 && rows[0] && typeof rows[0] === 'object'
-    ? rows[0] as StoredLineGroup
-    : null;
+
+  return stored;
 }
 
 async function upsertLineBotGroup(
@@ -291,77 +311,129 @@ async function updateLineBotGroup(
   if (!res.ok) throw new RegistryHttpError(res.status);
 }
 
-async function syncLineGroupRegistryAction(
-  action: LineGroupRegistryAction,
-  supabaseUrl: string,
-  serviceKey: string,
-  channelAccessToken: string | undefined,
-): Promise<void> {
-  const seenAt = new Date().toISOString();
+type RegistryOperation = 'lookup' | 'summary' | 'discover' | 'join' | 'command' | 'leave';
 
-  if (action.kind === 'leave') {
-    await upsertLineBotGroup(supabaseUrl, serviceKey, {
-      group_id: action.groupId,
-      is_active: false,
-      left_at: seenAt,
-      last_seen_at: seenAt,
-      updated_at: seenAt,
-    });
-    return;
-  }
-
-  if (action.kind === 'command') {
-    const existing = await findStoredLineGroup(supabaseUrl, serviceKey, action.groupId);
-    if (existing) {
-      await updateLineBotGroup(supabaseUrl, serviceKey, action.groupId, {
-        last_seen_at: seenAt,
-        updated_at: seenAt,
-      });
-      return;
-    }
-
-    const summary = await fetchLineGroupSummary(action.groupId, channelAccessToken);
-    await upsertLineBotGroup(supabaseUrl, serviceKey, {
-      group_id: action.groupId,
-      group_name: summary.groupName,
-      picture_url: summary.pictureUrl,
-      is_active: true,
-      last_seen_at: seenAt,
-      updated_at: seenAt,
-    });
-    return;
-  }
-
-  const summary = await fetchLineGroupSummary(action.groupId, channelAccessToken);
-  const existing = await findStoredLineGroup(supabaseUrl, serviceKey, action.groupId);
-  await upsertLineBotGroup(supabaseUrl, serviceKey, {
-    group_id: action.groupId,
-    group_name: summary.groupName,
-    picture_url: summary.pictureUrl,
-    is_active: true,
-    joined_at: existing?.joined_at || seenAt,
-    left_at: null,
-    last_seen_at: seenAt,
-    updated_at: seenAt,
-  });
+function logRegistryFailure(operation: RegistryOperation, error: unknown): void {
+  const httpStatus = error instanceof RegistryHttpError ? ` HTTP ${error.status}` : '';
+  console.error(`[line-router] group registry ${operation} failed${httpStatus}`);
 }
 
-function logRegistryFailure(action: LineGroupRegistryAction, error: unknown): void {
-  const httpStatus = error instanceof RegistryHttpError ? ` HTTP ${error.status}` : '';
-  console.error(`[line-router] group registry ${action.kind} failed${httpStatus}`);
+function registryOperationForPlan(plan: LineGroupRegistryPlan): RegistryOperation {
+  if (plan.hasLeave) return 'leave';
+  if (plan.hasJoin) return 'join';
+  if (plan.hasCommand) return 'command';
+  return 'discover';
+}
+
+async function fetchLineGroupSummaries(
+  plans: LineGroupRegistryPlan[],
+  channelAccessToken: string | undefined,
+): Promise<Map<string, LineGroupSummary | null>> {
+  const summaries = new Map<string, LineGroupSummary | null>();
+
+  for (let i = 0; i < plans.length; i += REGISTRY_SUMMARY_MAX_CONCURRENCY) {
+    const chunk = plans.slice(i, i + REGISTRY_SUMMARY_MAX_CONCURRENCY);
+    await Promise.all(chunk.map(async (plan) => {
+      try {
+        summaries.set(
+          plan.groupId,
+          await fetchLineGroupSummary(plan.groupId, channelAccessToken),
+        );
+      } catch (error) {
+        logRegistryFailure('summary', error);
+        summaries.set(plan.groupId, null);
+      }
+    }));
+  }
+
+  return summaries;
+}
+
+async function syncLineGroupRegistryPlan(
+  plan: LineGroupRegistryPlan,
+  existing: StoredLineGroup | undefined,
+  summary: LineGroupSummary | null | undefined,
+  seenAt: string,
+  supabaseUrl: string,
+  serviceKey: string,
+): Promise<void> {
+  const isKnown = Boolean(existing);
+  const needsWrite = !isKnown || plan.hasJoin || plan.hasCommand || plan.hasLeave;
+  if (!needsWrite) return;
+
+  if (isKnown && plan.hasCommand && !plan.hasJoin && !plan.hasLeave) {
+    await updateLineBotGroup(supabaseUrl, serviceKey, plan.groupId, {
+      last_seen_at: seenAt,
+      updated_at: seenAt,
+    });
+    return;
+  }
+
+  const values: Record<string, unknown> = {
+    group_id: plan.groupId,
+    last_seen_at: seenAt,
+    updated_at: seenAt,
+  };
+
+  if (!isKnown) values.is_active = true;
+  if (summary) {
+    values.group_name = summary.groupName;
+    values.picture_url = summary.pictureUrl;
+  }
+
+  if (plan.hasJoin) {
+    values.is_active = true;
+    values.joined_at = existing?.joined_at || seenAt;
+    values.left_at = null;
+  }
+  // A leave event is always applied last for a group, regardless of payload order.
+  if (plan.hasLeave) {
+    values.is_active = false;
+    values.left_at = seenAt;
+  }
+
+  await upsertLineBotGroup(supabaseUrl, serviceKey, values);
 }
 
 async function syncLineGroupRegistry(
-  actions: LineGroupRegistryAction[],
+  plans: LineGroupRegistryPlan[],
   supabaseUrl: string,
   serviceKey: string,
   channelAccessToken: string | undefined,
 ): Promise<void> {
-  for (const action of actions) {
+  if (plans.length === 0) return;
+
+  let stored: Map<string, StoredLineGroup>;
+  try {
+    stored = await findStoredLineGroups(
+      supabaseUrl,
+      serviceKey,
+      plans.map((plan) => plan.groupId),
+    );
+  } catch (error) {
+    logRegistryFailure('lookup', error);
+    return;
+  }
+
+  const summaryPlans = plans.filter((plan) => {
+    if (plan.hasJoin) return true;
+    return !stored.has(plan.groupId);
+  });
+  const summaries = await fetchLineGroupSummaries(summaryPlans, channelAccessToken);
+  const seenAt = new Date().toISOString();
+
+  for (const plan of plans) {
     try {
-      await syncLineGroupRegistryAction(action, supabaseUrl, serviceKey, channelAccessToken);
+      await syncLineGroupRegistryPlan(
+        plan,
+        stored.get(plan.groupId),
+        summaries.get(plan.groupId),
+        seenAt,
+        supabaseUrl,
+        serviceKey,
+      );
     } catch (error) {
-      logRegistryFailure(action, error);
+      logRegistryFailure(registryOperationForPlan(plan), error);
     }
   }
 }
@@ -458,16 +530,20 @@ Deno.serve(async (req: Request) => {
   // ── split events by destination ──
   const docinboxEvents: LineEvent[] = [];
   const meetangEvents: MeetangCommandEvent[] = [];
-  const registryActions: LineGroupRegistryAction[] = [];
-  const registryCommandGroups = new Set<string>();
+  const registryPlans = new Map<string, LineGroupRegistryPlan>();
   let hasPdfGroupEvent = false;
   for (const ev of events) {
     const gid = ev.source?.groupId || '';
     if (!gid) continue;
 
     if (ev.source?.type === 'group') {
-      if (ev.type === 'join') registryActions.push({ kind: 'join', groupId: gid });
-      else if (ev.type === 'leave') registryActions.push({ kind: 'leave', groupId: gid });
+      let plan = registryPlans.get(gid);
+      if (!plan) {
+        plan = { groupId: gid, hasJoin: false, hasCommand: false, hasLeave: false };
+        registryPlans.set(gid, plan);
+      }
+      if (ev.type === 'join') plan.hasJoin = true;
+      else if (ev.type === 'leave') plan.hasLeave = true;
     }
 
     if (docinboxSet.has(gid)) {
@@ -481,10 +557,8 @@ Deno.serve(async (req: Request) => {
         ? parseMeetangCommand(ev.message.text)
         : null;
       if (command) {
-        if (!registryCommandGroups.has(gid)) {
-          registryCommandGroups.add(gid);
-          registryActions.push({ kind: 'command', groupId: gid });
-        }
+        const plan = registryPlans.get(gid);
+        if (plan) plan.hasCommand = true;
         if (ev.replyToken) {
           meetangEvents.push({
             command,
@@ -501,7 +575,7 @@ Deno.serve(async (req: Request) => {
   // Registry discovery is best-effort and runs alongside existing routes.
   // Every failure is caught and sanitized inside syncLineGroupRegistry.
   const registrySync = syncLineGroupRegistry(
-    registryActions,
+    [...registryPlans.values()],
     supabaseUrl,
     serviceKey,
     channelAccessToken,
