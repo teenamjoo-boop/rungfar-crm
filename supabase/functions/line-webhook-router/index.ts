@@ -6,8 +6,10 @@ interface LineSource { type?: string; groupId?: string; userId?: string }
 interface LineEvent {
   type?: string;
   replyToken?: string;
+  webhookEventId?: string;
+  timestamp?: number;
   source?: LineSource;
-  message?: { type?: string; text?: string };
+  message?: { id?: string; type?: string; text?: string };
 }
 
 type MeetangCommand = 'help' | 'status' | 'document-count' | 'unknown';
@@ -45,6 +47,17 @@ interface LineGroupPolicy {
   commandEnabled: boolean;
   intakeMode: LineGroupIntakeMode;
   routingMode: LineGroupRoutingMode;
+}
+
+interface LineIntakeCandidate {
+  groupId: string;
+  lineMessageId: string;
+  lineEventId: string | null;
+  textBody: string;
+  textLength: number;
+  textTruncated: boolean;
+  sourceUserId: string | null;
+  eventTimestamp: string | null;
 }
 
 const MEETANG_HELP = [
@@ -171,6 +184,7 @@ class RegistryHttpError extends Error {
 const REGISTRY_FETCH_TIMEOUT_MS = 4_000;
 const REGISTRY_LOOKUP_BATCH_SIZE = 100;
 const REGISTRY_SUMMARY_MAX_CONCURRENCY = 3;
+const INTAKE_TEXT_MAX_CHARS = 2_000;
 
 function registryHeaders(serviceKey: string): Record<string, string> {
   return {
@@ -411,6 +425,77 @@ function lineGroupPolicy(existing: StoredLineGroup | undefined): LineGroupPolicy
   };
 }
 
+// Counts Unicode code points so the bound matches PostgreSQL char_length(), which
+// the line_intake_events check constraint enforces independently.
+function buildIntakeText(raw: string): { body: string; length: number; truncated: boolean } {
+  const chars = [...raw];
+  if (chars.length <= INTAKE_TEXT_MAX_CHARS) {
+    return { body: raw, length: chars.length, truncated: false };
+  }
+  return {
+    body: chars.slice(0, INTAKE_TEXT_MAX_CHARS).join(''),
+    length: chars.length,
+    truncated: true,
+  };
+}
+
+function buildIntakeCandidate(ev: LineEvent, groupId: string): LineIntakeCandidate | null {
+  if (ev.source?.type !== 'group') return null;
+  if (ev.type !== 'message') return null;
+  if (ev.message?.type !== 'text') return null;
+  const messageId = ev.message.id;
+  if (typeof messageId !== 'string' || messageId === '') return null;
+  const text = ev.message.text;
+  if (typeof text !== 'string') return null;
+  // Command exclusion is evaluated directly and never via MITANG_COMMAND_MODE, so
+  // Mitang commands stay out of intake even when command dispatch is switched off.
+  if (parseMeetangCommand(text) !== null) return null;
+
+  const intakeText = buildIntakeText(text);
+  return {
+    groupId,
+    lineMessageId: messageId,
+    lineEventId: typeof ev.webhookEventId === 'string' && ev.webhookEventId !== ''
+      ? ev.webhookEventId
+      : null,
+    textBody: intakeText.body,
+    textLength: intakeText.length,
+    textTruncated: intakeText.truncated,
+    sourceUserId: ev.source?.userId || null,
+    eventTimestamp: typeof ev.timestamp === 'number' && Number.isFinite(ev.timestamp)
+      ? new Date(ev.timestamp).toISOString()
+      : null,
+  };
+}
+
+async function insertLineIntakeEvents(
+  supabaseUrl: string,
+  serviceKey: string,
+  candidates: LineIntakeCandidate[],
+): Promise<void> {
+  // resolution=ignore-duplicates maps to ON CONFLICT DO NOTHING, so duplicate LINE
+  // deliveries stay at one row without a read-before-write and without UPDATE rights.
+  const res = await fetch(`${supabaseUrl}/rest/v1/line_intake_events?on_conflict=line_message_id`, {
+    method: 'POST',
+    headers: {
+      ...registryHeaders(serviceKey),
+      'Prefer': 'resolution=ignore-duplicates,return=minimal',
+    },
+    body: JSON.stringify(candidates.map((candidate) => ({
+      group_id: candidate.groupId,
+      line_message_id: candidate.lineMessageId,
+      line_event_id: candidate.lineEventId,
+      text_body: candidate.textBody,
+      text_length: candidate.textLength,
+      text_truncated: candidate.textTruncated,
+      source_user_id: candidate.sourceUserId,
+      event_timestamp: candidate.eventTimestamp,
+    }))),
+    signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new RegistryHttpError(res.status);
+}
+
 async function validateSignature(
   rawBody: string, signature: string | null, channelSecret: string,
 ): Promise<boolean> {
@@ -488,6 +573,7 @@ Deno.serve(async (req: Request) => {
 
   const docinboxEvents: LineEvent[] = [];
   const commandCandidates: MeetangCommandEvent[] = [];
+  const intakeCandidates: LineIntakeCandidate[] = [];
   const registryPlans = new Map<string, LineGroupRegistryPlan>();
   let hasPdfGroupEvent = false;
 
@@ -507,6 +593,14 @@ Deno.serve(async (req: Request) => {
 
     if (docinboxSet.has(gid)) docinboxEvents.push(ev);
     else if (pdfSet.has(gid)) hasPdfGroupEvent = true;
+
+    // Patch #12 proves generic text intake only. Groups already selected by the
+    // document or PDF/Excel allowlists keep their existing behavior untouched and
+    // never capture, regardless of intake_mode.
+    if (!docinboxSet.has(gid) && !pdfSet.has(gid)) {
+      const intakeCandidate = buildIntakeCandidate(ev, gid);
+      if (intakeCandidate) intakeCandidates.push(intakeCandidate);
+    }
 
     if (meetangCommandMode === 'all_groups' && ev.source?.type === 'group') {
       const command = ev.message?.type === 'text' ? parseMeetangCommand(ev.message.text) : null;
@@ -577,9 +671,33 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // Intake fails closed with the same rules as commands: a failed registry lookup
+  // captures nothing, and an unknown group has no stored policy so its effective
+  // intake mode is none. observe is recognized but performs zero database writes.
+  const intakeEvents: LineIntakeCandidate[] = [];
+  let intakeObserved = 0;
+  if (storedGroups) {
+    for (const candidate of intakeCandidates) {
+      const existing = storedGroups.get(candidate.groupId);
+      if (!existing) continue;
+      const intakeMode = lineGroupPolicy(existing).intakeMode;
+      if (intakeMode === 'observe') intakeObserved++;
+      else if (intakeMode === 'capture') intakeEvents.push(candidate);
+    }
+  }
+
   // When registry lookup fails, command enforcement fails closed and registry sync is skipped.
   const registrySync = storedGroups
     ? syncLineGroupRegistry(registryPlanList, storedGroups, supabaseUrl, serviceKey, channelAccessToken)
+    : Promise.resolve();
+
+  // Intake persistence is best-effort: it never rejects, so it cannot affect the
+  // document route, the PDF route, command replies, or the webhook response.
+  const intakeSync = intakeEvents.length > 0
+    ? insertLineIntakeEvents(supabaseUrl, serviceKey, intakeEvents).catch((error) => {
+      const httpStatus = error instanceof RegistryHttpError ? ` HTTP ${error.status}` : '';
+      console.error(`[line-router] intake capture failed${httpStatus}`);
+    })
     : Promise.resolve();
 
   if (meetangEvents.length > 0) {
@@ -604,10 +722,12 @@ Deno.serve(async (req: Request) => {
   }
 
   await registrySync;
+  await intakeSync;
 
   console.log(
     `[line-router] events=${events.length} docinbox=${docinboxEvents.length} ` +
-      `pdfForward=${hasPdfGroupEvent} commands=${meetangEvents.length}`,
+      `pdfForward=${hasPdfGroupEvent} commands=${meetangEvents.length} ` +
+      `intake=${intakeEvents.length} intakeObserved=${intakeObserved}`,
   );
   return new Response(JSON.stringify({ ok: true }), {
     status: 200, headers: { 'Content-Type': 'application/json' },
