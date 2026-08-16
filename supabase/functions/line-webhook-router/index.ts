@@ -11,6 +11,8 @@ interface LineEvent {
 }
 
 type MeetangCommand = 'help' | 'status' | 'document-count' | 'unknown';
+type LineGroupIntakeMode = 'none' | 'observe' | 'capture';
+type LineGroupRoutingMode = 'none' | 'source' | 'destination' | 'both';
 
 interface MeetangCommandEvent {
   command: MeetangCommand;
@@ -35,6 +37,14 @@ interface StoredLineGroup {
   group_id: string;
   joined_at?: string | null;
   command_mode?: string | null;
+  intake_mode?: string | null;
+  routing_mode?: string | null;
+}
+
+interface LineGroupPolicy {
+  commandEnabled: boolean;
+  intakeMode: LineGroupIntakeMode;
+  routingMode: LineGroupRoutingMode;
 }
 
 const MEETANG_HELP = [
@@ -212,7 +222,7 @@ async function findStoredLineGroups(
   for (let i = 0; i < groupIds.length; i += REGISTRY_LOOKUP_BATCH_SIZE) {
     const chunk = groupIds.slice(i, i + REGISTRY_LOOKUP_BATCH_SIZE);
     const params = new URLSearchParams({
-      select: 'group_id,joined_at,command_mode',
+      select: 'group_id,joined_at,command_mode,intake_mode,routing_mode',
       group_id: `in.(${chunk.map(quotePostgrestValue).join(',')})`,
     });
     const res = await fetch(`${supabaseUrl}/rest/v1/line_bot_groups?${params}`, {
@@ -383,11 +393,22 @@ async function syncLineGroupRegistry(
   }
 }
 
-function isMeetangCommandEnabled(existing: StoredLineGroup | undefined): boolean {
+function normalizeIntakeMode(value: unknown): LineGroupIntakeMode {
+  return value === 'observe' || value === 'capture' ? value : 'none';
+}
+
+function normalizeRoutingMode(value: unknown): LineGroupRoutingMode {
+  return value === 'source' || value === 'destination' || value === 'both' ? value : 'none';
+}
+
+function lineGroupPolicy(existing: StoredLineGroup | undefined): LineGroupPolicy {
   // Unknown groups keep the historical default-enabled behavior. Known groups are fail-closed:
   // only explicit `enabled` accepts commands; `disabled`, `customer_safe`, null, or unknown values stay silent.
-  if (!existing) return true;
-  return existing.command_mode === 'enabled';
+  return {
+    commandEnabled: !existing || existing.command_mode === 'enabled',
+    intakeMode: normalizeIntakeMode(existing?.intake_mode),
+    routingMode: normalizeRoutingMode(existing?.routing_mode),
+  };
 }
 
 async function validateSignature(
@@ -549,7 +570,7 @@ Deno.serve(async (req: Request) => {
   const meetangEvents: MeetangCommandEvent[] = [];
   if (storedGroups) {
     for (const item of commandCandidates) {
-      if (!isMeetangCommandEnabled(storedGroups.get(item.groupId))) continue;
+      if (!lineGroupPolicy(storedGroups.get(item.groupId)).commandEnabled) continue;
       meetangEvents.push(item);
       const plan = registryPlans.get(item.groupId);
       if (plan) plan.hasCommand = true;
