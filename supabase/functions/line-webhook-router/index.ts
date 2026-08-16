@@ -10,6 +10,7 @@ interface LineEvent {
   timestamp?: number;
   source?: LineSource;
   message?: { id?: string; type?: string; text?: string };
+  unsend?: { messageId?: string };
 }
 
 type MeetangCommand = 'help' | 'status' | 'document-count' | 'unknown';
@@ -57,6 +58,15 @@ interface LineIntakeCandidate {
   textLength: number;
   textTruncated: boolean;
   sourceUserId: string | null;
+  eventTimestamp: string | null;
+}
+
+// Deliberately carries no text and no sender identity: an unsend only needs to
+// name the message being retracted.
+interface LineUnsendCandidate {
+  groupId: string;
+  lineMessageId: string;
+  lineEventId: string | null;
   eventTimestamp: string | null;
 }
 
@@ -185,6 +195,7 @@ const REGISTRY_FETCH_TIMEOUT_MS = 4_000;
 const REGISTRY_LOOKUP_BATCH_SIZE = 100;
 const REGISTRY_SUMMARY_MAX_CONCURRENCY = 3;
 const INTAKE_TEXT_MAX_CHARS = 2_000;
+const INTAKE_UNSEND_RETRY_DELAY_MS = 250;
 
 function registryHeaders(serviceKey: string): Record<string, string> {
   return {
@@ -496,6 +507,60 @@ async function insertLineIntakeEvents(
   if (!res.ok) throw new RegistryHttpError(res.status);
 }
 
+// Unsend recognition is intentionally independent of intake_mode, routing_mode,
+// command_mode, registry lookup success, and the document/PDF allowlists: a row
+// captured earlier may still need removal after any of those changed.
+function buildUnsendCandidate(ev: LineEvent, groupId: string): LineUnsendCandidate | null {
+  if (ev.source?.type !== 'group') return null;
+  if (ev.type !== 'unsend') return null;
+  const messageId = ev.unsend?.messageId;
+  if (typeof messageId !== 'string' || messageId === '') return null;
+
+  return {
+    groupId,
+    lineMessageId: messageId,
+    lineEventId: typeof ev.webhookEventId === 'string' && ev.webhookEventId !== ''
+      ? ev.webhookEventId
+      : null,
+    eventTimestamp: typeof ev.timestamp === 'number' && Number.isFinite(ev.timestamp)
+      ? new Date(ev.timestamp).toISOString()
+      : null,
+  };
+}
+
+async function callUnsendIntakeEvent(
+  supabaseUrl: string,
+  serviceKey: string,
+  candidate: LineUnsendCandidate,
+): Promise<void> {
+  // The RPC tombstones and deletes inside one transaction under the Patch #13
+  // advisory lock, so service_role needs EXECUTE only and never table DELETE.
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, INTAKE_UNSEND_RETRY_DELAY_MS));
+    }
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/app_unsend_line_intake_event`, {
+        method: 'POST',
+        headers: registryHeaders(serviceKey),
+        body: JSON.stringify({
+          p_group_id: candidate.groupId,
+          p_line_message_id: candidate.lineMessageId,
+          p_unsent_event_id: candidate.lineEventId,
+          p_unsent_event_timestamp: candidate.eventTimestamp,
+        }),
+        signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new RegistryHttpError(res.status);
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 async function validateSignature(
   rawBody: string, signature: string | null, channelSecret: string,
 ): Promise<boolean> {
@@ -574,6 +639,7 @@ Deno.serve(async (req: Request) => {
   const docinboxEvents: LineEvent[] = [];
   const commandCandidates: MeetangCommandEvent[] = [];
   const intakeCandidates: LineIntakeCandidate[] = [];
+  const unsendCandidates: LineUnsendCandidate[] = [];
   const registryPlans = new Map<string, LineGroupRegistryPlan>();
   let hasPdfGroupEvent = false;
 
@@ -593,6 +659,9 @@ Deno.serve(async (req: Request) => {
 
     if (docinboxSet.has(gid)) docinboxEvents.push(ev);
     else if (pdfSet.has(gid)) hasPdfGroupEvent = true;
+
+    const unsendCandidate = buildUnsendCandidate(ev, gid);
+    if (unsendCandidate) unsendCandidates.push(unsendCandidate);
 
     // Patch #12 proves generic text intake only. Groups already selected by the
     // document or PDF/Excel allowlists keep their existing behavior untouched and
@@ -660,6 +729,25 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // Unsend runs to completion before any generic intake write starts, and after
+  // the document/PDF routes so it cannot delay or alter them. Suppression is
+  // enforced in memory as well as in the database: a message unsent in this same
+  // payload must never be persisted even if the RPC result is unknown.
+  const unsentMessageIds = new Set(unsendCandidates.map((item) => item.lineMessageId));
+  let unsendFailed = false;
+  for (const candidate of unsendCandidates) {
+    try {
+      await callUnsendIntakeEvent(supabaseUrl, serviceKey, candidate);
+    } catch (error) {
+      const httpStatus = error instanceof RegistryHttpError ? ` HTTP ${error.status}` : '';
+      console.error(
+        `[line-router] intake unsend FAILED${httpStatus} ` +
+          `group=${candidate.groupId} message=${candidate.lineMessageId}`,
+      );
+      unsendFailed = true;
+    }
+  }
+
   const storedGroups = await storedGroupsPromise;
   const meetangEvents: MeetangCommandEvent[] = [];
   if (storedGroups) {
@@ -674,10 +762,13 @@ Deno.serve(async (req: Request) => {
   // Intake fails closed with the same rules as commands: a failed registry lookup
   // captures nothing, and an unknown group has no stored policy so its effective
   // intake mode is none. observe is recognized but performs zero database writes.
+  // A failed unsend leaves retracted text at risk, so every generic intake write
+  // for this request is suppressed until the retraction is known to have applied.
   const intakeEvents: LineIntakeCandidate[] = [];
   let intakeObserved = 0;
-  if (storedGroups) {
+  if (storedGroups && !unsendFailed) {
     for (const candidate of intakeCandidates) {
+      if (unsentMessageIds.has(candidate.lineMessageId)) continue;
       const existing = storedGroups.get(candidate.groupId);
       if (!existing) continue;
       const intakeMode = lineGroupPolicy(existing).intakeMode;
@@ -727,7 +818,8 @@ Deno.serve(async (req: Request) => {
   console.log(
     `[line-router] events=${events.length} docinbox=${docinboxEvents.length} ` +
       `pdfForward=${hasPdfGroupEvent} commands=${meetangEvents.length} ` +
-      `intake=${intakeEvents.length} intakeObserved=${intakeObserved}`,
+      `intake=${intakeEvents.length} intakeObserved=${intakeObserved} ` +
+      `unsend=${unsendCandidates.length} unsendFailed=${unsendFailed}`,
   );
   return new Response(JSON.stringify({ ok: true }), {
     status: 200, headers: { 'Content-Type': 'application/json' },
