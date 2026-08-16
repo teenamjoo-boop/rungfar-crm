@@ -1,24 +1,5 @@
 // =============================================================
 // LINE Webhook Router — Supabase Edge Function (Stage 29B)
-//
-// บทบาท: เป็น "URL webhook เดียว" ของ LINE OA (ตั้งใน LINE Developers)
-//   ใช้ OA เดียว / channel secret เดียว — แล้ว route ตาม groupId
-//
-//   A) กลุ่มใน LINE_DOCINBOX_GROUP_IDS  → ส่ง event รูป/ไฟล์ ให้ line-doc-inbox
-//                                          (เก็บเป็น pending ใน CRM, เงียบ ไม่ตอบกลุ่ม)
-//   B) กลุ่มใน LINE_PDF_HELPER_GROUP_IDS / PDF_ALLOWED_GROUP_IDS / LINE_AI_CONTROL_GROUP_ID
-//                                        → forward raw body + x-line-signature เดิม
-//                                          ไปยัง line-ai-excel-helper (ของเดิม ไม่แตะ internals)
-//   C) ข้อความจาก LINE group เมื่อ MITANG_COMMAND_MODE=all_groups และขึ้นต้นด้วย "มีตัง"
-//                                        → ตอบคำสั่งพื้นฐานแบบ deterministic (ไม่ใช้ AI)
-//   D) ข้อความทั่วไป / user หรือ room source → เงียบ (200)
-//
-// หมายเหตุสำคัญ:
-//   * Attendance notify เป็น "ขาออก" (CRM → LINE push) — ไม่เกี่ยวกับ webhook นี้
-//     กลุ่มหลักจึงรับทั้ง attendance (ขาออก) และ doc inbox (ขาเข้า) พร้อมกันได้
-//   * helper ตรวจ signature เองอยู่แล้ว และ filter เฉพาะกลุ่มที่อนุญาตของมันเอง
-//     → forward raw body ทั้งก้อนได้ปลอดภัย ตราบใดที่ docinbox/pdf group "ไม่ทับกัน"
-//   * ❗ ตั้ง Edge Function นี้ให้ verify_jwt = false (รับ LINE webhook ที่ไม่มี Supabase JWT)
 // =============================================================
 
 interface LineSource { type?: string; groupId?: string; userId?: string }
@@ -53,6 +34,7 @@ interface LineGroupSummary {
 interface StoredLineGroup {
   group_id: string;
   joined_at?: string | null;
+  command_mode?: string | null;
 }
 
 const MEETANG_HELP = [
@@ -68,8 +50,6 @@ const MEETANG_HELP = [
 
 function parseMeetangCommand(text: string | undefined): MeetangCommand | null {
   if (typeof text !== 'string') return null;
-
-  // ต้องขึ้นต้นด้วยชื่อบอทโดยตรง (ไม่ต้อง @) และไม่จับคำที่เพียงขึ้นต้นคล้ายกัน เช่น "มีตังค์"
   const match = /^มีตัง(?:\s*[:：]\s*|\s+|$)(.*)$/u.exec(text.trim());
   if (!match) return null;
 
@@ -77,24 +57,18 @@ function parseMeetangCommand(text: string | undefined): MeetangCommand | null {
   if (!body || ['help', 'ช่วย', 'ช่วยอะไรได้บ้าง', 'คำสั่ง', 'ดูคำสั่ง'].includes(body)) {
     return 'help';
   }
-  if (['status', 'สถานะ', 'เช็กสถานะ', 'เช็คสถานะ'].includes(body)) {
-    return 'status';
-  }
+  if (['status', 'สถานะ', 'เช็กสถานะ', 'เช็คสถานะ'].includes(body)) return 'status';
   if (
     ['เอกสาร', 'จำนวนเอกสาร', 'เอกสารทั้งหมด', 'เอกสารวันนี้', 'เอกสารวันนี้กี่ไฟล์'].includes(body) ||
     (body.startsWith('เอกสาร') && /(กี่|จำนวน|วันนี้|ทั้งหมด)/u.test(body))
-  ) {
-    return 'document-count';
-  }
+  ) return 'document-count';
   return 'unknown';
 }
 
 function bangkokDayRange(now = new Date()): { start: string; end: string } {
-  // Bangkok is UTC+7 year-round (no daylight-saving time).
   const bangkokOffsetMs = 7 * 60 * 60 * 1000;
   const local = new Date(now.getTime() + bangkokOffsetMs);
-  const startMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) -
-    bangkokOffsetMs;
+  const startMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - bangkokOffsetMs;
   return {
     start: new Date(startMs).toISOString(),
     end: new Date(startMs + 24 * 60 * 60 * 1000).toISOString(),
@@ -120,12 +94,9 @@ async function countLineInbox(
     },
   });
   if (!res.ok) throw new Error(`document count ${res.status}`);
-
   const contentRange = res.headers.get('content-range') || '';
   const total = Number(contentRange.split('/').pop());
-  if (!Number.isSafeInteger(total) || total < 0) {
-    throw new Error('document count missing Content-Range');
-  }
+  if (!Number.isSafeInteger(total) || total < 0) throw new Error('document count missing Content-Range');
   return total;
 }
 
@@ -181,7 +152,6 @@ async function replyLineText(replyToken: string, text: string, channelAccessToke
 
 class RegistryHttpError extends Error {
   status: number;
-
   constructor(status: number) {
     super('registry HTTP request failed');
     this.status = status;
@@ -205,7 +175,6 @@ async function fetchLineGroupSummary(
   channelAccessToken: string | undefined,
 ): Promise<LineGroupSummary> {
   if (!channelAccessToken) throw new Error('LINE channel access token unavailable');
-
   const res = await fetch(
     `https://api.line.me/v2/bot/group/${encodeURIComponent(groupId)}/summary`,
     {
@@ -223,7 +192,6 @@ async function fetchLineGroupSummary(
     throw new Error('invalid LINE group summary');
   }
   if (!body || typeof body !== 'object') throw new Error('invalid LINE group summary');
-
   const summary = body as Record<string, unknown>;
   return {
     groupName: typeof summary.groupName === 'string' ? summary.groupName : null,
@@ -241,11 +209,10 @@ async function findStoredLineGroups(
   groupIds: string[],
 ): Promise<Map<string, StoredLineGroup>> {
   const stored = new Map<string, StoredLineGroup>();
-
   for (let i = 0; i < groupIds.length; i += REGISTRY_LOOKUP_BATCH_SIZE) {
     const chunk = groupIds.slice(i, i + REGISTRY_LOOKUP_BATCH_SIZE);
     const params = new URLSearchParams({
-      select: 'group_id,joined_at',
+      select: 'group_id,joined_at,command_mode',
       group_id: `in.(${chunk.map(quotePostgrestValue).join(',')})`,
     });
     const res = await fetch(`${supabaseUrl}/rest/v1/line_bot_groups?${params}`, {
@@ -265,12 +232,15 @@ async function findStoredLineGroups(
 
     for (const row of rows) {
       if (!row || typeof row !== 'object') throw new Error('invalid registry response');
-      const groupId = (row as Record<string, unknown>).group_id;
+      const record = row as Record<string, unknown>;
+      const groupId = record.group_id;
       if (typeof groupId !== 'string') throw new Error('invalid registry response');
+      if (record.command_mode !== undefined && record.command_mode !== null && typeof record.command_mode !== 'string') {
+        throw new Error('invalid registry response');
+      }
       stored.set(groupId, row as StoredLineGroup);
     }
   }
-
   return stored;
 }
 
@@ -297,8 +267,7 @@ async function updateLineBotGroup(
   groupId: string,
   values: Record<string, unknown>,
 ): Promise<void> {
-  const url = `${supabaseUrl}/rest/v1/line_bot_groups` +
-    `?group_id=eq.${encodeURIComponent(groupId)}`;
+  const url = `${supabaseUrl}/rest/v1/line_bot_groups?group_id=eq.${encodeURIComponent(groupId)}`;
   const res = await fetch(url, {
     method: 'PATCH',
     headers: {
@@ -330,22 +299,17 @@ async function fetchLineGroupSummaries(
   channelAccessToken: string | undefined,
 ): Promise<Map<string, LineGroupSummary | null>> {
   const summaries = new Map<string, LineGroupSummary | null>();
-
   for (let i = 0; i < plans.length; i += REGISTRY_SUMMARY_MAX_CONCURRENCY) {
     const chunk = plans.slice(i, i + REGISTRY_SUMMARY_MAX_CONCURRENCY);
     await Promise.all(chunk.map(async (plan) => {
       try {
-        summaries.set(
-          plan.groupId,
-          await fetchLineGroupSummary(plan.groupId, channelAccessToken),
-        );
+        summaries.set(plan.groupId, await fetchLineGroupSummary(plan.groupId, channelAccessToken));
       } catch (error) {
         logRegistryFailure('summary', error);
         summaries.set(plan.groupId, null);
       }
     }));
   }
-
   return summaries;
 }
 
@@ -374,51 +338,32 @@ async function syncLineGroupRegistryPlan(
     last_seen_at: seenAt,
     updated_at: seenAt,
   };
-
   if (!isKnown) values.is_active = true;
   if (summary) {
     values.group_name = summary.groupName;
     values.picture_url = summary.pictureUrl;
   }
-
   if (plan.hasJoin) {
     values.is_active = true;
     values.joined_at = existing?.joined_at || seenAt;
     values.left_at = null;
   }
-  // A leave event is always applied last for a group, regardless of payload order.
   if (plan.hasLeave) {
     values.is_active = false;
     values.left_at = seenAt;
   }
-
   await upsertLineBotGroup(supabaseUrl, serviceKey, values);
 }
 
 async function syncLineGroupRegistry(
   plans: LineGroupRegistryPlan[],
+  stored: Map<string, StoredLineGroup>,
   supabaseUrl: string,
   serviceKey: string,
   channelAccessToken: string | undefined,
 ): Promise<void> {
   if (plans.length === 0) return;
-
-  let stored: Map<string, StoredLineGroup>;
-  try {
-    stored = await findStoredLineGroups(
-      supabaseUrl,
-      serviceKey,
-      plans.map((plan) => plan.groupId),
-    );
-  } catch (error) {
-    logRegistryFailure('lookup', error);
-    return;
-  }
-
-  const summaryPlans = plans.filter((plan) => {
-    if (plan.hasJoin) return true;
-    return !stored.has(plan.groupId);
-  });
+  const summaryPlans = plans.filter((plan) => plan.hasJoin || !stored.has(plan.groupId));
   const summaries = await fetchLineGroupSummaries(summaryPlans, channelAccessToken);
   const seenAt = new Date().toISOString();
 
@@ -438,8 +383,13 @@ async function syncLineGroupRegistry(
   }
 }
 
-// ─── Signature validation (Base64(HMAC-SHA256(channelSecret, rawBody))) ───────
-//    timing-safe compare — ต้องคำนวณจาก raw body ตรง ๆ (ห้าม re-serialize)
+function isMeetangCommandEnabled(existing: StoredLineGroup | undefined): boolean {
+  // Unknown groups keep the historical default-enabled behavior. Known groups are fail-closed:
+  // only explicit `enabled` accepts commands; `disabled`, `customer_safe`, null, or unknown values stay silent.
+  if (!existing) return true;
+  return existing.command_mode === 'enabled';
+}
+
 async function validateSignature(
   rawBody: string, signature: string | null, channelSecret: string,
 ): Promise<boolean> {
@@ -454,9 +404,7 @@ async function validateSignature(
     const computed = btoa(String.fromCharCode(...new Uint8Array(sigBuf)));
     if (computed.length !== signature.length) return false;
     let diff = 0;
-    for (let i = 0; i < computed.length; i++) {
-      diff |= computed.charCodeAt(i) ^ signature.charCodeAt(i);
-    }
+    for (let i = 0; i < computed.length; i++) diff |= computed.charCodeAt(i) ^ signature.charCodeAt(i);
     return diff === 0;
   } catch (e) {
     console.error('[line-router] signature error:', e instanceof Error ? e.message : e);
@@ -476,49 +424,39 @@ function parseGroupSet(...raws: (string | undefined)[]): Set<string> {
   return s;
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  const rawBody   = await req.text();
+  const rawBody = await req.text();
   const signature = req.headers.get('x-line-signature');
-
-  // ── secrets ──
-  const supabaseUrl   = Deno.env.get('SUPABASE_URL');
-  const serviceKey    = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const channelSecret = Deno.env.get('LINE_CHANNEL_SECRET');
   const channelAccessToken = Deno.env.get('LINE_CHANNEL_ACCESS_TOKEN');
 
-  // routing config
   const docinboxSet = parseGroupSet(Deno.env.get('LINE_DOCINBOX_GROUP_IDS'));
-  // เปิดคำสั่งเฉพาะ explicit mode เท่านั้น; unset/unknown = ปิดทั้งหมด (fail-closed)
   const meetangCommandMode = Deno.env.get('MITANG_COMMAND_MODE')?.trim();
   const pdfSet = parseGroupSet(
     Deno.env.get('LINE_PDF_HELPER_GROUP_IDS'),
     Deno.env.get('PDF_ALLOWED_GROUP_IDS'),
     Deno.env.get('LINE_AI_CONTROL_GROUP_ID'),
   );
-  // ปลายทางของ sibling functions
   const docInboxUrl = `${supabaseUrl}/functions/v1/line-doc-inbox`;
-  const helperUrl   = Deno.env.get('LINE_AI_EXCEL_HELPER_URL')
-    || `${supabaseUrl}/functions/v1/line-ai-excel-helper`;
+  const helperUrl = Deno.env.get('LINE_AI_EXCEL_HELPER_URL') || `${supabaseUrl}/functions/v1/line-ai-excel-helper`;
 
   if (!supabaseUrl || !serviceKey || !channelSecret) {
     console.error('[line-router] missing required secrets');
-    // ตอบ 200 กัน LINE retry ถล่ม
     return new Response(JSON.stringify({ ok: false, error: 'not configured' }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // ── verify signature (mandatory) ──
   const valid = await validateSignature(rawBody, signature, channelSecret);
   if (!valid) {
     console.warn('[line-router] invalid signature');
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // ── parse ──
   let payload: { events?: LineEvent[] };
   try {
     payload = JSON.parse(rawBody);
@@ -527,11 +465,11 @@ Deno.serve(async (req: Request) => {
   }
   const events = Array.isArray(payload.events) ? payload.events : [];
 
-  // ── split events by destination ──
   const docinboxEvents: LineEvent[] = [];
-  const meetangEvents: MeetangCommandEvent[] = [];
+  const commandCandidates: MeetangCommandEvent[] = [];
   const registryPlans = new Map<string, LineGroupRegistryPlan>();
   let hasPdfGroupEvent = false;
+
   for (const ev of events) {
     const gid = ev.source?.groupId || '';
     if (!gid) continue;
@@ -546,50 +484,42 @@ Deno.serve(async (req: Request) => {
       else if (ev.type === 'leave') plan.hasLeave = true;
     }
 
-    if (docinboxSet.has(gid)) {
-      // คง flow เดิมครบทุก event; line-doc-inbox จะเลือกเก็บเฉพาะ image/file เอง
-      docinboxEvents.push(ev);
-    } else if (pdfSet.has(gid)) hasPdfGroupEvent = true;
+    if (docinboxSet.has(gid)) docinboxEvents.push(ev);
+    else if (pdfSet.has(gid)) hasPdfGroupEvent = true;
 
-    // global group mode ยังจำกัดเฉพาะ LINE group; user/room source จะไม่รับคำสั่ง
     if (meetangCommandMode === 'all_groups' && ev.source?.type === 'group') {
-      const command = ev.message?.type === 'text'
-        ? parseMeetangCommand(ev.message.text)
-        : null;
-      if (command) {
-        const plan = registryPlans.get(gid);
-        if (plan) plan.hasCommand = true;
-        if (ev.replyToken) {
-          meetangEvents.push({
-            command,
-            groupId: gid,
-            userId: ev.source?.userId || '',
-            replyToken: ev.replyToken,
-          });
-        }
+      const command = ev.message?.type === 'text' ? parseMeetangCommand(ev.message.text) : null;
+      if (command && ev.replyToken) {
+        commandCandidates.push({
+          command,
+          groupId: gid,
+          userId: ev.source?.userId || '',
+          replyToken: ev.replyToken,
+        });
       }
     }
-    // อื่น ๆ: เงียบ
   }
 
-  // Registry discovery is best-effort and runs alongside existing routes.
-  // Every failure is caught and sanitized inside syncLineGroupRegistry.
-  const registrySync = syncLineGroupRegistry(
-    [...registryPlans.values()],
+  const registryPlanList = [...registryPlans.values()];
+  const storedGroupsPromise: Promise<Map<string, StoredLineGroup> | null> = findStoredLineGroups(
     supabaseUrl,
     serviceKey,
-    channelAccessToken,
-  );
+    registryPlanList.map((plan) => plan.groupId),
+  ).catch((error) => {
+    logRegistryFailure('lookup', error);
+    return null;
+  });
 
-  // ── A) doc-inbox: ส่ง subset ให้ worker (internal, service-role auth) ──
+  // Start existing doc/PDF routes while the registry lookup is in flight.
+  // Command enforcement waits for the lookup; unrelated routes do not.
   if (docinboxEvents.length > 0) {
     try {
       const res = await fetch(docInboxUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${serviceKey}`,
-          'apikey':        serviceKey,
-          'Content-Type':  'application/json',
+          'apikey': serviceKey,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ events: docinboxEvents }),
       });
@@ -599,14 +529,12 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── B) PDF helper: forward raw body + original signature (helper self-validates) ──
-  //    helper filter กลุ่มของมันเอง → ส่ง raw ทั้งก้อนปลอดภัย
   if (hasPdfGroupEvent) {
     try {
       const res = await fetch(helperUrl, {
         method: 'POST',
         headers: {
-          'Content-Type':     'application/json',
+          'Content-Type': 'application/json',
           'x-line-signature': signature || '',
         },
         body: rawBody,
@@ -617,8 +545,22 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── C) มีตัง: ตอบเฉพาะข้อความที่ขึ้นต้นด้วยชื่อจาก LINE group เมื่อเปิด all_groups ──
-  // ข้อความทั่วไปไม่มี entry ใน meetangEvents จึงเงียบเหมือนเดิม
+  const storedGroups = await storedGroupsPromise;
+  const meetangEvents: MeetangCommandEvent[] = [];
+  if (storedGroups) {
+    for (const item of commandCandidates) {
+      if (!isMeetangCommandEnabled(storedGroups.get(item.groupId))) continue;
+      meetangEvents.push(item);
+      const plan = registryPlans.get(item.groupId);
+      if (plan) plan.hasCommand = true;
+    }
+  }
+
+  // When registry lookup fails, command enforcement fails closed and registry sync is skipped.
+  const registrySync = storedGroups
+    ? syncLineGroupRegistry(registryPlanList, storedGroups, supabaseUrl, serviceKey, channelAccessToken)
+    : Promise.resolve();
+
   if (meetangEvents.length > 0) {
     if (!channelAccessToken) {
       console.error('[line-router] LINE_CHANNEL_ACCESS_TOKEN missing; commands skipped');
@@ -646,7 +588,6 @@ Deno.serve(async (req: Request) => {
     `[line-router] events=${events.length} docinbox=${docinboxEvents.length} ` +
       `pdfForward=${hasPdfGroupEvent} commands=${meetangEvents.length}`,
   );
-  // ── D) + valid-but-ignored: ตอบ 200 เสมอ กัน LINE retry ──
   return new Response(JSON.stringify({ ok: true }), {
     status: 200, headers: { 'Content-Type': 'application/json' },
   });
