@@ -794,7 +794,15 @@ Deno.serve(async (req: Request) => {
       if (intakeCandidate) intakeCandidates.push(intakeCandidate);
     }
 
-    if (meetangCommandMode === 'all_groups' && ev.source?.type === 'group') {
+    // Command dispatch is scoped to original message events. A messageEdited event
+    // carries the same text shape and a replyToken, so without this gate an edited
+    // message could execute a Mitang command. The document and PDF/Excel routes
+    // above are deliberately left untouched and still see every event type.
+    if (
+      meetangCommandMode === 'all_groups' &&
+      ev.source?.type === 'group' &&
+      ev.type === 'message'
+    ) {
       const command = ev.message?.type === 'text' ? parseMeetangCommand(ev.message.text) : null;
       if (command && ev.replyToken) {
         commandCandidates.push({
