@@ -196,6 +196,11 @@ const REGISTRY_LOOKUP_BATCH_SIZE = 100;
 const REGISTRY_SUMMARY_MAX_CONCURRENCY = 3;
 const INTAKE_TEXT_MAX_CHARS = 2_000;
 const INTAKE_UNSEND_RETRY_DELAY_MS = 250;
+// Monitoring is not the privacy transaction, so it uses a shorter budget than the
+// unsend RPC and never shares its retry policy.
+const OPS_ALERT_FETCH_TIMEOUT_MS = 2_000;
+const OPS_ALERT_BUCKET_MS = 15 * 60 * 1_000;
+const OPS_ALERT_KIND = 'intake-unsend-failure';
 
 function registryHeaders(serviceKey: string): Record<string, string> {
   return {
@@ -561,6 +566,124 @@ async function callUnsendIntakeEvent(
   throw lastError;
 }
 
+class OpsAlertError extends Error {
+  status: number | null;
+  constructor(status: number | null) {
+    super('ops alert delivery failed');
+    this.status = status;
+  }
+}
+
+interface EdgeRuntimeGlobal {
+  waitUntil(task: Promise<unknown>): void;
+}
+
+// EdgeRuntime is not present in Deno's ambient declarations, so it is narrowed off
+// globalThis rather than declared. When it is unavailable (local harness) the task
+// still runs, detached, with its own error handling.
+function edgeWaitUntil(task: Promise<unknown>): void {
+  const runtime = (globalThis as { EdgeRuntime?: EdgeRuntimeGlobal }).EdgeRuntime;
+  if (runtime && typeof runtime.waitUntil === 'function') runtime.waitUntil(task);
+  else void task;
+}
+
+function opsAlertBucketId(nowMs: number): number {
+  // 15-minute buckets are whole-hour aligned, so this identity is the same whether
+  // it is read as UTC or Bangkok time.
+  return Math.floor(nowMs / OPS_ALERT_BUCKET_MS);
+}
+
+function opsAlertBucketLabel(bucketId: number): string {
+  const bangkokOffsetMs = 7 * 60 * 60 * 1000;
+  const local = new Date(bucketId * OPS_ALERT_BUCKET_MS + bangkokOffsetMs);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())} ` +
+    `${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())} (+07)`;
+}
+
+// Deterministic so every isolate handling a failure in the same window sends an
+// identical key; LINE then accepts at most one push per target per window. The
+// version and variant nibbles are fixed so the value is a syntactically valid UUID.
+async function opsAlertRetryKey(seed: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed));
+  const hex = Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32)
+    .split('');
+  hex[12] = '5';
+  hex[16] = ((parseInt(hex[16], 16) & 0x3 | 0x8)).toString(16);
+  const value = hex.join('');
+  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-` +
+    `${value.slice(16, 20)}-${value.slice(20, 32)}`;
+}
+
+// Deliberately free of message text, sender identity, message ids, source group and
+// payload: this is an operational signal, not a forensic record.
+function opsAlertText(bucketId: number): string {
+  return [
+    '⚠️ มีตัง: พบปัญหา Unsend Privacy',
+    'ระบบหยุดการเก็บข้อความใหม่ของ request ที่เกี่ยวข้องแล้ว',
+    `ช่วงเวลา: ${opsAlertBucketLabel(bucketId)}`,
+    'กรุณาตรวจ Edge Function logs',
+  ].join('\n');
+}
+
+async function pushOpsAlert(
+  channelAccessToken: string,
+  targetGroupId: string,
+  text: string,
+  retryKey: string,
+): Promise<void> {
+  let lastStatus: number | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${channelAccessToken}`,
+          'Content-Type': 'application/json',
+          'X-Line-Retry-Key': retryKey,
+        },
+        body: JSON.stringify({ to: targetGroupId, messages: [{ type: 'text', text }] }),
+        signal: AbortSignal.timeout(OPS_ALERT_FETCH_TIMEOUT_MS),
+      });
+      if (res.ok) return;
+      // The same retry key was already accepted, so the alert for this window exists.
+      if (res.status === 409) return;
+      lastStatus = res.status;
+      // Only transient failures are retried; other 4xx will not succeed on a retry.
+      if (res.status < 500) throw new OpsAlertError(res.status);
+    } catch (error) {
+      if (error instanceof OpsAlertError) throw error;
+    }
+  }
+  throw new OpsAlertError(lastStatus);
+}
+
+// Best effort only. This never re-enables intake, never clears unsendFailed, and
+// never changes the webhook response.
+function scheduleUnsendOpsAlert(channelAccessToken: string | undefined, nowMs: number): void {
+  const targetGroupId = Deno.env.get('LINE_OPS_ALERT_GROUP_ID')?.trim();
+  if (!targetGroupId || !channelAccessToken) {
+    console.error('[line-router] intake unsend ALERT UNCONFIGURED');
+    return;
+  }
+
+  const bucketId = opsAlertBucketId(nowMs);
+  edgeWaitUntil((async () => {
+    try {
+      const retryKey = await opsAlertRetryKey(`${OPS_ALERT_KIND}:${targetGroupId}:${bucketId}`);
+      await pushOpsAlert(channelAccessToken, targetGroupId, opsAlertText(bucketId), retryKey);
+    } catch (error) {
+      const httpStatus = error instanceof OpsAlertError && error.status !== null
+        ? ` HTTP ${error.status}`
+        : '';
+      console.error(`[line-router] intake unsend ALERT FAILED${httpStatus} bucket=${bucketId}`);
+    }
+  })());
+}
+
 async function validateSignature(
   rawBody: string, signature: string | null, channelSecret: string,
 ): Promise<boolean> {
@@ -747,6 +870,10 @@ Deno.serve(async (req: Request) => {
       unsendFailed = true;
     }
   }
+
+  // Monitoring only. The FAILED marker above remains the authoritative privacy
+  // signal, and the alert's outcome cannot influence intake suppression below.
+  if (unsendFailed) scheduleUnsendOpsAlert(channelAccessToken, Date.now());
 
   const storedGroups = await storedGroupsPromise;
   const meetangEvents: MeetangCommandEvent[] = [];
