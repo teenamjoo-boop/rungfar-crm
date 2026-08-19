@@ -13,7 +13,7 @@ interface LineEvent {
   unsend?: { messageId?: string };
 }
 
-type MeetangCommand = 'help' | 'status' | 'document-count' | 'unknown';
+type MeetangCommand = 'help' | 'status' | 'document-count' | 'price' | 'unknown';
 type LineGroupIntakeMode = 'none' | 'observe' | 'capture';
 type LineGroupRoutingMode = 'none' | 'source' | 'destination' | 'both';
 
@@ -22,6 +22,9 @@ interface MeetangCommandEvent {
   groupId: string;
   userId: string;
   replyToken: string;
+  // Text after the Mitang prefix. Only the price command reads it; every other
+  // command is fully determined by `command` alone.
+  queryText: string;
 }
 
 interface LineGroupRegistryPlan {
@@ -77,25 +80,62 @@ const MEETANG_HELP = [
   '• มีตัง ช่วยอะไรได้บ้าง',
   '• มีตัง สถานะ',
   '• มีตัง จำนวนเอกสาร',
+  // Two examples only. Help must make the price command discoverable without
+  // becoming a catalog, so no price figure and no service list appears here.
+  '• มีตัง ราคาตีวีซ่า',
+  '• มีตัง ราคาพาสลาว',
   '',
   'ตอนนี้ยังไม่ใช้ AI และจะไม่ตอบข้อความทั่วไปในกลุ่ม',
 ].join('\n');
 
-function parseMeetangCommand(text: string | undefined): MeetangCommand | null {
-  if (typeof text !== 'string') return null;
-  const match = /^มีตัง(?:\s*[:：]\s*|\s+|$)(.*)$/u.exec(text.trim());
-  if (!match) return null;
+// "มีตัง " / "มีตัง:" — the historical form. Everything after the delimiter is a
+// command body, including an unrecognized one.
+const MEETANG_DELIMITED = /^มีตัง(?:\s*[:：]\s*|\s+|$)(.*)$/u;
+// "มีตัง…" with nothing between the prefix and the body.
+const MEETANG_JOINED = /^มีตัง(.+)$/u;
+// A price question is anything that mentions a price or a cost. This is checked
+// only after every existing exact-match family, so no body that used to resolve
+// to help, status or document-count can be diverted here.
+const MEETANG_PRICE_HINT = /(ราคา|ทุน)/u;
 
-  const body = match[1].trim().toLowerCase();
-  if (!body || ['help', 'ช่วย', 'ช่วยอะไรได้บ้าง', 'คำสั่ง', 'ดูคำสั่ง'].includes(body)) {
+// The single place command families are defined. Both prefix forms resolve
+// through this, so the rules are never duplicated.
+function meetangCommandFamily(body: string): MeetangCommand {
+  const key = body.toLowerCase();
+  if (!key || ['help', 'ช่วย', 'ช่วยอะไรได้บ้าง', 'คำสั่ง', 'ดูคำสั่ง'].includes(key)) {
     return 'help';
   }
-  if (['status', 'สถานะ', 'เช็กสถานะ', 'เช็คสถานะ'].includes(body)) return 'status';
+  if (['status', 'สถานะ', 'เช็กสถานะ', 'เช็คสถานะ'].includes(key)) return 'status';
   if (
-    ['เอกสาร', 'จำนวนเอกสาร', 'เอกสารทั้งหมด', 'เอกสารวันนี้', 'เอกสารวันนี้กี่ไฟล์'].includes(body) ||
-    (body.startsWith('เอกสาร') && /(กี่|จำนวน|วันนี้|ทั้งหมด)/u.test(body))
+    ['เอกสาร', 'จำนวนเอกสาร', 'เอกสารทั้งหมด', 'เอกสารวันนี้', 'เอกสารวันนี้กี่ไฟล์'].includes(key) ||
+    (key.startsWith('เอกสาร') && /(กี่|จำนวน|วันนี้|ทั้งหมด)/u.test(key))
   ) return 'document-count';
+  if (MEETANG_PRICE_HINT.test(key)) return 'price';
   return 'unknown';
+}
+
+// The delimiter form keeps its exact historical contract, unknown bodies
+// included. The joined form is deliberately stricter: without a delimiter there
+// is nothing separating a command from an ordinary word that merely starts with
+// มีตัง, so it is accepted only when the body resolves to a known family.
+// "มีตังสถานะ" is a command; "มีตังใจทำงาน" stays chatter.
+function meetangCommandBody(text: string | undefined): string | null {
+  if (typeof text !== 'string') return null;
+  const trimmed = text.trim();
+
+  const delimited = MEETANG_DELIMITED.exec(trimmed);
+  if (delimited) return delimited[1].trim();
+
+  const joined = MEETANG_JOINED.exec(trimmed);
+  if (!joined) return null;
+  const body = joined[1].trim();
+  return meetangCommandFamily(body) === 'unknown' ? null : body;
+}
+
+function parseMeetangCommand(text: string | undefined): MeetangCommand | null {
+  const body = meetangCommandBody(text);
+  if (body === null) return null;
+  return meetangCommandFamily(body);
 }
 
 function bangkokDayRange(now = new Date()): { start: string; end: string } {
@@ -138,8 +178,12 @@ async function buildMeetangReply(
   groupId: string,
   supabaseUrl: string,
   serviceKey: string,
+  queryText = '',
 ): Promise<string> {
   if (command === 'help') return MEETANG_HELP;
+  if (command === 'price') {
+    return buildPriceReply(await lookupLinePrice(supabaseUrl, serviceKey, queryText));
+  }
   if (command === 'status') {
     return [
       'มีตังพร้อมใช้งาน 🐱💰',
@@ -512,6 +556,106 @@ async function insertLineIntakeEvents(
   if (!res.ok) throw new RegistryHttpError(res.status);
 }
 
+// One row per (service, cost) from app_lookup_line_price. Pricing facts only:
+// the RPC exposes no customer, case, document or registry data.
+interface LinePriceRow {
+  service_key: string;
+  service_name: string;
+  variant_name: string | null;
+  cost_status: string;
+  location_name: string | null;
+  cost_amount: number | string | null;
+  sale_price_min: number | string;
+  sale_price_max: number | string;
+  note: string | null;
+}
+
+// A LINE reply must stay short. Ambiguous queries legitimately return several
+// services, but the answer is capped rather than allowed to grow unbounded.
+const PRICE_MAX_SERVICES = 5;
+
+async function lookupLinePrice(
+  supabaseUrl: string,
+  serviceKey: string,
+  query: string,
+): Promise<LinePriceRow[]> {
+  const res = await fetch(`${supabaseUrl}/rest/v1/rpc/app_lookup_line_price`, {
+    method: 'POST',
+    headers: registryHeaders(serviceKey),
+    body: JSON.stringify({ p_query: query }),
+    signal: AbortSignal.timeout(REGISTRY_FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new RegistryHttpError(res.status);
+
+  let rows: unknown;
+  try {
+    rows = await res.json();
+  } catch {
+    throw new Error('invalid price lookup response');
+  }
+  if (!Array.isArray(rows)) throw new Error('invalid price lookup response');
+  return rows as LinePriceRow[];
+}
+
+// PostgREST may serialize numeric as a string, so the value is coerced once here
+// rather than trusted as a number.
+function formatBaht(value: number | string): string {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount.toLocaleString('th-TH') : String(value);
+}
+
+function buildPriceReply(rows: LinePriceRow[]): string {
+  // Deterministic miss. There is no AI fallback and no guess.
+  if (rows.length === 0) return 'ไม่พบราคากลางรายการนี้';
+
+  // The RPC already orders rows; grouping preserves that order.
+  const order: string[] = [];
+  const grouped = new Map<string, LinePriceRow[]>();
+  for (const row of rows) {
+    let bucket = grouped.get(row.service_key);
+    if (!bucket) {
+      bucket = [];
+      grouped.set(row.service_key, bucket);
+      order.push(row.service_key);
+    }
+    bucket.push(row);
+  }
+
+  const blocks: string[] = [];
+  for (const key of order.slice(0, PRICE_MAX_SERVICES)) {
+    const bucket = grouped.get(key) || [];
+    const head = bucket[0];
+    const lines: string[] = [
+      head.variant_name ? `${head.service_name} ${head.variant_name}` : head.service_name,
+    ];
+
+    const costs = bucket.filter((row) => row.cost_amount !== null && row.cost_amount !== undefined);
+    if (head.cost_status !== 'confirmed' || costs.length === 0) {
+      // Never print a number the catalog does not confirm.
+      lines.push('ทุน: ยังไม่ยืนยัน');
+    } else if (costs.length === 1 && !costs[0].location_name) {
+      lines.push(`ทุน: ${formatBaht(costs[0].cost_amount as number | string)} บาท`);
+    } else {
+      lines.push('ทุน:');
+      for (const cost of costs) {
+        const where = cost.location_name ? `${cost.location_name} ` : '';
+        lines.push(`- ${where}${formatBaht(cost.cost_amount as number | string)} บาท`);
+      }
+    }
+
+    const min = formatBaht(head.sale_price_min);
+    const max = formatBaht(head.sale_price_max);
+    lines.push(min === max ? `ราคาขาย: ${min} บาท` : `ราคาขาย: ${min}–${max} บาท`);
+    if (head.note) lines.push(`หมายเหตุ: ${head.note}`);
+    blocks.push(lines.join('\n'));
+  }
+
+  if (order.length > PRICE_MAX_SERVICES) {
+    blocks.push(`(แสดง ${PRICE_MAX_SERVICES} รายการแรก จากทั้งหมด ${order.length} รายการ)`);
+  }
+  return blocks.join('\n\n');
+}
+
 // Unsend recognition is intentionally independent of intake_mode, routing_mode,
 // command_mode, registry lookup success, and the document/PDF allowlists: a row
 // captured earlier may still need removal after any of those changed.
@@ -810,6 +954,7 @@ Deno.serve(async (req: Request) => {
           groupId: gid,
           userId: ev.source?.userId || '',
           replyToken: ev.replyToken,
+          queryText: meetangCommandBody(ev.message?.text) || '',
         });
       }
     }
@@ -887,7 +1032,13 @@ Deno.serve(async (req: Request) => {
   const meetangEvents: MeetangCommandEvent[] = [];
   if (storedGroups) {
     for (const item of commandCandidates) {
-      if (!lineGroupPolicy(storedGroups.get(item.groupId)).commandEnabled) continue;
+      const existing = storedGroups.get(item.groupId);
+      if (!lineGroupPolicy(existing).commandEnabled) continue;
+      // Pricing exposes internal cost data, so it is stricter than the other
+      // command families: it requires an explicitly trusted group. An unknown
+      // group's historical default-enabled behavior does not grant it, and
+      // customer_safe and disabled never reach here at all.
+      if (item.command === 'price' && existing?.command_mode !== 'enabled') continue;
       meetangEvents.push(item);
       const plan = registryPlans.get(item.groupId);
       if (plan) plan.hasCommand = true;
@@ -934,7 +1085,13 @@ Deno.serve(async (req: Request) => {
         try {
           let reply: string;
           try {
-            reply = await buildMeetangReply(item.command, item.groupId, supabaseUrl, serviceKey);
+            reply = await buildMeetangReply(
+              item.command,
+              item.groupId,
+              supabaseUrl,
+              serviceKey,
+              item.queryText,
+            );
           } catch (e) {
             console.error('[line-router] command data error:', e instanceof Error ? e.message : e);
             reply = 'มีตังตรวจข้อมูลไม่สำเร็จในขณะนี้ กรุณาลองใหม่อีกครั้ง';
