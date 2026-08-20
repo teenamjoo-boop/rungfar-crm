@@ -13,7 +13,7 @@ interface LineEvent {
   unsend?: { messageId?: string };
 }
 
-type MeetangCommand = 'help' | 'status' | 'document-count' | 'price' | 'unknown';
+type MeetangCommand = 'help' | 'status' | 'document-count' | 'price' | 'location' | 'unknown';
 type LineGroupIntakeMode = 'none' | 'observe' | 'capture';
 type LineGroupRoutingMode = 'none' | 'source' | 'destination' | 'both';
 
@@ -22,8 +22,8 @@ interface MeetangCommandEvent {
   groupId: string;
   userId: string;
   replyToken: string;
-  // Text after the Mitang prefix. Only the price command reads it; every other
-  // command is fully determined by `command` alone.
+  // Text after the Mitang prefix. Only the price and location commands read it;
+  // every other command is fully determined by `command` alone.
   queryText: string;
 }
 
@@ -84,6 +84,9 @@ const MEETANG_HELP = [
   // becoming a catalog, so no price figure and no service list appears here.
   '• มีตัง ราคาตีวีซ่า',
   '• มีตัง ราคาพาสลาว',
+  // One example only, for the same reason: Help points at the location command
+  // without becoming a branch directory.
+  '• มีตังโลปทุม',
   '',
   'ตอนนี้ยังไม่ใช้ AI และจะไม่ตอบข้อความทั่วไปในกลุ่ม',
 ].join('\n');
@@ -98,6 +101,122 @@ const MEETANG_JOINED = /^มีตัง(.+)$/u;
 // to help, status or document-count can be diverted here.
 const MEETANG_PRICE_HINT = /(ราคา|ทุน)/u;
 
+// -------------------------------------------------------------
+// Branch locations
+// -------------------------------------------------------------
+
+// The five map links are Owner-supplied constants. They are never generated,
+// resolved, expanded, shortened or looked up: the whole location path is string
+// data plus literal matching, so it makes no Maps API call, no geocoding call
+// and no network request of any kind. Array order is the all-branches order.
+interface MitangBranch {
+  name: string;
+  url: string;
+  // Already space-free and lowercase, so a normalized query can be compared by
+  // equality. Matching is exact — never fuzzy, never a prefix guess.
+  aliases: readonly string[];
+}
+
+const MITANG_BRANCH_LABEL = 'รุ่งฟ้าสาขา';
+
+const MITANG_BRANCHES: readonly MitangBranch[] = [
+  {
+    name: 'ปทุมธานี',
+    url: 'https://maps.app.goo.gl/uo4h6RGiDm4ZP1Fy9?g_st=ic',
+    aliases: ['ปทุม', 'ปทุมธานี'],
+  },
+  {
+    name: 'คลอง4',
+    url: 'https://maps.app.goo.gl/Z1r41gRVWCZJBRiV7?g_st=ic',
+    aliases: ['คลอง4', 'คลองสี่'],
+  },
+  {
+    name: 'อยุธยา',
+    url: 'https://maps.app.goo.gl/E29KsjzPudQyx3M9A?g_st=ic',
+    aliases: ['อยุธ', 'อยุธยา'],
+  },
+  {
+    name: 'สระบุรี',
+    url: 'https://maps.app.goo.gl/uYokLR7R9box2Pax7?g_st=ic',
+    aliases: ['สระ', 'สระบุรี'],
+  },
+  {
+    name: 'ระยอง',
+    url: 'https://maps.app.goo.gl/iF8WSKdDgXdeQoEP7?g_st=ic',
+    aliases: ['ระยอง'],
+  },
+];
+
+// Longest first, so "โลเคชั่น" is never truncated to the short "โล". `strict`
+// marks the one prefix that is also an ordinary Thai word fragment: an
+// unrecognized tail after it is chatter, not a failed lookup.
+const MITANG_LOCATION_PREFIXES: readonly { prefix: string; strict: boolean }[] = [
+  { prefix: 'ขอโลเคชั่น', strict: false },
+  { prefix: 'โลเคชั่น', strict: false },
+  { prefix: 'location', strict: false },
+  { prefix: 'แผนที่', strict: false },
+  { prefix: 'ขอโล', strict: false },
+  { prefix: 'แมพ', strict: false },
+  { prefix: 'โล', strict: true },
+];
+
+const MITANG_LOCATION_ALL = ['ทั้งหมด', 'ทุกสาขา', 'ทุกที่', 'สาขาทั้งหมด'];
+
+type MitangLocationRequest =
+  | { kind: 'branch'; branch: MitangBranch }
+  | { kind: 'all' }
+  | { kind: 'select' }
+  | { kind: 'unknown' };
+
+// Spacing is the only thing folded, so "คลอง 4" and "คลอง4" are one branch.
+// Canonical names and URLs never pass through here.
+function mitangLocationNormalize(text: string): string {
+  return text.replace(/\s+/gu, '').toLowerCase();
+}
+
+// Returns null when the text is not a location request at all, which is what
+// keeps "มีตังโลกสวย" and "มีตังโล่งใจ" ordinary chatter.
+function parseMitangLocation(body: string): MitangLocationRequest | null {
+  const norm = mitangLocationNormalize(body);
+  for (const { prefix, strict } of MITANG_LOCATION_PREFIXES) {
+    if (!norm.startsWith(prefix)) continue;
+    const rest = norm.slice(prefix.length);
+    if (!rest) return { kind: 'select' };
+    if (MITANG_LOCATION_ALL.includes(rest)) return { kind: 'all' };
+    const branch = MITANG_BRANCHES.find((item) => item.aliases.includes(rest));
+    if (branch) return { kind: 'branch', branch };
+    // An unreadable tail is only reported as a missing branch when the prefix
+    // was unambiguous. After the short "โล" it stays chatter.
+    return strict ? null : { kind: 'unknown' };
+  }
+  return null;
+}
+
+function mitangBranchBlock(branch: MitangBranch): string {
+  return `📍 ${MITANG_BRANCH_LABEL}${branch.name}\n${branch.url}`;
+}
+
+function buildLocationReply(body: string): string {
+  const request = parseMitangLocation(body);
+  if (request?.kind === 'branch') return mitangBranchBlock(request.branch);
+  if (request?.kind === 'all') return MITANG_BRANCHES.map(mitangBranchBlock).join('\n\n');
+  if (request?.kind === 'unknown') {
+    // Names the branches that exist rather than inventing a link for one that
+    // does not.
+    return [
+      'ไม่พบโลเคชั่นสาขานี้',
+      `มีสาขา: ${MITANG_BRANCHES.map((item) => item.name).join(' / ')}`,
+    ].join('\n');
+  }
+  // Bare request, and the defensive fallback: offer the list, never guess.
+  return [
+    'เลือกสาขาที่ต้องการ:',
+    ...MITANG_BRANCHES.map((item) => `• ${MITANG_BRANCH_LABEL}${item.name}`),
+    '',
+    'พิมพ์สั้น ๆ เช่น “มีตังโลปทุม”',
+  ].join('\n');
+}
+
 // The single place command families are defined. Both prefix forms resolve
 // through this, so the rules are never duplicated.
 function meetangCommandFamily(body: string): MeetangCommand {
@@ -111,6 +230,9 @@ function meetangCommandFamily(body: string): MeetangCommand {
     (key.startsWith('เอกสาร') && /(กี่|จำนวน|วันนี้|ทั้งหมด)/u.test(key))
   ) return 'document-count';
   if (MEETANG_PRICE_HINT.test(key)) return 'price';
+  // Checked after price so no body that used to resolve to price can be
+  // diverted here; no location phrasing contains ราคา or ทุน.
+  if (parseMitangLocation(key)) return 'location';
   return 'unknown';
 }
 
@@ -184,6 +306,9 @@ async function buildMeetangReply(
   if (command === 'price') {
     return buildPriceReply(await lookupLinePrice(supabaseUrl, serviceKey, queryText));
   }
+  // Answered entirely from the seeded constants above: no fetch, no RPC, no
+  // persistence.
+  if (command === 'location') return buildLocationReply(queryText);
   if (command === 'status') {
     return [
       'มีตังพร้อมใช้งาน 🐱💰',

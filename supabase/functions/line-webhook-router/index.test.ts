@@ -1245,3 +1245,244 @@ Deno.test('P20. joined pricing still obeys command_mode', async () => {
     assertEquals(replies(calls).length, 0, `no reply for group ${group}`);
   }
 });
+
+// =============================================================
+// Location V1
+//
+// The five map links are Owner-supplied constants. They are restated here
+// independently of the router so that changing one on either side fails loudly
+// rather than agreeing with itself. Nothing in this section reaches a network:
+// the location path is string data only, which L13 asserts directly.
+// =============================================================
+
+const BRANCHES: [string, string][] = [
+  ['ปทุมธานี', 'https://maps.app.goo.gl/uo4h6RGiDm4ZP1Fy9?g_st=ic'],
+  ['คลอง4', 'https://maps.app.goo.gl/Z1r41gRVWCZJBRiV7?g_st=ic'],
+  ['อยุธยา', 'https://maps.app.goo.gl/E29KsjzPudQyx3M9A?g_st=ic'],
+  ['สระบุรี', 'https://maps.app.goo.gl/uYokLR7R9box2Pax7?g_st=ic'],
+  ['ระยอง', 'https://maps.app.goo.gl/iF8WSKdDgXdeQoEP7?g_st=ic'],
+];
+
+const branchBlock = (index: number) => `📍 รุ่งฟ้าสาขา${BRANCHES[index][0]}\n${BRANCHES[index][1]}`;
+
+const ALL_BRANCHES_REPLY = BRANCHES.map((_, i) => branchBlock(i)).join('\n\n');
+
+Deno.test('L1. every short location prefix resolves to the exact branded ปทุมธานี block', async () => {
+  for (
+    const text of [
+      'มีตังโลปทุม',
+      'มีตังขอโลปทุม',
+      'มีตังแผนที่ปทุม',
+      'มีตังแมพปทุม',
+      'มีตังโลเคชั่นปทุม',
+      'มีตังlocationปทุม',
+      'มีตัง location ปทุม',
+    ]
+  ) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    assertEquals(replies(calls).length, 1, `expected one reply for: ${text}`);
+    assertEquals(replyText(calls), branchBlock(0), `exact branded block for: ${text}`);
+  }
+});
+
+Deno.test('L2. each branch alias resolves to its own canonical link and no other', async () => {
+  const cases: [string, number][] = [
+    ['มีตังโลปทุมธานี', 0],
+    ['มีตังโลคลอง4', 1],
+    ['มีตังโลคลอง 4', 1],
+    ['มีตังแผนที่คลองสี่', 1],
+    ['มีตังโลอยุธ', 2],
+    ['มีตังโลอยุธยา', 2],
+    ['มีตังโลสระ', 3],
+    ['มีตังโลสระบุรี', 3],
+    ['มีตังโลระยอง', 4],
+  ];
+  for (const [text, index] of cases) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    assertEquals(replyText(calls), branchBlock(index), `exact branch block for: ${text}`);
+    for (const [, url] of BRANCHES.filter((_, i) => i !== index)) {
+      assertTrue(!replyText(calls).includes(url), `no other branch link may appear for: ${text}`);
+    }
+  }
+});
+
+Deno.test('L3. delimiter forms, including the full-width colon, reach the same blocks', async () => {
+  const cases: [string, number][] = [
+    ['มีตัง:แผนที่ระยอง', 4],
+    ['มีตัง：โลคลอง4', 1],
+    ['มีตัง แผนที่ ปทุม', 0],
+    ['มีตัง โลปทุม', 0],
+  ];
+  for (const [text, index] of cases) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    assertEquals(replies(calls).length, 1, `expected one reply for: ${text}`);
+    assertEquals(replyText(calls), branchBlock(index), `exact branch block for: ${text}`);
+  }
+});
+
+Deno.test('L4. the all-branches reply lists all five in the required order', async () => {
+  for (
+    const text of [
+      'มีตังโลทั้งหมด',
+      'มีตังแผนที่ทั้งหมด',
+      'มีตังแมพทั้งหมด',
+      'มีตังโลทุกสาขา',
+      'มีตังแผนที่ทุกสาขา',
+    ]
+  ) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    const body = replyText(calls);
+    assertEquals(body, ALL_BRANCHES_REPLY, `exact all-branch reply for: ${text}`);
+    // Order is asserted positionally as well, so a reordered catalog cannot pass
+    // by containing the same five links.
+    let cursor = -1;
+    for (const [name, url] of BRANCHES) {
+      const at = body.indexOf(`📍 รุ่งฟ้าสาขา${name}\n${url}`);
+      assertTrue(at > cursor, `${name} must appear in order for: ${text}`);
+      cursor = at;
+    }
+  }
+});
+
+Deno.test('L5. a bare location command offers the branch list and never guesses', async () => {
+  for (const text of ['มีตังโล', 'มีตังแผนที่', 'มีตังแมพ', 'มีตังโลเคชั่น']) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    const body = replyText(calls);
+    assertEquals(replies(calls).length, 1, `expected one reply for: ${text}`);
+    assertTrue(body.includes('เลือกสาขาที่ต้องการ:'), `selector header for: ${text}`);
+    for (const [name] of BRANCHES) {
+      assertTrue(body.includes(`• รุ่งฟ้าสาขา${name}`), `selector must list ${name} for: ${text}`);
+    }
+    assertTrue(!body.includes('maps.app.goo.gl'), `the selector must not resolve a branch for: ${text}`);
+  }
+});
+
+Deno.test('L6. an unsupported branch is reported, never fabricated', async () => {
+  for (const text of ['มีตังแผนที่เชียงใหม่', 'มีตังโลเคชั่นภูเก็ต']) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    const body = replyText(calls);
+    assertEquals(replies(calls).length, 1, `expected one reply for: ${text}`);
+    assertTrue(body.includes('ไม่พบโลเคชั่นสาขานี้'), `must state the branch is unknown for: ${text}`);
+    assertTrue(
+      body.includes('มีสาขา: ปทุมธานี / คลอง4 / อยุธยา / สระบุรี / ระยอง'),
+      `must list the supported branches for: ${text}`,
+    );
+    assertTrue(!body.includes('maps.app.goo.gl'), `must not invent a link for: ${text}`);
+  }
+});
+
+Deno.test('L7. ordinary words beginning with โล stay chatter', async () => {
+  for (const text of ['มีตังใจทำงาน', 'มีตังโลกสวย', 'มีตังโล่งใจ']) {
+    priceFixture = [];
+    const { calls } = await deliver([
+      textEvent({ groupId: GENERIC_GROUP, text, messageId: `M-${text}` }),
+    ]);
+    assertEquals(replies(calls).length, 0, `must not be answered: ${text}`);
+    assertEquals(intakeInserts(calls).length, 1, `must be treated as ordinary text: ${text}`);
+  }
+});
+
+Deno.test('L8. a location command cannot execute from a messageEdited event', async () => {
+  for (const text of ['มีตังโลปทุม', 'มีตังแผนที่ทั้งหมด']) {
+    priceFixture = [];
+    const { calls } = await deliver([
+      textEvent({ type: 'messageEdited', groupId: GENERIC_GROUP, text }),
+    ]);
+    assertEquals(replies(calls).length, 0, `edited location must not answer: ${text}`);
+    assertEquals(intakeWrites(calls).length, 0, `edited location must not be captured: ${text}`);
+  }
+});
+
+Deno.test('L9. a recognized location command never enters generic intake', async () => {
+  for (const text of ['มีตังโลปทุม', 'มีตัง แผนที่ ปทุม', 'มีตังโลทั้งหมด', 'มีตังโล']) {
+    priceFixture = [];
+    const { calls } = await deliver([
+      textEvent({ groupId: GENERIC_GROUP, text, messageId: `M-loc-${text}` }),
+    ]);
+    assertEquals(replies(calls).length, 1, `the location command still answers: ${text}`);
+    assertEquals(intakeWrites(calls).length, 0, `must not be captured as intake: ${text}`);
+  }
+});
+
+Deno.test('L10. location follows the normal command policy, not the stricter pricing gate', async () => {
+  // UNKNOWN_GROUP is absent from the registry, so it keeps the historical
+  // default-open behavior for ordinary families. Pricing is closed there by its
+  // own extra gate; location must not inherit that gate.
+  priceFixture = [];
+  const open = await deliver([textEvent({ groupId: UNKNOWN_GROUP, text: 'มีตังโลปทุม' })]);
+  assertEquals(replies(open.calls).length, 1, 'an unknown group may still ask for a location');
+  assertEquals(replyText(open.calls), branchBlock(0), 'and receives the exact branded block');
+
+  priceFixture = FIXTURE_VISA;
+  const priced = await deliver([textEvent({ groupId: UNKNOWN_GROUP, text: 'มีตังราคาตีวีซ่า' })]);
+  assertEquals(priceLookups(priced.calls).length, 0, 'pricing stays closed for the same group');
+
+  for (const group of [SAFE_GROUP, DISABLED_GROUP]) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: group, text: 'มีตังโลปทุม' })]);
+    assertEquals(replies(calls).length, 0, `location must stay silent for group ${group}`);
+  }
+});
+
+Deno.test('L11. Pricing V1 behavior is unchanged by the location family', async () => {
+  priceFixture = FIXTURE_VISA;
+  const spaced = await deliver([textEvent({ groupId: GENERIC_GROUP, text: 'มีตัง ราคาตีวีซ่า' })]);
+  assertEquals(priceLookups(spaced.calls).length, 1, 'the delimited price command still runs');
+  assertEquals(priceQuerySent(spaced.calls), 'ราคาตีวีซ่า', 'and forwards the same body');
+
+  priceFixture = FIXTURE_VISA;
+  const joined = await deliver([textEvent({ groupId: GENERIC_GROUP, text: 'มีตังราคาพาสลาว' })]);
+  assertEquals(priceLookups(joined.calls).length, 1, 'the joined price command still runs');
+  assertEquals(priceQuerySent(joined.calls), 'ราคาพาสลาว', 'and forwards the same body');
+
+  for (const group of [SAFE_GROUP, DISABLED_GROUP, UNKNOWN_GROUP]) {
+    priceFixture = FIXTURE_VISA;
+    const { calls } = await deliver([textEvent({ groupId: group, text: 'มีตังราคาตีวีซ่า' })]);
+    assertEquals(priceLookups(calls).length, 0, `internal cost stays closed for group ${group}`);
+    assertEquals(replies(calls).length, 0, `no reply for group ${group}`);
+  }
+});
+
+Deno.test('L12. help, status and document-count keep working; help gains location', async () => {
+  priceFixture = [];
+  const help = await deliver([textEvent({ groupId: GENERIC_GROUP, text: 'มีตัง ช่วยอะไรได้บ้าง' })]);
+  const helpBody = replyText(help.calls);
+  assertTrue(helpBody.includes('คำสั่งที่ใช้ได้:'), 'the help body is preserved');
+  assertTrue(helpBody.includes('มีตังโลปทุม'), 'help must make location discoverable');
+  assertTrue(helpBody.includes('มีตัง ราคาตีวีซ่า'), 'the pricing examples are preserved');
+  assertTrue(!helpBody.includes('maps.app.goo.gl'), 'help must not become a branch directory');
+
+  priceFixture = [];
+  const status = await deliver([textEvent({ groupId: GENERIC_GROUP, text: 'มีตัง สถานะ' })]);
+  assertTrue(replyText(status.calls).includes('มีตังพร้อมใช้งาน'), 'status is unchanged');
+
+  priceFixture = [];
+  const docs = await deliver([textEvent({ groupId: GENERIC_GROUP, text: 'มีตัง จำนวนเอกสาร' })]);
+  assertTrue(
+    replyText(docs.calls).includes('จำนวนเอกสารของกลุ่มนี้'),
+    'document-count is unchanged',
+  );
+});
+
+Deno.test('L13. the location path contacts nothing: no RPC, no maps host, no forward', async () => {
+  for (const text of ['มีตังโลปทุม', 'มีตังโลทั้งหมด', 'มีตังโล', 'มีตังแผนที่เชียงใหม่']) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    assertEquals(priceLookups(calls).length, 0, `no pricing RPC for: ${text}`);
+    assertEquals(docForwards(calls).length, 0, `no doc forward for: ${text}`);
+    assertEquals(pdfForwards(calls).length, 0, `no helper forward for: ${text}`);
+    const outbound = calls.filter((call) => !call.url.includes('api.line.me'));
+    for (const call of outbound) {
+      assertTrue(
+        !/maps\.app\.goo\.gl|google|geocod|n8n|openai|anthropic/i.test(call.url),
+        `the location path must not call out to ${call.url}`,
+      );
+    }
+  }
+});
