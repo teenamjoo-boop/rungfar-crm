@@ -1486,3 +1486,111 @@ Deno.test('L13. the location path contacts nothing: no RPC, no maps host, no for
     }
   }
 });
+
+
+// REGRESSION: MITANG_KARAN_AND_BRANCH_SELECTOR_V1
+Deno.test('R1. มีตังค์ and optional สาขา preserve command/location policies', async () => {
+  for (const text of ['มีตังค์สถานะ', 'มีตังค์ สถานะ', 'มีตังค์:สถานะ']) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    assertEquals(replies(calls).length, 1, `status must answer: ${text}`);
+    assertTrue(replyText(calls).includes('มีตังพร้อมใช้งาน'), `status body: ${text}`);
+  }
+
+  priceFixture = FIXTURE_VISA;
+  const priced = await deliver([
+    textEvent({ groupId: GENERIC_GROUP, text: 'มีตังค์ราคาตีวีซ่า', messageId: 'M-R1-price' }),
+  ]);
+  assertEquals(priceLookups(priced.calls).length, 1, 'มีตังค์ pricing must query exactly once');
+  assertEquals(priceQuerySent(priced.calls), 'ราคาตีวีซ่า', 'ค์ must not leak into pricing query');
+  assertEquals(intakeWrites(priced.calls).length, 0, 'recognized pricing must stay out of intake');
+
+  const locations: [string, number][] = [
+    ['มีตังโลเคชั่นสาขาอยุธยา', 2],
+    ['มีตังขอโลสาขาระยอง', 4],
+    ['มีตังค์โลเคชั่นสาขาอยุธยา', 2],
+    ['มีตังค์ขอโลสาขาระยอง', 4],
+  ];
+  for (const [text, index] of locations) {
+    priceFixture = [];
+    const { calls } = await deliver([
+      textEvent({ groupId: GENERIC_GROUP, text, messageId: `M-R1-${index}-${text}` }),
+    ]);
+    assertEquals(replies(calls).length, 1, `location must answer: ${text}`);
+    assertEquals(replyText(calls), branchBlock(index), `exact branch: ${text}`);
+    assertEquals(priceLookups(calls).length, 0, `location must not call pricing: ${text}`);
+    assertEquals(intakeWrites(calls).length, 0, `location must stay out of intake: ${text}`);
+  }
+
+  for (const text of ['มีตังโลเคชั่นสาขาภูเก็ต', 'มีตังค์โลเคชั่นสาขาภูเก็ต']) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    assertTrue(replyText(calls).includes('ไม่พบโลเคชั่นสาขานี้'), `unknown branch: ${text}`);
+    assertTrue(!replyText(calls).includes('maps.app.goo.gl'), `no fake URL: ${text}`);
+  }
+
+  for (const text of [
+    'มีตังค์ใจทำงาน',
+    'มีตังค์โลกสวย',
+    'มีตังค์โล่งใจ',
+    'มีตังโลสาขาภูเก็ต',
+    'มีตังค์โลสาขาภูเก็ต',
+  ]) {
+    priceFixture = [];
+    const { calls } = await deliver([
+      textEvent({ groupId: GENERIC_GROUP, text, messageId: `M-R1-chat-${text}` }),
+    ]);
+    assertEquals(replies(calls).length, 0, `must remain chatter: ${text}`);
+    assertEquals(priceLookups(calls).length, 0, `chatter must not query pricing: ${text}`);
+    assertEquals(intakeInserts(calls).length, 1, `chatter remains intake-eligible: ${text}`);
+  }
+
+  for (const text of ['มีตังค์ราคาพาสลาว', 'มีตังค์โลเคชั่นสาขาอยุธยา']) {
+    priceFixture = FIXTURE_VISA;
+    const { calls } = await deliver([
+      textEvent({ type: 'messageEdited', groupId: GENERIC_GROUP, text }),
+    ]);
+    assertEquals(replies(calls).length, 0, `messageEdited must not answer: ${text}`);
+    assertEquals(priceLookups(calls).length, 0, `messageEdited must not price: ${text}`);
+    assertEquals(intakeWrites(calls).length, 0, `messageEdited must not enter intake: ${text}`);
+  }
+
+  priceFixture = [];
+  const openLocation = await deliver([
+    textEvent({ groupId: UNKNOWN_GROUP, text: 'มีตังค์โลเคชั่นสาขาอยุธยา' }),
+  ]);
+  assertEquals(replyText(openLocation.calls), branchBlock(2), 'location keeps normal default-open policy');
+
+  priceFixture = FIXTURE_VISA;
+  const closedPrice = await deliver([
+    textEvent({ groupId: UNKNOWN_GROUP, text: 'มีตังค์ราคาตีวีซ่า' }),
+  ]);
+  assertEquals(priceLookups(closedPrice.calls).length, 0, 'pricing stays closed for unknown group');
+  assertEquals(replies(closedPrice.calls).length, 0, 'unknown group gets no pricing reply');
+
+  for (const group of [SAFE_GROUP, DISABLED_GROUP]) {
+    priceFixture = [];
+    const { calls } = await deliver([
+      textEvent({ groupId: group, text: 'มีตังค์ขอโลสาขาระยอง' }),
+    ]);
+    assertEquals(replies(calls).length, 0, `location stays silent for ${group}`);
+  }
+
+  for (const text of [
+    'มีตังโลเคชั่นสาขาอยุธยา',
+    'มีตังค์ขอโลสาขาระยอง',
+    'มีตังโลเคชั่นสาขาภูเก็ต',
+  ]) {
+    priceFixture = [];
+    const { calls } = await deliver([textEvent({ groupId: GENERIC_GROUP, text })]);
+    assertEquals(priceLookups(calls).length, 0, `no pricing RPC: ${text}`);
+    assertEquals(docForwards(calls).length, 0, `no doc forward: ${text}`);
+    assertEquals(pdfForwards(calls).length, 0, `no PDF helper forward: ${text}`);
+    for (const call of calls.filter((item) => !item.url.includes('api.line.me'))) {
+      assertTrue(
+        !/maps\.app\.goo\.gl|google|geocod|n8n|openai|anthropic/i.test(call.url),
+        `no external location lookup: ${call.url}`,
+      );
+    }
+  }
+});

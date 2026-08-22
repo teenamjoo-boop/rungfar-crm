@@ -93,9 +93,9 @@ const MEETANG_HELP = [
 
 // "มีตัง " / "มีตัง:" — the historical form. Everything after the delimiter is a
 // command body, including an unrecognized one.
-const MEETANG_DELIMITED = /^มีตัง(?:\s*[:：]\s*|\s+|$)(.*)$/u;
+const MEETANG_DELIMITED = /^มีตัง(?:ค์)?(?:\s*[:：]\s*|\s+|$)(.*)$/u;
 // "มีตัง…" with nothing between the prefix and the body.
-const MEETANG_JOINED = /^มีตัง(.+)$/u;
+const MEETANG_JOINED = /^มีตัง(?:ค์)?(.+)$/u;
 // A price question is anything that mentions a price or a cost. This is checked
 // only after every existing exact-match family, so no body that used to resolve
 // to help, status or document-count can be diverted here.
@@ -183,7 +183,8 @@ function parseMitangLocation(body: string): MitangLocationRequest | null {
     const rest = norm.slice(prefix.length);
     if (!rest) return { kind: 'select' };
     if (MITANG_LOCATION_ALL.includes(rest)) return { kind: 'all' };
-    const branch = MITANG_BRANCHES.find((item) => item.aliases.includes(rest));
+    const branchSelector = rest.startsWith('สาขา') ? rest.slice('สาขา'.length) : rest;
+    const branch = MITANG_BRANCHES.find((item) => item.aliases.includes(branchSelector));
     if (branch) return { kind: 'branch', branch };
     // An unreadable tail is only reported as a missing branch when the prefix
     // was unambiguous. After the short "โล" it stays chatter.
