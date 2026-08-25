@@ -8304,7 +8304,8 @@ async function rejectDelReq(id){
 
 // =============================================================
 // STAGE 29C → 29G — เอกสารจาก LINE (LINE Document Inbox review, staff + admin)
-//   * อ่านรายการผ่าน RPC app_list_line_inbox (ตัวตน = user_id+username, session เดียวกับทั้งระบบ)
+//   * อ่านรายการแบบแบ่งหน้าผ่าน RPC app_list_line_inbox_page
+//     (ตัวตน = user_id+username, session เดียวกับทั้งระบบ)
 //   * preview/approve/reject ผ่าน Edge Function line-doc-inbox-admin (service role ฝั่ง server)
 //   * ไม่มีรหัสผ่านแยกของหน้านี้ — ใช้ session ปัจจุบัน (staff/admin ที่ active ใช้ได้)
 //   * ❌ ไม่ดึง file bytes มาที่ frontend (อ่าน metadata + signed URL เท่านั้น)
@@ -8312,6 +8313,12 @@ async function rejectDelReq(id){
 const LINE_DOC_ADMIN_URL=`${SB_URL}/functions/v1/line-doc-inbox-admin`;
 let _lineDocCache=[];
 let _lineDocFilters={status:'pending',source:'',from:'',to:'',sender:'',q:''};
+const _LD_PAGE_SIZE=50;
+let _lineDocOffset=0;
+let _lineDocTotal=0;
+let _lineDocPendingTotal=0;
+let _lineDocHasMore=false;
+let _lineDocLoadingMore=false;
 let _lineDocSelCust=null;              // ลูกค้าที่เลือกใน modal อนุมัติ
 let _lineDocApproveId=null;            // inbox id ที่กำลังอนุมัติ
 const _LD_SRC={image:{l:'รูปภาพ',i:'🖼️'},pdf:{l:'PDF',i:'📄'},excel:{l:'Excel',i:'📊'},other:{l:'อื่นๆ',i:'📎'}};
@@ -8397,9 +8404,18 @@ async function renderLineDoc(){
   lineDocLoad();
 }
 
-async function lineDocLoad(){
+async function lineDocLoad(append=false){
   const wrap=document.getElementById('lineDocContent');if(!wrap)return;
-  wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
+  if(append){
+    if(_lineDocLoadingMore||!_lineDocHasMore)return;
+    _lineDocLoadingMore=true;
+    const btn=document.getElementById('ldLoadMoreBtn');
+    if(btn){btn.disabled=true;btn.textContent='กำลังโหลด...';}
+  }else{
+    _lineDocOffset=0;
+    _lineDocHasMore=false;
+    wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--g5)">กำลังโหลด...</div>';
+  }
   const fl=_lineDocFilters;
   const body={
     p_user_id:(curUser&&curUser.id!=null)?String(curUser.id):'',
@@ -8409,24 +8425,48 @@ async function lineDocLoad(){
     p_start_date:fl.from||null,
     p_end_date:fl.to||null,
     p_sender:fl.sender||null,
-    p_search:fl.q||null
+    p_search:fl.q||null,
+    p_page_size:_LD_PAGE_SIZE,
+    p_offset:append?_lineDocOffset:0
   };
   let res;
   try{
-    res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_line_inbox`,{method:'POST',mode:'cors',
+    res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_line_inbox_page`,{method:'POST',mode:'cors',
       headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify(body)});
-  }catch(e){wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">เชื่อมต่อไม่ได้</div>`;return;}
+  }catch(e){
+    if(append){_lineDocLoadingMore=false;toast('โหลดรายการเพิ่มไม่ได้','err');lineDocRenderList();}
+    else wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">เชื่อมต่อไม่ได้</div>`;
+    return;
+  }
   if(!res.ok){
     let err={};try{err=await res.json();}catch(_){}
     const code=err?.code||'';const msg=err?.message||'';
+    if(append){_lineDocLoadingMore=false;toast('โหลดรายการเพิ่มไม่ได้','err');lineDocRenderList();return;}
     if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg)){
       wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5);background:#fff;border:1px solid var(--g2);border-radius:var(--rl)">ยังไม่ได้ติดตั้งฟังก์ชัน — กรุณา apply migration ก่อน</div>`;return;}
     if(msg==='unauthorized'){wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">ไม่มีสิทธิ์ใช้งาน หรือบัญชีถูกปิดใช้งาน</div>`;return;}
     wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">อ่านข้อมูลไม่ได้</div>`;return;
   }
-  let data=[];try{data=await res.json();}catch(_){data=[];}
-  _lineDocCache=Array.isArray(data)?data:[];
+  let payload=null;try{payload=await res.json();}catch(_){payload=null;}
+  if(!payload||typeof payload!=='object'||Array.isArray(payload)||!Array.isArray(payload.items)){
+    if(append){_lineDocLoadingMore=false;toast('รูปแบบข้อมูลไม่ถูกต้อง','err');lineDocRenderList();}
+    else wrap.innerHTML=`<div style="padding:40px;text-align:center;color:var(--g5)">รูปแบบข้อมูลไม่ถูกต้อง</div>`;
+    return;
+  }
+  const items=payload.items;
+  if(append){
+    const seen=new Set(_lineDocCache.map(r=>String(r.id)));
+    items.forEach(r=>{if(r&&r.id!=null&&!seen.has(String(r.id))){seen.add(String(r.id));_lineDocCache.push(r);}});
+  }else{
+    _lineDocCache=items;
+  }
+  const total=Number(payload.total_count),pending=Number(payload.pending_count),serverOffset=Number(payload.offset);
+  _lineDocTotal=Number.isSafeInteger(total)&&total>=0?total:0;
+  _lineDocPendingTotal=Number.isSafeInteger(pending)&&pending>=0?pending:0;
+  _lineDocOffset=(Number.isSafeInteger(serverOffset)&&serverOffset>=0?serverOffset:0)+items.length;
+  _lineDocHasMore=payload.has_more===true&&_lineDocOffset<_lineDocTotal;
+  _lineDocLoadingMore=false;
   refreshLineDocBadge();
   lineDocRenderList();
 }
@@ -8434,12 +8474,12 @@ async function lineDocLoad(){
 function lineDocRenderList(){
   const wrap=document.getElementById('lineDocContent');if(!wrap)return;
   const fl=_lineDocFilters;
-  const pendCnt=_lineDocCache.filter(r=>r.status==='pending').length;
+  const pendCnt=_lineDocPendingTotal;
   const opt=(v,cur,lbl)=>`<option value="${v}" ${v===cur?'selected':''}>${lbl}</option>`;
   const toolbar=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
       <span style="font-size:14px;font-weight:800;color:var(--g9)">เอกสารจาก LINE</span>
       <span style="background:${pendCnt>0?'var(--red)':'var(--g2)'};color:${pendCnt>0?'#fff':'var(--g6)'};border-radius:20px;padding:2px 11px;font-size:12px;font-weight:700;font-family:var(--mono)">รอตรวจ ${pendCnt}</span>
-      <span style="font-size:11.5px;color:var(--g5)">· แสดง ${_lineDocCache.length} รายการ</span>
+      <span style="font-size:11.5px;color:var(--g5)">· แสดง ${_lineDocCache.length} จาก ${_lineDocTotal} รายการ</span>
       <button class="btn btn-g btn-sm" style="margin-left:auto" onclick="lineDocLoad()">รีเฟรช</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:10px">
@@ -8465,7 +8505,8 @@ function lineDocRenderList(){
   const _ldSorted=fl.status&&fl.status!=='all'?_lineDocCache:[..._lineDocCache].sort((a,b)=>{
     const ap=a.status==='pending'?0:1, bp=b.status==='pending'?0:1;
     if(ap!==bp)return ap-bp;
-    return new Date(b.created_at)-new Date(a.created_at);
+    const dt=new Date(b.created_at)-new Date(a.created_at);
+    return dt||String(b.id||'').localeCompare(String(a.id||''));
   });
   const cards=_ldSorted.map(r=>{
     const src=_LD_SRC[r.source_type]||_LD_SRC.other;
@@ -8510,7 +8551,9 @@ function lineDocRenderList(){
       </div>
     </div>`;
   }).join('');
-  wrap.innerHTML=toolbar+cards;
+  const remaining=Math.max(_lineDocTotal-_lineDocOffset,0);
+  const loadMore=_lineDocHasMore?`<div style="display:flex;justify-content:center;padding:10px 0 4px"><button id="ldLoadMoreBtn" class="btn btn-g" onclick="lineDocLoad(true)">โหลดเพิ่มอีก ${Math.min(_LD_PAGE_SIZE,remaining)} รายการ</button></div>`:'';
+  wrap.innerHTML=toolbar+cards+loadMore;
   _ldBindThumbs(); // Stage 30A: ผูก lazy thumbnail หลัง render
 }
 
@@ -8666,22 +8709,26 @@ async function _ldConfirmApprove(){
   lineDocLoad();
 }
 function refreshLineDocBadge(){
-  const n=_lineDocCache.filter(r=>r.status==='pending').length;
+  const n=_lineDocPendingTotal;
   const el=document.getElementById('nbLineDoc');if(el){el.textContent=n;el.style.display=n>0?'':'none';}
   const dd=document.getElementById('drawerLineDocBadge');if(dd){dd.textContent=n;dd.style.display=n>0?'':'none';}
 }
 // Stage 52A-8: เติม badge เอกสารจาก LINE ตั้งแต่เปิดแอป (เดิม badge จะแสดงเมื่อเข้า
 //   หน้า "เอกสารจาก LINE" เท่านั้น → ตัวเลขค้าง/มองไม่เห็นงานที่รออนุมัติ)
-//   อ่านอย่างเดียวผ่าน RPC เดิม (เฉพาะ pending) — ใช้แค่จำนวนแถว ❌ ไม่แสดง path/ไฟล์
+//   อ่านอย่างเดียวผ่าน RPC pagination (เฉพาะ pending, page size 1) — ใช้แค่ exact count
+//   ❌ ไม่เก็บรายการลง cache ❌ ไม่แสดง path/ไฟล์
 //   ล้มเหลว (ยังไม่ apply migration / unauthorized / network) = เงียบ ไม่บล็อกการใช้งาน
 async function refreshLineDocBadgeGlobal(){
   try{
-    const res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_line_inbox`,{method:'POST',mode:'cors',
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/app_list_line_inbox_page`,{method:'POST',mode:'cors',
       headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({p_user_id:(curUser&&curUser.id!=null)?String(curUser.id):'',p_username:(curUser&&curUser.username)||'',p_status:'pending'})});
+      body:JSON.stringify({p_user_id:(curUser&&curUser.id!=null)?String(curUser.id):'',p_username:(curUser&&curUser.username)||'',p_status:'pending',p_page_size:1,p_offset:0})});
     if(!res.ok)return;
-    let data=[];try{data=await res.json();}catch(_){data=[];}
-    if(Array.isArray(data)){_lineDocCache=data;refreshLineDocBadge();}
+    let payload=null;try{payload=await res.json();}catch(_){payload=null;}
+    if(payload&&typeof payload==='object'&&!Array.isArray(payload)){
+      const pending=Number(payload.pending_count);
+      if(Number.isSafeInteger(pending)&&pending>=0){_lineDocPendingTotal=pending;refreshLineDocBadge();}
+    }
   }catch(_){console.warn('[lineDocBadge] startup refresh skipped');}
 }
 
