@@ -8,6 +8,73 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Rungfar CRM">
+<style id="simpleWorkerMode">/* Stage S1-SIMPLE: โหมดเรียบง่าย (ข้อมูลยังอยู่ครบ แค่ซ่อน) */html.simple-worker #cModal .tbar3 .tbtn:nth-child(4){display:none!important}html.simple-worker #ct1 .fsec:has(#svcT),html.simple-worker #ct1 .fsec:has(#f_medical){display:none!important}html.simple-worker .fgi:has(#f_src),html.simple-worker .fgi:has(#f_ws),html.simple-worker .fgi:has(#f_submit),html.simple-worker .fgi:has(#f_agent),html.simple-worker #staffSec{display:none!important}html.simple-worker #ct2 .fsec:has(#f_apptdate){display:none!important}</style>
+<style id="sheetView">/* Stage SHEET-VIEW + EMP-HUB */
+html:not(.simple-worker) .sw-only{display:none!important}
+html.sheet-nocols .sw-only{display:none!important}
+html.simple-worker #qct,html.simple-worker #qws{display:none!important}
+table.sh-t{border-collapse:separate;border-spacing:0;width:100%}
+table.sh-t th{background:#eef2f7;color:#334155;font-size:11px;font-weight:700;white-space:nowrap;padding:7px 8px;border-bottom:1px solid #cbd5e1;border-right:1px solid #e2e8f0;text-align:left;text-transform:none;letter-spacing:0}
+table.sh-t td{padding:6px 8px;border-bottom:1px solid #e5e7eb;border-right:1px solid #f1f5f9;vertical-align:middle;font-size:12px}
+table.sh-t tr.sh-r{cursor:pointer}
+table.sh-t tr.sh-r:hover td{background:#f8fafc}
+table.sh-t tr.sh-lv2 td:first-child{box-shadow:inset 3px 0 0 #dc2626}
+table.sh-t tr.sh-lv1 td:first-child{box-shadow:inset 3px 0 0 #f59e0b}
+.sh-no{color:#94a3b8;font-family:var(--mono);font-size:11px;text-align:right}
+.sh-mono{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.sh-emp{max-width:170px;font-size:11.5px;color:#334155}
+.sh-d{font-size:11.5px;white-space:nowrap;color:#1f2937}
+.sh-chip{display:inline-block;margin-top:2px;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.sh-ok{background:#ecfdf5;color:#047857}.sh-w{background:#fef3c7;color:#b45309}.sh-x{background:#fee2e2;color:#b91c1c}
+.sh-na{color:#9ca3af;font-size:11px}
+.sh-cat{display:inline-block;padding:2px 8px;border-radius:6px;background:#f1f5f9;color:#334155;font-size:11px;font-weight:700;white-space:nowrap}
+.sh-cat.c-mou{background:#eef2ff;color:#4338ca}.sh-cat.c-mati{background:#ecfeff;color:#0e7490}
+.sh-ed{cursor:text}.sh-ed:hover{outline:1px dashed #93c5fd;outline-offset:-3px}
+.sh-txt{max-width:190px;min-width:100px;white-space:pre-wrap;word-break:break-word;font-size:11.5px}
+.sh-add{color:#cbd5e1;font-size:12px}.sh-ed:hover .sh-add{color:#3b82f6}
+.sh-in{width:100%;min-width:120px;font:inherit;font-size:12px;padding:4px 6px;border:1.5px solid #3b82f6;border-radius:6px;outline:none;background:#fff;box-sizing:border-box}
+tr.sh-grp td{background:#f8fafc;font-weight:700;color:#0f172a;font-size:12.5px;padding:8px 10px;border-top:2px solid #cbd5e1;cursor:pointer}
+tr.sh-grp .sh-gs{font-weight:500;color:#64748b;font-size:11.5px;margin-left:8px}
+.sh-ctl{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sh-ctl select{font:inherit;font-size:12px;padding:4px 8px;border:1px solid var(--g3);border-radius:7px;background:#fff}
+.sh-ctl label{font-size:12px;color:var(--g6);display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.qv-chip b{font-family:var(--mono);margin-left:4px}
+.cc-sh{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.cc-sh .sh-chip{margin-top:0}
+.cc-stn{font-size:11px;color:#334155;background:#f1f5f9;border-radius:6px;padding:1px 7px}
+.eh-top{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.eh-ic{width:40px;height:40px;border-radius:10px;background:var(--pp);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.eh-name{font-size:19px;font-weight:800;color:var(--g9)}
+.eh-sub{font-size:12px;color:var(--g5);margin-top:2px}
+.eh-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.eh-st{background:var(--g0);border:1px solid var(--g2);border-radius:10px;padding:8px 10px}
+.eh-st b{display:block;font-size:20px;font-family:var(--mono);color:var(--g9)}
+.eh-st span{font-size:11px;color:var(--g5)}
+.eh-st.w{background:#fffbeb;border-color:#fde68a}.eh-st.w b{color:#b45309}
+.eh-st.x{background:#fef2f2;border-color:#fecaca}.eh-st.x b{color:#b91c1c}
+.eh-sec{margin-top:14px;padding-top:12px;border-top:1px solid var(--g2)}
+.eh-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:700;color:var(--g8);margin-bottom:8px}
+.eh-hint{font-size:11px;font-weight:400;color:var(--g5)}
+.eh-tbl{overflow-x:auto;border:1px solid var(--g2);border-radius:10px}
+.eh-doc{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--g2);border-radius:9px;margin-bottom:6px;background:#fff}
+.eh-doc-ic{font-size:18px}
+.eh-doc-n{font-size:13px;font-weight:600;color:var(--g9);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eh-doc-s{font-size:11px;color:var(--g5)}
+.eh-doc-x{text-align:right;cursor:pointer;min-width:96px}
+.eh-doc-x:hover{outline:1px dashed #93c5fd;outline-offset:2px;border-radius:6px}
+.eh-up{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--g0);border:1px dashed var(--g3);border-radius:9px;padding:10px;margin-top:8px}
+.eh-up select,.eh-up input[type=date]{width:auto;min-width:150px}
+.eh-lbl{display:flex;flex-direction:column;font-size:11px;color:var(--g5);gap:2px}
+.eh-err{font-size:12px;color:#b91c1c;background:#fef2f2;border-radius:8px;padding:6px 10px;margin-bottom:6px}
+.eh-more{margin-top:14px;border-top:1px solid var(--g2);padding-top:10px}
+.eh-more summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--g6)}
+@media(max-width:700px){.eh-stats{grid-template-columns:repeat(2,1fr)}.eh-doc{flex-wrap:wrap}.eh-doc-x{text-align:left}}
+</style>
+<style id="s2FormDocs">/* Stage S2-FORM-DOCS-IMPORT */html.simple-worker .fgi:has(#f_branch),html.simple-worker .fgi:has(#f_assignee),html.simple-worker #qbr,html.simple-worker #qassignee,html.simple-worker #niMyWork,html.simple-worker #drawerMyWork,html.simple-worker #bulkAsgWrap,html.simple-worker #bulkSelfBtn{display:none!important}html.simple-worker #cModal .tbar3 .tbtn:nth-child(2){display:none!important}html.simple-worker #newDocType,html.simple-worker #newDocLabel{display:none!important}.mdoc-name{width:100%;box-sizing:border-box;font:inherit;font-size:12px;font-weight:600;padding:4px 6px;border:1px solid var(--g3);border-radius:6px;background:#fff;margin-top:2px}.mdoc-name:focus{outline:none;border-color:#3b82f6}.mdoc-hint{font-size:11.5px;color:var(--g5);align-self:center}</style>
+<style id="empBanner">/* Stage EMP-BANNER */.eh-ban{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid var(--g2);border-radius:10px;padding:10px;margin-top:10px;background:#fff}.eh-ban-prev{width:160px;height:68px;border-radius:8px;overflow:hidden;background:linear-gradient(160deg,#f27a1a,#d9560a);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;flex:none}.eh-ban-prev img{width:100%;height:100%;object-fit:cover}</style>
+<script id="qrLib">/*! qrcode-generator 1.4.4 | (c) 2009 Kazuhiko Arase | MIT License */var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,(function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1}))},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(t,r){var e=n("友");if(2!=e.length||38726!=(e[0]<<8|e[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}((function(){return qrcode}));</script>
+<style id="grpShare">/* Stage SHARE-GROUP */.eh-grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;background:#eef6ff;border:1px solid #cfe3fb;border-radius:10px;padding:8px 12px;font-size:12px;color:#1e3a5f}.gs-emps{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}.gs-emp{background:var(--g0);border:1px solid var(--g2);border-radius:20px;padding:3px 10px;font-size:12px}</style>
+<style id="hideCaseModule">/* Stage UI-HIDE-CASES: ซ่อนงานเอกสารแรงงาน + แม่แบบ (ข้อมูลยังอยู่) */#niCases,#niCaseTpl,.di[data-view="cases"],.di[data-view="casetpl"],#detCaseSec{display:none!important}</style>
 <title>Rungfar CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2020,7 +2087,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
           <div class="fgi full"><label class="fl">ชื่อ-นามสกุล (อังกฤษ) *</label><input class="fi2" id="f_name" placeholder="FIRSTNAME LASTNAME" oninput="checkDup()"></div>
           <div class="fgi"><label class="fl">ชื่อภาษาไทย</label><input class="fi2" id="f_nameTh" placeholder="ชื่อ นามสกุล"></div>
           <div class="fgi"><label class="fl">เลขประจำตัวต่างด้าว</label><input class="fi2" id="f_alien" placeholder="6681390XXXXXXX" oninput="checkDup()"></div>
-          <div class="fgi"><label class="fl">สัญชาติ</label><select class="fi2" id="f_nat"><option value="เมียนมา">🇲🇲 เมียนมา</option><option value="กัมพูชา">🇰🇭 กัมพูชา</option><option value="ลาว">🇱🇦 ลาว</option><option value="เวียดนาม">🇻🇳 เวียดนาม</option></select></div>
+          <div class="fgi"><label class="fl">สัญชาติ</label><select class="fi2" id="f_nat"><option value="เมียนมา">🇲🇲 เมียนมา</option><option value="กัมพูชา">🇰🇭 กัมพูชา</option><option value="ลาว">🇱🇦 ลาว</option><option value="เวียดนาม">🇻🇳 เวียดนาม</option></select></div><div class="fgi sw-only"><label class="fl">ประเภท</label><input class="fi2" id="f_wcat" list="wcatList" placeholder="MOU / มติ.ครม."><datalist id="wcatList"><option value="MOU"><option value="มติ.ครม."></datalist></div>
           <div class="fgi"><label class="fl">เลขพาสปอร์ต</label><input class="fi2" id="f_pp" placeholder="AB1234567" oninput="checkDup()"></div>
           <div class="fgi"><label class="fl">เบอร์โทรศัพท์</label><input class="fi2" id="f_phone" placeholder="08X-XXX-XXXX" oninput="checkDup()"></div>
           <div class="fgi"><label class="fl">วันเกิด</label><input class="fi2" type="date" id="f_dob"></div>
@@ -2031,6 +2098,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
           <div class="fgi"><label class="fl">ตัวแทน</label><input class="fi2" id="f_agent" placeholder="ชื่อตัวแทน"></div>
         </div>
       </div>
+      <div class="fsec sw-only"><div class="fst">สถานะ / รายการ</div><div class="fg"><div class="fgi full"><label class="fl">สถานะ (เขียนเองได้ เช่น ถ่ายบัตรแล้ว)</label><input class="fi2" id="f_stnote" placeholder="เช่น ถ่ายบัตรแล้ว / รอเล่ม"></div><div class="fgi full"><label class="fl">รายการ</label><input class="fi2" id="f_items" placeholder="เช่น ต่อวีซ่า + เวิร์ค"></div></div></div>
       <div class="fsec" id="staffSec"><div class="fst">เจ้าหน้าที่รับผิดชอบ</div>
         <div class="fg3">
           <div class="fgi"><label class="fl">คนรับเคส</label><input class="fi2" id="f_sr" placeholder="ชื่อเจ้าหน้าที่"></div>
@@ -2111,7 +2179,7 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
             <option value="other">อื่นๆ</option>
           </select>
           <input class="fi2" id="newDocLabel" placeholder="ชื่อเอกสาร (ถ้ามี)" style="max-width:180px">
-          <button class="btn btn-p btn-sm" onclick="triggerMultiDoc()">+ เพิ่มไฟล์</button>
+          <button class="btn btn-p btn-sm" onclick="triggerMultiDoc()">+ เพิ่มไฟล์</button><span class="mdoc-hint sw-only">เลือกได้หลายไฟล์พร้อมกัน แล้วพิมพ์ชื่อเอกสารใต้แต่ละไฟล์ได้เลย (เช่น ใบรับรองแพทย์ ประกันสุขภาพ ใบอัตลักษณ์)</span><datalist id="docNameList"><option value="พาสปอร์ต"><option value="วีซ่า"><option value="ใบอนุญาตทำงาน"><option value="ใบรับรองแพทย์"><option value="ประกันสุขภาพ"><option value="ใบอัตลักษณ์"><option value="CI"><option value="ใบรับแจ้ง 90 วัน"><option value="สัญญาจ้าง"><option value="หนังสือมอบอำนาจ"><option value="รูปถ่าย"><option value="ใบเสร็จ"></datalist>
           <input type="file" id="multiDocFile" accept="image/*,.pdf" multiple style="display:none" onchange="handleMultiDoc(event)">
         </div>
         <div class="mdoc-grid" id="multiDocGrid"></div>
@@ -2581,6 +2649,28 @@ let _pendingDelUserId=null; // RLS-HARDEN-2D: id ที่รอยืนยั�
 let empQ=''; // employer search query
 // ── FEATURE FLAGS ──
 const SIMPLE_CUSTOMER_DETAIL=true; // true=ซ่อน staff grid ใน detail; finance summary แสดงเสมอแล้ว (Stage 2)
+// ── Stage S1-SIMPLE: true = หน้าลูกค้าเหลือ ข้อมูล + วันหมดอายุ + เอกสาร (false = เปิดทุกส่วนกลับมา) ──
+const SIMPLE_WORKER_MODE=true;
+if(SIMPLE_WORKER_MODE)document.documentElement.classList.add('simple-worker');
+// ── Stage S2: ย้ายเลขคำขอ / ใบอนุญาตเลขที่ ไปต่อจากเลขพาสปอร์ต · ซ่อนเลขคำขอ VISA ──
+function _swMoveDocNo(){
+  if(!SIMPLE_WORKER_MODE)return;
+  const pp=document.getElementById('f_pp');const ppg=pp&&pp.closest('.fgi');if(!ppg)return;
+  const mv=(id,lbl,ph)=>{const el=document.getElementById(id);const g=el&&el.closest('.fgi');if(!g)return null;const l=g.querySelector('.fl');if(l)l.textContent=lbl;if(ph)el.placeholder=ph;return g;};
+  const a=mv('f_wpn','เลขคำขอ','เช่น WP-68-XXXXXX');const b=mv('f_licn','ใบอนุญาตเลขที่','เลขใบอนุญาตทำงาน (WORK)');
+  if(b)ppg.after(b);if(a)ppg.after(a);
+  const v=document.getElementById('f_visn');const vg=v&&v.closest('.fgi');if(vg)vg.style.display='none';
+}
+try{_swMoveDocNo();}catch(_e){console.warn('[S2] move doc fields',_e);}
+// ── Stage NAV-ORDER: ลูกค้า = ข้อ 2, นายจ้าง = ข้อ 3 (ย้ายตำแหน่งเมนูอย่างเดียว ไม่แตะการทำงาน) ──
+function _swReorderNav(){
+  if(!SIMPLE_WORKER_MODE)return;
+  const mv=(anchor,els)=>{let a=anchor;els.forEach(el=>{if(el&&a){a.after(el);a=el;}});};
+  mv(document.getElementById('niDash'),[document.getElementById('niCustomers'),document.getElementById('sacc-cust'),document.getElementById('niEmployers')]);
+  mv(document.querySelector('#mobDrawer .di[data-view="dash"]'),[document.querySelector('#mobDrawer .di[data-view="customers"]'),document.getElementById('dacc-cust'),document.querySelector('#mobDrawer .di[data-view="employers"]')]);
+}
+try{_swReorderNav();}catch(_e){console.warn('[NAV] reorder',_e);}
+
 const CUSTOMER_MVP_MODE=true;      // true=ซ่อน work_status + เจ้าหน้าที่ ใน add/edit modal (Tab การเงิน แสดงแล้ว); false=แสดงครบ
 let curEmpInfo=null; // BRANCH-LIGHT: ข้อมูลพนักงานของ staff ที่ login อยู่ (fetch ในพื้นหลัง)
 function openPhotoModal(src){document.getElementById('photoModalImg').src=src;document.getElementById('photoModal').style.display='flex';}
@@ -3239,7 +3329,7 @@ function applyLang(){
   // 9=สถานะ 10=ใกล้หมดอายุ 11=90วัน 12=ต่ออายุล่าสุด 13=ชำระเงิน 14=หมายเหตุ 15=checkbox 16=จัดการ
   const ths=document.querySelectorAll('#view-customers thead th');
   const hmap={1:T('xlSubmit'),2:L.photo,3:L.employer,4:T('tblName'),5:T('detAlien'),6:L.nat,7:T('tblReqNo'),8:T('tblItems'),9:T('tblStatus'),10:T('tblExp'),11:L.day90,12:T('tblRenew'),13:T('tblPay'),14:T('tblNote'),16:L.manage};
-  ths.forEach((th,i)=>{if(hmap[i]!==undefined)th.textContent=hmap[i];});
+  if(!SIMPLE_WORKER_MODE)ths.forEach((th,i)=>{if(hmap[i]!==undefined)th.textContent=hmap[i];});
 
   // ===== BULK BAR =====
   const bar=document.getElementById('bulkBar');
@@ -3269,7 +3359,7 @@ function applyLang(){
   tbns.forEach((tb,i)=>{if(tabLabels[i])tb.textContent=tabLabels[i];});
 
   // Form section titles (Round C order: custType, photo, empInfo, basicInfo, staff)
-  const fsts=document.querySelectorAll('#cModal .fst');
+  const fsts=[...document.querySelectorAll('#cModal .fst')].filter(e=>!e.closest('.sw-only'));
   if(fsts[0])fsts[0].textContent=L.custType;
   if(fsts[1])fsts[1].textContent=L.photo;
   if(fsts[2])fsts[2].textContent=L.empInfo;
@@ -3455,7 +3545,26 @@ async function ensureDocFileData(doc){
   }catch(e){return null;}
 }
 
-const _DOC_TYPE_LABELS={passport_photo:'รูปพาสปอร์ต',visa:'VISA',wp:'Work Permit',employer_card:'บัตรนายจ้าง',receipt:'ใบเสร็จ',photo:'รูปถ่าย',pow:'หนังสือมอบอำนาจ',other:'อื่นๆ'};
+const _DOC_TYPE_LABELS={passport_photo:'รูปพาสปอร์ต',visa:'VISA',wp:'Work Permit',employer_card:'บัตรนายจ้าง',receipt:'ใบเสร็จ',photo:'รูปถ่าย',pow:'หนังสือมอบอำนาจ',other:'อื่นๆ',passport:'พาสปอร์ต',ci:'CI',work_permit:'ใบอนุญาตทำงาน',medical:'ใบรับรองแพทย์',insurance:'ประกันสุขภาพ',identity_card:'ใบอัตลักษณ์',tm47:'ใบรับแจ้ง 90 วัน',contract:'สัญญาจ้าง',profile_photo:'รูปถ่ายแรงงาน'}; // Stage S2
+// ── Stage S2: เดาประเภทเอกสารจากชื่อ (ชื่อไฟล์ หรือชื่อที่ตั้งเอง) ──
+const _DOC_GUESS=[
+  [/ใบอัตลักษณ์|อัตลักษณ์|identity|บัตรชมพู|pink/i,'identity_card','ใบอัตลักษณ์'],
+  [/แพทย์|แพท|medical|med[\s_.-]?cert/i,'medical','ใบรับรองแพทย์'],
+  [/ประกัน|insurance/i,'insurance','ประกันสุขภาพ'],
+  [/สัญญา|contract/i,'contract','สัญญาจ้าง'],
+  [/มอบอำนาจ|(^|[^a-z])poa([^a-z]|$)|power.?of.?attorney/i,'pow','หนังสือมอบอำนาจ'],
+  [/ใบเสร็จ|receipt/i,'receipt','ใบเสร็จ'],
+  [/ตม\.?\s?47|tm\.?\s?47|(^|[^0-9])90\s?(วัน|day)|รายงานตัว/i,'tm47','ใบรับแจ้ง 90 วัน'],
+  [/(^|[^a-z])ci([^a-z]|$)|certificate.?of.?identity/i,'ci','CI'],
+  [/visa|วีซ่า|วีซา/i,'visa','วีซ่า'],
+  [/(^|[^a-z])wp([^a-z]|$)|work.?permit|เวิร์ค|เวิค|ใบอนุญาต/i,'wp','ใบอนุญาตทำงาน'],
+  [/passport|พาสปอร์ต|พาสปอต|หนังสือเดินทาง|(^|[^a-z])pp([^a-z]|$)/i,'passport','พาสปอร์ต'],
+  [/รูปถ่าย|รูปหน้าตรง|(^|[^a-z])photo([^a-z]|$)/i,'photo','รูปถ่าย'],
+];
+function _docGuess(s){s=String(s||'');for(const [re,t,l] of _DOC_GUESS){if(re.test(s))return{type:t,label:l};}return null;}
+const _DOC_NAME_SUGGEST=['พาสปอร์ต','วีซ่า','ใบอนุญาตทำงาน','ใบรับรองแพทย์','ประกันสุขภาพ','ใบอัตลักษณ์','CI','ใบรับแจ้ง 90 วัน','สัญญาจ้าง','หนังสือมอบอำนาจ','รูปถ่าย','ใบเสร็จ'];
+function mdocRename(id,v){const d=(multiDocs||[]).find(x=>x.id===id);if(!d)return;d.label=String(v||'').trim();const g=_docGuess(d.label);d.type=g?g.type:'other';}
+
 function docTypeLabel(t){return _DOC_TYPE_LABELS[t]||'อื่นๆ';}
 function ftypeBadge(ft){
   if(ft==='application/pdf')return'<span class="mdoc-badge mdoc-badge-pdf">PDF</span>';
@@ -3548,7 +3657,8 @@ async function handleMultiDoc(e){
       const bytes=approxBytesFromDataURL(dataUrl);
       const _byteLim=_isPdf?Math.round(10*1024*1024*1.34):DOC_MAX_BYTES; // PDF: ≤10MB raw; image: ≤1.5MB after compression
       if(bytes>_byteLim){console.warn('[document upload] skipped large file',file.name,bytes);toast(_isPdf?'PDF '+file.name+' ใหญ่เกิน 10MB กรุณาลดขนาดไฟล์':'ไฟล์ '+file.name+' ใหญ่เกิน 1.5MB หลังย่อ ลองถ่าย/สแกนใหม่','err');continue;}
-      multiDocs.push({id:'doc_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),type,label:customLabel||typeLabel,data:dataUrl,fileType:ftype,name:file.name});
+      const _g2=SIMPLE_WORKER_MODE?_docGuess(file.name):null;
+      multiDocs.push({id:'doc_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),type:SIMPLE_WORKER_MODE?(_g2?_g2.type:'other'):type,label:SIMPLE_WORKER_MODE?(_g2?_g2.label:String(file.name||'เอกสาร').replace(/\.[^.]+$/,'').slice(0,80)):(customLabel||typeLabel),data:dataUrl,fileType:ftype,name:file.name});
       renderMultiDocGrid();
     }catch(err){console.error('[document add] failed',file&&file.name,err);toast('เพิ่มไฟล์ไม่สำเร็จ','err');}
   }
@@ -3577,7 +3687,7 @@ function renderMultiDocGrid(){
       ${thumb}
       <div class="mdoc-info">
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">${ftypeBadge(doc.fileType)}</div>
-        <div class="mdoc-label">${safeLabel}</div>
+        ${(SIMPLE_WORKER_MODE&&!doc.dbId)?`<input class="mdoc-name" list="docNameList" value="${esc(doc.label||'')}" placeholder="ตั้งชื่อเอกสาร" oninput="mdocRename('${doc.id}',this.value)" onclick="event.stopPropagation()">`:`<div class="mdoc-label">${safeLabel}</div>`}
         ${meta?`<div class="mdoc-meta">${meta}</div>`:''}
       </div>
       <button class="mdoc-del" onclick="delMdoc('${doc.id}')">×</button>
@@ -4094,6 +4204,9 @@ async function showApp(){
 // โหลด photo แบบ lazy เฉพาะแถวที่เห็น/รายที่เปิด แล้ว cache ไว้ใน _custPhotoCache
 // ⚠️ ถ้าเพิ่มคอลัมน์ใหม่ในตาราง customers ต้องเติมชื่อคอลัมน์ที่นี่ด้วย (ยกเว้น photo)
 const CUST_LIST_COLS='id,created_at,updated_at,updated_by_code,name,name_th,nationality,passport_no,alien_id,phone,employer_id,customer_type,group_id,branch_id,work_status,source,pay_channel,pay_status,wp_no,visa_no,license_no,note,staff_receiver,staff_document,staff_closer,exp_passport,exp_visa,exp_wp,next_90,exp_mou,last_renew,dob,fee_total,fee_paid,fee_due,pay_date,submit_date,agent_name,appt_date,appt_time,appt_place,queue_date,receive_date,medical_cert,insurance,fee_100_paid,fee_900_paid,card_fee_paid,booklet_status,assignee_code,services,photo_storage_path';
+// Stage SHEET-VIEW: 3 ช่องใหม่ (migration 20261010) — ถ้ายังไม่รัน SQL จะ fallback อัตโนมัติ
+const SHEET_COLS=',worker_category,status_note,work_items';
+let _sheetColsOk=null;
 // ↑ Stage 36A: photo_storage_path = cheap flag (path string, ไม่มี bytes) — ให้ list รู้ว่ามีรูปใน Storage โดยไม่ต้องโหลด photo base64
 let _custPhotoCache={};    // id → photo dataURL (string) | null (ยืนยันว่าไม่มีรูป)  | undefined = ยังไม่โหลด
 let _custPhotoInflight={}; // id → true ระหว่างดึง (กันยิงซ้ำ)
@@ -4186,7 +4299,7 @@ async function loadAll(silent=false){
     let _photoIds=[];
     [customers,groups,branches,employers,_photoIds]=await Promise.all([
       // Stage 52A-13: ซ่อนลูกค้าที่ถูก soft delete (deleted_at) — fallback query เดิมถ้ายังไม่ apply migration 20260728
-      (async()=>{try{return await dbGet('customers','?deleted_at=is.null&order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS);}catch(_){return dbGet('customers','?order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS);}})(),
+      (async()=>{if(_sheetColsOk!==false){try{const _sr=await dbGet('customers','?deleted_at=is.null&order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS+SHEET_COLS);_sheetColsOk=true;return _sr;}catch(_){_sheetColsOk=false;}}try{return await dbGet('customers','?deleted_at=is.null&order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS);}catch(_){return dbGet('customers','?order=created_at.desc.nullslast,id.desc&limit=2000&select='+CUST_LIST_COLS);}})(),
       dbGet('groups','?order=name.asc'),
       dbGet('branches','?order=name.asc&select=id,name,normal_checkin_time,normal_checkout_time,status,latitude,longitude,allowed_radius_meters,gps_required'),
       dbGet('employers','?order=name.asc'),
@@ -4202,7 +4315,7 @@ async function loadAll(silent=false){
     customers=customers.filter(c=>{if(seenIds.has(c.id))return false;seenIds.add(c.id);return true;});
     // Merge duplicate employers by name
     mergeDuplicateEmployers();
-    settings=JSON.parse(localStorage.getItem('crm_settings')||'null')||settings;
+    settings=JSON.parse(localStorage.getItem('crm_settings')||'null')||settings;try{await _loadAlertSettingsDb();}catch(_){} // Stage ALERT-SETTINGS-DB
     _lastLoadTime=Date.now();
   }catch(e){
     console.error('loadAll error:',e);
@@ -4243,8 +4356,12 @@ function mergeDuplicateEmployers(){
   }
 }
 
-function du(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);const x=new Date(d);x.setHours(0,0,0,0);return Math.round((x-t)/86400000);}
-function fd(d){if(!d)return'—';return new Date(d).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}
+function du(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);const x=new Date(_ceDate(d));x.setHours(0,0,0,0);return Math.round((x-t)/86400000);}
+// ── Stage DATE-BE-FIX: ปี ≥2400 = กรอกเป็น พ.ศ. → แปลงเป็น ค.ศ. ──
+function _ceDate(d){if(d==null||d==='')return d;const s=String(d);const m=s.match(/^(\d{4})(-\d{2}-\d{2}.*)$/);if(m){const y=+m[1];if(y>=2400)return String(y-543)+m[2];}return d;}
+function _ceObj(o){if(o&&typeof o==='object')Object.keys(o).forEach(k=>{const v=o[k];if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}/.test(v))o[k]=_ceDate(v);});return o;}
+document.addEventListener('focusout',function(e){const el=e.target;if(!el||el.tagName!=='INPUT'||el.type!=='date'||!el.value)return;const v=_ceDate(el.value);if(v!==el.value){el.value=v;el.dispatchEvent(new Event('change',{bubbles:true}));try{toast('ช่องวันที่ต้องกรอกปี ค.ศ. — แปลงปี พ.ศ. ให้แล้ว');}catch(_){}}},true);
+function fd(d){if(!d)return'—';return new Date(_ceDate(d)).toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'});}
 // STAGE 57F-RESET-2: จัดสถานะวันหมดอายุจากค่าเดิม (display-only) — ❌ ไม่แตะ alert backend, ไม่บันทึก
 //   near = ภายใน 60 วัน, expired = ก่อนวันนี้; ใช้ในแผง Phase 2 (worker profile / ตรวจความพร้อมก่อนยื่น)
 function _expStatus(dateStr){
@@ -4390,7 +4507,9 @@ function _syncModalLock(){
   if(document.readyState!=='loading')attach();else document.addEventListener('DOMContentLoaded',attach);
 })();
 
-function gv(v,opts={}){
+// Stage UI-HIDE-CASES: true = ซ่อนเมนูงานเอกสารแรงงาน/แม่แบบ (เปลี่ยนเป็น false เพื่อเปิดกลับ)
+const HIDE_CASE_MODULE=true;
+function gv(v,opts={}){if(HIDE_CASE_MODULE&&(v==='cases'||v==='casetpl'))v='dash';
   // STAGE 24: revalidate session ตอนเปลี่ยนหน้า (throttled, fire-and-forget) — ถ้าถูกปิดใช้งานจะถูกเด้งออกทันทีหลังเช็ค
   if(curUser&&typeof revalidateSessionLive==='function')revalidateSessionLive();
   // STAGE 57L-FIX-1: สลับหน้าหลัก → ปิด modal ที่ค้างเปิด แล้วคืน page scroll ให้ปกติเสมอ
@@ -5050,22 +5169,198 @@ function renderEmpGrid(){
   }).join('');
 }
 
+// ── Stage EMP-DELETE: ลบนายจ้าง (แอดมินเท่านั้น — server ตรวจซ้ำ) ──
+async function empDelete(id){
+  if(!_isAdminRole()){toast('เฉพาะผู้ดูแลระบบเท่านั้น','err');return;}
+  const e=(employers||[]).find(x=>x.id===id);if(!e)return;
+  const n=(customers||[]).filter(c=>c.employer_id===id).length;
+  if(n){alert(`ลบไม่ได้ — นายจ้าง "${e.name}" ยังมีแรงงาน ${n} คน\n\nย้ายแรงงานไปนายจ้างอื่น หรือลบแรงงานก่อน แล้วค่อยลบนายจ้าง`);return;}
+  if(!confirm(`ลบนายจ้าง "${e.name}" ถาวร?\n\nลิงก์/QR ของนายจ้างนี้จะใช้ไม่ได้อีก และกู้คืนไม่ได้`))return;
+  if(!(await guardSession()))return;
+  const r=await _shareRpc('app_delete_employer',{p_employer_id:id,p_confirm_name:e.name});
+  if(r.status==='missing'){toast('ต้องรัน SQL 20261013_employer_delete บนฐานข้อมูลนี้ก่อน','err');return;}
+  if(r.status==='unauthorized'){toast('ไม่มีสิทธิ์ลบ — เฉพาะผู้ดูแลระบบ','err');return;}
+  const d=r.status==='ok'?r.data:null;
+  if(!d){toast('ลบไม่สำเร็จ — กรุณาลองใหม่','err');return;}
+  if(d.ok){
+    const m=document.getElementById('empDetModal');if(m)m.style.display='none';
+    employers=employers.filter(x=>x.id!==id);
+    try{renderEmployers();}catch(_){}
+    toast(`ลบนายจ้าง "${e.name}" แล้ว`);
+    try{await loadAll(true);}catch(_){}
+    return;
+  }
+  if(d.error==='has_dependents'){
+    const parts=[];
+    if(d.customers)parts.push(`แรงงาน ${d.customers} คน`);
+    if(d.cases)parts.push(`เคส ${d.cases} เคส`);
+    if(d.establishments)parts.push(`สถานประกอบการ ${d.establishments} แห่ง`);
+    if(d.documents)parts.push(`เอกสารนายจ้าง ${d.documents} ไฟล์`);
+    alert(`ลบไม่ได้ — นายจ้าง "${e.name}" ยังมี ${parts.join(', ')}\n\nจัดการรายการเหล่านี้ก่อน แล้วค่อยลบนายจ้าง`);
+    return;
+  }
+  toast(d.error==='not_found'?'ไม่พบนายจ้างนี้แล้ว (อาจถูกลบไปแล้ว)':d.error==='name_mismatch'?'ชื่อนายจ้างไม่ตรง — โหลดหน้าใหม่แล้วลองอีกครั้ง':'ลบไม่สำเร็จ','err');
+}
 function openEmpDet(id){
   const e=employers.find(x=>x.id===id);if(!e)return;
   const empc=customers.filter(c=>c.employer_id===id);const alrt=empc.filter(isAlert);
-  const html=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--g2)"><div style="width:36px;height:36px;border-radius:10px;background:var(--pp);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--p)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><div style="font-size:20px;font-weight:800">${esc(e.name)}</div>${e.business_type?`<div style="font-size:12px;color:var(--g5)">${esc(e.business_type)}</div>`:''}</div><div style="margin-left:auto;display:flex;gap:8px"><span style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--p)">${empc.length}</span><span style="font-size:11px;color:var(--g5);align-self:flex-end;margin-bottom:4px">${T('dashPerson')}</span>${alrt.length>0?`<span class="eb eb-u" style="align-self:center">${alrt.length} ${T('empUrgent')}</span>`:''}</div></div>
+  const html=SIMPLE_WORKER_MODE?_empHubHtml(e,empc):`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--g2)"><div style="width:36px;height:36px;border-radius:10px;background:var(--pp);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--p)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><div style="font-size:20px;font-weight:800">${esc(e.name)}</div>${e.business_type?`<div style="font-size:12px;color:var(--g5)">${esc(e.business_type)}</div>`:''}</div><div style="margin-left:auto;display:flex;gap:8px"><span style="font-size:22px;font-weight:800;font-family:var(--mono);color:var(--p)">${empc.length}</span><span style="font-size:11px;color:var(--g5);align-self:flex-end;margin-bottom:4px">${T('dashPerson')}</span>${alrt.length>0?`<span class="eb eb-u" style="align-self:center">${alrt.length} ${T('empUrgent')}</span>`:''}</div></div>
   <div class="dg4"><div class="df"><div class="dfl">${T('empDetPhone')}</div><div class="dfv">${esc(e.phone)||'—'}</div></div><div class="df"><div class="dfl">${T('empDetContact')}</div><div class="dfv">${esc(e.contact_person)||'—'}</div></div><div class="df"><div class="dfl">${T('empDetAddr')}</div><div class="dfv">${esc(e.address)||'—'}</div></div></div>
-  <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('empDetWorkerList')}</div>
+  <div id="empShareSec"></div><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:10px">${T('empDetWorkerList')}</div>
   ${empc.length?`<div class="twrap" style="overflow-x:auto"><table><thead><tr><th>${T('empTblName')}</th><th>${T('empTblNat')}</th><th>${T('empTblStatus')}</th><th>${T('day90')}</th><th>VISA/WP</th></tr></thead><tbody>${empc.map(c=>{const d90=du(c.next_90);const dvw=Math.min(...[c.exp_visa,c.exp_wp].filter(Boolean).map(du).filter(d=>d!==null),Infinity);return`<tr onclick="document.getElementById('empDetModal').style.display='none';openDetail(${c.id})" style="cursor:pointer"><td style="font-weight:600;font-size:12px">${esc(c.name)}</td><td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td><td><span class="${wsC(c.work_status)}" style="font-size:10px;padding:2px 7px;border-radius:20px">${wsT(c.work_status||'')}</span></td><td>${d90!==null?`<span class="eb ${ec(d90)}" style="font-size:10px">${el(d90)}</span>`:'—'}</td><td>${dvw!==Infinity?`<span class="eb ${ec(dvw)}" style="font-size:10px">${el(dvw)}</span>`:'—'}</td></tr>`;}).join('')}</tbody></table></div>`:`<div style="color:var(--g5);font-size:13px;text-align:center;padding:20px">${T('empDetNoWorker')}</div>`}
   <div id="empP2Sec"></div>`;
   let m=document.getElementById('empDetModal');
-  if(!m){m=document.createElement('div');m.id='empDetModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};m.innerHTML=`<div class="mb mb-lg" onclick="event.stopPropagation()"><div class="mh"><div class="mt" id="empDetTitle"></div><div style="display:flex;gap:7px"><button class="btn btn-g btn-sm" id="empDetEditBtn" onclick="openEditEmp(${id})">${T('btnEdit')}</button><button class="xbtn" onclick="document.getElementById('empDetModal').style.display='none'">×</button></div></div><div class="mbody" id="empDetBody"></div></div>`;document.body.appendChild(m);}
+  if(!m){m=document.createElement('div');m.id='empDetModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};m.innerHTML=`<div class="mb mb-lg" onclick="event.stopPropagation()"><div class="mh"><div class="mt" id="empDetTitle"></div><div style="display:flex;gap:7px"><button class="btn btn-sm" id="empDetDelBtn" style="display:none;color:#b91c1c;background:#fff5f5;border:1px solid #fecaca">ลบนายจ้าง</button><button class="btn btn-g btn-sm" id="empDetEditBtn" onclick="openEditEmp(${id})">${T('btnEdit')}</button><button class="xbtn" onclick="document.getElementById('empDetModal').style.display='none'">×</button></div></div><div class="mbody" id="empDetBody"></div></div>`;document.body.appendChild(m);}
   document.getElementById('empDetTitle').textContent=e.name;document.getElementById('empDetBody').innerHTML=html;
   // Update edit button text and ID in case modal was reused
   const edb=document.getElementById('empDetEditBtn');if(edb){edb.textContent=T('btnEdit');edb.onclick=()=>{document.getElementById('empDetModal').style.display='none';openEditEmp(id);};}
+  {const ddb=document.getElementById('empDetDelBtn');if(ddb){ddb.style.display=_isAdminRole()?'':'none';ddb.onclick=()=>empDelete(id);}} // Stage EMP-DELETE
   m.style.display='flex';
   // STAGE 54A-5: โหลดข้อมูล Phase 2 + สถานประกอบการแบบ best-effort (migration ยังไม่ apply → แสดงคำแนะนำสั้น ๆ ไม่พังหน้าเดิม)
   try{if(typeof _loadEmpPhase2==='function')_loadEmpPhase2(id);}catch(_e){}
+  try{_loadEmpShare(id);}catch(_e){} // Stage SHARE-001
+  if(SIMPLE_WORKER_MODE){try{_loadEmpDocHub(id);}catch(_e){}} // Stage EMP-HUB
+}
+
+// ── Stage SHARE-001: ลิงก์ให้นายจ้างดูข้อมูลแรงงาน (ส่งทาง LINE · read-only) ──────────
+//   RPC: app_get/create/revoke_employer_share_link (ตรวจตัวตนฝั่ง server)
+//   หน้าเว็บลูกค้า: share.html?t=<token> → Edge Function employer-share-view
+//   ตั้ง SHARE_PAGE_URL เป็นที่อยู่จริงเมื่อขึ้นเว็บ (เช่น 'https://rungfar.netlify.app/share.html')
+//   ว่างไว้ = ใช้ไฟล์ข้าง ๆ CRM (STAGING ใช้ share.STAGING.local.html อัตโนมัติ)
+const SHARE_PAGE_URL='';
+function _shareBaseUrl(){
+  if(SHARE_PAGE_URL)return SHARE_PAGE_URL;
+  const f=/STAGING\.local/i.test(location.pathname)?'share.STAGING.local.html':'share.html';
+  try{return new URL(f,location.href).href.split('?')[0].split('#')[0];}catch(_){return f;}
+}
+// ── Stage SHARE-SHORT-QR ──
+//   ตั้ง SHARE_SITE_URL เมื่อขึ้นเว็บแล้ว เช่น 'https://rungfar.netlify.app' → ลิงก์เป็น https://rungfar.netlify.app/s/รหัส
+const SHARE_SITE_URL='https://rungfa-worker-th.netlify.app'; // Stage SHARE-PROD: เว็บจริง — ลิงก์ /s/รหัส ต่อกับ Production
+const _B62='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+function _shareCode(tok){try{let n=BigInt('0x'+String(tok).slice(0,16));let s='';while(n>0n){s=_B62[Number(n%62n)]+s;n/=62n;}return s.padStart(11,'0');}catch(_){return'';}}
+const RF_LOGO='data:image/png;base64,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';
+function _empShareQr(){const L=_empShareCur.link;if(!L||!L.token)return;const e=employers.find(x=>x.id===_empShareCur.id)||{};_shareQrDraw(_shareLinkUrl(L.token),String(e.name||''),'สแกนดูสถานะเอกสารแรงงาน');} // Stage SHARE-GROUP
+let _qrLastUrl='';
+async function _shareQrCopy(){const ok=await _copyText(_qrLastUrl);toast(ok?'คัดลอกลิงก์แล้ว':'คัดลอกไม่สำเร็จ',ok?undefined:'err');}
+function _shareQrDraw(url,nmIn,subIn){
+  _qrLastUrl=url;
+  if(typeof qrcode!=='function'){toast('สร้าง QR ไม่ได้','err');return;}
+  const q=qrcode(0,'H');q.addData(url);q.make();
+  const n=q.getModuleCount(),S=900,pad=70,cell=Math.floor((S-pad*2)/n),qs=cell*n,off=Math.floor((S-qs)/2),H=S+170;
+  const cv=document.createElement('canvas');cv.width=S;cv.height=H;const x=cv.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,S,H);x.fillStyle='#111';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))x.fillRect(off+c*cell,off+r*cell,cell,cell);
+  const ff=getComputedStyle(document.body).fontFamily||'sans-serif';
+  const img=new Image();
+  img.onload=()=>{
+    const ls=Math.round(qs*0.22);
+    x.fillStyle='#fff';x.beginPath();x.arc(S/2,off+qs/2,ls/2+12,0,Math.PI*2);x.fill();
+    x.drawImage(img,(S-ls)/2,off+(qs-ls)/2,ls,ls);
+    x.textAlign='center';
+    const nm=String(nmIn||'');let fs=44;x.font=`700 ${fs}px ${ff}`;while(fs>22&&x.measureText(nm).width>S-80){fs-=2;x.font=`700 ${fs}px ${ff}`;}
+    x.fillStyle='#d9560a';x.fillText(nm,S/2,S+28);
+    x.fillStyle='#333';x.font=`500 30px ${ff}`;x.fillText(subIn||'สแกนดูสถานะเอกสารแรงงาน',S/2,S+80);
+    x.fillStyle='#888';x.font=`400 24px ${ff}`;x.fillText('บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด · โทร 092-256-6114',S/2,S+125);
+    const png=cv.toDataURL('image/png');
+    let m=document.getElementById('shareQrModal');
+    if(!m){m=document.createElement('div');m.id='shareQrModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};document.body.appendChild(m);}
+    const fn=('QR-'+(nm||'employer')).replace(/[\\/:*?"<>|]+/g,'_')+'.png';
+    m.innerHTML=`<div class="mb" style="max-width:420px" onclick="event.stopPropagation()"><div class="mh"><div class="mt">QR โค้ดลิงก์ — ${esc(nm)}</div><button class="xbtn" onclick="document.getElementById('shareQrModal').style.display='none'">×</button></div>
+      <div class="mbody" style="text-align:center"><img src="${png}" alt="QR" style="width:100%;max-width:340px;border:1px solid var(--g2);border-radius:12px">
+      <div style="font-size:11px;color:var(--g5);margin:8px 0;word-break:break-all;font-family:var(--mono)">${esc(url)}</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><a class="btn btn-p btn-sm" href="${png}" download="${esc(fn)}">ดาวน์โหลดรูป QR</a><button class="btn btn-g btn-sm" onclick="_shareQrCopy()">คัดลอกลิงก์</button></div>
+      <div style="font-size:11px;color:var(--g5);margin-top:8px">ส่งรูปนี้ทาง LINE หรือปริ้นติดไว้ — สแกนแล้วเปิดหน้าข้อมูลแรงงานของนายจ้างนี้</div></div></div>`;
+    m.style.display='flex';
+  };
+  img.onerror=()=>toast('โหลดโลโก้ไม่สำเร็จ','err');
+  img.src=RF_LOGO;
+}
+function _shareLinkUrl(token){const c=_shareCode(token);if(!c)return _shareBaseUrl()+'?t='+encodeURIComponent(token);if(SHARE_SITE_URL)return SHARE_SITE_URL.replace(/\/+$/,'')+'/s/'+c;return _shareBaseUrl()+'?c='+c;} // Stage SHARE-SHORT-QR
+async function _shareRpc(fname,extra){
+  const uid=(curUser&&curUser.id!=null)?String(curUser.id):'';
+  const uname=(curUser&&curUser.username)||'';
+  let res;
+  try{
+    res=await fetch(`${SB_URL}/rest/v1/rpc/${fname}`,{
+      method:'POST',mode:'cors',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(Object.assign({p_user_id:uid,p_username:uname},extra||{}))
+    });
+  }catch(e){return{status:'error'};}
+  let d=null;try{d=await res.json();}catch(_){d=null;}
+  if(res.ok)return{status:'ok',data:d};
+  const code=(d&&d.code)||'';const msg=(d&&d.message)||'';
+  if(res.status===404||code==='PGRST202'||/Could not find the function/i.test(msg))return{status:'missing'};
+  if(msg==='unauthorized')return{status:'unauthorized'};
+  return{status:'error',msg};
+}
+async function _copyText(t){
+  try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(t);return true;}}catch(_){}
+  try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(_){return false;}
+}
+let _empShareCur={id:null,link:null};
+function _renderEmpShare(){
+  const box=document.getElementById('empShareSec');if(!box)return;
+  const e=employers.find(x=>x.id===_empShareCur.id);
+  const L=_empShareCur.link;
+  const head=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><div style="font-weight:700;font-size:13px;color:var(--g9)">🔗 ลิงก์ให้นายจ้างดูข้อมูลแรงงาน</div>
+    <div style="font-size:11px;color:var(--g5)">ส่งทาง LINE · นายจ้างเห็นวันหมดอายุ รูปแรงงาน และรูปเอกสาร (ดูได้อย่างเดียว)</div></div>`;
+  let body;
+  if(L==='loading'){body=head+`<span style="font-size:12px;color:var(--g5)">กำลังโหลด…</span></div>`;}
+  else if(L==='missing'){body=head+`</div><div style="font-size:11px;color:var(--g5);margin-top:6px">ยังไม่ได้รัน SQL 20261009_employer_share_links บนฐานข้อมูลนี้</div>`;}
+  else if(L==='error'){body=head+`<button class="btn btn-g btn-sm" onclick="_loadEmpShare(${_empShareCur.id})">ลองใหม่</button></div><div style="font-size:11px;color:var(--r,#b91c1c);margin-top:6px">โหลดลิงก์ไม่สำเร็จ</div>`;}
+  else if(!L){body=head+`<button class="btn btn-p btn-sm" onclick="_empShareCreate(false)">สร้างลิงก์</button></div>`;}
+  else{
+    const url=_shareLinkUrl(L.token);
+    const seen=L.view_count?`เปิดดูแล้ว ${L.view_count} ครั้ง${L.last_viewed_at?' · ล่าสุด '+new Date(L.last_viewed_at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):''}`:'ยังไม่มีคนเปิดดู';
+    body=head+`<div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-p btn-sm" onclick="_empShareCopy(true)">คัดลอกข้อความส่ง LINE</button>
+        <button class="btn btn-g btn-sm" onclick="_empShareCopy(false)">คัดลอกลิงก์</button>
+        <button class="btn btn-g btn-sm" onclick="window.open(_shareLinkUrl(_empShareCur.link.token),'_blank','noopener')">เปิดดู</button><button class="btn btn-g btn-sm" onclick="_empShareQr()">QR โค้ด</button>
+      </div></div>
+      <div style="margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--g6);background:var(--g1);border-radius:8px;padding:6px 8px;word-break:break-all">${esc(url)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--g5)">สร้างโดย ${esc(L.created_by_code||'—')} · ${L.created_at?new Date(L.created_at).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}):''} · ${seen}</span>
+        <span style="display:flex;gap:6px">
+          <button class="btn btn-g btn-xs" onclick="_empShareCreate(true)">สร้างลิงก์ใหม่</button>
+          <button class="btn btn-g btn-xs" style="color:#b91c1c" onclick="_empShareRevoke()">ยกเลิกลิงก์</button>
+        </span>
+      </div>`;
+  }
+  box.innerHTML=`<div style="border:1px solid var(--g2);border-radius:12px;padding:12px 14px;margin-bottom:14px">${body}</div>`;
+  void e;
+}
+async function _loadEmpShare(id){
+  _empShareCur={id,link:'loading'};_renderEmpShare();
+  const r=await _shareRpc('app_get_employer_share_link',{p_employer_id:id});
+  if(_empShareCur.id!==id)return;
+  if(r.status==='missing'){_empShareCur.link='missing';}
+  else if(r.status!=='ok'){_empShareCur.link='error';}
+  else{const row=Array.isArray(r.data)?r.data[0]:null;_empShareCur.link=row||null;}
+  _renderEmpShare();
+}
+async function _empShareCreate(rotate){
+  const id=_empShareCur.id;if(id==null)return;
+  if(rotate&&!confirm('สร้างลิงก์ใหม่?\nลิงก์เดิมที่ส่งให้นายจ้างไปแล้วจะเปิดไม่ได้ ต้องส่งลิงก์ใหม่ให้อีกครั้ง'))return;
+  const r=await _shareRpc('app_create_employer_share_link',{p_employer_id:id,p_rotate:!!rotate});
+  if(r.status==='ok'){const row=Array.isArray(r.data)?r.data[0]:null;_empShareCur.link=row||null;_renderEmpShare();toast(rotate?'สร้างลิงก์ใหม่แล้ว':'สร้างลิงก์แล้ว');}
+  else if(r.status==='missing'){_empShareCur.link='missing';_renderEmpShare();}
+  else toast(r.status==='unauthorized'?'ไม่มีสิทธิ์ — กรุณาเข้าสู่ระบบใหม่':'สร้างลิงก์ไม่สำเร็จ','err');
+}
+async function _empShareRevoke(){
+  const id=_empShareCur.id;if(id==null)return;
+  if(!confirm('ยกเลิกลิงก์นี้?\nนายจ้างจะเปิดลิงก์เดิมไม่ได้อีก'))return;
+  const r=await _shareRpc('app_revoke_employer_share_link',{p_employer_id:id});
+  if(r.status==='ok'){_empShareCur.link=null;_renderEmpShare();toast('ยกเลิกลิงก์แล้ว');}
+  else toast('ยกเลิกลิงก์ไม่สำเร็จ','err');
+}
+async function _empShareCopy(withMsg){
+  const L=_empShareCur.link;if(!L||!L.token)return;
+  const e=employers.find(x=>x.id===_empShareCur.id)||{};
+  const url=_shareLinkUrl(L.token);
+  const txt=withMsg?`สวัสดีครับ/ค่ะ บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด\nข้อมูลเอกสารแรงงานของ ${e.name||'ท่าน'} (วันหมดอายุพาสปอร์ต วีซ่า ใบอนุญาตทำงาน รายงานตัว 90 วัน)\nกดดูได้ที่ลิงก์นี้ 👇\n${url}`:url;
+  toast(await _copyText(txt)?'คัดลอกแล้ว — วางใน LINE ได้เลย':'คัดลอกไม่สำเร็จ',undefined);
 }
 
 // Stage 54A-5: helper เติม/อ่าน field Phase 2 ของ modal นายจ้าง (ef2_*)
@@ -5163,7 +5458,7 @@ async function saveEmployer(){
 
 function setQuickView(v){
   customerQuickView=v;
-  ['all','pending','submitted','unpaid'].forEach(k=>{
+  ['all','pending','submitted','unpaid','soon','overdue','nodate'].forEach(k=>{
     const el=document.getElementById('qvc-'+k);
     if(el)el.classList.toggle('active',(k==='all'?v==='':k===v));
   });
@@ -5177,9 +5472,9 @@ function doFilter(){
   const pendingWS=new Set([WS[0],WS[1],WS[2]]);
   filtered=customers.filter(c=>{
     const emp2=c.employer_id?employers.find(e=>e.id===c.employer_id):null;
-    const mq=!q||[c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,c.agent_name,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
-    const mqv=customerQuickView==='pending'?pendingWS.has(c.work_status):customerQuickView==='submitted'?c.work_status===WS[3]:customerQuickView==='unpaid'?(c.pay_status==='partial'||c.pay_status==='unpaid'||(!c.pay_status&&Number(c.fee_due)>0)):true;
-    return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br))&&(!asg||String(c.assignee_code||'')===String(asg))&&mqv;
+    const mq=!q||[c.license_no,c.status_note,c.work_items,c.worker_category,c.name,c.name_th,c.passport_no,c.alien_id,c.phone,c.wp_no,c.visa_no,c.agent_name,emp2?.name,emp2?.contact_person,emp2?.phone].some(v=>v&&String(v).toLowerCase().includes(q));
+    const _sq=SIMPLE_WORKER_MODE?_sheetQv(c,customerQuickView):null;const mqv=_sq!==null?_sq:customerQuickView==='pending'?pendingWS.has(c.work_status):customerQuickView==='submitted'?c.work_status===WS[3]:customerQuickView==='unpaid'?(c.pay_status==='partial'||c.pay_status==='unpaid'||(!c.pay_status&&Number(c.fee_due)>0)):true;
+    return mq&&(!nat||c.nationality===nat)&&(!ct||c.customer_type===ct)&&(!ws||c.work_status===ws)&&(!grp||String(c.group_id)===String(grp))&&(!br||String(c.branch_id)===String(br))&&(!asg||String(c.assignee_code||'')===String(asg))&&mqv&&(!SIMPLE_WORKER_MODE||_sheetFilterOk(c));
   });
   // Stage 28C: photo customers first; within each group newest-first (created_at DESC, id DESC)
   filtered.sort((a,b)=>{
@@ -5221,9 +5516,9 @@ function renderCustomerCards(list){
           <div class="cc-sub">${c.employer_id?esc(empN(c.employer_id)):(c.name_th?esc(c.name_th):mDash)}</div>
           <div class="cc-row2">
             <span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span>
-            <span class="${wsC(c.work_status)} cc-st">${wsT(c.work_status||'รับเรื่อง')}</span>
+            ${SIMPLE_WORKER_MODE?'':`<span class="${wsC(c.work_status)} cc-st">${wsT(c.work_status||'รับเรื่อง')}</span>`}
             ${(()=>{const _a=assigneeLabel(c.assignee_code);return _a?`<span class="asg-chip">${esc(_a)}</span>`:'';})()}
-            ${payBadge}${svcs}${ex}${expChips}
+            ${SIMPLE_WORKER_MODE?_sheetCardChips(c):payBadge+svcs+ex+expChips}
           </div>
         </div>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--g3)"><path d="M9 18l6-6-6-6"/></svg>
@@ -5291,7 +5586,305 @@ function syncCustomerNav(){
   }
 }
 function editorInfo(code){const k=code?_normCode(code):'';const e=k?empProfMap[k]:null;return{emp:e||null,name:e?(e.nickname||e.full_name||code):(code||'')};}
-function renderTable(){
+// =============================================================
+// Stage SHEET-VIEW — ตารางแรงงานแบบ Google Sheets (SIMPLE_WORKER_MODE)
+// =============================================================
+let _sheetGroupEmp=false;try{_sheetGroupEmp=localStorage.getItem('crm_sheet_grp')==='1';}catch(_){}
+let _sheetSort='urgent';try{_sheetSort=localStorage.getItem('crm_sheet_sort')||'urgent';}catch(_){}
+const _SHEET_EXP=[['exp_wp','wp','WP'],['exp_passport','passport','เล่ม'],['exp_visa','visa','VISA'],['next_90','next90','90 วัน'],['exp_mou','mou','MOU']];
+function _sheetW(k){const v=Number(typeof settings!=='undefined'&&settings&&settings[k]);return v>0?v:({passport:30,visa:30,wp:60,next90:7,mou:60})[k];}
+function _sheetChipCls(d,w){if(d===null||d===undefined||isNaN(d))return'';if(d<0)return'sh-x';if(d<=w)return'sh-w';return'sh-ok';}
+function _sheetDay(d){if(d===null||d===undefined||isNaN(d))return'';if(d<0)return'เลย '+Math.abs(d)+' วัน';if(d===0)return'หมดวันนี้';return'อีก '+d+' วัน';}
+function _sheetDate(v,k){if(!v)return'<span class="sh-na">—</span>';const d=du(v);return`<div class="sh-d">${fd(v)}</div><span class="sh-chip ${_sheetChipCls(d,_sheetW(k))}">${_sheetDay(d)}</span>`;}
+function _sheetMinDays(c){const xs=_SHEET_EXP.map(([f])=>du(c[f])).filter(d=>d!==null&&!isNaN(d));return xs.length?Math.min(...xs):null;}
+// 2 = เลยกำหนด · 1 = ใกล้หมด (ภายในค่าตั้งเตือน) · 0 = ปกติ · -1 = ไม่มีวันหมดอายุ
+function _sheetLevel(c){let lv=-1;_SHEET_EXP.forEach(([f,k])=>{const d=du(c[f]);if(d===null||isNaN(d))return;lv=Math.max(lv,d<0?2:(d<=_sheetW(k)?1:0));});return lv;}
+function _sheetCatHtml(v){if(!v)return'<span class="sh-add">+ ประเภท</span>';const s=String(v);const cls=/mou/i.test(s)?'c-mou':(/มติ|ครม/.test(s)?'c-mati':'');return`<span class="sh-cat ${cls}">${esc(s)}</span>`;}
+function _sheetAv(c){const ini=c.name?String(c.name).split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'?';
+  const u=c.photo||(typeof _custPhotoCache!=='undefined'&&_custPhotoCache[c.id])||null;
+  if(u)return`<img src="${esc(u)}" class="c-avatar" title="คลิกดูรูปใหญ่" onclick="openPhotoModal(this.src);event.stopPropagation()">`;
+  return(c._hasPhoto||c.photo_storage_path)?`<div class="c-avatar-placeholder" data-custphoto="${c.id}">${esc(ini)}</div>`:`<div class="c-avatar-placeholder">${esc(ini)}</div>`;}
+const _SHEET_HEAD=['','ลำดับ','รูป','นายจ้าง','ชื่อต่างด้าว','สัญชาติ','ประเภท','WORK','เวิร์คหมด','PASSPORT','เล่มหมดอายุ','VISA หมด','90 วัน','สถานะ','รายการ','หมายเหตุ',''];
+function _sheetUiInit(){
+  document.documentElement.classList.toggle('sheet-nocols',_sheetColsOk===false);
+  const tr=document.querySelector('#view-customers thead tr');
+  if(tr&&tr.dataset.sheet!=='1'){tr.dataset.sheet='1';tr.innerHTML=_SHEET_HEAD.map(h=>`<th>${h}</th>`).join('');const t=tr.closest('table');if(t)t.classList.add('sh-t');}
+  const qv=document.getElementById('custQvChips');
+  if(qv&&qv.dataset.sheet!=='1'){qv.dataset.sheet='1';customerQuickView='';
+    qv.innerHTML=[['all','ทั้งหมด'],['soon','ใกล้หมด'],['overdue','เลยกำหนด'],['nodate','ยังไม่มีวันหมดอายุ']].map(([k,l])=>`<button class="qv-chip${k==='all'?' active':''}" id="qvc-${k}" onclick="setQuickView('${k==='all'?'':k}')">${l}<b id="qvn-${k}"></b></button>`).join('');}
+  const tb=document.querySelector('#view-customers .toolbar');
+  if(tb&&!document.getElementById('qemp')){
+    tb.insertAdjacentHTML('beforeend',`<select class="fi" id="qemp" onchange="doFilter()"><option value="">นายจ้างทั้งหมด</option></select><select class="fi" id="qcat" onchange="doFilter()"><option value="">ประเภททั้งหมด</option></select>`);}
+  const sb=document.getElementById('selAllBtn');
+  if(sb&&!document.getElementById('sheetCtl')){
+    sb.insertAdjacentHTML('beforebegin',`<span class="sh-ctl" id="sheetCtl"><select id="shSort" onchange="sheetSetSort(this.value)" title="เรียงลำดับ"><option value="urgent">เรียง: ใกล้หมดก่อน</option><option value="latest">เรียง: เพิ่มล่าสุด</option><option value="emp">เรียง: นายจ้าง</option></select><label><input type="checkbox" id="shGrp" onchange="sheetSetGroup(this.checked)">จัดกลุ่มตามนายจ้าง</label></span>`);}
+  const ss=document.getElementById('shSort');if(ss)ss.value=_sheetSort;
+  const sg=document.getElementById('shGrp');if(sg)sg.checked=_sheetGroupEmp;
+  _sheetFillFilters();
+}
+function _sheetFillFilters(){
+  const qe=document.getElementById('qemp');
+  if(qe){const cur=qe.value;const used=new Set((customers||[]).map(c=>c.employer_id).filter(v=>v!=null));
+    const list=(employers||[]).filter(e=>used.has(e.id)).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'th'));
+    qe.innerHTML='<option value="">นายจ้างทั้งหมด</option>'+list.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')+'<option value="__none__">— ไม่มีนายจ้าง —</option>';
+    qe.value=cur;if(qe.selectedIndex<0)qe.value='';}
+  const qc=document.getElementById('qcat');
+  if(qc){const cur=qc.value;const cats=[...new Set(['MOU','มติ.ครม.',...(customers||[]).map(c=>c.worker_category).filter(Boolean)])];
+    qc.innerHTML='<option value="">ประเภททั้งหมด</option>'+cats.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')+'<option value="__none__">— ไม่ระบุ —</option>';
+    qc.value=cur;if(qc.selectedIndex<0)qc.value='';}
+}
+function _sheetFilterOk(c){
+  const qe=document.getElementById('qemp')?.value||'';const qc=document.getElementById('qcat')?.value||'';
+  if(qe&&(qe==='__none__'?c.employer_id!=null:String(c.employer_id||'')!==qe))return false;
+  if(qc&&(qc==='__none__'?!!c.worker_category:c.worker_category!==qc))return false;
+  return true;
+}
+function _sheetQv(c,v){if(v==='soon')return _sheetLevel(c)===1;if(v==='overdue')return _sheetLevel(c)===2;if(v==='nodate')return _sheetLevel(c)===-1;return null;}
+function sheetSetSort(v){_sheetSort=v||'urgent';try{localStorage.setItem('crm_sheet_sort',_sheetSort);}catch(_){}curPage=1;renderTable();}
+function sheetSetGroup(on){_sheetGroupEmp=!!on;try{localStorage.setItem('crm_sheet_grp',on?'1':'0');}catch(_){}curPage=1;renderTable();}
+function _sheetSortList(list){
+  const byName=(a,b)=>String(a.name||'').localeCompare(String(b.name||''));
+  const byUrg=(a,b)=>{const da=_sheetMinDays(a),db=_sheetMinDays(b);if(da===null&&db===null)return byName(a,b);if(da===null)return 1;if(db===null)return -1;return da-db||byName(a,b);};
+  const byEmp=(a,b)=>{const ea=a.employer_id?empN(a.employer_id):'￿',eb=b.employer_id?empN(b.employer_id):'￿';return ea.localeCompare(eb,'th');};
+  const inner=_sheetSort==='urgent'?byUrg:(_sheetSort==='emp'?byName:null);
+  if(_sheetGroupEmp||_sheetSort==='emp')list.sort((a,b)=>byEmp(a,b)||(inner?inner(a,b):0));
+  else if(inner)list.sort(inner);
+  return list;
+}
+function _sheetRow(c,no){
+  const mD='<span class="sh-na">—</span>';
+  return`<tr onclick="openDetail(${c.id})" id="row-${c.id}" class="sh-r sh-lv${_sheetLevel(c)} ${selectedIds.has(c.id)?'row-selected':''}">
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedIds.has(c.id)?'checked':''} onchange="toggleRow(${c.id},this.checked)"></td>
+      <td class="sh-no">${no}</td>
+      <td onclick="event.stopPropagation()">${_sheetAv(c)}</td>
+      <td class="sh-emp">${c.employer_id?esc(empN(c.employer_id)):mD}</td>
+      <td><div class="ctbl-name">${esc(c.name)}</div>${c.name_th?`<div class="ctbl-sub">${esc(c.name_th)}</div>`:''}</td>
+      <td><span class="nb ${NC[c.nationality]||'nb-ot'}" style="font-size:10px">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span></td>
+      <td class="sh-ed" onclick="event.stopPropagation();sheetEditCat(this,${c.id})">${_sheetCatHtml(c.worker_category)}</td>
+      <td class="sh-mono">${c.license_no?esc(c.license_no):mD}</td>
+      <td>${_sheetDate(c.exp_wp,'wp')}</td>
+      <td class="sh-mono">${c.passport_no?esc(c.passport_no):mD}</td>
+      <td>${_sheetDate(c.exp_passport,'passport')}</td>
+      <td>${_sheetDate(c.exp_visa,'visa')}</td>
+      <td>${_sheetDate(c.next_90,'next90')}</td>
+      <td class="sh-ed sh-txt" onclick="event.stopPropagation();sheetEditText(this,${c.id},'status_note')">${c.status_note?esc(c.status_note):'<span class="sh-add">+ สถานะ</span>'}</td>
+      <td class="sh-ed sh-txt" onclick="event.stopPropagation();sheetEditText(this,${c.id},'work_items')">${c.work_items?esc(c.work_items):'<span class="sh-add">+ รายการ</span>'}</td>
+      <td class="sh-ed sh-txt" onclick="event.stopPropagation();sheetEditText(this,${c.id},'note')">${c.note?esc(c.note):'<span class="sh-add">+</span>'}</td>
+      <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px"><button class="bic" onclick="openEdit(${c.id})">${uiIcon('edit')}</button><button class="bic" onclick="delCust(${c.id})" style="color:var(--red)">${uiIcon('trash')}</button></div></td>
+    </tr>`;
+}
+function _sheetRenderTable(){
+  _sheetUiInit();
+  const all=customers||[];
+  [['soon',1],['overdue',2],['nodate',-1]].forEach(([k,lv])=>{const el=document.getElementById('qvn-'+k);if(el){const n=all.filter(c=>_sheetLevel(c)===lv).length;el.textContent=n?String(n):'';}});
+  const total=filtered.length;
+  const rcnt=document.getElementById('rcnt');if(rcnt)rcnt.textContent=total;
+  if(!total){document.getElementById('tbody').innerHTML='';renderCustomerCards([]);document.getElementById('emptyRow').style.display='block';document.getElementById('pag').innerHTML='';updateBulkBar();return;}
+  document.getElementById('emptyRow').style.display='none';
+  _sheetSortList(filtered);
+  const s=(curPage-1)*PG,e=Math.min(s+PG,total);const page=filtered.slice(s,e);
+  const empCnt={};if(_sheetGroupEmp)filtered.forEach(c=>{const k=c.employer_id||0;empCnt[k]=empCnt[k]||{n:0,w:0};empCnt[k].n++;if(_sheetLevel(c)>=1)empCnt[k].w++;});
+  let prev=null;const out=[];
+  page.forEach((c,i)=>{
+    if(_sheetGroupEmp){const k=c.employer_id||0;if(k!==prev){prev=k;const st=empCnt[k]||{n:0,w:0};
+      out.push(`<tr class="sh-grp"${k?` onclick="openEmpDet(${k})" title="เปิดหน้านายจ้าง"`:''}><td colspan="${_SHEET_HEAD.length}">🏢 ${k?esc(empN(k)):'ไม่มีนายจ้าง'}<span class="sh-gs">${st.n} คน${st.w?` · ต้องดู ${st.w} คน`:''}${k?' · กดเพื่อเปิดหน้านายจ้าง ›':''}</span></td></tr>`);}}
+    out.push(_sheetRow(c,s+i+1));
+  });
+  document.getElementById('tbody').innerHTML=out.join('');
+  renderCustomerCards(page);
+  _bindCustPhotos();
+  const pages=Math.ceil(total/PG);const ss=s+1,ee=e;
+  document.getElementById('pag').innerHTML=`<span>${T('pagShow')} ${total?ss:0}–${ee} ${T('pagFrom')} ${total}</span><div class="pbtns"><button class="pb" onclick="goPage(${curPage-1})" ${curPage<=1?'disabled':''}>‹</button>${Array.from({length:Math.min(pages,5)},(_,i)=>{const p=Math.max(1,Math.min(curPage-2,pages-4))+i;return`<button class="pb ${p===curPage?'on':''}" onclick="goPage(${p})">${p}</button>`;}).join('')}<button class="pb" onclick="goPage(${curPage+1})" ${curPage>=pages?'disabled':''}>›</button></div>`;
+  updateBulkBar();
+}
+// ── แก้ไขในช่อง (inline) — บันทึกผ่าน app_save_customer เดิม ──
+function _sheetNeedCols(){if(_sheetColsOk===false){toast('ต้องรัน SQL 20261010 บน Supabase ก่อน จึงจะบันทึกช่องนี้ได้','err');return false;}return true;}
+async function _sheetSave(id,patch){
+  const c=(customers||[]).find(x=>x.id===id);if(!c)return false;
+  const old={};Object.keys(patch).forEach(k=>{old[k]=c[k]==null?null:c[k];});
+  const r=await _customerSaveRpc(id,patch);
+  if(r.status==='ok'){Object.assign(c,patch);
+    try{const ch={};Object.keys(patch).forEach(k=>{ch[k]={from:old[k],to:patch[k]};});logAudit('customer.update','customer',id,{name:c.name,passport_no:c.passport_no||c.alien_id||null,changed:Object.keys(patch),changes:ch,source:'sheetInline'});}catch(_){}
+    return true;}
+  toast(r.status==='unauthorized'?'ไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่':'บันทึกไม่สำเร็จ','err');return false;
+}
+function sheetEditText(td,id,field){
+  if(field!=='note'&&!_sheetNeedCols())return;
+  if(td.querySelector('textarea'))return;
+  const c=(customers||[]).find(x=>x.id===id);if(!c)return;
+  const cur=String(c[field]||'');
+  td.innerHTML='<textarea class="sh-in" rows="2"></textarea>';const ta=td.firstChild;ta.value=cur;ta.focus();ta.select();
+  let done=false;
+  const fin=async save=>{if(done)return;done=true;const v=ta.value.trim();
+    if(save&&v!==cur.trim()){td.innerHTML='<span class="sh-na">กำลังบันทึก…</span>';if(await _sheetSave(id,{[field]:v||null}))toast('บันทึกแล้ว');}
+    renderTable();};
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();fin(true);}else if(e.key==='Escape'){e.preventDefault();fin(false);}});
+  ta.addEventListener('blur',()=>fin(true));
+}
+function sheetEditCat(td,id){
+  if(!_sheetNeedCols())return;
+  if(td.querySelector('select'))return;
+  const c=(customers||[]).find(x=>x.id===id);if(!c)return;
+  const cur=c.worker_category||'';
+  const opts=[...new Set(['MOU','มติ.ครม.',...(customers||[]).map(x=>x.worker_category).filter(Boolean)])];
+  td.innerHTML=`<select class="sh-in"><option value="">— ไม่ระบุ —</option>${opts.map(o=>`<option value="${esc(o)}" ${o===cur?'selected':''}>${esc(o)}</option>`).join('')}<option value="__other__">อื่น ๆ (พิมพ์เอง)…</option></select>`;
+  const sel=td.firstChild;sel.focus();
+  let done=false;
+  const fin=async v=>{if(done)return;done=true;if(v!==null&&v!==cur){if(await _sheetSave(id,{worker_category:v||null}))toast('บันทึกแล้ว');}renderTable();};
+  sel.addEventListener('change',()=>{let v=sel.value;if(v==='__other__'){v=(prompt('ประเภท:','')||'').trim();if(!v){fin(null);return;}}fin(v);});
+  sel.addEventListener('keydown',e=>{if(e.key==='Escape')fin(null);});
+  sel.addEventListener('blur',()=>setTimeout(()=>fin(null),200));
+}
+// ── การ์ดมือถือ / หัวรายละเอียด ──
+function _sheetCardChips(c){
+  const ch=_SHEET_EXP.slice(0,4).map(([f,k,l])=>{const d=du(c[f]);return(d===null||isNaN(d))?'':`<span class="sh-chip ${_sheetChipCls(d,_sheetW(k))}">${l} ${_sheetDay(d)}</span>`;}).join('');
+  return`<div class="cc-sh">${c.worker_category?_sheetCatHtml(c.worker_category):''}${c.status_note?`<span class="cc-stn">${esc(c.status_note)}</span>`:''}${ch}</div>`;
+}
+function _sheetDetChips(c){return`${c.worker_category?_sheetCatHtml(c.worker_category):''}${c.status_note?`<span class="cc-stn" style="font-size:12px">📌 ${esc(c.status_note)}</span>`:''}`;}
+
+// =============================================================
+// Stage EMP-HUB — หน้านายจ้างเป็นศูนย์รวม (เอกสารนายจ้าง + แรงงานเรียงตามความเร่งด่วน)
+// =============================================================
+const _EMP_DOC_TYPES=[['company_certificate','หนังสือรับรองบริษัท'],['employer_id_card','บัตรประชาชนนายจ้าง'],['house_registration','ทะเบียนบ้าน'],['employer_poa','หนังสือมอบอำนาจ'],['pp20','ภพ.20'],['commercial_registration','ใบทะเบียนพาณิชย์'],['workplace_photo','รูปสถานประกอบการ'],['map','แผนที่'],['other','อื่น ๆ']];
+let _ehDocs=[],_ehEmpId=null,_ehErr='';
+function _empHubHtml(e,empc){
+  const lv=empc.map(_sheetLevel);const nOver=lv.filter(x=>x===2).length,nSoon=lv.filter(x=>x===1).length;
+  const sorted=empc.slice().sort((a,b)=>{const da=_sheetMinDays(a),db=_sheetMinDays(b);if(da===null&&db===null)return String(a.name||'').localeCompare(String(b.name||''));if(da===null)return 1;if(db===null)return -1;return da-db;});
+  const st=(n,l,cls)=>`<div class="eh-st ${cls}"><b>${n}</b><span>${l}</span></div>`;
+  const sub=[e.business_type,e.contact_person,e.phone].filter(Boolean).map(esc).join(' · ');
+  const rows=sorted.map(c=>`<tr class="sh-r sh-lv${_sheetLevel(c)}" onclick="document.getElementById('empDetModal').style.display='none';openDetail(${c.id})">
+      <td onclick="event.stopPropagation()">${_sheetAv(c)}</td>
+      <td><div class="ctbl-name">${esc(c.name)}</div>${c.name_th?`<div class="ctbl-sub">${esc(c.name_th)}</div>`:''}</td>
+      <td>${c.worker_category?_sheetCatHtml(c.worker_category):'<span class="sh-na">—</span>'}</td>
+      <td class="sh-mono">${c.license_no?esc(c.license_no):'<span class="sh-na">—</span>'}</td>
+      <td>${_sheetDate(c.exp_wp,'wp')}</td><td>${_sheetDate(c.exp_passport,'passport')}</td><td>${_sheetDate(c.exp_visa,'visa')}</td><td>${_sheetDate(c.next_90,'next90')}</td>
+      <td class="sh-txt">${c.status_note?esc(c.status_note):'<span class="sh-na">—</span>'}</td></tr>`).join('');
+  return`<div class="eh-top"><div class="eh-ic">🏢</div><div style="flex:1;min-width:0"><div class="eh-name">${esc(e.name)}</div><div class="eh-sub">${sub||'—'}</div>${e.address?`<div class="eh-sub">${esc(e.address)}</div>`:''}</div></div>
+  <div class="eh-stats">${st(empc.length,'แรงงานทั้งหมด','')}${st(nOver,'เลยกำหนด',nOver?'x':'')}${st(nSoon,'ใกล้หมดอายุ',nSoon?'w':'')}<div class="eh-st" id="ehDocStat"><b>…</b><span>เอกสารนายจ้าง</span></div></div>
+  <div id="empShareSec"></div>${_empGroupHint(empc)}<div id="empBannerSec"></div>
+  <div class="eh-sec"><div class="eh-h">📎 เอกสารนายจ้าง / บริษัท <span class="eh-hint">กดวันหมดอายุเพื่อแก้ไข</span></div><div id="empDocHub"><div class="sh-na" style="padding:8px">กำลังโหลด…</div></div></div>
+  <div class="eh-sec"><div class="eh-h">👷 แรงงาน (${empc.length}) <span class="eh-hint">เรียงจากใกล้หมดอายุก่อน · กดชื่อเพื่อดูวันหมดอายุและเอกสาร</span><button class="btn btn-p btn-sm" style="margin-left:auto" onclick="empHubAddWorker(${e.id})">+ เพิ่มแรงงาน</button></div>
+    ${empc.length?`<div class="eh-tbl"><table class="sh-t"><thead><tr><th>รูป</th><th>ชื่อ</th><th>ประเภท</th><th>WORK</th><th>เวิร์คหมด</th><th>เล่มหมดอายุ</th><th>VISA หมด</th><th>90 วัน</th><th>สถานะ</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="sh-na" style="padding:14px;text-align:center">ยังไม่มีแรงงานของนายจ้างนี้</div>'}
+  </div>
+  <details class="eh-more"><summary>ข้อมูลนายจ้างเพิ่มเติม / สถานประกอบการ</summary><div id="empP2Sec"></div></details>`;
+}
+function empHubAddWorker(empId){
+  const m=document.getElementById('empDetModal');if(m)m.style.display='none';
+  openAdd();const rc=document.getElementById('r_comp');if(rc){rc.checked=true;ctChange();}
+  const s=document.getElementById('f_empId');if(s)s.value=String(empId);
+}
+// ── Stage EMP-BANNER: รูปพื้นหลังหน้าลิงก์ต่อนายจ้าง ──
+let _ehBanner=null;
+async function _renderEmpBanner(){
+  const box=document.getElementById('empBannerSec');if(!box)return;
+  const b=_ehBanner;
+  box.innerHTML=`<div class="eh-ban"><div class="eh-ban-prev" id="ehBanPrev">${b?'กำลังโหลดรูป…':'พื้นหลังส้มมาตรฐาน'}</div>
+    <div style="flex:1;min-width:180px"><div style="font-weight:700;font-size:13px;color:var(--g9)">🖼️ พื้นหลังหน้าลิงก์ของนายจ้างนี้</div>
+    <div style="font-size:11px;color:var(--g5)">ใช้รูปแนวนอน เช่น รูปสวน/โรงงาน/โลโก้ของนายจ้าง — แสดงแทนแถบสีส้มด้านบนของหน้าลิงก์</div>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><label class="btn btn-p btn-sm" style="cursor:pointer">${b?'เปลี่ยนรูป':'ใส่รูปพื้นหลัง'}<input type="file" accept="image/*" style="display:none" onchange="ehBannerPick(this)"></label>${b?'<button class="btn btn-g btn-sm" onclick="ehBannerRemove()">ใช้พื้นหลังส้มเดิม</button>':''}</div></div></div>`;
+  if(b&&b.has_storage){
+    try{const res=await fetch(CUST_DOC_SIGN_URL,{method:'POST',mode:'cors',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+        body:JSON.stringify({document_id:Number(b.id),user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||''})});
+      const d=await res.json();const p=document.getElementById('ehBanPrev');
+      if(p&&d&&d.ok&&d.url&&_ehBanner===b)p.innerHTML=`<img src="${esc(d.url)}" alt="">`;}catch(_){}
+  }
+}
+async function ehBannerPick(inp){
+  const f=inp.files&&inp.files[0];inp.value='';if(!f||_ehEmpId==null)return;
+  if(!/^image\//.test(f.type||'')){toast('กรุณาเลือกไฟล์รูป','err');return;}
+  if(!(await guardSession()))return;
+  showLoading('กำลังอัปโหลดพื้นหลัง...');let r=null;
+  try{let data=await compressImage(f,1600,0.8);if(approxBytesFromDataURL(data)>DOC_MAX_BYTES)data=await compressImage(f,1200,0.7);
+    r=await _callEmpDocUpload({employer_id:_ehEmpId,doc_type:'share_banner',doc_name:'พื้นหลังหน้าลิงก์',file_name:f.name,file_type:'image/jpeg',data_url:data,doc_expiry:null});}
+  catch(e){r={ok:false,error:(e&&e.message)||'error'};}
+  finally{hideLoading();}
+  if(r&&r.ok){toast('ตั้งพื้นหลังแล้ว — เปิดหน้าลิงก์ใหม่เพื่อดู');try{logAudit('employer.share_banner.set','employer',_ehEmpId,{source:'empHub'});}catch(_){}}
+  else toast('อัปโหลดไม่สำเร็จ: '+_ehErrMsg(r&&r.error),'err');
+  await _loadEmpDocHub(_ehEmpId);
+}
+async function ehBannerRemove(){
+  const b=_ehBanner;if(!b||_ehEmpId==null)return;
+  if(!confirm('กลับไปใช้พื้นหลังสีส้มเดิม?'))return;
+  try{await _delReqRpc('app_update_document_metadata',{p_document_id:String(b.id),p_doc_name:b.doc_name||'พื้นหลังหน้าลิงก์',p_doc_type:'share_banner_off',p_source:b.source||null,p_doc_expiry:null,p_doc_status:null,p_doc_note:null});
+    toast('กลับไปใช้พื้นหลังส้มแล้ว');try{logAudit('employer.share_banner.clear','employer',_ehEmpId,{doc_id:b.id});}catch(_){}}
+  catch(e){toast('ไม่สำเร็จ: '+((e&&e.message)||''),'err');}
+  await _loadEmpDocHub(_ehEmpId);
+}
+async function _loadEmpDocHub(empId){
+  _ehEmpId=empId;_ehErr='';
+  let docs=[];
+  try{docs=await _delReqRpc('app_list_documents',{p_owner_type:'employer',p_owner_id:Number(empId),p_limit:100,p_offset:0});}
+  catch(e){_ehErr=(e&&e.message)||'error';}
+  if(_ehEmpId!==empId)return;
+  {const _all=Array.isArray(docs)?docs:[];_ehBanner=_all.find(d=>d.doc_type==='share_banner')||null;_ehDocs=_all.filter(d=>!/^share_banner/.test(String(d.doc_type||'')));} // Stage EMP-BANNER
+  _renderEmpDocHub();_renderEmpBanner();
+  try{const ids=(customers||[]).filter(c=>c.employer_id===empId&&!c.photo&&(c._hasPhoto||c.photo_storage_path)).map(c=>c.id);if(ids.length)_fetchCustPhotos(ids);}catch(_){}
+}
+function _renderEmpDocHub(){
+  const box=document.getElementById('empDocHub');if(!box)return;
+  const docs=_ehDocs.slice().sort((a,b)=>{const x=a.doc_expiry||'9999',y=b.doc_expiry||'9999';return x<y?-1:x>y?1:0;});
+  const near=docs.filter(d=>{const x=du(d.doc_expiry);return x!==null&&x<=30;}).length;
+  const st=document.getElementById('ehDocStat');
+  if(st){st.className='eh-st'+(near?' w':'');st.innerHTML=`<b>${docs.length}</b><span>เอกสารนายจ้าง${near?` · ใกล้หมด ${near}`:''}</span>`;}
+  const rows=docs.map(d=>{const x=du(d.doc_expiry);const isPdf=/pdf/i.test(d.mime_type||d.file_type||'');
+    return`<div class="eh-doc"><div class="eh-doc-ic">${isPdf?'📄':'🖼️'}</div>
+      <div style="flex:1;min-width:0"><div class="eh-doc-n">${esc(d.doc_name||_dcDocTypeLabel(d.doc_type))}</div><div class="eh-doc-s">${esc(_dcDocTypeLabel(d.doc_type))} · อัปโหลด ${fd(d.created_at)}${d.uploaded_by?' · '+esc(d.uploaded_by):''}</div></div>
+      <div class="eh-doc-x" onclick="ehEditExp('${esc(String(d.id))}',this)" title="แก้วันหมดอายุ">${d.doc_expiry?`<div class="sh-d">หมด ${fd(d.doc_expiry)}</div><span class="sh-chip ${_sheetChipCls(x,30)}">${_sheetDay(x)}</span>`:'<span class="sh-add">+ วันหมดอายุ</span>'}</div>
+      <button class="btn btn-g btn-sm" onclick="dcOpenDoc('${esc(String(d.id))}',${!!d.has_storage})">เปิดดู</button></div>`;}).join('');
+  box.innerHTML=(_ehErr?`<div class="eh-err">โหลดเอกสารไม่สำเร็จ: ${esc(_ehErr)}</div>`:'')
+    +(rows||'<div class="sh-na" style="padding:4px 0 6px">ยังไม่มีเอกสารนายจ้าง — อัปโหลดด้านล่างได้เลย</div>')
+    +`<div class="eh-up"><label class="eh-lbl">ประเภทเอกสาร<select id="ehType" class="fi2">${_EMP_DOC_TYPES.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></label>
+      <label class="eh-lbl">วันหมดอายุ (ถ้ามี)<input type="date" id="ehExp" class="fi2"></label>
+      <label class="btn btn-g btn-sm" style="cursor:pointer">เลือกไฟล์ PDF / รูป…<input type="file" id="ehFile" accept="image/*,.pdf" multiple style="display:none" onchange="ehPick(this)"></label>
+      <span id="ehFileN" class="eh-hint"></span>
+      <button class="btn btn-p btn-sm" id="ehGo" onclick="ehUpload()">อัปโหลด</button></div>`;
+}
+function ehPick(inp){const n=document.getElementById('ehFileN');if(n)n.textContent=inp.files&&inp.files.length?(inp.files.length===1?inp.files[0].name:inp.files.length+' ไฟล์'):'';}
+async function _callEmpDocUpload({employer_id,doc_type,doc_name,file_name,file_type,data_url,doc_expiry}){
+  const res=await fetch(CUST_DOC_UPLOAD_URL,{method:'POST',mode:'cors',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+    body:JSON.stringify({user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||'',owner_type:'employer',owner_id:employer_id,doc_type,doc_name,file_name:file_name||doc_name,file_type,file_size:data_url?approxBytesFromDataURL(data_url):0,data_url,doc_expiry:doc_expiry||null})});
+  return await res.json();
+}
+function _ehErrMsg(code){return({owner_type_not_supported:'ต้องอัปเดตฟังก์ชัน customer-doc-upload บน Supabase ก่อน',invalid_doc_type:'ต้องอัปเดตฟังก์ชัน customer-doc-upload บน Supabase ก่อน',db_error:'บันทึกไม่ได้ — ต้องรัน SQL 20261010 ก่อน',employer_not_found:'ไม่พบนายจ้างในระบบ',invalid_doc_expiry:'วันหมดอายุไม่ถูกต้อง',unauthorized:'กรุณาเข้าสู่ระบบใหม่',pdf_too_large:'PDF ใหญ่เกิน 10MB',image_too_large:'รูปใหญ่เกินไป'})[code]||code;}
+async function ehUpload(){
+  const f=document.getElementById('ehFile');const files=f&&f.files?[...f.files]:[];
+  if(!files.length){toast('กรุณาเลือกไฟล์ก่อน','err');return;}
+  if(_ehEmpId==null)return;
+  if(!(await guardSession()))return;
+  const type=document.getElementById('ehType').value||'other';
+  const label=(_EMP_DOC_TYPES.find(x=>x[0]===type)||[0,'เอกสารนายจ้าง'])[1];
+  const exp=_ceDate(document.getElementById('ehExp').value||'')||null;
+  const btn=document.getElementById('ehGo');if(btn)btn.disabled=true;
+  showLoading('กำลังอัปโหลดเอกสารนายจ้าง...');
+  let ok=0,fail=0,last='';
+  try{for(const file of files){try{const p=await _bulkPrepare(file);
+      const r=await _callEmpDocUpload({employer_id:_ehEmpId,doc_type:type,doc_name:files.length>1?(label+' — '+file.name):label,file_name:file.name,file_type:p.type,data_url:p.data,doc_expiry:exp});
+      if(!r||!r.ok)throw new Error(r&&r.error||'upload_failed');ok++;}catch(e){fail++;last=(e&&e.message)||'error';}}}
+  finally{hideLoading();}
+  if(ok){try{logAudit('document.upload','employer',_ehEmpId,{count:ok,failed:fail,doc_type:type,doc_expiry:exp,source:'empDocHub'});}catch(_){}}
+  toast(fail?('อัปโหลดไม่สำเร็จ '+fail+' ไฟล์: '+_ehErrMsg(last)):('อัปโหลดแล้ว '+ok+' ไฟล์'),fail?'err':undefined);
+  await _loadEmpDocHub(_ehEmpId);
+}
+function ehEditExp(id,el){
+  if(el.querySelector('input'))return;
+  const d=_ehDocs.find(x=>String(x.id)===String(id));if(!d)return;
+  el.onclick=null;
+  el.innerHTML=`<input type="date" class="sh-in" style="min-width:130px" value="${esc(d.doc_expiry||'')}"><div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end"><button class="btn btn-p btn-sm btn-xs">บันทึก</button><button class="btn btn-g btn-sm btn-xs">ยกเลิก</button></div>`;
+  const inp=el.querySelector('input');const [bOk,bNo]=el.querySelectorAll('button');inp.focus();
+  let done=false;
+  const fin=async save=>{if(done)return;done=true;
+    const v=_ceDate(inp.value||'')||null;
+    if(save&&v!==(d.doc_expiry||null)){
+      try{await _delReqRpc('app_update_document_metadata',{p_document_id:String(d.id),p_doc_name:d.doc_name||null,p_doc_type:d.doc_type||null,p_source:d.source||null,p_doc_expiry:v,p_doc_status:null,p_doc_note:null});
+        d.doc_expiry=v;toast('บันทึกวันหมดอายุแล้ว');try{logAudit('document.update','document',d.id,{doc_expiry:v,source:'empDocHub'});}catch(_){}}
+      catch(e){toast('บันทึกไม่สำเร็จ: '+((e&&e.message)||''),'err');}}
+    _renderEmpDocHub();};
+  bOk.onclick=ev=>{ev.stopPropagation();fin(true);};bNo.onclick=ev=>{ev.stopPropagation();fin(false);};
+  inp.addEventListener('click',ev=>ev.stopPropagation());
+  inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')fin(true);else if(ev.key==='Escape')fin(false);});
+}
+function renderTable(){if(SIMPLE_WORKER_MODE)return _sheetRenderTable();
   const total=filtered.length;
   const rcnt=document.getElementById('rcnt');
   if(rcnt)rcnt.textContent=total;
@@ -5375,7 +5968,7 @@ function empSelected(){const id=document.getElementById('f_empId').value;if(id){
 function openAdd(){
   editId=null;photoB64=null;_editPhotoReady=true;_photoIsNew=false;selSvcs=[];docFiles={};multiDocs=[];
   document.getElementById('cModalTitle').textContent=T('addNew');
-  ['name','nameTh','pp','alien','phone','emp','biz','ephon','addr','wpn','visn','licn','note','sr','sd','sc','ftotal','fpaid','fdue'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
+  ['wcat','stnote','items','name','nameTh','pp','alien','phone','emp','biz','ephon','addr','wpn','visn','licn','note','sr','sd','sc','ftotal','fpaid','fdue'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   ['epp','evis','ewp','e90','emou','ren','dob','fpdate'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   // Round F1B-1: reset field ใหม่ตาม Excel
   ['submit','agent','apptdate','appttime','apptplace','queue','receive'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
@@ -5396,7 +5989,7 @@ async function openEdit(id){
   document.getElementById('cModalTitle').textContent='แก้ไขข้อมูล';
   const sv=(f,v)=>{const el=document.getElementById('f_'+f);if(el)el.value=v||'';};
   sv('name',c.name);sv('nameTh',c.name_th);sv('pp',c.passport_no);sv('alien',c.alien_id);sv('phone',c.phone);
-  sv('wpn',c.wp_no);sv('visn',c.visa_no);sv('licn',c.license_no);sv('note',c.note);
+  sv('wcat',c.worker_category);sv('stnote',c.status_note);sv('items',c.work_items);sv('wpn',c.wp_no);sv('visn',c.visa_no);sv('licn',c.license_no);sv('note',c.note);
   sv('sr',c.staff_receiver);sv('sd',c.staff_document);sv('sc',c.staff_closer);
   sv('epp',c.exp_passport);sv('evis',c.exp_visa);sv('ewp',c.exp_wp);sv('e90',c.next_90);sv('emou',c.exp_mou);sv('ren',c.last_renew);sv('dob',c.dob);
   sv('ftotal',c.fee_total);sv('fpaid',c.fee_paid);sv('fdue',c.fee_due);sv('fpdate',c.pay_date);
@@ -5431,7 +6024,7 @@ function renderDocGrid(){const _dg=document.getElementById('docGrid');if(!_dg)re
 function triggerDoc(k){document.getElementById('df-'+k).click();}
 function handleDoc(e,k){const f=e.target.files[0];if(!f)return;if(f.size>5*1024*1024){toast('ไฟล์ใหญ่เกิน 5MB','err');return;}const r=new FileReader();r.onload=ev=>{docFiles[k]={data:ev.target.result,name:f.name,type:f.type};renderDocGrid();};r.readAsDataURL(f);}
 function delDoc(k){delete docFiles[k];renderDocGrid();}
-function swTab(n){curTab=n;[0,1,2,3,4,5].forEach(i=>{document.getElementById('ct'+i).style.display=i===n?'block':'none';const _tb=document.querySelectorAll('#cModal .tbtn')[i];if(_tb)_tb.classList.toggle('on',i===n);});}
+function swTab(n){if(SIMPLE_WORKER_MODE){const _b=document.querySelectorAll('#cModal .tbar3 .tbtn');if(_b[1])_b[1].textContent='เลขเอกสาร';}curTab=n;[0,1,2,3,4,5].forEach(i=>{document.getElementById('ct'+i).style.display=i===n?'block':'none';const _tb=document.querySelectorAll('#cModal .tbtn')[i];if(_tb)_tb.classList.toggle('on',i===n);});}
 function applyMvpModal(){
   if(!CUSTOMER_MVP_MODE)return;
   // Round C follow-up: คืน Tab การเงินแล้ว (ไม่ซ่อน tab[3] อีกต่อไป)
@@ -5610,7 +6203,8 @@ async function saveCustomer(){
     const data={name,name_th:VT('f_nameTh'),nationality:V('f_nat'),passport_no:VT('f_pp')||null,alien_id:VT('f_alien')||null,phone:VT('f_phone')||null,dob:V('f_dob')||null,customer_type:isComp?'company':'freelance',group_id:V('f_grp')?parseInt(V('f_grp')):null,branch_id:V('f_branch')?parseInt(V('f_branch')):null,employer_id:empId,work_status:V('f_ws')||'รับเรื่อง',services:selSvcs,wp_no:VT('f_wpn')||null,visa_no:VT('f_visn')||null,license_no:VT('f_licn')||null,source:V('f_src'),staff_receiver:VT('f_sr'),staff_document:VT('f_sd'),staff_closer:VT('f_sc'),exp_passport:V('f_epp')||null,exp_visa:V('f_evis')||null,exp_wp:V('f_ewp')||null,next_90:V('f_e90')||null,exp_mou:V('f_emou')||null,last_renew:V('f_ren')||null,fee_total:total,fee_paid:paid,fee_due:Math.max(0,total-paid),pay_channel:V('f_fpay'),pay_status:V('f_fst'),pay_date:V('f_fpdate')||null,note:VT('f_note'),
       submit_date:V('f_submit')||null,agent_name:VT('f_agent')||null,medical_cert:VC('f_medical'),insurance:VC('f_insurance'),fee_100_paid:VC('f_fee100'),fee_900_paid:VC('f_fee900'),card_fee_paid:VC('f_cardfee'),booklet_status:V('f_booklet')||null,appt_date:V('f_apptdate')||null,appt_time:VT('f_appttime')||null,appt_place:VT('f_apptplace')||null,queue_date:V('f_queue')||null,receive_date:V('f_receive')||null,
       assignee_code:V('f_assignee')||null,
-      updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})};
+      updated_at:new Date().toISOString(),...(curUser&&curUser.username?{updated_by_code:curUser.username}:{})};_ceObj(data); // Stage DATE-BE-FIX
+    if(SIMPLE_WORKER_MODE&&_sheetColsOk!==false){data.worker_category=VT('f_wcat')||null;data.status_note=VT('f_stnote')||null;data.work_items=VT('f_items')||null;} // Stage SHEET-VIEW
     // Stage 36A: ไม่ใส่ field photo ใน data อีกต่อไป → รูปใหม่ upload เข้า Storage หลังบันทึก; รูปเดิม (base64/Storage) ไม่ถูกแตะ
     let savedId=editId;
     const _auditOld=editId?(customers.find(c=>c.id===editId)||null):null;
@@ -5653,7 +6247,7 @@ async function saveCustomer(){
       const doc=newDocs[di];
       const _lt=document.getElementById('loadingText');if(_lt)_lt.textContent=`กำลังอัปโหลดเอกสาร ${di+1}/${newDocs.length}...`;
       try{
-        const _ur=await _callDocUpload({customer_id:savedId,doc_type:doc.type,doc_name:doc.label,file_name:doc.name||doc.label,file_type:doc.fileType||'image/jpeg',data_url:doc.data});
+        const _ur=await _callDocUpload({customer_id:savedId,doc_type:doc.type,doc_name:doc.label||docTypeLabel(doc.type),file_name:doc.name||doc.label,file_type:doc.fileType||'image/jpeg',data_url:doc.data});
         if(!_ur||!_ur.ok)throw new Error(_ur&&_ur.error||'upload_failed');
         const _rd=_ur.doc;const _idx=multiDocs.findIndex(d=>d.id===doc.id);
         if(_idx>=0){multiDocs[_idx].dbId=_rd.id;multiDocs[_idx].storage_path=_rd.storage_path||null;}
@@ -5747,19 +6341,19 @@ async function openDetail(id){
       ${c.name_th?`<div style="font-size:13px;color:var(--g5);margin-top:2px">${esc(c.name_th)}</div>`:''}
       <div style="margin-top:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">
         <span class="nb ${NC[c.nationality]||'nb-ot'}">${NF[c.nationality]||''} ${esc(c.nationality||'—')}</span>
-        <span class="${c.customer_type==='company'?'ct-comp':'ct-free'}">${c.customer_type==='company'?T('detCustComp'):T('detCustFree')}</span>
-        <span class="${wsC(c.work_status)}">${wsT(c.work_status||'รับเรื่อง')}</span>
+        ${SIMPLE_WORKER_MODE?_sheetDetChips(c):`<span class="${c.customer_type==='company'?'ct-comp':'ct-free'}">${c.customer_type==='company'?T('detCustComp'):T('detCustFree')}</span>`}
+        ${SIMPLE_WORKER_MODE?'':`<span class="${wsC(c.work_status)}">${wsT(c.work_status||'รับเรื่อง')}</span>`}
         ${c.group_id?`<span class="gb">${esc(grpN(c.group_id))}</span>`:''}
       </div>
       <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">${(c.services||[]).map(s=>`<span class="xb ${SC[s]||'xb-ot'}">${s}</span>`).join('')}</div>
     </div>
-    ${_updBtn}
+    ${SIMPLE_WORKER_MODE?'':_updBtn}
   </div>
-  ${_tlSec}
+  ${SIMPLE_WORKER_MODE?'':_tlSec}
   <div class="dg4">
     <div class="df"><div class="dfl">${T('detBoss')}</div><div class="dfv">${c.employer_id?esc(empN(c.employer_id)):T('dashNoBoss')}</div></div>
     <div class="df"><div class="dfl">${T('detPhone')}</div><div class="dfv">${esc(c.phone||'—')}</div></div>
-    <div class="df"><div class="dfl">${T('detPassport')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.passport_no||'—')}</div></div>
+    ${SIMPLE_WORKER_MODE?`<div class="df"><div class="dfl">WORK (ใบอนุญาตทำงาน)</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.license_no||'—')}</div></div><div class="df"><div class="dfl">รายการ</div><div class="dfv">${esc(c.work_items||'—')}</div></div>`:''}<div class="df"><div class="dfl">${T('detPassport')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.passport_no||'—')}</div></div>
     <div class="df"><div class="dfl">${T('detAlien')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.alien_id||'—')}</div></div>
     <div class="df"><div class="dfl">${T('detWP')}</div><div class="dfv" style="font-family:var(--mono);font-size:12px">${esc(c.wp_no||'—')}</div></div>
     <div class="df"><div class="dfl">${T('detBranch')}</div><div class="dfv">${c.branch_id?esc(brN(c.branch_id)):'—'}</div></div>
@@ -5767,13 +6361,13 @@ async function openDetail(id){
   </div>
   ${_staffGrid}
   ${exps.length?`<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--g7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${T('detExpiry')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${exps.map(x=>{const d=du(x.d);return`<div class="df"><div class="dfl">${x.l}</div><div style="font-size:12px;font-weight:600;margin-top:2px">${fd(x.d)}</div><span class="eb ${ec(d)}" style="margin-top:4px;display:inline-flex;font-size:10px">${el(d)}</span></div>`;}).join('')}</div></div>`:''}
-  ${_finSec}
-  ${_xlSec}
+  ${SIMPLE_WORKER_MODE?'':_finSec}
+  ${SIMPLE_WORKER_MODE?'':_xlSec}
   ${docs.length?renderDetailDocSection(docs):''}
   <div id="detCaseSec"></div>
-  ${_wpr2Section(c)}
-  ${_clogSec}
-  ${_histSec}
+  ${SIMPLE_WORKER_MODE?'':_wpr2Section(c)}
+  ${SIMPLE_WORKER_MODE?'':_clogSec}
+  ${SIMPLE_WORKER_MODE?'':_histSec}
   ${(()=>{
     // Stage 3: บล็อก "แก้ไขล่าสุด" ในหน้ารายละเอียดเท่านั้น (avatar + ชื่อ + วันที่) — ไม่โชว์ในตาราง/มือถือ list
     const _ei=editorInfo(c.updated_by_code);
@@ -5952,10 +6546,138 @@ async function saveTL(){
     customers=customers.map(c=>c.id===tlCid?{...c,work_status:status}:c);document.getElementById('tlModal').style.display='none';if(_cr.status!=='missing'&&_tr.status!=='missing')toast('อัปเดตสถานะแล้ว');if(detId===tlCid)openDetail(tlCid);renderDash();if(curView==='customers')doFilter();}catch(e){toast('เกิดข้อผิดพลาด','err');}
 }
 
+// ── Stage SHARE-GROUP: ลิงก์รวมของกลุ่มงาน ──
+let _grpShareCur={id:null,link:null};
+function _grpOfId(id){return(groups||[]).find(g=>g.id===id)||{};}
+function _grpEmpSummary(gid){
+  const m=new Map();(customers||[]).filter(c=>c.group_id===gid).forEach(c=>{const k=c.employer_id||0;m.set(k,(m.get(k)||0)+1);});
+  return[...m.entries()].map(([k,n])=>({id:k,name:k?empN(k):'ไม่มีนายจ้าง',n}));
+}
+function openGrpShare(gid){
+  let m=document.getElementById('grpShareModal');
+  if(!m){m=document.createElement('div');m.id='grpShareModal';m.className='mo';m.onclick=function(ev){if(ev.target===this)this.style.display='none';};document.body.appendChild(m);}
+  m.innerHTML=`<div class="mb" style="max-width:560px" onclick="event.stopPropagation()"><div class="mh"><div class="mt">🔗 ลิงก์รวมของกลุ่ม: ${esc(_grpOfId(gid).name||'')}</div><button class="xbtn" onclick="document.getElementById('grpShareModal').style.display='none'">×</button></div><div class="mbody"><div id="grpShareBody"></div><div id="grpBannerSec"></div></div></div>`;
+  m.style.display='flex';
+  _loadGrpShare(gid);_loadGrpBanner(gid); // Stage SHARE-GROUP-BANNER
+}
+async function _loadGrpShare(gid){
+  _grpShareCur={id:gid,link:'loading'};_renderGrpShare();
+  const r=await _shareRpc('app_get_group_share_link',{p_group_id:gid});
+  if(_grpShareCur.id!==gid)return;
+  if(r.status==='missing')_grpShareCur.link='missing';
+  else if(r.status!=='ok')_grpShareCur.link='error';
+  else{const row=Array.isArray(r.data)?r.data[0]:null;_grpShareCur.link=row||null;}
+  _renderGrpShare();
+}
+function _renderGrpShare(){
+  const box=document.getElementById('grpShareBody');if(!box)return;
+  const gid=_grpShareCur.id,L=_grpShareCur.link,emps=_grpEmpSummary(gid);
+  const total=emps.reduce((a,x)=>a+x.n,0);
+  let html=`<div style="font-size:12px;color:var(--g6)">ลิงก์นี้แสดงแรงงานทุกคนที่อยู่ในกลุ่มนี้ (${total} คน) รวมทุกนายจ้างไว้หน้าเดียว — นายจ้างกดกรองดูเฉพาะของตัวเองได้</div>
+    <div class="gs-emps">${emps.length?emps.map(x=>`<span class="gs-emp">🏢 ${esc(x.name)} · ${x.n} คน</span>`).join(''):'<span class="sh-na">ยังไม่มีแรงงานในกลุ่มนี้</span>'}</div>`;
+  if(L==='loading')html+='<div class="sh-na">กำลังโหลด…</div>';
+  else if(L==='missing')html+='<div style="font-size:12px;color:#b91c1c">ยังไม่ได้รัน SQL 20261012_group_share_links บนฐานข้อมูลนี้</div>';
+  else if(L==='error')html+=`<div style="font-size:12px;color:#b91c1c">โหลดลิงก์ไม่สำเร็จ</div><button class="btn btn-g btn-sm" style="margin-top:6px" onclick="_loadGrpShare(${gid})">ลองใหม่</button>`;
+  else if(!L)html+=`<button class="btn btn-p btn-sm" onclick="_grpShareCreate(false)">สร้างลิงก์รวมของกลุ่ม</button>`;
+  else{
+    const url=_shareLinkUrl(L.token);
+    const seen=L.view_count?`เปิดดูแล้ว ${L.view_count} ครั้ง${L.last_viewed_at?' · ล่าสุด '+new Date(L.last_viewed_at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):''}`:'ยังไม่มีคนเปิดดู';
+    html+=`<div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-p btn-sm" onclick="_grpShareCopy(true)">คัดลอกข้อความส่ง LINE</button>
+        <button class="btn btn-g btn-sm" onclick="_grpShareCopy(false)">คัดลอกลิงก์</button>
+        <button class="btn btn-g btn-sm" onclick="window.open(_shareLinkUrl(_grpShareCur.link.token),'_blank','noopener')">เปิดดู</button>
+        <button class="btn btn-g btn-sm" onclick="_grpShareQr()">QR โค้ด</button></div>
+      <div style="margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--g6);background:var(--g1);border-radius:8px;padding:6px 8px;word-break:break-all">${esc(url)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--g5)">สร้างโดย ${esc(L.created_by_code||'—')} · ${L.created_at?new Date(L.created_at).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'}):''} · ${seen}</span>
+        <span style="display:flex;gap:6px"><button class="btn btn-g btn-xs" onclick="_grpShareCreate(true)">สร้างลิงก์ใหม่</button><button class="btn btn-g btn-xs" style="color:#b91c1c" onclick="_grpShareRevoke()">ยกเลิกลิงก์</button></span></div>`;
+  }
+  box.innerHTML=html;
+}
+async function _grpShareCreate(rotate){
+  const gid=_grpShareCur.id;if(gid==null)return;
+  if(rotate&&!confirm('สร้างลิงก์ใหม่?\nลิงก์/QR เดิมของกลุ่มที่ส่งไปแล้วจะเปิดไม่ได้ ต้องส่งอันใหม่ให้อีกครั้ง'))return;
+  const r=await _shareRpc('app_create_group_share_link',{p_group_id:gid,p_rotate:!!rotate});
+  if(r.status==='ok'){const row=Array.isArray(r.data)?r.data[0]:null;_grpShareCur.link=row||null;_renderGrpShare();toast(rotate?'สร้างลิงก์ใหม่แล้ว':'สร้างลิงก์แล้ว');}
+  else if(r.status==='missing'){_grpShareCur.link='missing';_renderGrpShare();}
+  else toast(r.status==='unauthorized'?'ไม่มีสิทธิ์ — กรุณาเข้าสู่ระบบใหม่':'สร้างลิงก์ไม่สำเร็จ','err');
+}
+async function _grpShareRevoke(){
+  const gid=_grpShareCur.id;if(gid==null)return;
+  if(!confirm('ยกเลิกลิงก์รวมของกลุ่มนี้?\nคนที่มีลิงก์/QR เดิมจะเปิดไม่ได้อีก'))return;
+  const r=await _shareRpc('app_revoke_group_share_link',{p_group_id:gid});
+  if(r.status==='ok'){_grpShareCur.link=null;_renderGrpShare();toast('ยกเลิกลิงก์แล้ว');}
+  else toast('ยกเลิกลิงก์ไม่สำเร็จ','err');
+}
+async function _grpShareCopy(withMsg){
+  const L=_grpShareCur.link;if(!L||!L.token)return;
+  const g=_grpOfId(_grpShareCur.id);const url=_shareLinkUrl(L.token);
+  const txt=withMsg?`สวัสดีครับ/ค่ะ บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด\nข้อมูลเอกสารแรงงานกลุ่ม ${g.name||''} (วันหมดอายุพาสปอร์ต วีซ่า ใบอนุญาตทำงาน รายงานตัว 90 วัน)\nกดดูได้ที่ลิงก์นี้ 👇\n${url}`:url;
+  toast(await _copyText(txt)?'คัดลอกแล้ว — วางใน LINE ได้เลย':'คัดลอกไม่สำเร็จ',undefined);
+}
+function _grpShareQr(){
+  const L=_grpShareCur.link;if(!L||!L.token)return;
+  _shareQrDraw(_shareLinkUrl(L.token),String(_grpOfId(_grpShareCur.id).name||''),'สแกนดูสถานะเอกสารแรงงานของกลุ่ม');
+}
+// ── Stage SHARE-GROUP-BANNER: รูปพื้นหลังหน้าลิงก์ของกลุ่ม ──
+let _grpBan={gid:null,doc:undefined};   // undefined = กำลังโหลด · null = ไม่มี · 'missing' = ยังไม่รัน SQL · 'error'
+async function _loadGrpBanner(gid){
+  _grpBan={gid,doc:undefined};_renderGrpBanner();
+  const r=await _shareRpc('app_get_group_banner',{p_group_id:gid});
+  if(_grpBan.gid!==gid)return;
+  _grpBan.doc=r.status==='missing'?'missing':(r.status==='ok'?((Array.isArray(r.data)?r.data[0]:null)||null):'error');
+  _renderGrpBanner();
+}
+async function _renderGrpBanner(){
+  const box=document.getElementById('grpBannerSec');if(!box)return;
+  const gid=_grpBan.gid,b=_grpBan.doc;
+  const head='<div style="font-weight:700;font-size:13px;color:var(--g9);margin-top:14px">🖼️ พื้นหลังหน้าลิงก์ของกลุ่มนี้</div>';
+  if(b===undefined){box.innerHTML=head+'<div class="sh-na">กำลังโหลด…</div>';return;}
+  if(b==='missing'){box.innerHTML=head+'<div style="font-size:12px;color:#b91c1c">ต้องรัน SQL 20261013_group_share_banner บนฐานข้อมูลนี้ก่อน</div>';return;}
+  if(b==='error'){box.innerHTML=head+`<div style="font-size:12px;color:#b91c1c">โหลดไม่สำเร็จ</div><button class="btn btn-g btn-sm" style="margin-top:6px" onclick="_loadGrpBanner(${Number(gid)})">ลองใหม่</button>`;return;}
+  box.innerHTML=head+`<div class="eh-ban"><div class="eh-ban-prev" id="grpBanPrev">${b?'กำลังโหลดรูป…':'ยังไม่ได้ใส่รูป'}</div>
+    <div style="flex:1;min-width:180px"><div style="font-size:11px;color:var(--g5)">ใช้รูปแนวนอน เช่น รูปสวน/ไร่ของกลุ่ม — แสดงแทนแถบสีส้มด้านบนของหน้าลิงก์รวม${b?'':'<br>ตอนนี้ใช้รูปพื้นหลังของนายจ้างในกลุ่ม (ถ้ามี) หรือสีส้มมาตรฐาน'}</div>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><label class="btn btn-p btn-sm" style="cursor:pointer">${b?'เปลี่ยนรูป':'ใส่รูปพื้นหลัง'}<input type="file" accept="image/*" style="display:none" onchange="grpBannerPick(this)"></label>${b?'<button class="btn btn-g btn-sm" onclick="grpBannerRemove()">ไม่ใช้รูปนี้</button>':''}</div></div></div>`;
+  if(b&&b.has_storage){
+    try{const res=await fetch(CUST_DOC_SIGN_URL,{method:'POST',mode:'cors',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+        body:JSON.stringify({document_id:Number(b.id),user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||''})});
+      const d=await res.json();const p=document.getElementById('grpBanPrev');
+      if(p&&d&&d.ok&&d.url&&_grpBan.doc===b)p.innerHTML=`<img src="${esc(d.url)}" alt="">`;}catch(_){}
+  }
+}
+function _grpBanErr(code){return({owner_type_not_supported:'ต้องอัปเดตฟังก์ชัน customer-doc-upload บน Supabase ก่อน',invalid_owner_type:'ต้องอัปเดตฟังก์ชัน customer-doc-upload บน Supabase ก่อน',db_error:'บันทึกไม่ได้ — ต้องรัน SQL 20261013 ก่อน',group_not_found:'ไม่พบกลุ่มนี้'})[code]||_ehErrMsg(code);}
+async function grpBannerPick(inp){
+  const f=inp.files&&inp.files[0];inp.value='';const gid=_grpBan.gid;if(!f||gid==null)return;
+  if(!/^image\//.test(f.type||'')){toast('กรุณาเลือกไฟล์รูป','err');return;}
+  if(!(await guardSession()))return;
+  showLoading('กำลังอัปโหลดพื้นหลัง...');let r=null;
+  try{let data=await compressImage(f,1600,0.8);if(approxBytesFromDataURL(data)>DOC_MAX_BYTES)data=await compressImage(f,1200,0.7);
+    const res=await fetch(CUST_DOC_UPLOAD_URL,{method:'POST',mode:'cors',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||'',owner_type:'group',owner_id:gid,doc_type:'share_banner',doc_name:'พื้นหลังหน้าลิงก์กลุ่ม',file_name:f.name,file_type:'image/jpeg',file_size:approxBytesFromDataURL(data),data_url:data,doc_expiry:null})});
+    r=await res.json();}
+  catch(e){r={ok:false,error:(e&&e.message)||'error'};}
+  finally{hideLoading();}
+  if(r&&r.ok){toast('ตั้งพื้นหลังของกลุ่มแล้ว — เปิดหน้าลิงก์ใหม่เพื่อดู');try{logAudit('group.share_banner.set','group',gid,{source:'grpShare'});}catch(_){}}
+  else toast('อัปโหลดไม่สำเร็จ: '+_grpBanErr(r&&r.error),'err');
+  await _loadGrpBanner(gid);
+}
+async function grpBannerRemove(){
+  const b=_grpBan.doc,gid=_grpBan.gid;if(!b||typeof b!=='object'||gid==null)return;
+  if(!confirm('ไม่ใช้รูปพื้นหลังนี้กับลิงก์ของกลุ่ม?\n(หน้าลิงก์จะใช้รูปของนายจ้างในกลุ่ม หรือสีส้มเดิม — ไฟล์รูปไม่ถูกลบ)'))return;
+  try{await _delReqRpc('app_update_document_metadata',{p_document_id:String(b.id),p_doc_name:b.doc_name||'พื้นหลังหน้าลิงก์กลุ่ม',p_doc_type:'share_banner_off',p_source:b.source||null,p_doc_expiry:null,p_doc_status:null,p_doc_note:null});
+    toast('เลิกใช้รูปพื้นหลังของกลุ่มแล้ว');try{logAudit('group.share_banner.clear','group',gid,{doc_id:b.id});}catch(_){}}
+  catch(e){toast('ไม่สำเร็จ: '+((e&&e.message)||''),'err');}
+  await _loadGrpBanner(gid);
+}
+function _empGroupHint(empc){
+  const ids=[...new Set((empc||[]).map(c=>c.group_id).filter(v=>v!=null))];
+  if(!ids.length)return'';
+  return`<div class="eh-grp">👥 แรงงานของนายจ้างนี้อยู่ในกลุ่ม ${ids.map(id=>`<b>${esc(_grpOfId(id).name||('#'+id))}</b> <button class="btn btn-g btn-xs" onclick="openGrpShare(${id})">ลิงก์รวมของกลุ่ม / QR</button>`).join(' ')}</div>`;
+}
 function renderGroups(){
   const _ga=_isAdminRole();   // Stage 49A-2: ปุ่มลบกลุ่ม แสดงเฉพาะ admin
   document.getElementById('grpContent').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:16px;font-weight:700">${T('grpTitle')}</div><button class="btn btn-p btn-sm" onclick="openAddGrp()">${T('grpAdd')}</button></div>
-  ${groups.length?`<div style="display:flex;flex-direction:column;gap:8px">${groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div style="background:#fff;border:1.5px solid var(--g2);border-radius:var(--rl);padding:13px 16px;display:flex;align-items:center;gap:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><div style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0"></div><div style="flex:1;font-weight:600;font-size:14px">${esc(g.name)}</div>${g.description?`<div style="font-size:12px;color:var(--g5)">${esc(g.description)}</div>`:''}<div style="font-size:12px;font-family:var(--mono);color:var(--g5)">${cnt} ${T('grpPerson')}</div><button class="bic" onclick="openEditGrp(${g.id})" style="font-size:12px">✏️</button>${_ga?`<button class="bic" onclick="delGrp(${g.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div>`;}).join('')}</div>`:`<div style="text-align:center;padding:30px;color:var(--g5);background:var(--g0);border-radius:var(--r)">${T('grpNone')}</div>`}
+  ${groups.length?`<div style="display:flex;flex-direction:column;gap:8px">${groups.map(g=>{const cnt=customers.filter(c=>c.group_id===g.id).length;return`<div style="background:#fff;border:1.5px solid var(--g2);border-radius:var(--rl);padding:13px 16px;display:flex;align-items:center;gap:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--p)'" onmouseout="this.style.borderColor='var(--g2)'"><div style="width:8px;height:8px;border-radius:50%;background:var(--p);flex-shrink:0"></div><div style="flex:1;font-weight:600;font-size:14px">${esc(g.name)}</div>${g.description?`<div style="font-size:12px;color:var(--g5)">${esc(g.description)}</div>`:''}<div style="font-size:12px;font-family:var(--mono);color:var(--g5)">${cnt} ${T('grpPerson')}</div><button class="btn btn-g btn-sm" style="font-size:11px;padding:4px 10px" onclick="openGrpShare(${g.id})">🔗 ลิงก์/QR</button><button class="bic" onclick="openEditGrp(${g.id})" style="font-size:12px">✏️</button>${_ga?`<button class="bic" onclick="delGrp(${g.id})" style="font-size:12px;color:var(--red)">🗑️</button>`:''}</div>`;}).join('')}</div>`:`<div style="text-align:center;padding:30px;color:var(--g5);background:var(--g0);border-radius:var(--r)">${T('grpNone')}</div>`}
   <div style="margin-top:12px;padding:10px 13px;background:var(--pp);border-radius:var(--r);font-size:12px;color:var(--pd)">${T('grpTip')}</div>`;
 }
 function openAddGrp(){editGid=null;document.getElementById('gf_name').value='';document.getElementById('gf_desc').value='';document.getElementById('grpMT').textContent='เพิ่มกลุ่ม';document.getElementById('grpModal').style.display='flex';}
@@ -6009,7 +6731,7 @@ function renderImport(){
         <div style="font-size:12px;color:var(--g5);margin-top:4px">.xlsx, .xls, .csv</div>
         <input type="file" id="impFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImpFile(event)">
       </div>
-      <div id="impPreview" style="margin-top:16px"></div>
+      <details id="impPasteBox" style="margin-top:12px;border:1px solid var(--g2);border-radius:10px;padding:10px 14px;background:#fff"><summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--g7)">📋 วางข้อมูลจาก Google Sheets</summary><div style="font-size:12px;color:var(--g5);margin:8px 0">ใน Google Sheets เลือกตารางรวมแถวหัวคอลัมน์ → กด Ctrl+C → วางในช่องนี้ (Ctrl+V) → กด "อ่านข้อมูล"</div><textarea id="impPasteText" class="fi2" rows="5" style="width:100%;font-family:var(--mono);font-size:11px" placeholder="วางข้อมูลที่ copy มาที่นี่"></textarea><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn btn-p btn-sm" onclick="impFromPaste()">อ่านข้อมูล</button></div></details><div id="impPreview" style="margin-top:16px"></div>
     </div>
     <div style="border-top:2px solid var(--g2);padding-top:22px">
       <div style="font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px"><svg class="ui-ic" style="width:17px;height:17px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>อัปโหลดเอกสาร PDF / รูปภาพ</div>
@@ -6019,6 +6741,7 @@ function renderImport(){
         <div style="font-weight:700;color:var(--g7)">คลิกเพื่ออัปโหลดเอกสาร</div>
         <div style="font-size:12px;color:var(--g5);margin-top:4px">PDF · JPEG · PNG · เลือกลูกค้าแล้วบันทึก</div>
       </div>
+      <div id="bulkDocBox" style="margin-top:12px;border:1px solid var(--g2);border-radius:var(--rx);padding:14px 16px;background:#fff"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><div style="font-weight:700;color:var(--g8)">📚 อัปโหลดหลายไฟล์พร้อมกัน</div><div style="font-size:12px;color:var(--g5);margin-top:2px">ตั้งชื่อไฟล์ให้มีเลขพาสปอร์ต / เลขต่างด้าว / เลขใบอนุญาต เช่น T0974538_passport.pdf — ระบบจับคู่แรงงานและเดาประเภทเอกสารให้</div></div><label class="btn btn-p btn-sm" style="cursor:pointer">เลือกไฟล์…<input type="file" id="bulkDocInput" multiple accept="image/*,.pdf" style="display:none" onchange="bulkDocPick(event)"></label></div><div id="bulkDocList" style="margin-top:10px"></div></div>
     </div>
   </div>`;
 }
@@ -6135,19 +6858,89 @@ async function saveDocUpload(){
 }
 
 // Round D: เพิ่ม aliases รองรับหัวคอลัมน์ไทยตาม Excel template (จับคู่กับ field ที่มี DB เท่านั้น)
+// ── Stage S1-BULKDOC: อัปโหลด PDF/รูปทีละหลายไฟล์ + จับคู่แรงงานจากชื่อไฟล์ ──
+let _bulkDocs=[];
+const _BULK_TYPES=[['passport_photo','พาสปอร์ต'],['visa','VISA'],['wp','Work Permit'],['photo','รูปถ่าย'],['pow','หนังสือมอบอำนาจ'],['other','อื่นๆ']];
+function _bulkNorm(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function _bulkGuessType(n){const s=String(n||'').toLowerCase();
+  if(/passport|พาสปอร์ต|หนังสือเดินทาง|(^|[^a-z])pp([^a-z]|$)/.test(s))return'passport_photo';
+  if(/visa|วีซ่า/.test(s))return'visa';
+  if(/work|permit|ใบอนุญาต|เวิร์ค|(^|[^a-z])wp([^a-z]|$)/.test(s))return'wp';
+  if(/มอบอำนาจ|(^|[^a-z])pow([^a-z]|$)/.test(s))return'pow';
+  if(/photo|รูป/.test(s))return'photo';
+  return'other';}
+function _bulkMatch(fileName){
+  const f=_bulkNorm(String(fileName||'').replace(/\.[^.]+$/,''));let best=null,bestLen=0,tie=false;
+  (typeof customers!=='undefined'?customers:[]).forEach(c=>{[c.passport_no,c.alien_id,c.license_no,c.wp_no].forEach(k=>{const n=_bulkNorm(k);
+    if(n.length>=6&&f.includes(n)){if(n.length>bestLen){best=c;bestLen=n.length;tie=false;}else if(n.length===bestLen&&best&&best.id!==c.id)tie=true;}});});
+  return tie?null:best;}
+function bulkDocPick(e){
+  const files=[...(e.target.files||[])];e.target.value='';
+  const ok=files.filter(f=>f.type==='application/pdf'||(f.type||'').startsWith('image/'));
+  if(ok.length<files.length)toast('ข้ามไฟล์ที่ไม่ใช่ PDF/รูป '+(files.length-ok.length)+' ไฟล์','err');
+  ok.slice(0,40).forEach(file=>{const c=_bulkMatch(file.name);_bulkDocs.push({file,cust:c?c.id:null,type:_bulkGuessType(file.name),status:''});});
+  if(ok.length>40)toast('เลือกได้ครั้งละ 40 ไฟล์','err');
+  _bulkRender();}
+function _bulkRender(){
+  const box=document.getElementById('bulkDocList');if(!box)return;
+  if(!_bulkDocs.length){box.innerHTML='';return;}
+  const list=(typeof customers!=='undefined'?customers:[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  const opts=list.map(c=>'<option value="'+c.id+'">'+esc(c.name||'—')+(c.passport_no?' · '+esc(c.passport_no):'')+'</option>').join('');
+  const matched=_bulkDocs.filter(d=>d.cust).length,done=_bulkDocs.filter(d=>d.status==='ok').length;
+  box.innerHTML='<div style="font-size:12px;color:var(--g6);margin-bottom:6px">จับคู่แรงงานได้ '+matched+'/'+_bulkDocs.length+' ไฟล์'+(done?' · อัปโหลดแล้ว '+done:'')+' — ไฟล์ที่ยังไม่จับคู่ เลือกแรงงานเองได้</div>'
+   +'<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">'
+   +_bulkDocs.map((d,i)=>{const kb=Math.round(d.file.size/1024);
+     const st=d.status==='ok'?'<span style="color:#15803d;font-weight:700">✓ สำเร็จ</span>':d.status==='busy'?'<span style="color:var(--g5)">กำลังอัปโหลด…</span>':d.status?'<span style="color:#b91c1c">'+esc(d.status)+'</span>':'';
+     const dis=d.status==='ok'||d.status==='busy'?' disabled':'';
+     return '<tr style="border-top:1px solid var(--g1)"><td style="padding:6px 4px;max-width:220px;word-break:break-all">'+(d.file.type==='application/pdf'?'📄 ':'🖼️ ')+esc(d.file.name)+' <span style="color:var(--g4)">'+kb+' KB</span></td>'
+      +'<td style="padding:6px 4px"><select class="fi2" style="min-width:180px;'+(d.cust?'':'border-color:#f59e0b')+'" onchange="_bulkDocs['+i+'].cust=this.value?Number(this.value):null;_bulkRender()"'+dis+'><option value="">— เลือกแรงงาน —</option>'+opts.replace('value="'+d.cust+'"','value="'+d.cust+'" selected')+'</select></td>'
+      +'<td style="padding:6px 4px"><select class="fi2" onchange="_bulkDocs['+i+'].type=this.value"'+dis+'>'+_BULK_TYPES.map(t=>'<option value="'+t[0]+'"'+(t[0]===d.type?' selected':'')+'>'+t[1]+'</option>').join('')+'</select></td>'
+      +'<td style="padding:6px 4px;white-space:nowrap">'+st+(d.status!=='ok'&&d.status!=='busy'?' <button class="btn btn-g btn-xs" onclick="_bulkDocs.splice('+i+',1);_bulkRender()">ลบ</button>':'')+'</td></tr>';}).join('')
+   +'</table></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">'
+   +'<button class="btn btn-g btn-sm" onclick="_bulkDocs=[];_bulkRender()">ล้างรายการ</button>'
+   +'<button class="btn btn-p btn-sm" id="bulkDocGo" onclick="bulkDocUpload()">อัปโหลด '+_bulkDocs.filter(d=>d.cust&&d.status!=='ok').length+' ไฟล์</button></div>';}
+async function _bulkPrepare(file){
+  const isPdf=file.type==='application/pdf';
+  if(isPdf){if(file.size>10*1024*1024)throw new Error('PDF ใหญ่เกิน 10MB');return{data:await readAsDataURL(file),type:'application/pdf'};}
+  let data=await compressImage(file,1600,0.72);
+  if(approxBytesFromDataURL(data)>DOC_MAX_BYTES)data=await compressImage(file,1200,0.6);
+  if(approxBytesFromDataURL(data)>DOC_MAX_BYTES)throw new Error('รูปใหญ่เกิน 1.5MB หลังย่อ');
+  return{data,type:'image/jpeg'};}
+async function bulkDocUpload(){
+  if(!(await guardSession()))return;
+  const todo=_bulkDocs.filter(d=>d.cust&&d.status!=='ok');
+  if(!todo.length){toast('ยังไม่มีไฟล์ที่เลือกแรงงานแล้ว','err');return;}
+  let ok=0,fail=0;
+  for(const d of todo){
+    d.status='busy';_bulkRender();
+    try{const p=await _bulkPrepare(d.file);const c=(customers||[]).find(x=>x.id===d.cust);
+      const r=await _callDocUpload({customer_id:d.cust,doc_type:d.type,doc_name:docTypeLabel(d.type),file_name:d.file.name,file_type:p.type,data_url:p.data});
+      if(!r||!r.ok)throw new Error(r&&r.error||'upload_failed');
+      d.status='ok';ok++;void c;
+    }catch(e){d.status='ไม่สำเร็จ: '+(e&&e.message||e);fail++;}
+    _bulkRender();
+  }
+  try{logAudit('document.upload.bulk','document',null,{count:ok,failed:fail});}catch(_){}
+  toast(fail?('อัปโหลดสำเร็จ '+ok+' · ไม่สำเร็จ '+fail):('อัปโหลดสำเร็จ '+ok+' ไฟล์'),fail?'err':undefined);
+}
 const IMP_FIELDS=[
-  {key:'name',label:'รายชื่อ',aliases:['รายชื่อ','ชื่อ','ชื่อลูกค้า','ชื่อ-นามสกุล','name']},
+  {key:'name',label:'รายชื่อ',aliases:['รายชื่อ','ชื่อ','ชื่อลูกค้า','ชื่อ-นามสกุล','name','ชื่อต่างด้าว','ชื่อแรงงาน']},
   {key:'employer_name',label:'นายจ้าง',aliases:['นายจ้าง','นายจ้าง/บริษัท','employer']},
   {key:'alien_id',label:'เลขประจำตัวต่างด้าว',aliases:['เลขประจำตัวต่างด้าว','เลขประจำตัวคนต่างด้าว','เลขบัตรประจำตัวคนต่างด้าว','บัตรประจำตัวคนต่างด้าว','เลขบัตรต่างด้าว','บัตรต่างด้าว','เลขต่างด้าว','รหัสต่างด้าว','เลขประจำตัว','ต่างด้าว','alien_id','alien']},
   {key:'nationality',label:'สัญชาติ',aliases:['สัญชาติ','nationality']},
   {key:'passport_no',label:'เลขพาสปอร์ต',aliases:['เลขพาสปอร์ต','พาสปอร์ต','passport_no','passport']},
-  {key:'wp_no',label:'เลขคำขอ',aliases:['เลขคำขอ','เลขคำขอ wp','wp_no','work permit']},
+  {key:'wp_no',label:'เลขคำขอ',aliases:['เลขคำขอ','เลขคำขอ wp','wp_no','work permit','เลข wp']},
+  {key:'license_no',label:'เลขใบอนุญาตทำงาน',aliases:['work','เลขใบอนุญาตทำงาน','เลขใบอนุญาต','เลขเวิร์ค','license_no']},
   {key:'phone',label:'เบอร์โทร',aliases:['เบอร์โทร','เบอร์','โทรศัพท์','phone']},
-  {key:'services',label:'รายการ',aliases:['รายการ','บริการ','services']},
-  {key:'work_status',label:'สถานะ',aliases:['สถานะ','สถานะงาน','work_status']},
+  {key:'services',label:'บริการ',aliases:['บริการ','services']},
+  {key:'work_items',label:'รายการ',aliases:['รายการ','ราคาต่ออายุ','work_items']},
+  {key:'worker_category',label:'ประเภท',aliases:['ประเภท','ประเภทแรงงาน','worker_category']},
+  {key:'work_status',label:'สถานะงาน',aliases:['สถานะงาน','work_status']},
+  {key:'status_note',label:'สถานะ',aliases:['สถานะ','status_note']},
   {key:'next_90',label:'90 วัน',aliases:['90วัน','90 วัน','รายงาน 90 วัน','next_90']},
   {key:'exp_visa',label:'วันหมด VISA',aliases:['วันหมด visa','exp_visa','visa']},
-  {key:'exp_wp',label:'วันหมด WP',aliases:['วันหมด wp','exp_wp']},
+  {key:'exp_wp',label:'วันหมด WP',aliases:['วันหมด wp','exp_wp','เวิร์คหมด','วันหมดเวิร์ค','wp หมด','วันหมดใบอนุญาตทำงาน']},
+  {key:'exp_passport',label:'วันหมดพาสปอร์ต',aliases:['วันหมดพาสปอร์ต','เล่มหมดอายุ','พาสปอร์ตหมด','วันหมด passport','passport หมด','exp_passport']},
   {key:'note',label:'หมายเหตุ',aliases:['หมายเหตุ','remark','note']},
   // Round F1B-2: field ใหม่ตาม Excel
   {key:'submit_date',label:'วันที่ยื่น',aliases:['วันที่ยื่น','submit_date']},
@@ -6167,6 +6960,32 @@ const IMP_FIELDS=[
   // Stage 4: ผู้รับผิดชอบ (assignee) — รับค่า employee_code / nickname / full_name / "ชื่อ (CODE)"
   {key:'assignee',label:'ผู้รับผิดชอบ',aliases:['ผู้รับผิดชอบ','เจ้าหน้าที่รับผิดชอบ','คนรับผิดชอบ','เจ้าหน้าที่','คนทำเคส','assignee','assignee_code','employee_code','staff']},
 ];
+// ── Stage IMPORT-SHEETS: สัญชาติแบบรหัส/อังกฤษ → ชื่อไทยที่ CRM ใช้ ──
+const _IMP_NAT_MAP={KHM:'กัมพูชา',KH:'กัมพูชา',CAM:'กัมพูชา',CAMBODIA:'กัมพูชา',CAMBODIAN:'กัมพูชา','เขมร':'กัมพูชา','กัมพูชา':'กัมพูชา',
+  LAO:'ลาว',LA:'ลาว',LAOS:'ลาว','ลาว':'ลาว',
+  MMR:'เมียนมา',MM:'เมียนมา',MYA:'เมียนมา',MYANMAR:'เมียนมา',BURMA:'เมียนมา','พม่า':'เมียนมา','เมียนมา':'เมียนมา','เมียนมาร์':'เมียนมา',
+  VNM:'เวียดนาม',VN:'เวียดนาม',VIE:'เวียดนาม',VIETNAM:'เวียดนาม','เวียดนาม':'เวียดนาม'};
+function _impNat(v){const c=_impClean(v);if(!c)return null;const k=String(c).trim().toUpperCase().replace(/[\s.]/g,'');return _IMP_NAT_MAP[k]||c;}
+// ค่าที่เป็นแค่คำหัวคอลัมน์ (เช่น ช่องสถานะที่พิมพ์ว่า "สถานะ") → ถือว่าว่าง
+function _impStatus(v){const s=String(v==null?'':v).trim();return(!s||s==='สถานะ'||s==='-')?'':s;}
+// วางจาก Google Sheets (TSV) → ใช้ pipeline เดิมของการนำเข้า
+function impFromPaste(){
+  const ta=document.getElementById('impPasteText');const text=(ta&&ta.value||'').replace(/\r/g,'');
+  if(!text.trim()){toast('ยังไม่ได้วางข้อมูล','err');return;}
+  const rows=text.split('\n').map(l=>l.split('\t').map(c=>String(c).trim())).filter(r=>r.some(c=>c));
+  if(rows.length<2){toast('ต้องมีหัวคอลัมน์และข้อมูลอย่างน้อย 1 แถว','err');return;}
+  impPhotos={};impPhotoScan=false;impPhotoFilter='all';impSaveUnsure=false;
+  const _h=impDetectHeaderRow(rows);
+  impCols=(rows[_h]||[]).map(c=>String(c).trim());
+  impData=rows.slice(_h+1).filter(r=>r.some(c=>c));
+  impMap={};const _nz=s=>String(s||'').trim().toLowerCase();const _used=new Set();
+  IMP_FIELDS.forEach(f=>{const al=(f.aliases||[f.label]).map(_nz);
+    let found=impCols.findIndex((c,i)=>!_used.has(i)&&al.includes(_nz(c)));
+    if(found<0)found=impCols.findIndex((c,i)=>!_used.has(i)&&al.some(a=>a.length>=3&&_nz(c).includes(a)));
+    if(found>=0){impMap[f.key]=found;_used.add(found);}});
+  renderImpPreview();
+  const p=document.getElementById('impPreview');if(p)p.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function normImpStr(s){return String(s||'').trim().toUpperCase().replace(/\s+/g,'');}
 // Round F1B-2: parser สำหรับ import field ใหม่
 function impBool(v){return /^(✓|✔|\/|x|มี|ใช่|true|yes|y|1|จ่ายแล้ว|จ่าย)$/i.test(String(v==null?'':v).trim());}
@@ -6355,8 +7174,8 @@ function handleImpFile(e){
         let text=new TextDecoder('utf-8').decode(ev.target.result);
         if(text.charCodeAt(0)===0xFEFF)text=text.slice(1); // ตัด BOM กันชื่อคอลัมน์แรกเพี้ยน (ไฟล์ export ของระบบมี BOM)
         const _rows=_csvParse(text);
-        impCols=(_rows[0]||[]).map(c=>String(c).trim());
-        impData=_rows.slice(1).map(r=>r.map(c=>String(c).trim())).filter(r=>r.some(c=>c));
+        const _ch=impDetectHeaderRow(_rows);impCols=(_rows[_ch]||[]).map(c=>String(c).trim());
+        impData=_rows.slice(_ch+1).map(r=>r.map(c=>String(c).trim())).filter(r=>r.some(c=>c));
       }
       else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});const _hdr=impDetectHeaderRow(arr);impCols=(arr[_hdr]||[]).map(String);const _raw=arr.slice(_hdr+1);impData=_raw.filter(r=>r.some(c=>c));
         try{const _ph=await impExtractXlsxPhotos(ev.target.result);impPhotoScan=true;const _rm={};let _fi=0;_raw.forEach((r,_j)=>{if(r.some(c=>c)){const _pk=_hdr+_j;if(_ph.photos[_pk])_rm[_fi]=_ph.photos[_pk];_fi++;}});impPhotos=_rm;}catch(_){impPhotos={};impPhotoScan=true;}
@@ -6418,7 +7237,7 @@ function renderImpPreview(){
   // ขวดคอหลักคือการย่อรูป (Canvas, sequential) — text-only ชุด insert ได้เร็วมากแล้ว
   const _photoCount=impPhotoScan?Object.keys(impPhotos).length:0;
   const _estNote=(_photoCount>=30||cntNew>=400)?`<div style="padding:6px 15px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⏱ คาดว่าใช้เวลา ${_photoCount>=200||cntNew>=500?'2–3 นาที':_photoCount>=80||cntNew>=400?'~1 นาที':'~30 วินาที'} — กรุณาอย่าปิดหน้าต่างระหว่างนำเข้า</div>`:'';
-  document.getElementById('impPreview').innerHTML=`${photoPanel}<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div><button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ</button></div>${_estNote}
+  document.getElementById('impPreview').innerHTML=`${photoPanel}<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div>${cntDupEx>0?`<label style="font-size:12px;display:inline-flex;gap:5px;align-items:center;margin-right:8px;cursor:pointer;color:#92400e"><input type="checkbox" id="impUpdEx" checked>อัปเดตข้อมูลคนเดิม ${cntDupEx} คน ตามไฟล์นี้</label>`:''}<button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ${cntDupEx>0?' + อัปเดตคนเดิม':''}</button></div>${_estNote}
   <div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div class="imp-map-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value);renderImpPreview()"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
   <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map((r,i)=>{const st=rowStatus[i];return`<tr ${st==='dup-existing'||st==='dup-file'?'class="imp-dup"':st==='missing'?'style="background:#fff0f0"':''}>${r.map((v,ci)=>`<td>${dateColIdx.has(ci)?(impDate(v)||''):(v||'')}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
   ${impData.length>5?`<div style="padding:8px 15px;font-size:11px;color:var(--g5);border-top:1px solid var(--g1)">แสดง 5 แถวแรก จาก ${impData.length} แถวทั้งหมด</div>`:``}</div>`;
@@ -6450,9 +7269,27 @@ function _impErrMsg(e){
   }catch(_){}
   return'บันทึกไม่สำเร็จ กรุณาตรวจข้อมูลแถวนี้ใน Excel';
 }
+// ── Stage S2: นำเข้าซ้ำ → อัปเดตคนเดิม (เฉพาะช่องที่ชีสมีค่า และค่าไม่ตรงกับในระบบ) ──
+const _IMP_UPD_LBL={exp_wp:'เวิร์คหมด',exp_passport:'เล่มหมดอายุ',exp_visa:'VISA',next_90:'90 วัน',exp_mou:'MOU',license_no:'WORK',wp_no:'เลขคำขอ',passport_no:'PASSPORT',worker_category:'ประเภท',status_note:'สถานะ',work_items:'รายการ',note:'หมายเหตุ',phone:'เบอร์',employer_id:'นายจ้าง'};
+function _impBuildUpdate(row,get,c){
+  const P={};
+  const cur=k=>{const v=c[k];if(v==null)return'';return(/^exp_|^next_90$/.test(k))?String(_ceDate(String(v).slice(0,10))):String(v);};
+  const set=(k,v)=>{if(v==null||v==='')return;if(String(v)!==cur(k))P[k]=v;};
+  const d=k=>{if(impMap[k]===undefined)return null;const r=get(row,k);return r?(impDate(r)||null):null;};
+  ['exp_wp','exp_passport','exp_visa','next_90','exp_mou'].forEach(k=>set(k,d(k)));
+  ['license_no','wp_no','passport_no','work_items','note','phone'].forEach(k=>set(k,_impClean(get(row,k))));
+  const wc=String(get(row,'worker_category')||'').trim();
+  if(wc&&wc!=='-'&&wc!=='ประเภท')set('worker_category',/^mou$/i.test(wc)?'MOU':(/มติ|ครม/.test(wc)?'มติ.ครม.':wc));
+  set('status_note',_impStatus(get(row,'status_note')));
+  const en=get(row,'employer_name');
+  if(en){const _en=normalizeEmployerName(en);const ef=employers.find(x=>normalizeEmployerName(x.name)===_en);if(ef&&ef.id!==c.employer_id){P.employer_id=ef.id;P.customer_type='company';}}
+  if(typeof _sheetColsOk!=='undefined'&&_sheetColsOk===false){delete P.worker_category;delete P.status_note;delete P.work_items;}
+  const keys=Object.keys(P).filter(k=>k!=='customer_type');
+  return keys.length?{patch:P,labels:keys.map(k=>_IMP_UPD_LBL[k]||k)}:null;
+}
 async function doImport(){
   if(!impData.length){toast('ไม่มีข้อมูล','err');return;}
-  showLoading(`กำลังนำเข้าข้อมูล ${impData.length} แถว...`);
+  showLoading(`กำลังนำเข้าข้อมูล ${impData.length} แถว...`);const _impUpdEx=!!(document.getElementById('impUpdEx')&&document.getElementById('impUpdEx').checked); // Stage S2
   const get=(row,key)=>impMap[key]!==undefined&&impMap[key]>=0?String(row[impMap[key]]||'').trim():'';
   const existingKeys=buildExistingKeys();
   // map key→ลูกค้าเดิม (key เดียวกับ buildExistingKeys) — ใช้หาเพื่ออัปเดตรูปให้คนเดิมที่ยังไม่มีรูป
@@ -6466,7 +7303,7 @@ async function doImport(){
   let countNew=0,countDupEx=0,countDupFile=0,countMissing=0,countError=0;
   let countPhotoNew=0,countPhotoUpd=0,countPhotoSkip=0,countPhotoStorageFail=0; // Stage 38B: Excel embedded photo → customer-photos Storage (countPhotoStorageFail = upload ไป Storage ไม่สำเร็จ)
   let countAsgUnresolved=0; // Stage 4: แถวที่มีค่าผู้รับผิดชอบแต่จับคู่ employee_code ไม่ได้
-  let countAsgUpd=0; // Stage 4: ลูกค้าเดิมที่อัปเดต assignee_code จาก Excel
+  let countAsgUpd=0;let countExUpd=0; // Stage 4: ลูกค้าเดิมที่อัปเดต assignee_code จาก Excel
   const skippedRows=[];
   // เก็บลำดับไฟล์ Excel: แถวบนสุด (ri=0) ได้ created_at ใหม่สุด → ขึ้นบนตาม sort created_at DESC เดิม
   const _impBase=Date.now();
@@ -6487,7 +7324,7 @@ async function doImport(){
     const key=_k?_k.key:null;
     if(key&&existingKeys.has(key)){
       countDupEx++;
-      const _exC=existingByKey.get(key);const _notes=[];
+      const _exC=existingByKey.get(key);const _notes=[];if(_exC&&_impUpdEx){const _up=_impBuildUpdate(row,get,_exC);if(_up){const _ur=await _bulkUpdateCustomersRpc([_exC.id],_up.patch);if(_ur.status==='unauthorized'){hideLoading();toast('ไม่มีสิทธิ์นำเข้าข้อมูล กรุณาเข้าสู่ระบบใหม่','err');return;}if(_ur.status==='ok'){Object.assign(_exC,_up.patch);countExUpd++;_notes.push('อัปเดต: '+_up.labels.join(', '));try{logAudit('customer.update','customer',_exC.id,{name:_exC.name,passport_no:_exC.passport_no||_exC.alien_id||null,changed:Object.keys(_up.patch),source:'importUpdate'});}catch(_){}}else _notes.push('อัปเดตไม่สำเร็จ');}} // Stage S2
       // ลูกค้าเดิม + ยังไม่มีรูป + row import มีรูป → อัปเดตรูปให้ (ไม่สร้างลูกค้าซ้ำ)
       const _exPh=impPhotos[ri];
       // Stage 28D: อัปเดตรูปให้ลูกค้าเดิม "เฉพาะที่ยังไม่มีรูป" เท่านั้น (ไม่ทับรูปเดิม) — รูปไม่มั่นใจต้องติ๊กยืนยันก่อน
@@ -6529,7 +7366,8 @@ async function doImport(){
       const _bdat=[];
       const _ds=(key,raw)=>{const r=impDate(raw);const rv=String(raw||'').trim();if(rv&&!r)_bdat.push(key+(rv.length<=25?'='+rv:''));return r||null;};
       // Stage 50A-7 follow-up: _impClean() → placeholder ("-", "N/A", "ไม่มี" ฯลฯ) เป็น null ไม่ส่งเป็นเลขตัวตนจริง (กัน error unique/บันทึกค่าขยะ)
-      const data={name,nationality:_impClean(nat)||'เมียนมา',passport_no:_impClean(pp),alien_id:_impClean(al),phone:_impClean(get(row,'phone')),employer_id:empId,customer_type:empId?'company':'freelance',wp_no:_impClean(get(row,'wp_no')),exp_visa:_ds('exp_visa',get(row,'exp_visa'))||null,exp_wp:_ds('exp_wp',get(row,'exp_wp'))||null,next_90:_ds('next_90',get(row,'next_90'))||null,work_status:get(row,'work_status')||'รับเรื่อง',note:_impClean(get(row,'note'))};
+      const data={name,nationality:_impNat(nat)||'เมียนมา',passport_no:_impClean(pp),alien_id:_impClean(al),phone:_impClean(get(row,'phone')),employer_id:empId,customer_type:empId?'company':'freelance',wp_no:_impClean(get(row,'wp_no')),exp_visa:_ds('exp_visa',get(row,'exp_visa'))||null,exp_wp:_ds('exp_wp',get(row,'exp_wp'))||null,next_90:_ds('next_90',get(row,'next_90'))||null,work_status:_impStatus(get(row,'work_status'))||'รับเรื่อง',note:_impClean(get(row,'note'))};
+      {const _wc=String(get(row,'worker_category')||'').trim();if(_wc&&_wc!=='-'&&_wc!=='ประเภท')data.worker_category=/^mou$/i.test(_wc)?'MOU':(/มติ|ครม/.test(_wc)?'มติ.ครม.':_wc);const _sn=_impStatus(get(row,'status_note'));if(_sn)data.status_note=_sn;const _wi=_impClean(get(row,'work_items'));if(_wi)data.work_items=_wi;} // Stage SHEET-VIEW
       const _svc=get(row,'services');if(_svc)data.services=_svc.split(/[;,]/).map(s=>s.trim()).filter(Boolean);
       // Round F1B-2: field ใหม่ตาม Excel
       data.submit_date=_ds('submit_date',get(row,'submit_date'));
@@ -6544,6 +7382,8 @@ async function doImport(){
       data.appt_place=_impClean(get(row,'appt_place'));
       data.queue_date=_ds('queue_date',get(row,'queue_date'));
       data.receive_date=_ds('receive_date',get(row,'receive_date'));
+      data.exp_passport=_ds('exp_passport',get(row,'exp_passport')); // Stage IMPORT-SHEETS
+      data.license_no=_impClean(get(row,'license_no')); // Stage IMPORT-SHEETS-2
       const _bh=get(row,'booklet_has'),_bn=get(row,'booklet_none');
       data.booklet_status=_bh?'has':(_bn?'none':null); // ทั้งคู่มีค่า → has
       data.created_at=new Date(_impBase-ri*1000).toISOString(); // คงลำดับ Excel (บน→ล่าง)
@@ -6630,7 +7470,7 @@ async function doImport(){
   const _bwRows=pendingInserts.filter(r=>r._bdat&&r._bdat.length);
   const dateWarnHTML=_bwRows.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:var(--rx);font-size:12px;color:#92400e"><strong>⚠️ วันที่บางช่องแปลงไม่ได้ (ตั้งเป็นว่าง): ${_bwRows.length} แถว</strong><div style="font-size:11px;color:#b45309;margin-top:3px">แถวเหล่านี้นำเข้าสำเร็จ แต่ช่องวันที่ที่แปลงไม่ได้ถูกตั้งเป็นว่าง กรุณาแก้ไขใน Excel แล้ว import ซ้ำหรือแก้ในระบบโดยตรง</div><div style="overflow-x:auto;max-height:120px;margin-top:6px"><table class="imp-table"><thead><tr><th>แถว</th><th>ชื่อ</th><th>ช่องที่มีปัญหา</th></tr></thead><tbody>${_bwRows.slice(0,15).map(r=>`<tr><td>${r.ri+2}</td><td>${esc(r.name)}</td><td style="font-size:10px;color:#92400e">${r._bdat.map(esc).join(', ')}</td></tr>`).join('')}${_bwRows.length>15?`<tr><td colspan="3" style="text-align:center;color:var(--g5)">...และอีก ${_bwRows.length-15} แถว</td></tr>`:''}</tbody></table></div></div>`:'';
   const skipHTML=skippedRows.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:6px">รายการที่ถูกข้าม (${skippedRows.length} รายการ)</div><div style="overflow-x:auto;max-height:180px"><table class="imp-table"><thead><tr><th>แถว Excel</th><th>ชื่อ</th><th>พาสปอร์ต/ID</th><th>เหตุผล</th></tr></thead><tbody>${skippedRows.map(s=>`<tr><td>${s.ri}</td><td>${esc(s.name)}</td><td>${esc(s.id)}</td><td><span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${s.reason.includes('ซ้ำกับข้อมูลเดิม')?'#fef3c7':s.reason.includes('ในไฟล์นำเข้า')?'#fff3e0':'#ffeaea'};color:${s.reason.includes('ซ้ำกับข้อมูลเดิม')?'#92400e':s.reason.includes('ในไฟล์นำเข้า')?'#d97706':'#dc2626'}">${esc(s.reason)}</span>${s.detail?`<div style="font-size:10px;color:#92400e;margin-top:2px">${esc(s.detail)}</div>`:''}</td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong></div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip+countPhotoStorageFail)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}${countPhotoStorageFail?` · อัปโหลด Storage ล้มเหลว ${countPhotoStorageFail} (เก็บแบบเดิมไว้ชั่วคราว)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${dateWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
+  document.getElementById('impPreview').innerHTML=`<div class="twrap"><div style="padding:14px 16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">สรุปผลการนำเข้า</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px"><div style="padding:10px;background:var(--g1);border-radius:var(--rx);text-align:center">แถวทั้งหมด<br><strong style="font-size:20px">${impData.length}</strong></div><div style="padding:10px;background:#e6f9ee;border-radius:var(--rx);text-align:center">เพิ่มใหม่<br><strong style="font-size:20px;color:#16a34a">${countNew}</strong></div><div style="padding:10px;background:#fff3e0;border-radius:var(--rx);text-align:center">ซ้ำข้อมูลเดิม<br><strong style="font-size:20px;color:#d97706">${countDupEx}</strong>${countExUpd?`<div style="font-size:11px;color:#16a34a;margin-top:2px">อัปเดตแล้ว ${countExUpd} คน</div>`:''}</div><div style="padding:10px;background:#fff8e1;border-radius:var(--rx);text-align:center">ซ้ำในไฟล์<br><strong style="font-size:20px;color:#b45309">${countDupFile}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ไม่มีชื่อ<br><strong style="font-size:20px;color:#dc2626">${countMissing}</strong></div><div style="padding:10px;background:#ffeaea;border-radius:var(--rx);text-align:center">ข้อผิดพลาด<br><strong style="font-size:20px;color:#dc2626">${countError}</strong></div></div>${(countPhotoNew+countPhotoUpd+countPhotoSkip+countPhotoStorageFail)>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">รูปถ่าย: บันทึกใหม่ <strong>${countPhotoNew}</strong> · อัปเดตคนเดิม <strong>${countPhotoUpd}</strong>${countPhotoSkip?` · ข้าม ${countPhotoSkip} (ใหญ่เกิน/แปลงไม่ได้)`:''}${countPhotoStorageFail?` · อัปโหลด Storage ล้มเหลว ${countPhotoStorageFail} (เก็บแบบเดิมไว้ชั่วคราว)`:''}</div>`:''}${countAsgUpd>0?`<div style="margin-top:10px;padding:9px 12px;background:#eef6ff;border-radius:var(--rx);font-size:12px;color:#1e40af">อัปเดตผู้รับผิดชอบ <strong>${countAsgUpd}</strong> รายการ (ลูกค้าเดิม)</div>`:''}${asgWarnHTML}${dateWarnHTML}${unsupHTML}${skipHTML}</div></div>`;
 }
 
 function renderSettings(){
@@ -6647,9 +7487,30 @@ function renderSettings(){
       </div>
       <div id="phchkResults" style="font-size:12px;color:var(--g5)">กดปุ่ม “เริ่มตรวจระบบ” เพื่อตรวจสอบ (บาง รายการต้องใช้รหัส ADMIN)</div>
     </div>`;
-  document.getElementById('settingsContent').innerHTML=notifyHtml+readiness;
+  document.getElementById('settingsContent').innerHTML='<div style="font-size:12px;margin:0 0 10px;padding:7px 11px;border-radius:8px;'+(_alertSrc==='db'?'background:#f0fdf4;color:#15803d">✅ ค่านี้ใช้ร่วมกันทุกเครื่อง และใช้ในหน้าลิงก์ที่ส่งให้นายจ้าง':'background:#fffbeb;color:#92400e">⚠️ ตอนนี้ค่าเตือนบันทึกเฉพาะเครื่องนี้ (ยังเชื่อมฐานข้อมูลไม่ได้)')+'</div>'+notifyHtml+readiness;
 }
-function setSetting(k,v){settings[k]=parseInt(v)||30;localStorage.setItem('crm_settings',JSON.stringify(settings));toast('บันทึกการตั้งค่าแล้ว');}
+// ── Stage ALERT-SETTINGS-DB: ค่าแจ้งเตือนล่วงหน้าเก็บในฐานข้อมูล (app_alert_settings) ──
+let _alertSrc='local';
+async function _loadAlertSettingsDb(){
+  if(typeof _shareRpc!=='function'||!curUser)return;
+  const r=await _shareRpc('app_get_alert_settings',{});
+  if(r.status==='ok'){
+    const row=Array.isArray(r.data)?r.data[0]:r.data;
+    if(row){['passport','visa','wp','next90','mou'].forEach(k=>{const v=parseInt(row[k]);if(v>0)settings[k]=v;});
+      _alertSrc='db';try{localStorage.setItem('crm_settings',JSON.stringify(settings));}catch(_){}}
+  }else if(r.status==='missing')_alertSrc='missing';
+}
+async function setSetting(k,v){
+  const n=parseInt(v);
+  if(!(n>=1&&n<=3650)){toast('กรุณาใส่จำนวนวัน 1–3650','err');renderSettings();return;}
+  settings[k]=n;try{localStorage.setItem('crm_settings',JSON.stringify(settings));}catch(_){}
+  const r=await _shareRpc('app_save_alert_settings',{p_passport:settings.passport,p_visa:settings.visa,p_wp:settings.wp,p_next90:settings.next90,p_mou:settings.mou});
+  if(r.status==='ok'){_alertSrc='db';toast('บันทึกแล้ว — ใช้ร่วมกันทุกเครื่องและหน้าลิงก์ลูกค้า');}
+  else if(r.status==='missing'){_alertSrc='missing';toast('บันทึกเฉพาะเครื่องนี้ — ยังไม่ได้รัน SQL ค่าตั้งเตือน','err');}
+  else if(r.status==='unauthorized'){toast('เฉพาะผู้ดูแลระบบที่แก้ค่าเตือนได้','err');}
+  else toast('บันทึกลงฐานข้อมูลไม่สำเร็จ (บันทึกเฉพาะเครื่องนี้)','err');
+  renderSettings();
+}
 
 // Stage 49A-1: Pre-test verification — เรียก RPC อ่านอย่างเดียว, จับ 404/PGRST202/unauthorized
 //   ❌ ไม่เรียก write RPC ใด ๆ (log/create/review/update) — ไม่อ่าน body ผลลัพธ์ (แค่เช็ค res.ok)
@@ -8773,7 +9634,7 @@ const _DC_DOC_TYPE_LABELS={
   // Phase 2 — case-specific documents
   request_form:'ใบรับคำขอ',appointment_slip:'ใบนัด',
   payment_proof:'หลักฐานชำระเงิน',eworkpermit_reply:'เอกสารตอบกลับจาก e-Workpermit',
-  requested_extra_doc:'เอกสารที่เจ้าหน้าที่ขอเพิ่ม',
+  requested_extra_doc:'เอกสารที่เจ้าหน้าที่ขอเพิ่ม',identity_card:'ใบอัตลักษณ์',tm47:'ใบรับแจ้ง 90 วัน',contract:'สัญญาจ้าง',
 };
 function _dcDocTypeLabel(t){return _DC_DOC_TYPE_LABELS[t]||docTypeLabel(t)||'อื่นๆ';}
 
@@ -14305,7 +15166,7 @@ async function saveCaseStatus(){
   }finally{hideLoading();}
 }
 // ── ผูกกับหน้ารายละเอียดลูกค้า (best-effort — RPC ยังไม่ติดตั้ง = ซ่อนเงียบ ๆ) ──
-async function _loadDetCases(cid){
+async function _loadDetCases(cid){if(HIDE_CASE_MODULE)return;
   const sec=document.getElementById('detCaseSec');if(!sec||cid==null)return;
   let rows=[];
   try{rows=await _delReqRpc('app_list_cases',{p_customer_id:cid,p_limit:10,p_offset:0});}
@@ -15356,8 +16217,8 @@ function _renderEmpPhase2(){
       <div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">${T('emp2Sec')}</div>
       <div class="dg4">${rows}</div>
       ${e.phase2_note?`<div style="font-size:12px;color:var(--g6);margin-top:8px;background:var(--g0);padding:6px 10px;border-radius:7px">📝 ${esc(e.phase2_note)}</div>`:''}
-      <div style="font-size:11px;color:var(--g5);margin-top:10px;background:var(--g0);border:1px dashed var(--g3);border-radius:8px;padding:7px 11px">📎 ${T('emp2Docs')}: <b>${docsN}</b> — ${esc(T('emp2DocsNote'))}</div>
-      <div id="empDocSec"></div>
+      ${SIMPLE_WORKER_MODE?'':`<div style="font-size:11px;color:var(--g5);margin-top:10px;background:var(--g0);border:1px dashed var(--g3);border-radius:8px;padding:7px 11px">📎 ${T('emp2Docs')}: <b>${docsN}</b> — ${esc(T('emp2DocsNote'))}</div>`}
+      ${SIMPLE_WORKER_MODE?'':'<div id="empDocSec"></div>'}
       <div style="display:flex;align-items:center;gap:9px;margin-top:14px;margin-bottom:8px">
         <div style="font-size:12px;font-weight:700;color:var(--g7)">${T('estSec')}</div>
         <span style="background:var(--g2);color:var(--g6);border-radius:20px;padding:1px 9px;font-size:11px;font-weight:700;font-family:var(--mono)">${ests.length}</span>

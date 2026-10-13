@@ -1,0 +1,4 @@
+# ลิงก์ทดสอบ (Staging): /st/s/<รหัส> → share-staging.html  — ต้องอยู่ก่อนบรรทัด /s/*
+/st/s/*   /share-staging.html   200
+# ลิงก์จริง (Production): /s/<รหัส> → share.html
+/s/*   /share.html   200

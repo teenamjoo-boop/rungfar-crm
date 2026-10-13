@@ -14,6 +14,16 @@
 //   * audit log บันทึก metadata เท่านั้น — ❌ ไม่ log file_data/base64/bytes
 //   * ถ้า DB insert ล้มเหลวหลัง storage upload → พยายาม cleanup object ที่ upload ไปแล้ว
 //
+// Stage EMP-DOCS (2026-10-10): รองรับเอกสารนายจ้าง owner_type='employer'
+//   * ส่ง { owner_type:'employer', owner_id:<employer id> } ไม่ต้องมี customer_id
+//   * ตรวจว่านายจ้างมีอยู่จริงฝั่ง server, path = employers/<id>/..., customer_id = null
+//   * ต้อง apply migration 20261010_sheet_view_employer_docs.sql ก่อน (customer_id nullable)
+//   * optional doc_expiry (YYYY-MM-DD, ปี ค.ศ.) — ใช้ได้ทั้งเอกสารลูกค้าและนายจ้าง
+//
+// Stage SHARE-GROUP-BANNER (2026-10-13): owner_type='group' — รูปพื้นหลังหน้าลิงก์รวมของกลุ่ม
+//   * รับเฉพาะ doc_type='share_banner' · ตรวจว่ากลุ่มมีอยู่จริง · path = groups/<id>/..., customer_id = null
+//   * ต้องรัน migration 20261013_group_share_banner.sql ก่อน (documents.owner_type รับ 'group')
+//
 // ❌ ไม่แตะ: line-webhook-router / line-doc-inbox / line-ai-excel-* / attendance / import
 // =============================================================
 
@@ -27,13 +37,20 @@ const BUCKET = 'customer-documents';
 
 const ALLOWED_DOC_TYPES = new Set([
   'passport_photo', 'visa', 'wp', 'employer_card', 'receipt', 'photo', 'pow', 'other',
+  // Stage EMP-DOCS: เอกสารนายจ้าง / บริษัท
+  'employer_id_card', 'house_registration', 'employer_poa', 'company_certificate',
+  'pp20', 'commercial_registration', 'workplace_photo', 'map',
+  // Stage S2: เอกสารแรงงานเพิ่ม (ตั้งชื่อเองได้ที่ doc_name)
+  'passport', 'ci', 'work_permit', 'medical', 'insurance', 'identity_card', 'tm47', 'contract', 'profile_photo',
+  // Stage EMP-BANNER: รูปพื้นหลังหน้าลิงก์ของนายจ้าง (owner_type='employer')
+  'share_banner',
 ]);
 
 // STAGE 54A-1B: owner generalization — ค่า owner_type ที่ schema รองรับ
 // stage นี้ "อัปโหลดได้เฉพาะ customer" — employer/establishment/case จะเปิดใน
 // stage ถัดไปเมื่อมีตาราง/UI ให้ validate เจ้าของได้จริง (กัน orphan write)
-const ALLOWED_OWNER_TYPES = new Set(['customer', 'employer', 'establishment', 'case']);
-const SUPPORTED_OWNER_TYPES = new Set(['customer']);
+const ALLOWED_OWNER_TYPES = new Set(['customer', 'employer', 'establishment', 'case', 'group']);
+const SUPPORTED_OWNER_TYPES = new Set(['customer', 'employer', 'group']); // Stage EMP-DOCS + SHARE-GROUP-BANNER
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg', 'image/png', 'application/pdf',
@@ -89,6 +106,41 @@ async function customerExists(url: string, key: string, customerId: number): Pro
   return Array.isArray(rows) && rows.length > 0;
 }
 
+// ─── Stage EMP-DOCS: ตรวจ employer_id มีอยู่ใน DB ───────────────────────────
+async function employerExists(url: string, key: string, employerId: number): Promise<boolean> {
+  const res = await fetch(
+    `${url}/rest/v1/employers?id=eq.${employerId}&select=id&limit=1`,
+    { headers: svcHeaders(key) },
+  );
+  if (!res.ok) return false;
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+// ─── Stage SHARE-GROUP-BANNER: ตรวจ group_id มีอยู่ใน DB ─────────────────────
+async function groupExists(url: string, key: string, groupId: number): Promise<boolean> {
+  const res = await fetch(
+    `${url}/rest/v1/groups?id=eq.${groupId}&select=id&limit=1`,
+    { headers: svcHeaders(key) },
+  );
+  if (!res.ok) return false;
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+// ─── Stage EMP-DOCS: ตรวจ doc_expiry (YYYY-MM-DD ปี ค.ศ. 1900–2399) ─────────
+function parseExpiry(v: unknown): string | null | 'bad' {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return 'bad';
+  const y = +m[1], mo = +m[2], d = +m[3];
+  if (y < 1900 || y > 2399 || mo < 1 || mo > 12 || d < 1 || d > 31) return 'bad';
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCMonth() !== mo - 1) return 'bad';
+  return s;
+}
+
 // ─── Decode data URL → bytes ──────────────────────────────────────────────────
 function dataUrlToBytes(dataUrl: string): Uint8Array | null {
   const commaIdx = dataUrl.indexOf(',');
@@ -107,7 +159,7 @@ function dataUrlToBytes(dataUrl: string): Uint8Array | null {
 // ─── สร้าง storage path ที่ปลอดภัย (ASCII เท่านั้น) ─────────────────────────
 // ใช้ timestamp + random suffix เท่านั้น — ❌ ไม่ใช้ชื่อไฟล์เดิม (อาจมี Thai/space/emoji)
 // doc_name ใน documents table เก็บชื่อที่อ่านได้ตามปกติ
-function buildStoragePath(customerId: number, fileType: string): string {
+function buildStoragePath(customerId: number, fileType: string, prefix = 'customers'): string {
   const now = new Date();
   const yyyy = now.getUTCFullYear();
   const mm   = String(now.getUTCMonth() + 1).padStart(2, '0');
@@ -116,7 +168,7 @@ function buildStoragePath(customerId: number, fileType: string): string {
   const ext  = fileType === 'application/pdf' ? 'pdf'
     : fileType === 'image/png'  ? 'png'
     : 'jpg';
-  return `customers/${customerId}/${yyyy}/${mm}/${ts}_${rand}.${ext}`;
+  return `${prefix}/${customerId}/${yyyy}/${mm}/${ts}_${rand}.${ext}`;
 }
 
 // ─── Upload bytes ไปยัง Supabase Storage (service role) ─────────────────────
@@ -147,7 +199,8 @@ async function deleteFromStorage(url: string, key: string, path: string): Promis
 
 // ─── Insert row ใน public.documents (file_data = null) ──────────────────────
 interface DocInsert {
-  customerId:   number;
+  customerId:   number | null;   // Stage EMP-DOCS: null สำหรับเอกสารนายจ้าง
+  docExpiry:    string | null;   // Stage EMP-DOCS
   docType:      string;
   docName:      string;
   fileType:     string;
@@ -180,6 +233,7 @@ async function insertDocument(
       // (ต้อง apply migration 20260731_documents_owner_generalization.sql ก่อน deploy ไฟล์นี้)
       owner_type:     d.ownerType,
       owner_id:       d.ownerId,
+      ...(d.docExpiry ? { doc_expiry: d.docExpiry } : {}),
     }),
   });
   if (!res.ok) throw new Error(`documents insert ${res.status}: ${await res.text()}`);
@@ -216,13 +270,25 @@ Deno.serve(async (req: Request) => {
   const fileType     = String(body.file_type  ?? '').trim();
   const dataUrl      = String(body.data_url   ?? '').trim();
 
-  if (!userId || !username || customerIdRaw == null || !docType || !docNameRaw || !dataUrl) {
+  // Stage EMP-DOCS: owner_type มาก่อน — เอกสารนายจ้างไม่ต้องมี customer_id
+  const ownerTypeRaw = String(body.owner_type ?? '').trim().toLowerCase();
+  const ownerType    = ownerTypeRaw || 'customer';
+  const isEmployer   = ownerType === 'employer';
+  const isGroup      = ownerType === 'group';         // Stage SHARE-GROUP-BANNER
+  const isOwnerDoc   = isEmployer || isGroup;          // เอกสารที่ไม่ใช่ของลูกค้า (ไม่มี customer_id)
+
+  if (!userId || !username || (!isOwnerDoc && customerIdRaw == null) || !docType || !docNameRaw || !dataUrl) {
     return json({ ok: false, error: 'bad_request' }, 400);
   }
 
-  const customerId = Number(customerIdRaw);
-  if (!Number.isInteger(customerId) || customerId <= 0) {
+  const customerId = isOwnerDoc ? 0 : Number(customerIdRaw);
+  if (!isOwnerDoc && (!Number.isInteger(customerId) || customerId <= 0)) {
     return json({ ok: false, error: 'invalid_customer_id' }, 400);
+  }
+
+  const docExpiry = parseExpiry(body.doc_expiry);
+  if (docExpiry === 'bad') {
+    return json({ ok: false, error: 'invalid_doc_expiry' }, 400);
   }
 
   // ── STAGE 54A-1B: owner_type / owner_id (optional — ไม่ส่ง = พฤติกรรมเดิม 100%) ──
@@ -230,8 +296,6 @@ Deno.serve(async (req: Request) => {
   //   * ส่ง 'customer' → owner_id (ถ้าส่ง) ต้องตรงกับ customer_id (กันชี้คนละคน)
   //   * ส่ง employer/establishment/case → ยังไม่เปิดใน stage นี้ (รอตาราง/UI ให้
   //     validate เจ้าของจริงได้ก่อน — กัน orphan write) → คืน error ชัดเจน
-  const ownerTypeRaw = String(body.owner_type ?? '').trim().toLowerCase();
-  const ownerType    = ownerTypeRaw || 'customer';
   if (!ALLOWED_OWNER_TYPES.has(ownerType)) {
     return json({ ok: false, error: 'invalid_owner_type' }, 400);
   }
@@ -244,10 +308,12 @@ Deno.serve(async (req: Request) => {
     if (!Number.isInteger(n) || n <= 0) {
       return json({ ok: false, error: 'invalid_owner_id' }, 400);
     }
-    if (n !== customerId) {
+    if (!isOwnerDoc && n !== customerId) {
       return json({ ok: false, error: 'owner_mismatch' }, 400);
     }
     ownerId = n;
+  } else if (isOwnerDoc) {
+    return json({ ok: false, error: 'invalid_owner_id' }, 400);
   }
 
   const docName = docNameRaw.slice(0, 255);
@@ -263,15 +329,27 @@ Deno.serve(async (req: Request) => {
   if (!ALLOWED_DOC_TYPES.has(docType)) {
     return json({ ok: false, error: 'invalid_doc_type' }, 400);
   }
+  // Stage SHARE-GROUP-BANNER: กลุ่มเก็บได้เฉพาะรูปพื้นหลังหน้าลิงก์
+  if (isGroup && docType !== 'share_banner') {
+    return json({ ok: false, error: 'invalid_doc_type' }, 400);
+  }
 
   // ── ตรวจ file_type (MIME) ──────────────────────────────────────────────────
   if (!ALLOWED_MIME_TYPES.has(fileType)) {
     return json({ ok: false, error: 'invalid_file_type' }, 400);
   }
 
-  // ── ตรวจ customer_id มีอยู่ ────────────────────────────────────────────────
+  // ── ตรวจเจ้าของมีอยู่ (ลูกค้า หรือ นายจ้าง — Stage EMP-DOCS) ─────────────────
   try {
-    if (!(await customerExists(url, key, customerId))) {
+    if (isEmployer) {
+      if (!(await employerExists(url, key, ownerId))) {
+        return json({ ok: false, error: 'employer_not_found' }, 404);
+      }
+    } else if (isGroup) {
+      if (!(await groupExists(url, key, ownerId))) {
+        return json({ ok: false, error: 'group_not_found' }, 404);
+      }
+    } else if (!(await customerExists(url, key, customerId))) {
       return json({ ok: false, error: 'customer_not_found' }, 404);
     }
   } catch (e) {
@@ -295,7 +373,11 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── สร้าง storage path ─────────────────────────────────────────────────────
-  const storagePath = buildStoragePath(customerId, fileType);
+  const storagePath = isEmployer
+    ? buildStoragePath(ownerId, fileType, 'employers')
+    : isGroup
+      ? buildStoragePath(ownerId, fileType, 'groups')
+      : buildStoragePath(customerId, fileType);
 
   // ── upload ไปยัง storage ───────────────────────────────────────────────────
   try {
@@ -309,7 +391,8 @@ Deno.serve(async (req: Request) => {
   let docRow: Record<string, unknown>;
   try {
     docRow = await insertDocument(url, key, {
-      customerId,
+      customerId:  isOwnerDoc ? null : customerId,
+      docExpiry:   docExpiry,
       docType,
       docName,
       fileType,
@@ -328,7 +411,7 @@ Deno.serve(async (req: Request) => {
 
   // ── audit log (metadata เท่านั้น — ❌ ไม่ log file_data/bytes) ─────────────
   console.log(
-    `[customer-doc-upload] ok customer=${customerId} doc_type=${docType}` +
+    `[customer-doc-upload] ok ${isOwnerDoc ? ownerType + '=' + ownerId : 'customer=' + customerId} doc_type=${docType}` +
     ` file_type=${fileType} size=${bytes.length} storage_path=${storagePath} actor=${actor.code}`,
   );
 

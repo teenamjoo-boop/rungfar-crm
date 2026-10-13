@@ -1,0 +1,2 @@
+# Netlify: ลิงก์สั้น /s/<รหัส> → หน้า share.html (ใช้ตอนขึ้นเว็บ — Stage SHARE-SHORT-QR)
+/s/*   /share.html   200
