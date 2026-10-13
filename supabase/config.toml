@@ -1,4 +1,9 @@
 project_id = "rungfar-crm"
 
+# 2026-10-13: เปิดบอท LINE กลับ (Production Verify JWT = OFF) — LINE ส่ง JWT ไม่ได้ ฟังก์ชันตรวจลายเซ็น LINE เอง
+#   การเก็บเอกสารจากกลุ่ม LINE ปิดแยกด้วย secret LINE_DOCINBOX_GROUP_IDS=disabled (พื้นที่ Storage เต็ม 2026-10-13)
 [functions.line-webhook-router]
+verify_jwt = false
+
+[functions.employer-share-view]
 verify_jwt = false
