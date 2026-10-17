@@ -7,3 +7,7 @@ verify_jwt = false
 
 [functions.employer-share-view]
 verify_jwt = false
+
+# 2026-10-17: storage-cleanup ตรวจ token จาก Vault เอง (x-cleanup-token) → ปิด Verify JWT
+[functions.storage-cleanup]
+verify_jwt = false
