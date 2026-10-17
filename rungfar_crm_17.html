@@ -2677,6 +2677,7 @@ function openPhotoModal(src){document.getElementById('photoModalImg').src=src;do
 function closePhotoModal(){document.getElementById('photoModal').style.display='none';document.getElementById('photoModalImg').src='';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePhotoModal();});
 let impData=[],impCols=[],impMap={};
+let impDefEmp=''; // Stage IMPORT-EXACT: นายจ้างของทุกแถว (จากหัวเรื่องในไฟล์ เมื่อไม่มีคอลัมน์นายจ้าง)
 let impPhotos={},impPhotoScan=false; // Phase A/B: รูปจาก Excel (preview only — ไม่บันทึก DB รอบนี้)
 let impPhotoFilter='all'; // Stage 28D: ตัวกรองพรีวิวรูป (all|ok|unsure|no) — มีผลกับการแสดงผลเท่านั้น
 let impSaveUnsure=false;  // Stage 28D: ติ๊ก = บันทึกรูป "ไม่มั่นใจ" ด้วย (ค่าเริ่มต้นไม่บันทึก)
@@ -6930,7 +6931,7 @@ const IMP_FIELDS=[
   {key:'nationality',label:'สัญชาติ',aliases:['สัญชาติ','nationality']},
   {key:'passport_no',label:'เลขพาสปอร์ต',aliases:['เลขพาสปอร์ต','พาสปอร์ต','passport_no','passport']},
   {key:'wp_no',label:'เลขคำขอ',aliases:['เลขคำขอ','เลขคำขอ wp','wp_no','work permit','เลข wp']},
-  {key:'license_no',label:'เลขใบอนุญาตทำงาน',aliases:['work','เลขใบอนุญาตทำงาน','เลขใบอนุญาต','เลขเวิร์ค','license_no']},
+  {key:'license_no',label:'เลขใบอนุญาตทำงาน',aliases:['work','เลขใบอนุญาตทำงาน','เลขใบอนุญาต','เลขเวิร์ค','license_no','ใบอนุญาตทำงานเลขที่','เลขที่ใบอนุญาตทำงาน','work permit no']},
   {key:'phone',label:'เบอร์โทร',aliases:['เบอร์โทร','เบอร์','โทรศัพท์','phone']},
   {key:'services',label:'บริการ',aliases:['บริการ','services']},
   {key:'work_items',label:'รายการ',aliases:['รายการ','ราคาต่ออายุ','work_items']},
@@ -6939,9 +6940,12 @@ const IMP_FIELDS=[
   {key:'status_note',label:'สถานะ',aliases:['สถานะ','status_note']},
   {key:'next_90',label:'90 วัน',aliases:['90วัน','90 วัน','รายงาน 90 วัน','next_90']},
   {key:'exp_visa',label:'วันหมด VISA',aliases:['วันหมด visa','exp_visa','visa']},
-  {key:'exp_wp',label:'วันหมด WP',aliases:['วันหมด wp','exp_wp','เวิร์คหมด','วันหมดเวิร์ค','wp หมด','วันหมดใบอนุญาตทำงาน']},
+  {key:'exp_wp',label:'วันหมด WP',aliases:['วันหมด wp','exp_wp','เวิร์คหมด','วันหมดเวิร์ค','wp หมด','วันหมดใบอนุญาตทำงาน','วันหมดอายุใบอนุญาตทำงาน','วันหมดอยุใบอนุญาตทำงาน','หมดอายุใบอนุญาตทำงาน','หมดอยุใบอนุญาตทำงาน','วันหมดอายุ wp','wp หมดอายุ']},
   {key:'exp_passport',label:'วันหมดพาสปอร์ต',aliases:['วันหมดพาสปอร์ต','เล่มหมดอายุ','พาสปอร์ตหมด','วันหมด passport','passport หมด','exp_passport']},
   {key:'note',label:'หมายเหตุ',aliases:['หมายเหตุ','remark','note']},
+  // Stage IMPORT-EXACT
+  {key:'dob',label:'วันเกิด',aliases:['วันเกิด','ว/ด/ป เกิด','ว/ด/ปเกิด','ว.ด.ป.เกิด','ว.ด.ป. เกิด','วดป เกิด','วัน/เดือน/ปี เกิด','วันเดือนปีเกิด','dob','date of birth','birthday','เกิด']},
+  {key:'email',label:'Email',aliases:['email','e-mail','อีเมล','อีเมล์']},
   // Round F1B-2: field ใหม่ตาม Excel
   {key:'submit_date',label:'วันที่ยื่น',aliases:['วันที่ยื่น','submit_date']},
   {key:'medical_cert',label:'ใบแพทย์',aliases:['ใบแพทย์','medical']},
@@ -6968,6 +6972,33 @@ const _IMP_NAT_MAP={KHM:'กัมพูชา',KH:'กัมพูชา',CAM:'
 function _impNat(v){const c=_impClean(v);if(!c)return null;const k=String(c).trim().toUpperCase().replace(/[\s.]/g,'');return _IMP_NAT_MAP[k]||c;}
 // ค่าที่เป็นแค่คำหัวคอลัมน์ (เช่น ช่องสถานะที่พิมพ์ว่า "สถานะ") → ถือว่าว่าง
 function _impStatus(v){const s=String(v==null?'':v).trim();return(!s||s==='สถานะ'||s==='-')?'':s;}
+// ── Stage IMPORT-EXACT ──
+// ชื่อนายจ้างจากแถวหัวเรื่องเหนือหัวตาราง (แถวที่มีข้อความช่องเดียว) — ใช้เมื่อไฟล์ไม่มีคอลัมน์นายจ้าง
+function _impTitleEmp(rows,hdr){
+  const _co=/(บริษัท|บ\.|หจก|ห้างหุ้นส่วน|จำกัด|co\.|ltd|limited|นาย|นาง|น\.ส\.|สวน|ฟาร์ม|โรงงาน|ร้าน)/i;
+  for(let r=Math.min(hdr,6)-1;r>=0;r--){
+    const cells=(rows[r]||[]).map(c=>String(c==null?'':c).trim()).filter(Boolean);
+    if(cells.length!==1)continue;const t=cells[0];
+    if(t.length<2||t.length>80||/^\d+$/.test(t))continue;
+    const n=normalizeEmployerName(t);
+    if((employers||[]).some(e=>normalizeEmployerName(e.name)===n)||_co.test(t))return t;
+  }
+  return '';
+}
+// นายจ้างของแถว: คอลัมน์นายจ้างในไฟล์ก่อน → ถ้าไฟล์ไม่มีคอลัมน์นายจ้าง ใช้ "นายจ้างของทุกคนในไฟล์"
+function _impEmpName(row,get){if(impMap.employer_name!==undefined&&impMap.employer_name>=0)return get(row,'employer_name');return String(impDefEmp||'').trim();}
+// ข้อความเพิ่มเติมที่ต้องไม่หาย → ต่อท้ายหมายเหตุ: Email + ช่องวันที่ที่เป็นข้อความ (เช่น "รอPass")
+const _IMP_DATE_LBL={exp_wp:'วันหมด WP',exp_visa:'วันหมด VISA',exp_passport:'วันหมดพาสปอร์ต',next_90:'90 วัน',dob:'วันเกิด',submit_date:'วันที่ยื่น',appt_date:'นัดหมาย',queue_date:'คิวว่าง',receive_date:'วันรับเล่ม'};
+function _impExtraNote(row,get){
+  const out=[];
+  Object.keys(_IMP_DATE_LBL).forEach(k=>{if(impMap[k]===undefined||impMap[k]<0)return;const raw=get(row,k);if(raw&&!_impBlankId(raw)&&!impDate(raw))out.push(_IMP_DATE_LBL[k]+': '+raw);});
+  const em=_impClean(get(row,'email'));if(em)out.push('Email: '+em);
+  return out;
+}
+function _impJoinNote(base,extra){const b=_impClean(base);const parts=(b?[b]:[]).concat(extra||[]);return parts.length?parts.join(' · '):null;}
+// อัปเดตสถานะช่องนายจ้าง (ไม่ render ใหม่ทั้งหน้า — กันเคอร์เซอร์หลุดตอนพิมพ์)
+function impDefEmpInput(v){impDefEmp=v;const el=document.getElementById('impDefEmpSt');if(el)el.innerHTML=_impDefEmpStatus();}
+function _impDefEmpStatus(){const t=String(impDefEmp||'').trim();if(!t)return'<span style="color:var(--g5)">ว่าง = ไม่ผูกนายจ้าง</span>';const n=normalizeEmployerName(t);return(employers||[]).some(e=>normalizeEmployerName(e.name)===n)?'<span style="color:#16a34a;font-weight:600">✅ มีในระบบแล้ว</span>':'<span style="color:#b45309;font-weight:600">➕ จะสร้างนายจ้างใหม่</span>';}
 // วางจาก Google Sheets (TSV) → ใช้ pipeline เดิมของการนำเข้า
 function impFromPaste(){
   const ta=document.getElementById('impPasteText');const text=(ta&&ta.value||'').replace(/\r/g,'');
@@ -6978,6 +7009,7 @@ function impFromPaste(){
   const _h=impDetectHeaderRow(rows);
   impCols=(rows[_h]||[]).map(c=>String(c).trim());
   impData=rows.slice(_h+1).filter(r=>r.some(c=>c));
+  impDefEmp=_impTitleEmp(rows,_h); // Stage IMPORT-EXACT
   impMap={};const _nz=s=>String(s||'').trim().toLowerCase();const _used=new Set();
   IMP_FIELDS.forEach(f=>{const al=(f.aliases||[f.label]).map(_nz);
     let found=impCols.findIndex((c,i)=>!_used.has(i)&&al.includes(_nz(c)));
@@ -7022,6 +7054,7 @@ function impDate(v){
   _m=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if(_m){const y=parseInt(_m[1]),mo=parseInt(_m[2]),dy=parseInt(_m[3]);if(y>=1900&&y<2400&&mo>=1&&mo<=12&&dy>=1&&dy<=31)return`${y}-${String(mo).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;}
   // Mixed text with embedded date ("ต่ออายุ31/03/69") — extract and retry
+  if(/^รอ/.test(v))return null; // Stage IMPORT-EXACT: "รอถ่ายบัตรวันที่ 2/12/69" = งานที่รออยู่ ไม่ใช่วันหมดอายุ → เก็บเป็นหมายเหตุแทน
   _m=v.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if(_m){const p=impDate(_m[1]+'/'+_m[2]+'/'+_m[3]);if(p)return p;}
   return null; // unrecognised — never send raw text to a DB date column
@@ -7174,10 +7207,10 @@ function handleImpFile(e){
         let text=new TextDecoder('utf-8').decode(ev.target.result);
         if(text.charCodeAt(0)===0xFEFF)text=text.slice(1); // ตัด BOM กันชื่อคอลัมน์แรกเพี้ยน (ไฟล์ export ของระบบมี BOM)
         const _rows=_csvParse(text);
-        const _ch=impDetectHeaderRow(_rows);impCols=(_rows[_ch]||[]).map(c=>String(c).trim());
+        const _ch=impDetectHeaderRow(_rows);impCols=(_rows[_ch]||[]).map(c=>String(c).trim());impDefEmp=_impTitleEmp(_rows,_ch);
         impData=_rows.slice(_ch+1).map(r=>r.map(c=>String(c).trim())).filter(r=>r.some(c=>c));
       }
-      else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});const _hdr=impDetectHeaderRow(arr);impCols=(arr[_hdr]||[]).map(String);const _raw=arr.slice(_hdr+1);impData=_raw.filter(r=>r.some(c=>c));
+      else{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const arr=XLSX.utils.sheet_to_json(ws,{header:1});const _hdr=impDetectHeaderRow(arr);impCols=(arr[_hdr]||[]).map(String);impDefEmp=_impTitleEmp(arr,_hdr);const _raw=arr.slice(_hdr+1);impData=_raw.filter(r=>r.some(c=>c));
         try{const _ph=await impExtractXlsxPhotos(ev.target.result);impPhotoScan=true;const _rm={};let _fi=0;_raw.forEach((r,_j)=>{if(r.some(c=>c)){const _pk=_hdr+_j;if(_ph.photos[_pk])_rm[_fi]=_ph.photos[_pk];_fi++;}});impPhotos=_rm;}catch(_){impPhotos={};impPhotoScan=true;}
       }
       impMap={};const _nz=s=>String(s||'').trim().toLowerCase();const _used=new Set();
@@ -7200,7 +7233,7 @@ function renderImpPreview(){
   let cntDupEx=0,cntDupFile=0,cntMissing=0;
   const rowStatus=impData.map(r=>{
     const name=get(r,'name');if(!name){cntMissing++;return 'missing';}
-    const _k=makeImpKeyEx(get(r,'passport_no'),get(r,'alien_id'),get(r,'wp_no'),name,get(r,'nationality'),get(r,'employer_name'));
+    const _k=makeImpKeyEx(get(r,'passport_no'),get(r,'alien_id'),get(r,'wp_no'),name,get(r,'nationality'),_impEmpName(r,get));
     const key=_k?_k.key:null;
     if(key&&existingKeys.has(key)){cntDupEx++;return 'dup-existing';}
     if(key&&seenInFile.has(key)){cntDupFile++;return 'dup-file';}
@@ -7218,7 +7251,7 @@ function renderImpPreview(){
     const _shown=_filt.slice(0,_cap);
     const _rows=_shown.map(({r,i,cat})=>{
       const p=impPhotos[i];
-      const nm=get(r,'name')||'—',emp=get(r,'employer_name')||'—',al=get(r,'alien_id')||'—',sd=impDate(get(r,'submit_date'))||'—';
+      const nm=get(r,'name')||'—',emp=_impEmpName(r,get)||'—',al=get(r,'alien_id')||'—',sd=impDate(get(r,'submit_date'))||'—';
       let thumb,badge;
       if(cat==='ok'){thumb=`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`;badge='<span class="imp-ph-b ok">พบรูป</span>';}
       else if(cat==='unsure'){thumb=p.url?`<img src="${p.url}" class="imp-ph-thumb" onclick="openPhotoModal(this.src)">`:'<div class="imp-ph-none">โชว์ไม่ได้</div>';badge='<span class="imp-ph-b warn">ไม่มั่นใจ</span>';}
@@ -7237,9 +7270,14 @@ function renderImpPreview(){
   // ขวดคอหลักคือการย่อรูป (Canvas, sequential) — text-only ชุด insert ได้เร็วมากแล้ว
   const _photoCount=impPhotoScan?Object.keys(impPhotos).length:0;
   const _estNote=(_photoCount>=30||cntNew>=400)?`<div style="padding:6px 15px;font-size:11px;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">⏱ คาดว่าใช้เวลา ${_photoCount>=200||cntNew>=500?'2–3 นาที':_photoCount>=80||cntNew>=400?'~1 นาที':'~30 วินาที'} — กรุณาอย่าปิดหน้าต่างระหว่างนำเข้า</div>`:'';
+  // Stage IMPORT-EXACT: ไฟล์ไม่มีคอลัมน์นายจ้าง → ให้ระบุนายจ้างของทุกคน (เติมจากหัวเรื่องให้อัตโนมัติ)
+  const _noEmpCol=!(impMap.employer_name!==undefined&&impMap.employer_name>=0);
+  const _impEmpBox=_noEmpCol?`<div style="padding:10px 15px;border-bottom:1px solid var(--g2);background:#f0f7ff;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px"><b style="color:var(--g8)">นายจ้างของทุกคนในไฟล์นี้:</b><input class="fi2" list="impEmpList" style="min-width:240px;flex:1;max-width:380px" value="${esc(impDefEmp||'')}" placeholder="พิมพ์หรือเลือกนายจ้าง" oninput="impDefEmpInput(this.value)"><datalist id="impEmpList">${(employers||[]).map(e=>`<option value="${esc(e.name)}">`).join('')}</datalist><span id="impDefEmpSt">${_impDefEmpStatus()}</span></div>`:'';
+  const _xn=impData.map((r,i)=>({i,x:_impExtraNote(r,get)})).filter(o=>o.x.some(t=>!/^Email: /.test(t)));
+  const _impNoteBox=_xn.length?`<div style="padding:8px 15px;border-bottom:1px solid #fde68a;background:#fffbeb;font-size:11px;color:#92400e"><b>ช่องวันที่ที่เป็นข้อความ ${_xn.length} แถว</b> — ไม่ตั้งเป็นวันที่ แต่เก็บข้อความไว้ใน "หมายเหตุ" ของแรงงาน: ${_xn.slice(0,6).map(o=>esc((get(impData[o.i],'name')||'#'+(o.i+1))+' → '+o.x.filter(t=>!/^Email: /.test(t)).join(', '))).join(' · ')}${_xn.length>6?' …':''}</div>`:'';
   document.getElementById('impPreview').innerHTML=`${photoPanel}<div class="twrap"><div class="tbar2"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><strong>${impData.length}</strong> แถว</span><span style="color:#16a34a;font-weight:600">✅ ใหม่ ${cntNew}</span>${cntDupEx>0?`<span class="eb eb-w">ซ้ำเดิม ${cntDupEx}</span>`:``}${cntDupFile>0?`<span class="eb eb-w">ซ้ำในไฟล์ ${cntDupFile}</span>`:``}${cntMissing>0?`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ffeaea;color:#dc2626;font-weight:600">ไม่มีชื่อ ${cntMissing}</span>`:``}</div>${cntDupEx>0?`<label style="font-size:12px;display:inline-flex;gap:5px;align-items:center;margin-right:8px;cursor:pointer;color:#92400e"><input type="checkbox" id="impUpdEx" checked>อัปเดตข้อมูลคนเดิม ${cntDupEx} คน ตามไฟล์นี้</label>`:''}<button class="btn btn-p btn-sm" onclick="doImport()">✅ นำเข้า ${cntNew} รายการ${cntDupEx>0?' + อัปเดตคนเดิม':''}</button></div>${_estNote}
-  <div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div class="imp-map-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value);renderImpPreview()"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
-  <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map((r,i)=>{const st=rowStatus[i];return`<tr ${st==='dup-existing'||st==='dup-file'?'class="imp-dup"':st==='missing'?'style="background:#fff0f0"':''}>${r.map((v,ci)=>`<td>${dateColIdx.has(ci)?(impDate(v)||''):(v||'')}</td>`).join('')}</tr>`;}).join('')}</tbody></table></div>
+  ${_impEmpBox}${_impNoteBox}<div style="padding:12px 15px;border-bottom:1px solid var(--g2)"><div style="font-size:12px;font-weight:700;color:var(--g7);margin-bottom:8px">จับคู่คอลัมน์</div><div class="imp-map-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${IMP_FIELDS.map(f=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="color:var(--g6);flex-shrink:0">${f.label}:</span><select class="map-sel" onchange="impMap['${f.key}']=this.value===''?undefined:parseInt(this.value);renderImpPreview()"><option value="">—</option>${impCols.map((c,i)=>`<option value="${i}" ${impMap[f.key]===i?'selected':''}>${c}</option>`).join('')}</select></div>`).join('')}</div></div>
+  <div style="overflow-x:auto;max-height:240px"><table class="imp-table"><thead><tr>${impCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${impData.slice(0,5).map((r,i)=>{const st=rowStatus[i];return`<tr ${st==='dup-existing'||st==='dup-file'?'class="imp-dup"':st==='missing'?'style="background:#fff0f0"':''}>${impCols.map((_c,ci)=>{const v=r[ci];return`<td>${dateColIdx.has(ci)?(impDate(v)||''):(v==null?'':v)}</td>`;}).join('')}</tr>`;}).join('')}</tbody></table></div>
   ${impData.length>5?`<div style="padding:8px 15px;font-size:11px;color:var(--g5);border-top:1px solid var(--g1)">แสดง 5 แถวแรก จาก ${impData.length} แถวทั้งหมด</div>`:``}</div>`;
 }
 
@@ -7270,18 +7308,18 @@ function _impErrMsg(e){
   return'บันทึกไม่สำเร็จ กรุณาตรวจข้อมูลแถวนี้ใน Excel';
 }
 // ── Stage S2: นำเข้าซ้ำ → อัปเดตคนเดิม (เฉพาะช่องที่ชีสมีค่า และค่าไม่ตรงกับในระบบ) ──
-const _IMP_UPD_LBL={exp_wp:'เวิร์คหมด',exp_passport:'เล่มหมดอายุ',exp_visa:'VISA',next_90:'90 วัน',exp_mou:'MOU',license_no:'WORK',wp_no:'เลขคำขอ',passport_no:'PASSPORT',worker_category:'ประเภท',status_note:'สถานะ',work_items:'รายการ',note:'หมายเหตุ',phone:'เบอร์',employer_id:'นายจ้าง'};
+const _IMP_UPD_LBL={dob:'วันเกิด',exp_wp:'เวิร์คหมด',exp_passport:'เล่มหมดอายุ',exp_visa:'VISA',next_90:'90 วัน',exp_mou:'MOU',license_no:'WORK',wp_no:'เลขคำขอ',passport_no:'PASSPORT',worker_category:'ประเภท',status_note:'สถานะ',work_items:'รายการ',note:'หมายเหตุ',phone:'เบอร์',employer_id:'นายจ้าง'};
 function _impBuildUpdate(row,get,c){
   const P={};
   const cur=k=>{const v=c[k];if(v==null)return'';return(/^exp_|^next_90$/.test(k))?String(_ceDate(String(v).slice(0,10))):String(v);};
   const set=(k,v)=>{if(v==null||v==='')return;if(String(v)!==cur(k))P[k]=v;};
   const d=k=>{if(impMap[k]===undefined)return null;const r=get(row,k);return r?(impDate(r)||null):null;};
-  ['exp_wp','exp_passport','exp_visa','next_90','exp_mou'].forEach(k=>set(k,d(k)));
+  ['exp_wp','exp_passport','exp_visa','next_90','exp_mou','dob'].forEach(k=>set(k,d(k)));
   ['license_no','wp_no','passport_no','work_items','note','phone'].forEach(k=>set(k,_impClean(get(row,k))));
   const wc=String(get(row,'worker_category')||'').trim();
   if(wc&&wc!=='-'&&wc!=='ประเภท')set('worker_category',/^mou$/i.test(wc)?'MOU':(/มติ|ครม/.test(wc)?'มติ.ครม.':wc));
   set('status_note',_impStatus(get(row,'status_note')));
-  const en=get(row,'employer_name');
+  const en=_impEmpName(row,get); // Stage IMPORT-EXACT
   if(en){const _en=normalizeEmployerName(en);const ef=employers.find(x=>normalizeEmployerName(x.name)===_en);if(ef&&ef.id!==c.employer_id){P.employer_id=ef.id;P.customer_type='company';}}
   if(typeof _sheetColsOk!=='undefined'&&_sheetColsOk===false){delete P.worker_category;delete P.status_note;delete P.work_items;}
   const keys=Object.keys(P).filter(k=>k!=='customer_type');
@@ -7318,7 +7356,7 @@ async function doImport(){
     const name=get(row,'name');
     if(!name){countMissing++;skippedRows.push({ri:ri+2,name:'—',id:'—',reason:'ไม่มีชื่อ'});continue;}
     const pp=get(row,'passport_no');const al=get(row,'alien_id');
-    const nat=get(row,'nationality');const empName=get(row,'employer_name');
+    const nat=get(row,'nationality');const empName=_impEmpName(row,get); // Stage IMPORT-EXACT
     // Stage 50A-7 fix: strong-first key + strip placeholder + รวมเลขคำขอ(wp_no) → กัน false duplicate ในไฟล์
     const _k=makeImpKeyEx(pp,al,get(row,'wp_no'),name,nat,empName);
     const key=_k?_k.key:null;
@@ -7366,7 +7404,8 @@ async function doImport(){
       const _bdat=[];
       const _ds=(key,raw)=>{const r=impDate(raw);const rv=String(raw||'').trim();if(rv&&!r)_bdat.push(key+(rv.length<=25?'='+rv:''));return r||null;};
       // Stage 50A-7 follow-up: _impClean() → placeholder ("-", "N/A", "ไม่มี" ฯลฯ) เป็น null ไม่ส่งเป็นเลขตัวตนจริง (กัน error unique/บันทึกค่าขยะ)
-      const data={name,nationality:_impNat(nat)||'เมียนมา',passport_no:_impClean(pp),alien_id:_impClean(al),phone:_impClean(get(row,'phone')),employer_id:empId,customer_type:empId?'company':'freelance',wp_no:_impClean(get(row,'wp_no')),exp_visa:_ds('exp_visa',get(row,'exp_visa'))||null,exp_wp:_ds('exp_wp',get(row,'exp_wp'))||null,next_90:_ds('next_90',get(row,'next_90'))||null,work_status:_impStatus(get(row,'work_status'))||'รับเรื่อง',note:_impClean(get(row,'note'))};
+      const data={name,nationality:_impNat(nat)||'เมียนมา',passport_no:_impClean(pp),alien_id:_impClean(al),phone:_impClean(get(row,'phone')),employer_id:empId,customer_type:empId?'company':'freelance',wp_no:_impClean(get(row,'wp_no')),exp_visa:_ds('exp_visa',get(row,'exp_visa'))||null,exp_wp:_ds('exp_wp',get(row,'exp_wp'))||null,next_90:_ds('next_90',get(row,'next_90'))||null,work_status:_impStatus(get(row,'work_status'))||'รับเรื่อง',note:_impJoinNote(get(row,'note'),_impExtraNote(row,get))}; // Stage IMPORT-EXACT: + Email/ข้อความในช่องวันที่
+      {const _dob=_ds('dob',get(row,'dob'));if(_dob)data.dob=_dob;} // Stage IMPORT-EXACT
       {const _wc=String(get(row,'worker_category')||'').trim();if(_wc&&_wc!=='-'&&_wc!=='ประเภท')data.worker_category=/^mou$/i.test(_wc)?'MOU':(/มติ|ครม/.test(_wc)?'มติ.ครม.':_wc);const _sn=_impStatus(get(row,'status_note'));if(_sn)data.status_note=_sn;const _wi=_impClean(get(row,'work_items'));if(_wi)data.work_items=_wi;} // Stage SHEET-VIEW
       const _svc=get(row,'services');if(_svc)data.services=_svc.split(/[;,]/).map(s=>s.trim()).filter(Boolean);
       // Round F1B-2: field ใหม่ตาม Excel
