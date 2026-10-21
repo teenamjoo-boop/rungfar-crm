@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#e8650c">
@@ -26,6 +26,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
+/* มือถือ: ล็อกซูม + หน้าไม่เลื่อนซ้าย-ขวา (ตารางกว้างยังเลื่อนได้ภายในกล่องของตัวเอง) */
+html,body{overflow-x:hidden;max-width:100%;overscroll-behavior-x:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{touch-action:pan-y}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14.5px;line-height:1.55;font-weight:400;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{background:none;border:0;cursor:pointer}
@@ -110,9 +113,15 @@ button.drow.dh{width:100%;text-align:left;cursor:pointer;font:inherit;color:inhe
 .it .amt{text-align:right;font-weight:600;white-space:nowrap}
 .it .amt small{display:block;font-weight:500;font-size:11.5px;color:var(--mute)}
 .it .acts{display:flex;gap:4px}
+.paysw{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;flex:none;background:#fff}
+.paysw button{font-size:12px;font-weight:600;padding:5px 10px;color:var(--mute);white-space:nowrap}
+.paysw button+button{border-left:1px solid var(--line)}
+.paysw button.on.cash{background:var(--ok-soft);color:var(--ok)}
+.paysw button.on.transfer{background:var(--blue-soft);color:var(--blue)}
 .it .acts button{font-size:12px;padding:5px 9px;border-radius:99px;background:var(--neutral-soft)}
 .ic{width:16px;height:16px;flex:none;vertical-align:-3px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .pay button{display:flex;align-items:center;justify-content:center;gap:6px}
+.t2 .tag,.t2 .brtag{margin:0 5px 0 0}
 .tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:4px;vertical-align:1px}
 .tag.cash{background:var(--ok-soft);color:var(--ok)} .tag.transfer{background:var(--blue-soft);color:var(--blue)} .tag.self{background:var(--self-soft);color:var(--self)}
 .dayh{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f5f1eb;border-radius:11px;padding:7px 8px 7px 11px;margin:14px 0 4px}
@@ -164,7 +173,9 @@ button.drow.dh{width:100%;text-align:left;cursor:pointer;font:inherit;color:inhe
 .tbl tr[onclick]{cursor:pointer}
 .tbl tr.tot td{font-weight:600;background:#faf7f2}
 .tbl td.neg{color:var(--bad)}
-.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
+.brsw,.tabs{touch-action:pan-x pan-y}
+@media (max-width:759px){ input,select,textarea{font-size:16px!important} }
 .bal{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .bal:first-of-type{border-top:0}
 .bal .nm{font-weight:600}
@@ -206,6 +217,10 @@ __STAGING_BANNER__
 'use strict';
 const FN_URL='__FN_URL__';
 const IS_STG=__IS_STG__;
+// ล็อกซูมบนมือถือ (iOS ไม่สน user-scalable=no): กันถ่างนิ้ว + แตะสองครั้งซูม
+['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{ if(e.touches&&e.touches.length>1) e.preventDefault(); },{passive:false});
+let _lastTouch=0; document.addEventListener('touchend',e=>{ const t=Date.now(); if(t-_lastTouch<320&&!e.target.closest('input,select,textarea')) e.preventDefault(); _lastTouch=t; },{passive:false});
 const LOGO='__LOGO__';
 const TH_M=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const TH_MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -308,8 +323,8 @@ async function logout(){ await api('logout'); TOKEN=''; ls.del(TK); ME=null; sho
 function shell(){
   const owner=ME&&ME.role==='owner';
   document.title=SHOP_NAME+(ME||VIEW_CODE?' '+brName():'')+' · รายรับ-รายจ่าย';
-  const tabs=VIEW_CODE?[['sum','สรุป'],['bal','คงเหลือ'],['year','ทั้งปี']]
-    :[['entry','บันทึก'],['sum','สรุป'],['bal','คงเหลือ'],['year','ทั้งปี'],...(owner?[['set','ตั้งค่า']]:[])];
+  const tabs=VIEW_CODE?[['sum','สรุป'],['bal','คงเหลือ'],['year','รายปี']]
+    :[['entry','บันทึก'],['sum','สรุป'],['bal','คงเหลือ'],['year','รายปี'],...(owner?[['set','ตั้งค่า']]:[])];
   document.getElementById('app').innerHTML=`
   <header class="hd">
     <div class="hrow">
@@ -323,7 +338,7 @@ function shell(){
   <main class="main" id="main"></main>
   <p class="foot" id="foot">${esc(GENTXT)}</p>`;
 }
-function go(t){ TAB=t; EDIT=null; shell(); render(); }
+function go(t){ TAB=t; EDIT=null; for(const k in DAYOPEN) delete DAYOPEN[k]; shell(); render(); }
 // บรรทัดย่อยในการ์ด: ขยายตัวหนังสือให้เต็มความกว้างการ์ดพอดี 1 บรรทัด (สูงสุด 14px) — ความสูงบรรทัดคงที่ การ์ดไม่ขยาย
 function fitSmall(){ document.querySelectorAll('.kpi small').forEach(el=>{ const r=document.createRange(); r.selectNodeContents(el); let f=14; el.style.fontSize=f+'px'; const cw=el.clientWidth-2; while(r.getBoundingClientRect().width>cw&&f>10){ f-=0.25; el.style.fontSize=f+'px'; } }); }
 let _fitT=0; window.addEventListener('resize',()=>{ clearTimeout(_fitT); _fitT=setTimeout(fitSmall,120); });
@@ -457,7 +472,16 @@ async function saveEntry(e){
   await loadMonth(); render();
   if(KIND==='ship'){ const t=document.getElementById('fCost'); if(t&&window.matchMedia('(pointer:fine)').matches) t.focus(); }
 }
-function canEdit(r){ if(VIEW_CODE||!ME) return false; if(ME.role==='owner') return true; return r.by===ME.username && (Date.now()-new Date(r.at).getTime())<7*864e5; }
+function canEdit(r){ return !VIEW_CODE&&!!ME&&ME.role==='owner'; }
+// เปลี่ยนช่องทางรับเงิน (เงินสด ⇄ โอน) ของส่งพัสดุ — พนักงานทำได้อย่างเดียวนี้ (ส่งเองเปลี่ยนไม่ได้)
+const canPay=(kind,r)=>!VIEW_CODE&&!!ME&&kind==='ship'&&(r.pay==='cash'||r.pay==='transfer');
+async function setPay(id,p){
+  const r=ROWS.ship.find(x=>Number(x.id)===id); if(!r||r.pay===p) return;
+  const row=ME.role==='owner'?{id,date:r.date,carrier_id:r.carrier_id,cost:r.cost,price:r.price,pay:p,tracking_no:r.tracking_no||'',customer_name:r.customer_name||'',note:r.note||''}:{id,pay:p};
+  const d=await api('save',{kind:'ship',row}); if(!d.ok){ toast(errMsg(d.error)); return; }
+  r.pay=p; toast(p==='cash'?'เปลี่ยนเป็นเงินสดแล้ว':'เปลี่ยนเป็นโอนแล้ว');
+  const [s]=await Promise.all([api('summary',{year:Y,month:M})]); if(s.ok) SUMM=s.summary; render();
+}
 const TH_D=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์'], TH_DS=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 const dow=s=>{ const [y,m,dd]=String(s).slice(0,10).split('-').map(Number); return new Date(y,m-1,dd).getDay(); };
 const wd=s=>TH_D[dow(s)];
@@ -474,7 +498,7 @@ function rowList(kind,actions){
     if(kind==='ship'){ if(r.pay==='self') d.self+=num(r.cost); else { d.p+=num(r.price)-num(r.cost); d.hasCust=true; } } else d.a+=num(r.amount); });
   let gi=0; const MX=Math.max(1,...Object.values(D).map(d=>kind==='ship'?d.p:d.a));
   rows.forEach(r=>{
-    if(r.date!==lastD){ if(lastD) html+='</div></div>'; lastD=r.date; const d=D[r.date]; const key=kind+'|'+r.date; const open=key in DAYOPEN?DAYOPEN[key]:gi===0; gi++;
+    if(r.date!==lastD){ if(lastD) html+='</div></div>'; lastD=r.date; const d=D[r.date]; const key=kind+'|'+r.date; const open=key in DAYOPEN?DAYOPEN[key]:false; gi++;
       const pills=kind==='ship'
         ? (d.hasCust?`<span class="pill ${d.p>0?'pos':d.p<0?'neg':''}">กำไร ${d.p>0?'+':''}${money(d.p)} ฿</span>`:'')+(d.self?`<span class="pill self">บริษัท ${money(d.self)} ฿</span>`:'')
         : `<span class="pill">${money(d.a)} ฿</span>`;
@@ -488,11 +512,11 @@ function rowList(kind,actions){
       amt=r.pay==='self'?`<span style="color:var(--self)">ทุน ${money(r.cost)} ฿</span><small>ส่งเอง · ไม่เก็บเงิน</small>`:`${money(r.price)} ฿<small>ทุน ${money(r.cost)} · กำไร ${money(num(r.price)-num(r.cost))}</small>`; }
     else if(kind==='topup'){ t1=esc(r.carrier||'—'); t2=esc(r.note||'')||'&nbsp;'; amt=`${money(r.amount)} ฿`; }
     else { t1=esc(r.item); t2=esc(r.note||'')||'&nbsp;'; amt=`${money(r.amount)} ฿`; }
-    const ed=actions&&canEdit(r);
-    html+=`<div class="it"><div class="mid"><div class="t1">${t1}<span class="tag ${r.pay}">${PAY_L[r.pay]||''}</span>${allMode()&&r.branch?`<span class="brtag">${esc(r.branch)}</span>`:''}</div><div class="t2">${t2}</div></div><div class="amt">${amt}</div>${ed?`<div class="acts"><button onclick="editRow('${kind}',${Number(r.id)})">แก้</button><button onclick="delRow('${kind}',${Number(r.id)})">ลบ</button></div>`:''}</div>`;
+    const ed=actions&&canEdit(r), ps=actions&&canPay(kind,r);
+    html+=`<div class="it${ps?' hasps':''}"><div class="mid"><div class="t1">${t1}</div><div class="t2">${ps?'':`<span class="tag ${r.pay}">${PAY_L[r.pay]||''}</span>`}${allMode()&&r.branch?`<span class="brtag">${esc(r.branch)}</span>`:''}${t2==='&nbsp;'&&(!ps||(allMode()&&r.branch))?'':' '+t2}</div></div><div class="amt">${amt}</div>${ps?`<div class="paysw"><button type="button" class="${r.pay==='cash'?'on cash':''}" onclick="setPay(${Number(r.id)},'cash')">เงินสด</button><button type="button" class="${r.pay==='transfer'?'on transfer':''}" onclick="setPay(${Number(r.id)},'transfer')">โอน</button></div>`:''}${ed?`<div class="acts"><button onclick="editRow('${kind}',${Number(r.id)})">แก้</button><button onclick="delRow('${kind}',${Number(r.id)})">ลบ</button></div>`:''}</div>`;
   });
   if(lastD) html+='</div></div>';
-  return `<div class="dtools"><span>แตะวันที่เพื่อเปิด/ปิด</span><button type="button" onclick="allDays(this,true)">เปิดทั้งหมด</button><button type="button" onclick="allDays(this,false)">ปิดทั้งหมด</button></div><div class="list">${html}</div>`;
+  return `<div class="dtools"><span>แตะวันที่เพื่อดูรายการ</span><button type="button" onclick="allDays(this,true)">เปิดทั้งหมด</button><button type="button" onclick="allDays(this,false)">ปิดทั้งหมด</button></div><div class="list">${html}</div>`;
 }
 function editRow(kind,id){
   const r=ROWS[kind].find(x=>Number(x.id)===id); if(!r) return;
@@ -557,7 +581,7 @@ async function impFile(f){
   render();
 }
 function impSetPay(p){ IMP.pay=p; ls.set('rf_parcel_imp_pay',p); IMP.rows.forEach(r=>{ if(!r.auto) r.pay=null; }); render(); }
-function impTogglePay(i){ const r=IMP.rows[i]; const cur=r.pay||IMP.pay; r.pay={cash:'transfer',transfer:'self',self:'cash'}[cur]; r.auto=r.pay==='self'; render(); }
+function impSetRowPay(i,p){ const r=IMP.rows[i]; r.pay=p; r.auto=false; render(); }
 function renderImport(el){
   if(!BR){ el.innerHTML=pickBranchCard('นำเข้า'); return; }
   const R=IMP.rows, nw=R.filter(r=>!r.exists&&!r.bad&&!r.dup);
@@ -581,11 +605,13 @@ function renderImport(el){
       <div class="kpi"><span>กำไรจากลูกค้า</span><b>${money(sum('price')-sum('cost'))} ฿</b></div>
     </div>
     ${R.length-nw.length?`<p class="note" style="margin-bottom:8px">ข้าม ${R.length-nw.length} รายการ (${[['เคยนำเข้าแล้ว',R.filter(r=>r.exists).length],['ซ้ำในไฟล์',R.filter(r=>r.dup&&!r.exists).length],['ข้อมูลไม่ครบ',R.filter(r=>r.bad&&!r.exists&&!r.dup).length]].filter(x=>x[1]).map(x=>x[0]+' '+x[1]).join(' · ')})</p>`:''}
-    <label class="l">ลูกค้าจ่ายด้วย (ค่าเริ่มต้นทุกรายการ — แตะป้ายในตารางเพื่อเปลี่ยน เงินสด → โอน → ส่งเอง)</label>
+    <label class="l">ลูกค้าจ่ายด้วย (ค่าเริ่มต้นทุกรายการ — เปลี่ยนทีละรายการได้ที่ปุ่ม เงินสด/โอน ในตาราง)</label>
     <div class="pay" style="margin-bottom:6px">${['cash','transfer'].map(p=>`<button type="button" class="${p}${IMP.pay===p?' on':''}" onclick="impSetPay('${p}')">${PAY_BTN[p]}</button>`).join('')}</div>
     <p class="note" style="margin-bottom:12px">ผู้ส่งชื่อ "รุ่งฟ้า" ตั้งเป็น <b>ส่งเอง</b> ให้อัตโนมัติ (ไม่เก็บเงิน · นับแค่ทุน)</p>
-    <div class="tw"><table class="tbl"><tr><th>วันที่</th><th>รายการ</th><th>ราคา</th><th>จ่าย</th></tr>
-    ${R.map((r,i)=>{const skip=r.exists||r.bad||r.dup;const p=r.pay||IMP.pay;return `<tr style="${skip?'opacity:.45':''}"><td style="vertical-align:top">${r.date?fdate(r.date):'<span style="color:var(--bad)">?</span>'}</td><td style="text-align:left;white-space:normal;min-width:120px">${esc(r.carrier)} · ${esc(r.tracking_no)}<div class="note">${esc(r.customer_name)}</div></td><td style="vertical-align:top">${p==='self'&&!skip?`<span style="color:var(--self)">0</span><div class="note">ทุน ${money(r.cost)}</div>`:`${money(r.price)}<div class="note">ทุน ${money(r.cost)} · +${money(num(r.price)-num(r.cost))}</div>`}</td><td style="vertical-align:top">${skip?`<span class="note">${r.exists?'มีแล้ว':r.dup?'ซ้ำ':'ไม่ครบ'}</span>`:`<button class="tag ${p}" style="font-size:12px;padding:3px 9px" onclick="impTogglePay(${i})">${PAY_L[p]}</button>`}</td></tr>`;}).join('')}
+    <div class="tw"><table class="tbl"><tr><th>วันที่</th><th style="text-align:left">รายการ · รับเงิน</th><th>ราคา</th></tr>
+    ${R.map((r,i)=>{const skip=r.exists||r.bad||r.dup;const p=r.pay||IMP.pay;
+      const pay=skip?`<span class="note">${r.exists?'มีแล้ว':r.dup?'ซ้ำ':'ไม่ครบ'}</span>`:(p==='self'?`<span class="tag self" style="margin-left:0">ส่งเอง</span>`:`<div class="paysw"><button type="button" class="${p==='cash'?'on cash':''}" onclick="impSetRowPay(${i},'cash')">เงินสด</button><button type="button" class="${p==='transfer'?'on transfer':''}" onclick="impSetRowPay(${i},'transfer')">โอน</button></div>`);
+      return `<tr style="${skip?'opacity:.45':''}"><td style="vertical-align:top">${r.date?fdate(r.date):'<span style="color:var(--bad)">?</span>'}</td><td style="text-align:left;white-space:normal;min-width:120px">${esc(r.carrier)} · ${esc(r.tracking_no)}<div class="note">${esc(r.customer_name)}</div><div style="margin-top:6px">${pay}</div></td><td style="vertical-align:top">${p==='self'&&!skip?`<span style="color:var(--self)">0</span><div class="note">ทุน ${money(r.cost)}</div>`:`${money(r.price)}<div class="note">ทุน ${money(r.cost)} · +${money(num(r.price)-num(r.cost))}</div>`}</td></tr>`;}).join('')}
     </table></div>
     <button class="btn btn-p" style="margin-top:12px" id="impGo" ${nw.length?'':'disabled'} onclick="impRun()">นำเข้า ${nw.length} รายการ (เงินสด ${cashN} · โอน ${trN}${selfR.length?' · ส่งเอง '+selfR.length:''})</button>
   </div>`:''}`;
