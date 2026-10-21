@@ -119,6 +119,9 @@ details.more[open] summary{margin-bottom:10px}
 .card h3 .chipi .ic{width:16px;height:16px}
 .bal .lt{display:flex;align-items:center;gap:10px}
 .kpi.hl small{color:rgba(255,255,255,.9)}
+.kpi .netbox{margin-top:7px;background:rgba(255,255,255,.18);border-radius:10px;padding:5px 9px}
+.kpi .netbox span{display:block;font-size:12px;line-height:1.35;opacity:.92}
+.kpi .netbox b{display:block;font-size:16.5px;line-height:1.3;font-weight:600;letter-spacing:0}
 .kpi.self b{color:var(--self)}
 .crow{border-top:1px solid var(--line);padding:8px 0}
 .crow:first-of-type{border-top:0}
@@ -191,7 +194,7 @@ const ICONS={cash:'<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||''}</svg>`;
 const chipi=(n,c)=>`<i class="chipi c-${c}">${ic(n)}</i>`;
 // การ์ดตัวเลข: ไอคอนสี + ชื่อ + ตัวเลข + บรรทัดย่อย
-const kpi=(o)=>`<div class="kpi ${o.cls||''}"><div class="kh">${chipi(o.i,o.c)}<span>${o.l}</span></div><b class="${o.neg?'neg':''}">${o.v}</b>${(o.sub||[]).filter(Boolean).map(x=>`<small>${x}</small>`).join('')}</div>`;
+const kpi=(o)=>`<div class="kpi ${o.cls||''}"><div class="kh">${chipi(o.i,o.c)}<span>${o.l}</span></div><b class="${o.neg?'neg':''}">${o.v}</b>${(o.sub||[]).filter(Boolean).map(x=>`<small>${x}</small>`).join('')}${o.extra||''}</div>`;
 const hh=(n,c,t)=>`<span class="ht">${chipi(n,c)}${t}</span>`;
 const PAY_L={cash:'เงินสด',transfer:'โอน',self:'ส่งเอง'};
 const PAY_BTN={cash:ic('cash')+'เงินสด',transfer:ic('transfer')+'โอน',self:ic('self')+'ส่งเอง'};
@@ -345,7 +348,7 @@ function renderEntry(el){
         <div><label class="l">หมายเหตุ</label><input class="in" value="${esc(F.note||'')}" oninput="setF('note',this.value)"></div></div></details>`;
   }else if(KIND==='topup'){
     form=`<div><label class="l">จำนวนเงินที่เติม (บาท)</label><input class="in big" inputmode="decimal" id="fAmt" value="${esc(F.amount||'')}" oninput="setF('amount',this.value)"></div>
-      <div><label class="l">จ่ายด้วย</label>${payBtns}</div>
+      <div><label class="l">บริษัทจ่ายด้วย</label>${payBtns}<p class="note" style="margin-top:6px">เงินเติมเครดิตเป็นเงินบริษัท ไม่หักเงินสด/เงินในบัญชีของร้านขนส่ง</p></div>
       <div><label class="l">หมายเหตุ</label><input class="in" value="${esc(F.note||'')}" oninput="setF('note',this.value)"></div>`;
   }else{
     form=`<div><label class="l">รายการ</label><input class="in" id="fItem" value="${esc(F.item||'')}" oninput="setF('item',this.value)" placeholder="เช่น กล่อง เทป ค่าน้ำมัน" list="itemList"><datalist id="itemList">${[...new Set(ROWS.expense.map(r=>r.item))].slice(0,20).map(i=>`<option value="${esc(i)}">`).join('')}</datalist></div>
@@ -547,9 +550,9 @@ const moneyBal=x=>num(x.opening)+num(x.in)-num(x.out);
 function nowStrip(){
   const mo=SUMM.money;
   return `<div class="card"><h3>${hh('wallet','orange','ยอดคงเหลือตอนนี้')}</h3><div class="kpis" style="margin:0">
-    ${creditList().map(c=>{const v=num(c.topup)-num(c.used);const low=num(c.topup)>0&&v<50;return kpi({i:'wallet',c:'orange',l:'เครดิต '+esc(c.name),v:money(v)+' ฿',neg:v<0||low,sub:[`เติม ${money(c.topup)} · ใช้ไป ${money(c.used)}`,low?'<span style="color:var(--bad);font-weight:500">ใกล้หมด ควรเติม</span>':'']});}).join('')}
-    ${kpi({i:'cash',c:'green',l:'เงินสดในมือ',v:money(moneyBal(mo.cash))+' ฿',neg:moneyBal(mo.cash)<0})}
-    ${kpi({i:'bank',c:'blue',l:'เงินในบัญชี',v:money(moneyBal(mo.transfer))+' ฿',neg:moneyBal(mo.transfer)<0})}
+    ${creditList().map(c=>{const v=num(c.topup)-num(c.used);const low=num(c.topup)>0&&v<50;return kpi({i:'wallet',c:'orange',l:'เครดิต '+esc(c.name)+' คงเหลือ',v:money(v)+' ฿',neg:v<0||low,sub:[`เติมแล้ว ${money(c.topup)} · ตัดค่าส่ง ${money(c.used)}`,low?'<span style="color:var(--bad);font-weight:500">ใกล้หมด ควรเติม</span>':'']});}).join('')}
+    ${kpi({i:'cash',c:'green',l:'เงินสดในมือ',v:money(moneyBal(mo.cash))+' ฿',neg:moneyBal(mo.cash)<0,sub:['ในลิ้นชักร้าน']})}
+    ${kpi({i:'bank',c:'blue',l:'เงินในบัญชีขนส่ง',v:money(moneyBal(mo.transfer))+' ฿',neg:moneyBal(mo.transfer)<0,sub:['บัญชีแยกของขนส่ง']})}
   </div></div>`;
 }
 
@@ -572,7 +575,7 @@ function renderSum(el){
   const custN=num(m.count)-num(m.self_count), custCost=num(m.cost)-num(m.self_cost);
   el.innerHTML=`${nowStrip()}${monBar()}
   <div class="kpis">
-    ${kpi({cls:'hl',i:'trend',c:'orange',l:'กำไรร้านขนส่ง',v:money(shop(m))+' ฿',neg:shop(m)<0,sub:[num(m.self_cost)?`รวมหลังค่าส่งบริษัท ${money(m.net)} ฿`:'']})}
+    ${kpi({cls:'hl',i:'trend',c:'orange',l:'กำไรร้านขนส่ง',v:money(shop(m))+' ฿',neg:shop(m)<0,extra:num(m.self_cost)?`<div class="netbox"><span>หักค่าส่งบริษัท</span><b>กำไรสุทธิ ${money(m.net)} ฿</b></div>`:''})}
     ${kpi({cls:'self',i:'self',c:'purple',l:'ค่าส่งของบริษัท',v:money(m.self_cost)+' ฿',sub:[`ส่งเอง ${num(m.self_count)} ชิ้น · ไม่เก็บเงิน`]})}
     ${kpi({i:'user',c:'teal',l:'กำไรจากลูกค้า',v:money(m.profit)+' ฿',neg:num(m.profit)<0})}
     ${kpi({i:'receipt',c:'rose',l:'รายจ่ายอื่นของร้าน',v:money(m.expense)+' ฿'})}
@@ -598,17 +601,17 @@ function renderYear(el){
   const cell=v=>`<td class="${num(v)<0?'neg':''}">${num(v)?money(v):'-'}</td>`;
   el.innerHTML=`<div class="mon"><button onclick="shiftYear(-1)" aria-label="ปีก่อน">‹</button><b>ปี ${Y+543}</b><button onclick="shiftYear(1)" aria-label="ปีถัดไป">›</button></div>
   <div class="kpis">
-    ${kpi({cls:'hl',i:'trend',c:'orange',l:'กำไรร้านขนส่งทั้งปี',v:money(shop(tot))+' ฿',neg:shop(tot)<0,sub:[num(tot.self_cost)?`รวมหลังค่าส่งบริษัท ${money(tot.net)} ฿`:'']})}
+    ${kpi({cls:'hl',i:'trend',c:'orange',l:'กำไรร้านขนส่งทั้งปี',v:money(shop(tot))+' ฿',neg:shop(tot)<0,extra:num(tot.self_cost)?`<div class="netbox"><span>หักค่าส่งบริษัท</span><b>กำไรสุทธิ ${money(tot.net)} ฿</b></div>`:''})}
     ${kpi({cls:'self',i:'self',c:'purple',l:'ค่าส่งของบริษัททั้งปี',v:money(tot.self_cost)+' ฿',sub:[`ส่งเอง ${num(tot.self_count)} ชิ้น`]})}
     ${kpi({i:'box',c:'orange',l:'จำนวนชิ้นทั้งปี',v:money(tot.count)+' ชิ้น'})}
     ${kpi({i:'coins',c:'amber',l:'ยอดเก็บลูกค้าทั้งปี',v:money(tot.price)+' ฿'})}
   </div>
   <div class="card"><h3>${hh('chart','indigo','รายเดือน · ปี '+(Y+543))}</h3><div class="tw"><table class="tbl">
-    <tr><th>เดือน</th><th>ชิ้น</th><th>ยอดเก็บ</th><th>ทุน</th><th>กำไรจากลูกค้า</th><th>รายจ่ายอื่น</th><th>กำไรร้าน</th><th>ค่าส่งบริษัท</th><th>รวมสุทธิ</th><th>เงินสด</th><th>โอน</th><th>เติมเงิน</th></tr>
+    <tr><th>เดือน</th><th>ชิ้น</th><th>ยอดเก็บ</th><th>ทุน</th><th>กำไรจากลูกค้า</th><th>รายจ่ายอื่น</th><th>กำไรร้าน</th><th>ค่าส่งบริษัท</th><th>กำไรสุทธิ</th><th>เงินสด</th><th>โอน</th><th>เติมเงิน</th></tr>
     ${yr.map(x=>`<tr class="${x.m===M?'cur':''}" onclick="M=${x.m};go('sum');loadMonth().then(render)" title="ดูเดือนนี้"><td>${TH_MS[x.m-1]}</td><td>${num(x.count)||'-'}</td>${cell(x.price)}${cell(x.cost)}${cell(x.profit)}${cell(x.expense)}<td class="${shop(x)<0?'neg':''}" style="font-weight:600">${shop(x)?money(shop(x)):'-'}</td>${cell(x.self_cost)}${cell(x.net)}${cell(x.cash_in)}${cell(x.transfer_in)}${cell(x.topup)}</tr>`).join('')}
     <tr class="tot"><td>รวม</td><td>${num(tot.count)||'-'}</td>${cell(tot.price)}${cell(tot.cost)}${cell(tot.profit)}${cell(tot.expense)}${cell(shop(tot))}${cell(tot.self_cost)}${cell(tot.net)}${cell(tot.cash_in)}${cell(tot.transfer_in)}${cell(tot.topup)}</tr>
   </table></div>
-  <p class="note" style="margin-top:8px">แตะเดือนเพื่อดูสรุปเดือนนั้น · กำไรร้านขนส่ง = กำไรจากลูกค้า − รายจ่ายอื่นของร้าน · ค่าส่งของบริษัท (ส่งเอง) แยกไว้ ไม่หักจากกำไรร้าน · รวมสุทธิ = กำไรร้าน − ค่าส่งบริษัท · เงินที่เติมเข้าขนส่งไม่นับเป็นรายจ่าย (เป็นเครดิตที่ยังใช้ได้ ทุนจะถูกนับตอนส่งแต่ละชิ้น)</p></div>`;
+  <p class="note" style="margin-top:8px">แตะเดือนเพื่อดูสรุปเดือนนั้น · กำไรร้านขนส่ง = กำไรจากลูกค้า − รายจ่ายอื่นของร้าน · ค่าส่งของบริษัท (ส่งเอง) แยกไว้ ไม่หักจากกำไรร้าน · กำไรสุทธิ = กำไรร้าน − ค่าส่งบริษัท · เงินที่เติมเข้าขนส่งไม่นับเป็นรายจ่าย (เป็นเครดิตที่ยังใช้ได้ ทุนจะถูกนับตอนส่งแต่ละชิ้น)</p></div>`;
 }
 
 // ───────── หน้า คงเหลือ ─────────
@@ -621,8 +624,8 @@ function renderBal(el){
     ${cs.map(c=>{const cr=num(c.topup)-num(c.used);const low=num(c.topup)>0&&cr<50;return `<div class="bal"><div class="lt">${chipi(c.is_wallet?'wallet':'truck','orange')}<div><div class="nm">${esc(c.name)}</div><div class="sub">เติม ${money(c.topup)} · ใช้ ${money(c.used)} · ${money(c.count)} ชิ้น</div>${(c.members||[]).length?`<div class="sub">ใช้ร่วมกับ ${esc(c.members.join(', '))}</div>`:''}</div></div><div class="v${low?' low':''}">${money(cr)} ฿${low?'<small>ใกล้หมด ควรเติม</small>':''}</div></div>`;}).join('')||'<div class="empty">ยังไม่มีขนส่ง</div>'}
   </div>
   <div class="card"><h3>${hh('coins','green','เงินสด / เงินในบัญชี')}</h3>
-    ${[['cash','เงินสดในมือ'],['transfer','เงินในบัญชี (โอน)']].map(([k,l])=>`<div class="bal"><div class="lt">${k==='cash'?chipi('cash','green'):chipi('bank','blue')}<div><div class="nm">${l}</div><div class="sub">ตั้งต้น ${money(mo[k].opening)} · รับ ${money(mo[k].in)} · จ่าย ${money(mo[k].out)}</div></div></div><div class="v${bal(mo[k])<0?' low':''}">${money(bal(mo[k]))} ฿</div></div>`).join('')}
-    <p class="note" style="margin-top:8px">จ่าย = เติมเงินขนส่ง + รายจ่ายอื่น ตามช่องทางที่จ่าย${ME&&ME.role==='owner'?' · ตั้งยอดตั้งต้นได้ที่ ตั้งค่า':''}</p>
+    ${[['cash','เงินสดในมือ'],['transfer','เงินในบัญชีขนส่ง']].map(([k,l])=>`<div class="bal"><div class="lt">${k==='cash'?chipi('cash','green'):chipi('bank','blue')}<div><div class="nm">${l}</div><div class="sub">ตั้งต้น ${money(mo[k].opening)} · รับจากลูกค้า ${money(mo[k].in)} · รายจ่ายร้าน ${money(mo[k].out)}</div></div></div><div class="v${bal(mo[k])<0?' low':''}">${money(bal(mo[k]))} ฿</div></div>`).join('')}
+    <p class="note" style="margin-top:8px">เงินเติมเครดิตขนส่งเป็นเงินบริษัท จึงไม่หักจากเงินสด/เงินในบัญชีของร้าน${ME&&ME.role==='owner'?' · ตั้งยอดตั้งต้นได้ที่ ตั้งค่า':''}</p>
   </div>`;
 }
 
@@ -647,8 +650,8 @@ async function renderSet(el){
      :`<p class="note">ยังไม่มีลิงก์ · สร้างแล้วส่งให้คนที่ต้องการให้ดูตัวเลข (ดูได้อย่างเดียว แก้ไม่ได้)</p><button class="btn-s" style="margin-top:10px" onclick="shareAct('share_create')">สร้างลิงก์</button>`}
   </div>
   <div class="card"><h3>ยอดเงินตั้งต้น</h3>
-    <p class="note" style="margin-bottom:8px">เงินที่มีอยู่ก่อนเริ่มใช้ระบบ (ใช้คำนวณเงินคงเหลือ)</p>
-    <div class="f2"><div><label class="l">เงินสดในมือ</label><input class="in" inputmode="decimal" id="opC" value="${num(OPENING.cash)}"></div><div><label class="l">เงินในบัญชี</label><input class="in" inputmode="decimal" id="opT" value="${num(OPENING.transfer)}"></div></div>
+    <p class="note" style="margin-bottom:8px">เงินของร้านขนส่งก่อนเริ่มใช้ระบบ (ตั้งครั้งเดียว) · เงินเติมเครดิตเป็นเงินบริษัท ไม่ต้องใส่ตรงนี้</p>
+    <div class="f2"><div><label class="l">เงินสดในมือ</label><input class="in" inputmode="decimal" id="opC" value="${num(OPENING.cash)}"></div><div><label class="l">เงินในบัญชีขนส่ง</label><input class="in" inputmode="decimal" id="opT" value="${num(OPENING.transfer)}"></div></div>
     <button class="btn-s" style="margin-top:10px" onclick="saveOpening()">บันทึกยอดตั้งต้น</button>
   </div></div><div>
   <div class="card"><h3>ขนส่ง</h3>
