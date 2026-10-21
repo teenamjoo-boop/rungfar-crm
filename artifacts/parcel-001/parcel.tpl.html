@@ -6,7 +6,8 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#e8650c">
-<title>ขนส่งพัสดุ · รายรับ-รายจ่าย</title>
+<title>รุ่งฟ้า ส่งด่วน · รายรับ-รายจ่าย</title>
+<meta name="apple-mobile-web-app-title" content="รายรับ-จ่าย ส่งด่วน">
 <link rel="icon" type="image/png" href="__LOGO__">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -73,7 +74,36 @@ details.more[open] summary{margin-bottom:10px}
 .btn-d{background:var(--bad-soft);color:var(--bad);padding:7px 12px;font-size:13.5px;border-radius:99px}
 .editing{background:var(--warn-soft);color:var(--warn);font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
 .list .it{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
-.list .it:first-child,.list .dayh+.it{border-top:0}
+.list .it:first-child,.ditems .it:first-child{border-top:0}
+.dgrp .ditems{display:none}
+.dgrp.open .ditems{display:block}
+button.dayh{width:100%;text-align:left;cursor:pointer;border:0;font:inherit}
+.dayh .chev{width:16px;height:16px;fill:none;stroke:var(--mute);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:4px;transition:transform .18s}
+.dgrp.open .dayh .chev{transform:rotate(90deg)}
+.dgrp:not(.open) .dayh{margin-bottom:6px}
+.dtools{display:flex;align-items:center;gap:6px;justify-content:flex-end;font-size:12px;color:var(--mute);margin:-2px 0 2px}
+.dtools span{margin-right:auto}
+.dtools button{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--neutral-soft);color:var(--ink)}
+.drows{display:flex;flex-direction:column;gap:8px}
+.dgrp{margin-top:8px}
+button.drow.dh{width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.drow.dh .chev{width:16px;height:16px;flex:none;fill:none;stroke:var(--mute);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s;margin-left:-4px}
+.dgrp.open .drow.dh{border-color:#f3c9a6;background:#fffaf5;border-bottom-left-radius:4px;border-bottom-right-radius:4px}
+.dgrp.open .drow.dh .chev{transform:rotate(90deg)}
+.dgrp.open .ditems{border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;padding:0 10px;margin-top:-1px;background:#fff}
+.dbar.amt i{background:linear-gradient(90deg,#5aa9e6,#1d64b0)}
+.drow{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.dchip{width:46px;flex:none;text-align:center;border-radius:10px;background:var(--c-bg,#e6f0fb);color:var(--c-fg,#1d64b0);padding:4px 0;line-height:1.15}
+.dchip b{display:block;font-size:19px;font-weight:600}
+.dchip span{font-size:11px}
+.dchip.we{--c-bg:#fde7eb;--c-fg:#c4314b}
+.dmid{flex:1;min-width:0}
+.dl1{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl1 b{font-weight:600}
+.dbar{height:6px;border-radius:99px;background:#f1ede7;margin-top:6px;overflow:hidden}
+.dbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#3fb37a,#17804a)}
+.dpf{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.dsum{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;color:var(--mute)}
 .it .mid{flex:1;min-width:0}
 .it .t1{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .it .t2{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -152,6 +182,10 @@ details.more[open] summary{margin-bottom:10px}
 .err{color:var(--bad);font-size:13.5px;min-height:20px}
 .toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#1d1a16;color:#fff;font-size:14px;padding:9px 16px;border-radius:99px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.on{opacity:.94}
+.brsw{display:flex;gap:6px;margin-top:10px;overflow-x:auto;padding-bottom:2px}
+.brsw button{flex:none;font-size:13px;font-weight:600;padding:5px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.45);color:#fff;background:transparent}
+.brsw button.on{background:#fff;color:var(--brand-d);border-color:#fff}
+.brtag{display:inline-block;font-size:11px;font-weight:600;padding:0 7px;border-radius:99px;background:#eef2f7;color:#475569;margin-left:4px;vertical-align:1px}
 .ro{font-size:12px;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:99px}
 .foot{font-size:11.5px;color:var(--mute);text-align:center;padding:8px 16px}
 .skel{height:64px;border-radius:14px;margin-bottom:10px;background:linear-gradient(90deg,#ebe6de 0%,#f6f3ee 50%,#ebe6de 100%);background-size:200% 100%;animation:sh 1.2s infinite}
@@ -196,6 +230,7 @@ const chipi=(n,c)=>`<i class="chipi c-${c}">${ic(n)}</i>`;
 // การ์ดตัวเลข: ไอคอนสี + ชื่อ + ตัวเลข + บรรทัดย่อย
 const kpi=(o)=>`<div class="kpi ${o.cls||''}"><div class="kh">${chipi(o.i,o.c)}<span>${o.l}</span></div><b class="${o.neg?'neg':''}">${o.v}</b>${(o.sub||[]).filter(Boolean).map(x=>`<small>${x}</small>`).join('')}${o.extra||''}</div>`;
 const hh=(n,c,t)=>`<span class="ht">${chipi(n,c)}${t}</span>`;
+const SHOP_NAME='รุ่งฟ้า ส่งด่วน';
 const PAY_L={cash:'เงินสด',transfer:'โอน',self:'ส่งเอง'};
 const PAY_BTN={cash:ic('cash')+'เงินสด',transfer:ic('transfer')+'โอน',self:ic('self')+'ส่งเอง'};
 const SELF_RE=/รุ่งฟ้า/;   // ผู้ส่งชื่อนี้ = ของบริษัทเอง → ตั้งเป็น "ส่งเอง" อัตโนมัติตอนนำเข้า
@@ -204,7 +239,7 @@ const ERR_L={invalid:'ชื่อผู้ใช้หรือรหัสผ�
   forbidden:'ไม่มีสิทธิ์ทำรายการนี้',invalid_date:'วันที่ไม่ถูกต้อง',invalid_carrier:'กรุณาเลือกขนส่ง',invalid_pay:'กรุณาเลือกเงินสดหรือโอน',
   invalid_cost:'ทุนค่าส่งไม่ถูกต้อง',invalid_price:'ยอดเก็บลูกค้าไม่ถูกต้อง',invalid_amount:'จำนวนเงินไม่ถูกต้อง',invalid_item:'กรุณาใส่รายการ',
   not_found:'ไม่พบรายการ (อาจถูกลบไปแล้ว)',username_exists:'ชื่อผู้ใช้นี้มีอยู่แล้ว',invalid_username:'ชื่อผู้ใช้ใช้ได้เฉพาะ a-z 0-9 . _ - (3–30 ตัว)',
-  password_short:'รหัสผ่านอย่างน้อย 6 ตัว',invalid_wallet:'เลือกกระเป๋าเครดิตไม่ถูกต้อง',invalid_name:'กรุณาใส่ชื่อ',network:'เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'};
+  password_short:'รหัสผ่านอย่างน้อย 6 ตัว',invalid_wallet:'เลือกกระเป๋าเครดิตไม่ถูกต้อง',choose_branch:'กรุณาเลือกสาขาก่อน',invalid_branch:'สาขาไม่ถูกต้อง',name_exists:'ชื่อนี้มีอยู่แล้ว',invalid_name:'กรุณาใส่ชื่อ',network:'เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'};
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>Number(v)||0;
@@ -217,7 +252,15 @@ const TK='rf_parcel_tok_v1'+(IS_STG?'_stg':'');
 
 let TOKEN=ls.get(TK)||'';
 let GENTXT='';
-let ME=null, CARRIERS=[], OPENING={cash:0,transfer:0};
+let ME=null, CARRIERS=[], OPENINGS={}, BRANCHES=[], VIEW_BRANCH=null, VIEW_ALL=false, VIEW_BRS=[], VIEW_SEL=0;
+// Stage PARCEL-BRANCH: สาขาที่เลือก (0 = รวมทุกสาขา — เฉพาะเจ้าของ) · พนักงาน = สาขาตัวเองเสมอ
+let BR=Number(ls.get('rf_parcel_br'+(IS_STG?'_stg':'')))||0;
+const isOwner=()=>!!ME&&ME.role==='owner';
+const brObj=id=>BRANCHES.find(b=>b.id===id);
+function brName(){ if(VIEW_CODE) return VIEW_BRANCH?'สาขา'+VIEW_BRANCH.name:'รวมทุกสาขา'; const b=brObj(BR); return b?'สาขา'+b.name:'รวมทุกสาขา'; }
+const allMode=()=>VIEW_CODE?!VIEW_BRANCH:!BR;
+async function setViewBR(id){ VIEW_SEL=id; if(await loadMonth()){ shell(); render(); } }
+async function setBR(id){ BR=id; ls.set('rf_parcel_br'+(IS_STG?'_stg':''),String(id)); EDIT=null; LINK=undefined; USERS=null; if(TAB==='import'||(TAB==='entry'&&!id)) TAB=id?'entry':TAB; shell(); await loadMonth(); render(); }
 const now=new Date();
 let Y=now.getFullYear(), M=now.getMonth()+1;
 let TAB='entry', KIND='ship', EDIT=null;
@@ -231,7 +274,7 @@ const errMsg=e=>ERR_L[e]||('เกิดข้อผิดพลาด ('+e+')')
 async function api(a,args){
   let d=null;
   try{
-    const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({a,t:TOKEN||undefined,args:args||{}})});
+    const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({a,t:TOKEN||undefined,args:(VIEW_CODE||a==='login'||a==='logout'||(args&&'branch' in args))?(args||{}):Object.assign({branch:BR||''},args||{})})});
     d=await r.json();
   }catch(_){d={ok:false,error:'network'};}
   if(!d) d={ok:false,error:'network'};
@@ -243,7 +286,7 @@ async function api(a,args){
 function showLogin(msg){
   document.getElementById('app').innerHTML=`
   <div class="login">
-    <div style="text-align:center;margin-bottom:16px"><img src="${LOGO}" alt="" style="width:64px;height:64px"><div style="font-weight:600;margin-top:6px">ขนส่งพัสดุ · รายรับ-รายจ่าย</div><div class="note">บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</div></div>
+    <div style="text-align:center;margin-bottom:16px"><img src="${LOGO}" alt="" style="width:64px;height:64px"><div style="font-weight:600;margin-top:6px">${SHOP_NAME}</div><div class="note">รายงานรายรับ-รายจ่าย</div><div class="note">บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</div></div>
     <form class="card f" id="lf" autocomplete="on">
       <h2>เข้าสู่ระบบ</h2>
       <div><label class="l" for="lu">ชื่อผู้ใช้</label><input class="in" id="lu" autocomplete="username" autocapitalize="none" required></div>
@@ -264,15 +307,18 @@ async function logout(){ await api('logout'); TOKEN=''; ls.del(TK); ME=null; sho
 // ───────── โครงหน้า ─────────
 function shell(){
   const owner=ME&&ME.role==='owner';
+  document.title=SHOP_NAME+(ME||VIEW_CODE?' '+brName():'')+' · รายรับ-รายจ่าย';
   const tabs=VIEW_CODE?[['sum','สรุป'],['bal','คงเหลือ'],['year','ทั้งปี']]
     :[['entry','บันทึก'],['sum','สรุป'],['bal','คงเหลือ'],['year','ทั้งปี'],...(owner?[['set','ตั้งค่า']]:[])];
   document.getElementById('app').innerHTML=`
   <header class="hd">
     <div class="hrow">
-      <div class="brand"><img src="${LOGO}" alt=""><div>ขนส่งพัสดุ<small>รายรับ-รายจ่าย</small></div></div>
+      <div class="brand"><img src="${LOGO}" alt=""><div>${SHOP_NAME}<small>${esc(brName())} · รายรับ-รายจ่าย</small></div></div>
       ${VIEW_CODE?'<span class="ro">ดูอย่างเดียว</span>':`<div class="who">${esc(ME.username)} · ${owner?'เจ้าของ':'พนักงาน'}<br><button onclick="logout()">ออกจากระบบ</button></div>`}
     </div>
     <nav class="tabs">${tabs.map(([k,l])=>`<button class="tab${TAB===k?' on':''}" onclick="go('${k}')">${l}</button>`).join('')}</nav>
+    ${VIEW_CODE&&VIEW_ALL&&VIEW_BRS.length>1?`<div class="brsw">${VIEW_BRS.map(b=>`<button class="${VIEW_SEL===b.id?'on':''}" onclick="setViewBR(${b.id})">${esc(b.name)}</button>`).join('')}<button class="${!VIEW_SEL?'on':''}" onclick="setViewBR(0)">รวมทุกสาขา</button></div>`:''}
+    ${!VIEW_CODE&&owner&&BRANCHES.length>1?`<div class="brsw">${BRANCHES.filter(b=>b.active).map(b=>`<button class="${BR===b.id?'on':''}" onclick="setBR(${b.id})">${esc(b.name)}</button>`).join('')}<button class="${!BR?'on':''}" onclick="setBR(0)">รวมทุกสาขา</button></div>`:''}
   </header>
   <main class="main" id="main"></main>
   <p class="foot" id="foot">${esc(GENTXT)}</p>`;
@@ -299,14 +345,16 @@ async function shiftMon(d){ M+=d; if(M<1){M=12;Y--;} if(M>12){M=1;Y++;} await lo
 // ───────── ข้อมูล ─────────
 async function boot(){
   const d=await api('boot'); if(!d.ok) return;
-  ME=d.user; CARRIERS=d.carriers||[]; OPENING=d.opening||{cash:0,transfer:0};
-  TAB='entry'; shell(); await loadMonth(); render();
+  ME=d.user; CARRIERS=d.carriers||[]; OPENINGS=d.openings||{}; BRANCHES=d.branches||[];
+  if(ME.role!=='owner') BR=ME.branch_id; else if(BR&&!brObj(BR)) BR=0;
+  if(ME.role==='owner'&&!BR&&!ls.get('rf_parcel_br'+(IS_STG?'_stg':''))) BR=(BRANCHES[0]||{}).id||0;
+  TAB=BR?'entry':'sum'; shell(); await loadMonth(); render();
 }
 async function loadMonth(){
   if(VIEW_CODE){
-    const d=await api('share_view',{c:VIEW_CODE,year:Y,month:M});
+    const d=await api('share_view',{c:VIEW_CODE,year:Y,month:M,branch:VIEW_SEL||''});
     if(!d.ok){ document.getElementById('app').innerHTML=`<div class="login"><div class="card" style="text-align:center"><b>ลิงก์นี้ใช้ไม่ได้แล้ว</b><p class="note" style="margin-top:6px">กรุณาขอลิงก์ใหม่จากเจ้าของร้าน</p></div></div>`; return false; }
-    SUMM=d.summary; ROWS={ship:d.ship||[],topup:d.topup||[],expense:d.expense||[]};
+    SUMM=d.summary; ROWS={ship:d.ship||[],topup:d.topup||[],expense:d.expense||[]}; VIEW_BRANCH=d.branch||null; VIEW_ALL=!!d.link_all; VIEW_BRS=d.branches||[];
     CARRIERS=(SUMM.carriers||[]).map(c=>({id:c.id,name:c.name,active:c.active,is_wallet:c.is_wallet,wallet_id:c.wallet_id}));
     GENTXT='ข้อมูล ณ '+new Date(d.generated_at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})+' · บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด'; const f=document.getElementById('foot'); if(f) f.textContent=GENTXT;
     return true;
@@ -322,7 +370,9 @@ async function loadMonth(){
 function activeCarriers(){ return CARRIERS.filter(c=>(EDIT&&EDIT.carrier_id===c.id)||(c.active&&(KIND==='topup'?!c.wallet_id:!c.is_wallet))); }
 const carKey=()=>'rf_parcel_car'+(KIND==='topup'?'_t':'');
 function fv(k,def){ const F=FORM[KIND]; return F[k]!==undefined?F[k]:def; }
+function pickBranchCard(what){ return `<div class="card" style="text-align:center;padding:22px"><b>เลือกสาขาก่อน${what}</b><p class="note" style="margin:6px 0 12px">ตอนนี้กำลังดูแบบรวมทุกสาขา</p><div class="row" style="justify-content:center;flex-wrap:wrap">${BRANCHES.filter(b=>b.active).map(b=>`<button class="btn-s" onclick="setBR(${b.id})">สาขา${esc(b.name)}</button>`).join('')}</div></div>`; }
 function renderEntry(el){
+  if(!BR){ el.innerHTML=pickBranchCard('บันทึก'); return; }
   const F=FORM[KIND];
   if(F.date===undefined) F.date=todayStr();
   if(F.pay===undefined) F.pay=ls.get('rf_parcel_pay_'+KIND)||'cash';
@@ -408,30 +458,41 @@ async function saveEntry(e){
   if(KIND==='ship'){ const t=document.getElementById('fCost'); if(t&&window.matchMedia('(pointer:fine)').matches) t.focus(); }
 }
 function canEdit(r){ if(VIEW_CODE||!ME) return false; if(ME.role==='owner') return true; return r.by===ME.username && (Date.now()-new Date(r.at).getTime())<7*864e5; }
+const TH_D=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์'], TH_DS=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const dow=s=>{ const [y,m,dd]=String(s).slice(0,10).split('-').map(Number); return new Date(y,m-1,dd).getDay(); };
+const wd=s=>TH_D[dow(s)];
+// พับ/เปิด รายการแต่ละวัน: จำสถานะที่ผู้ใช้กดไว้ · ค่าเริ่มต้น = เปิดเฉพาะวันล่าสุด
+const DAYOPEN={};
+function togDay(btn){ const g=btn.parentElement; const o=!g.classList.contains('open'); g.classList.toggle('open',o); DAYOPEN[g.dataset.k]=o; }
+function allDays(btn,o){ btn.closest('.card').querySelectorAll('.dgrp').forEach(g=>{ g.classList.toggle('open',o); DAYOPEN[g.dataset.k]=o; }); }
 function rowList(kind,actions){
   const rows=ROWS[kind];
   if(!rows.length) return '<div class="empty">ยังไม่มีรายการในเดือนนี้</div>';
   let html='',lastD='';
   // สรุปต่อวัน: กำไรจากลูกค้า · ค่าส่งบริษัท · จำนวนชิ้น (ส่งพัสดุ) หรือยอดรวม (เติมเงิน/รายจ่าย)
-  const D={}; rows.forEach(r=>{ const d=D[r.date]=D[r.date]||{n:0,p:0,self:0,a:0,hasCust:false}; d.n++;
+  const D={}; rows.forEach(r=>{ const d=D[r.date]=D[r.date]||{n:0,p:0,self:0,a:0,price:0,hasCust:false}; d.n++; d.price+=num(r.price);
     if(kind==='ship'){ if(r.pay==='self') d.self+=num(r.cost); else { d.p+=num(r.price)-num(r.cost); d.hasCust=true; } } else d.a+=num(r.amount); });
-  const TH_D=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์'];
-  const wd=s=>{ const [y,m,dd]=String(s).slice(0,10).split('-').map(Number); return TH_D[new Date(y,m-1,dd).getDay()]; };
+  let gi=0; const MX=Math.max(1,...Object.values(D).map(d=>kind==='ship'?d.p:d.a));
   rows.forEach(r=>{
-    if(r.date!==lastD){ lastD=r.date; const d=D[r.date];
+    if(r.date!==lastD){ if(lastD) html+='</div></div>'; lastD=r.date; const d=D[r.date]; const key=kind+'|'+r.date; const open=key in DAYOPEN?DAYOPEN[key]:gi===0; gi++;
       const pills=kind==='ship'
         ? (d.hasCust?`<span class="pill ${d.p>0?'pos':d.p<0?'neg':''}">กำไร ${d.p>0?'+':''}${money(d.p)} ฿</span>`:'')+(d.self?`<span class="pill self">บริษัท ${money(d.self)} ฿</span>`:'')
-        : `<span class="pill">รวม ${money(d.a)} ฿</span>`;
-      html+=`<div class="dayh"><span class="dd">${wd(r.date)} ${fdate(r.date)}<small>${d.n} ${kind==='ship'?'ชิ้น':'รายการ'}</small></span><span class="pf">${pills}</span></div>`; }
+        : `<span class="pill">${money(d.a)} ฿</span>`;
+      const w=dow(r.date), dd=Number(String(r.date).slice(8,10)), val=kind==='ship'?d.p:d.a;
+      const line=kind==='ship'?`<b>${d.n} ชิ้น</b> · เก็บ ${money(d.price)} ฿`:`<b>${d.n} รายการ</b>`;
+      html+=`<div class="dgrp${open?' open':''}" data-k="${key}"><button type="button" class="drow dh" onclick="togDay(this)"><div class="dchip${w===0||w===6?' we':''}"><b>${dd}</b><span>${TH_DS[w]}</span></div>
+        <div class="dmid"><div class="dl1">${line}</div><div class="dbar${kind==='ship'?'':' amt'}"><i style="width:${val>0?Math.max(4,Math.round(val/MX*100)):0}%"></i></div></div>
+        <div class="dpf">${pills}</div><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><div class="ditems">`; }
     let t1,t2,amt;
     if(kind==='ship'){ t1=`${esc(r.carrier||'—')}${r.customer_name?' · '+esc(r.customer_name):''}`; t2=[r.tracking_no,r.note].filter(Boolean).map(esc).join(' · ')||'&nbsp;';
       amt=r.pay==='self'?`<span style="color:var(--self)">ทุน ${money(r.cost)} ฿</span><small>ส่งเอง · ไม่เก็บเงิน</small>`:`${money(r.price)} ฿<small>ทุน ${money(r.cost)} · กำไร ${money(num(r.price)-num(r.cost))}</small>`; }
     else if(kind==='topup'){ t1=esc(r.carrier||'—'); t2=esc(r.note||'')||'&nbsp;'; amt=`${money(r.amount)} ฿`; }
     else { t1=esc(r.item); t2=esc(r.note||'')||'&nbsp;'; amt=`${money(r.amount)} ฿`; }
     const ed=actions&&canEdit(r);
-    html+=`<div class="it"><div class="mid"><div class="t1">${t1}<span class="tag ${r.pay}">${PAY_L[r.pay]||''}</span></div><div class="t2">${t2}</div></div><div class="amt">${amt}</div>${ed?`<div class="acts"><button onclick="editRow('${kind}',${Number(r.id)})">แก้</button><button onclick="delRow('${kind}',${Number(r.id)})">ลบ</button></div>`:''}</div>`;
+    html+=`<div class="it"><div class="mid"><div class="t1">${t1}<span class="tag ${r.pay}">${PAY_L[r.pay]||''}</span>${allMode()&&r.branch?`<span class="brtag">${esc(r.branch)}</span>`:''}</div><div class="t2">${t2}</div></div><div class="amt">${amt}</div>${ed?`<div class="acts"><button onclick="editRow('${kind}',${Number(r.id)})">แก้</button><button onclick="delRow('${kind}',${Number(r.id)})">ลบ</button></div>`:''}</div>`;
   });
-  return `<div class="list">${html}</div>`;
+  if(lastD) html+='</div></div>';
+  return `<div class="dtools"><span>แตะวันที่เพื่อเปิด/ปิด</span><button type="button" onclick="allDays(this,true)">เปิดทั้งหมด</button><button type="button" onclick="allDays(this,false)">ปิดทั้งหมด</button></div><div class="list">${html}</div>`;
 }
 function editRow(kind,id){
   const r=ROWS[kind].find(x=>Number(x.id)===id); if(!r) return;
@@ -498,13 +559,14 @@ async function impFile(f){
 function impSetPay(p){ IMP.pay=p; ls.set('rf_parcel_imp_pay',p); IMP.rows.forEach(r=>{ if(!r.auto) r.pay=null; }); render(); }
 function impTogglePay(i){ const r=IMP.rows[i]; const cur=r.pay||IMP.pay; r.pay={cash:'transfer',transfer:'self',self:'cash'}[cur]; r.auto=r.pay==='self'; render(); }
 function renderImport(el){
+  if(!BR){ el.innerHTML=pickBranchCard('นำเข้า'); return; }
   const R=IMP.rows, nw=R.filter(r=>!r.exists&&!r.bad&&!r.dup);
   const pOf=r=>r.pay||IMP.pay;
   const cust=nw.filter(r=>pOf(r)!=='self'), selfR=nw.filter(r=>pOf(r)==='self');
   const sum=(k,a)=>(a||cust).reduce((x,r)=>x+num(r[k]),0);
   const cashN=nw.filter(r=>pOf(r)==='cash').length, trN=nw.filter(r=>pOf(r)==='transfer').length;
   el.innerHTML=`
-  <div class="card"><h3>นำเข้ารายงาน PayPoint<button class="btn-g" onclick="TAB='entry';shell();render()">‹ กลับ</button></h3>
+  <div class="card"><h3>นำเข้ารายงาน PayPoint · ${esc(brName())}<button class="btn-g" onclick="TAB='entry';shell();render()">‹ กลับ</button></h3>
     <p class="note">PayPoint → รายงาน → ดาวน์โหลด Excel แล้วเลือกไฟล์ที่นี่ · ระบบเก็บเฉพาะ วันที่ ขนส่ง เลขพัสดุ ชื่อผู้ส่ง ราคาขาย ต้นทุน (ไม่เก็บเบอร์โทร/ที่อยู่) · รายการที่เคยนำเข้าแล้วจะข้ามให้เอง</p>
     <label class="btn btn-p" style="margin-top:10px;cursor:pointer">${IMP.busy?'กำลังอ่านไฟล์…':(IMP.file?'เลือกไฟล์ใหม่':'เลือกไฟล์ Excel')}<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="impFile(this.files[0])"></label>
     ${IMP.file?`<div class="note" style="margin-top:6px">ไฟล์: ${esc(IMP.file)}</div>`:''}
@@ -550,7 +612,7 @@ const moneyBal=x=>num(x.opening)+num(x.in)-num(x.out);
 function nowStrip(){
   const mo=SUMM.money;
   return `<div class="card"><h3>${hh('wallet','orange','ยอดคงเหลือตอนนี้')}</h3><div class="kpis" style="margin:0">
-    ${creditList().map(c=>{const v=num(c.topup)-num(c.used);const low=num(c.topup)>0&&v<50;return kpi({i:'wallet',c:'orange',l:'เครดิต '+esc(c.name)+' คงเหลือ',v:money(v)+' ฿',neg:v<0||low,sub:[`เติมแล้ว ${money(c.topup)} · ตัดค่าส่ง ${money(c.used)}`,low?'<span style="color:var(--bad);font-weight:500">ใกล้หมด ควรเติม</span>':'']});}).join('')}
+    ${creditList().map(c=>{const v=num(c.topup)-num(c.used);const low=num(c.topup)>0&&v<50;return kpi({i:'wallet',c:'orange',l:'เครดิต '+esc(c.name)+(allMode()&&c.branch?' · '+esc(c.branch):' คงเหลือ'),v:money(v)+' ฿',neg:v<0||low,sub:[`เติมแล้ว ${money(c.topup)} · ตัดค่าส่ง ${money(c.used)}`,low?'<span style="color:var(--bad);font-weight:500">ใกล้หมด ควรเติม</span>':'']});}).join('')}
     ${kpi({i:'cash',c:'green',l:'เงินสดในมือ',v:money(moneyBal(mo.cash))+' ฿',neg:moneyBal(mo.cash)<0,sub:['ในลิ้นชักร้าน']})}
     ${kpi({i:'bank',c:'blue',l:'เงินในบัญชีขนส่ง',v:money(moneyBal(mo.transfer))+' ฿',neg:moneyBal(mo.transfer)<0,sub:['บัญชีแยกของขนส่ง']})}
   </div></div>`;
@@ -562,6 +624,26 @@ function expCard(){
   rows.forEach(r=>{ const k=String(r.item||'').trim()||'อื่น ๆ'; g[k]=g[k]||{n:0,a:0}; g[k].n++; g[k].a+=num(r.amount); });
   const list=Object.entries(g).sort((a,b)=>b[1].a-a[1].a); const tot=list.reduce((x,[,v])=>x+v.a,0);
   return `<div class="card"><h3>${hh('receipt','rose','รายจ่ายอื่นของร้าน · '+TH_M[M-1])}<span class="note">${money(tot)} ฿</span></h3>${list.length?`<div class="tw"><table class="tbl"><tr><th>รายการ</th><th>ครั้ง</th><th>รวม</th></tr>${list.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${money(v.a)}</td></tr>`).join('')}</table></div>`:`<div class="empty">ยังไม่มีรายจ่ายอื่นในเดือนนี้${VIEW_CODE?'':' · บันทึกได้ที่ บันทึก → รายจ่ายอื่น'}</div>`}</div>`;
+}
+
+// เทียบสาขา (ดูแบบรวม · เดือนที่เลือก)
+function brCard(){
+  const L=SUMM.branches; const mx=Math.max(1,...L.map(b=>num(b.profit)-num(b.expense)));
+  return `<div class="card"><h3>${hh('chart','indigo','เทียบสาขา · '+TH_M[M-1])}</h3><div class="drows">${L.map(b=>{ const sp=num(b.profit)-num(b.expense);
+    return `<div class="drow"><div class="dmid"><div class="dl1"><b>สาขา${esc(b.name)}</b> · ${num(b.count)} ชิ้น · เก็บ ${money(b.price)} ฿</div><div class="dbar"><i style="width:${sp>0?Math.max(4,Math.round(sp/mx*100)):0}%"></i></div></div>
+      <div class="dpf"><span class="pill ${sp>0?'pos':sp<0?'neg':''}">กำไรร้าน ${money(sp)}</span>${num(b.self_cost)?`<span class="pill self">บริษัท ${money(b.self_cost)}</span>`:''}</div></div>`; }).join('')}</div></div>`;
+}
+
+// รายวัน: วันละ 1 แถว — วันที่ · ชิ้น/ยอดเก็บ · แถบกำไร · ป้ายกำไร/ค่าส่งบริษัท
+function dayRows(m){
+  const days=(SUMM.days||[]).slice().reverse();
+  if(!days.length) return '<div class="empty">ยังไม่มีการส่งในเดือนนี้</div>';
+  const mx=Math.max(1,...days.map(d=>num(d.profit)));
+  return `<div class="drows">${days.map(d=>{ const w=dow(d.d), p=num(d.profit), dd=Number(String(d.d).slice(8,10));
+    return `<div class="drow"><div class="dchip${w===0||w===6?' we':''}"><b>${dd}</b><span>${TH_DS[w]}</span></div>
+      <div class="dmid"><div class="dl1"><b>${num(d.count)} ชิ้น</b> · เก็บ ${money(d.price)} ฿</div><div class="dbar"><i style="width:${p>0?Math.max(4,Math.round(p/mx*100)):0}%"></i></div></div>
+      <div class="dpf">${p||num(d.price)?`<span class="pill ${p>0?'pos':p<0?'neg':''}">กำไร ${p>0?'+':''}${money(p)}</span>`:''}${num(d.self_cost)?`<span class="pill self">บริษัท ${money(d.self_cost)}</span>`:''}</div></div>`; }).join('')}</div>
+  <div class="dsum"><span>รวม ${TH_M[M-1]}: <b style="color:var(--ink)">${num(m.count)} ชิ้น</b></span><span class="pill ${num(m.profit)>0?'pos':''}">กำไร ${money(m.profit)} ฿</span>${num(m.self_cost)?`<span class="pill self">บริษัท ${money(m.self_cost)} ฿</span>`:''}</div>`;
 }
 
 // ───────── หน้า สรุป ─────────
@@ -584,13 +666,13 @@ function renderSum(el){
     ${kpi({i:'box',c:'orange',l:'จำนวนชิ้น',v:money(m.count)+' ชิ้น',sub:[num(m.self_count)?`ลูกค้า ${custN} · ส่งเอง ${num(m.self_count)}`:'']})}
     ${kpi({i:'topup',c:'cyan',l:'เติมเงินขนส่ง',v:money(m.topup)+' ฿',sub:['เดือนนี้']})}
   </div>
-  <div class="card"><h3>${hh('calendar','blue','รายวัน · '+TH_M[M-1])}</h3>${SUMM.days.length?`<div class="tw"><table class="tbl"><tr><th>วันที่</th><th>ชิ้น</th><th>ยอดเก็บ</th><th>กำไรจากลูกค้า</th><th>ค่าส่งบริษัท</th></tr>
-    ${SUMM.days.slice().reverse().map(d=>`<tr><td>${fdate(d.d)}</td><td>${d.count}</td><td>${money(d.price)}</td>${cell(d.profit)}${cell(d.self_cost)}</tr>`).join('')}</table></div>`:'<div class="empty">ยังไม่มีการส่งในเดือนนี้</div>'}</div>
-  ${expCard()}
-  <div class="card"><h3>${hh('list','teal','รายการ · '+TH_M[M-1])}</h3>
+  ${allMode()&&(SUMM.branches||[]).length>1?brCard():''}
+  <div class="card"><h3>${hh('calendar','blue','รายวัน · '+TH_M[M-1])}</h3>
     <div class="seg">${['ship','topup','expense'].map(k=>`<button class="${VKIND===k?'on':''}" onclick="VKIND='${k}';render()">${({ship:'ส่งพัสดุ',topup:'เติมเงิน',expense:'รายจ่ายอื่น'})[k]} <small style="opacity:.7">${(ROWS[k]||[]).length}</small></button>`).join('')}</div>
-    ${rowList(VKIND,false)}</div>`;
+    ${rowList(VKIND,false)}${VKIND==='ship'&&(ROWS.ship||[]).length?monthSum(m):''}</div>
+  ${expCard()}`;
 }
+function monthSum(m){ return `<div class="dsum"><span>รวม ${TH_M[M-1]}: <b style="color:var(--ink)">${num(m.count)} ชิ้น</b></span><span class="pill ${num(m.profit)>0?'pos':''}">กำไร ${money(m.profit)} ฿</span>${num(m.self_cost)?`<span class="pill self">บริษัท ${money(m.self_cost)} ฿</span>`:''}</div>`; }
 
 // ───────── หน้า ทั้งปี ─────────
 async function shiftYear(d){ Y+=d; await loadMonth(); render(); }
@@ -621,7 +703,7 @@ function renderBal(el){
   const mo=SUMM.money; const bal=moneyBal;
   el.innerHTML=`
   <div class="card"><h3>${hh('wallet','orange','เครดิตคงเหลือในระบบขนส่ง')}</h3>
-    ${cs.map(c=>{const cr=num(c.topup)-num(c.used);const low=num(c.topup)>0&&cr<50;return `<div class="bal"><div class="lt">${chipi(c.is_wallet?'wallet':'truck','orange')}<div><div class="nm">${esc(c.name)}</div><div class="sub">เติม ${money(c.topup)} · ใช้ ${money(c.used)} · ${money(c.count)} ชิ้น</div>${(c.members||[]).length?`<div class="sub">ใช้ร่วมกับ ${esc(c.members.join(', '))}</div>`:''}</div></div><div class="v${low?' low':''}">${money(cr)} ฿${low?'<small>ใกล้หมด ควรเติม</small>':''}</div></div>`;}).join('')||'<div class="empty">ยังไม่มีขนส่ง</div>'}
+    ${cs.map(c=>{const cr=num(c.topup)-num(c.used);const low=num(c.topup)>0&&cr<50;return `<div class="bal"><div class="lt">${chipi(c.is_wallet?'wallet':'truck','orange')}<div><div class="nm">${esc(c.name)}${allMode()&&c.branch?' · '+esc(c.branch):''}</div><div class="sub">เติม ${money(c.topup)} · ใช้ ${money(c.used)} · ${money(c.count)} ชิ้น</div>${(c.members||[]).length?`<div class="sub">ใช้ร่วมกับ ${esc(c.members.join(', '))}</div>`:''}</div></div><div class="v${low?' low':''}">${money(cr)} ฿${low?'<small>ใกล้หมด ควรเติม</small>':''}</div></div>`;}).join('')||'<div class="empty">ยังไม่มีขนส่ง</div>'}
   </div>
   <div class="card"><h3>${hh('coins','green','เงินสด / เงินในบัญชี')}</h3>
     ${[['cash','เงินสดในมือ'],['transfer','เงินในบัญชีขนส่ง']].map(([k,l])=>`<div class="bal"><div class="lt">${k==='cash'?chipi('cash','green'):chipi('bank','blue')}<div><div class="nm">${l}</div><div class="sub">ตั้งต้น ${money(mo[k].opening)} · รับจากลูกค้า ${money(mo[k].in)} · รายจ่ายร้าน ${money(mo[k].out)}</div></div></div><div class="v${bal(mo[k])<0?' low':''}">${money(bal(mo[k]))} ฿</div></div>`).join('')}
@@ -641,18 +723,25 @@ async function renderSet(el){
   el.innerHTML='<div class="skel"></div><div class="skel"></div>';
   if(USERS===null){ const [u,l]=await Promise.all([api('users_list'),api('share_get')]); USERS=u.ok?u.users:[]; LINK=l.ok?l.link:null; }
   const url=LINK?`${location.origin}${IS_STG?'/st':''}/pv/${LINK.code}`:'';
+  const OP=OPENINGS[String(BR)]||{cash:0,transfer:0};
   el.innerHTML=`
   <div class="cols"><div>
-  <div class="card"><h3>ลิงก์ดูรายรับ-รายจ่าย (ดูอย่างเดียว)</h3>
+  <div class="card"><h3>ลิงก์ดูรายรับ-รายจ่าย · ${esc(brName())}</h3>
+    <p class="note" style="margin-bottom:8px">ดูอย่างเดียว แก้ไม่ได้ · ${BR?'เห็นเฉพาะสาขานี้':'กดสลับดูได้ทุกสาขา และแบบรวม'} — เปลี่ยนสาขาด้านบนเพื่อจัดการลิงก์ของสาขาอื่น</p>
     ${LINK?`<div class="linkbox">${esc(url)}</div>
       <div class="note">เปิดแล้ว ${LINK.view_count} ครั้ง${LINK.last_viewed_at?' · ล่าสุด '+new Date(LINK.last_viewed_at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):''}</div>
       <div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="btn-s" onclick="copyLink('${esc(url)}')">คัดลอกลิงก์</button><a class="btn-g" style="text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">เปิดดู</a><button class="btn-g" onclick="shareAct('share_create','สร้างลิงก์ใหม่? ลิงก์เดิมจะใช้ไม่ได้ทันที')">สร้างลิงก์ใหม่</button><button class="btn-d" onclick="shareAct('share_revoke','ยกเลิกลิงก์? คนที่มีลิงก์จะเปิดไม่ได้ทันที')">ยกเลิกลิงก์</button></div>`
      :`<p class="note">ยังไม่มีลิงก์ · สร้างแล้วส่งให้คนที่ต้องการให้ดูตัวเลข (ดูได้อย่างเดียว แก้ไม่ได้)</p><button class="btn-s" style="margin-top:10px" onclick="shareAct('share_create')">สร้างลิงก์</button>`}
   </div>
-  <div class="card"><h3>ยอดเงินตั้งต้น</h3>
+  ${BR?`<div class="card"><h3>ยอดเงินตั้งต้น · ${esc(brName())}</h3>
     <p class="note" style="margin-bottom:8px">เงินของร้านขนส่งก่อนเริ่มใช้ระบบ (ตั้งครั้งเดียว) · เงินเติมเครดิตเป็นเงินบริษัท ไม่ต้องใส่ตรงนี้</p>
-    <div class="f2"><div><label class="l">เงินสดในมือ</label><input class="in" inputmode="decimal" id="opC" value="${num(OPENING.cash)}"></div><div><label class="l">เงินในบัญชีขนส่ง</label><input class="in" inputmode="decimal" id="opT" value="${num(OPENING.transfer)}"></div></div>
+    <div class="f2"><div><label class="l">เงินสดในมือ</label><input class="in" inputmode="decimal" id="opC" value="${num(OP.cash)}"></div><div><label class="l">เงินในบัญชีขนส่ง</label><input class="in" inputmode="decimal" id="opT" value="${num(OP.transfer)}"></div></div>
     <button class="btn-s" style="margin-top:10px" onclick="saveOpening()">บันทึกยอดตั้งต้น</button>
+  </div>`:`<div class="card"><h3>ยอดเงินตั้งต้น</h3><p class="note">เลือกสาขาด้านบนเพื่อตั้งยอดเงินตั้งต้นของสาขานั้น</p></div>`}
+  <div class="card"><h3>สาขา</h3>
+    ${BRANCHES.map(b=>`<div class="row" style="margin-bottom:6px"><input class="in" value="${esc(b.name)}" id="bn${b.id}"><button class="btn-g" onclick="saveBranch(${b.id})">บันทึก</button></div>`).join('')}
+    <div class="row" style="margin-top:10px"><input class="in" id="bnNew" placeholder="เพิ่มสาขาใหม่ เช่น ชลบุรี"><button class="btn-s" onclick="saveBranch(null)">เพิ่ม</button></div>
+    <p class="note" style="margin-top:6px">แต่ละสาขามีเครดิต PayPoint เงินสด และบัญชีของตัวเอง</p>
   </div></div><div>
   <div class="card"><h3>ขนส่ง</h3>
     ${CARRIERS.map(c=>`<div class="crow"><div class="row"><input class="in" value="${esc(c.name)}" id="cn${c.id}"><button class="btn-g" onclick="saveCarrier(${c.id})">บันทึก</button>${c.is_wallet?'':`<button class="${c.active?'btn-g':'btn-s'}" onclick="toggleCarrier(${c.id},${!c.active})">${c.active?'ซ่อน':'ใช้งาน'}</button>`}</div>
@@ -662,24 +751,25 @@ async function renderSet(el){
     <p class="note" style="margin-top:6px">ขนส่งใหม่จะตัดเครดิตจาก ${esc((WALLETS()[0]||{}).name||'ตัวเอง')} ให้ก่อน (เปลี่ยนได้) · ขนส่งที่ซ่อนจะไม่ขึ้นตอนบันทึก แต่ข้อมูลเดิมยังอยู่</p>
   </div>
   <div class="card"><h3>ผู้ใช้ร้านขนส่ง</h3>
-    <p class="note" style="margin-bottom:8px">ผู้ใช้เหล่านี้เข้าได้เฉพาะเว็บขนส่ง (เข้า CRM ไม่ได้) · บันทึก/แก้/ลบ ได้เฉพาะรายการของตัวเองภายใน 7 วัน</p>
-    ${(USERS||[]).map(u=>`<div class="bal"><div><div class="nm">${esc(u.name||u.username)}${u.active?'':' <span class="tag" style="background:var(--neutral-soft);color:var(--mute)">ปิดใช้</span>'}</div><div class="sub">${esc(u.username)}</div></div><div class="row"><button class="btn-g" onclick="resetPw(${u.id})">ตั้งรหัสใหม่</button><button class="${u.active?'btn-d':'btn-s'}" onclick="toggleUser(${u.id},${!u.active})">${u.active?'ปิดใช้':'เปิดใช้'}</button></div></div>`).join('')||'<div class="note">ยังไม่มีผู้ใช้</div>'}
+    <p class="note" style="margin-bottom:8px">ผู้ใช้เหล่านี้เข้าได้เฉพาะเว็บขนส่ง (เข้า CRM ไม่ได้) · บันทึก/แก้/ลบ ได้เฉพาะรายการของตัวเองภายใน 7 วัน · เห็นเฉพาะสาขาของตัวเอง</p>
+    ${(USERS||[]).map(u=>`<div class="bal"><div><div class="nm">${esc(u.name||u.username)}${u.active?'':' <span class="tag" style="background:var(--neutral-soft);color:var(--mute)">ปิดใช้</span>'}</div><div class="sub">${esc(u.username)} · สาขา${esc(u.branch||'-')}</div></div><div class="row"><button class="btn-g" onclick="resetPw(${u.id})">ตั้งรหัสใหม่</button><button class="${u.active?'btn-d':'btn-s'}" onclick="toggleUser(${u.id},${!u.active})">${u.active?'ปิดใช้':'เปิดใช้'}</button></div></div>`).join('')||'<div class="note">ยังไม่มีผู้ใช้</div>'}
     <div class="f" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
       <div class="f2"><div><label class="l">ชื่อผู้ใช้ (a-z 0-9)</label><input class="in" id="nuU" autocapitalize="none"></div><div><label class="l">ชื่อที่แสดง</label><input class="in" id="nuN"></div></div>
-      <div><label class="l">รหัสผ่าน (อย่างน้อย 6 ตัว)</label><input class="in" id="nuP" type="text" autocomplete="new-password"></div>
+      <div class="f2"><div><label class="l">รหัสผ่าน (อย่างน้อย 6 ตัว)</label><input class="in" id="nuP" type="text" autocomplete="new-password"></div><div><label class="l">สาขา</label><select class="in" id="nuB">${BRANCHES.map(b=>`<option value="${b.id}"${b.id===BR?' selected':''}>${esc(b.name)}</option>`).join('')}</select></div></div>
       <button class="btn-s" onclick="addUser()">เพิ่มผู้ใช้</button>
     </div>
   </div></div></div>`;
 }
 async function shareAct(a,conf){ if(conf&&!confirm(conf)) return; const d=await api(a); if(!d.ok){toast(errMsg(d.error));return;} LINK=d.link; toast(a==='share_revoke'?'ยกเลิกลิงก์แล้ว':'สร้างลิงก์แล้ว'); render(); }
 function copyLink(u){ (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('คัดลอกลิงก์แล้ว')).catch(()=>prompt('คัดลอกลิงก์นี้',u)); }
-async function saveOpening(){ const d=await api('opening_save',{cash:Number(document.getElementById('opC').value)||0,transfer:Number(document.getElementById('opT').value)||0}); if(!d.ok){toast(errMsg(d.error));return;} OPENING={cash:Number(document.getElementById('opC').value)||0,transfer:Number(document.getElementById('opT').value)||0}; await loadMonth(); toast('บันทึกแล้ว'); }
-async function reloadBoot(){ const d=await api('boot'); if(d.ok){ CARRIERS=d.carriers||[]; OPENING=d.opening||OPENING; } }
+async function saveBranch(id){ const name=(document.getElementById(id?'bn'+id:'bnNew').value||'').trim(); if(!name){toast('กรุณาใส่ชื่อสาขา');return;} const d=await api('save',{branch:'',kind:'branch',row:id?{id,name}:{name}}); if(!d.ok){toast(errMsg(d.error));return;} await reloadBoot(); shell(); toast('บันทึกแล้ว'); render(); }
+async function saveOpening(){ const op={cash:Number(document.getElementById('opC').value)||0,transfer:Number(document.getElementById('opT').value)||0}; const d=await api('opening_save',op); if(!d.ok){toast(errMsg(d.error));return;} OPENINGS[String(BR)]=op; await loadMonth(); toast('บันทึกแล้ว'); }
+async function reloadBoot(){ const d=await api('boot'); if(d.ok){ CARRIERS=d.carriers||[]; OPENINGS=d.openings||OPENINGS; BRANCHES=d.branches||BRANCHES; } }
 const WALLETS=()=>CARRIERS.filter(c=>c.is_wallet);
 async function setWallet(id,v){ const c=CARRIERS.find(x=>x.id===id); const d=await api('carrier_save',{id,name:c.name,wallet_id:v?Number(v):null}); if(!d.ok){toast(errMsg(d.error));return;} await reloadBoot(); await loadMonth(); toast('บันทึกแล้ว'); render(); }
 async function saveCarrier(id){ const name=(document.getElementById(id?'cn'+id:'cnNew').value||'').trim(); if(!name){toast('กรุณาใส่ชื่อขนส่ง');return;} const w=WALLETS()[0]; const d=await api('carrier_save',id?{id,name}:{name,wallet_id:w?w.id:null}); if(!d.ok){toast(errMsg(d.error));return;} await reloadBoot(); toast('บันทึกแล้ว'); render(); }
 async function toggleCarrier(id,active){ const c=CARRIERS.find(x=>x.id===id); const d=await api('carrier_save',{id,name:c.name,active}); if(!d.ok){toast(errMsg(d.error));return;} await reloadBoot(); render(); }
-async function addUser(){ const d=await api('user_save',{username:document.getElementById('nuU').value.trim(),full_name:document.getElementById('nuN').value.trim(),password:document.getElementById('nuP').value}); if(!d.ok){toast(errMsg(d.error));return;} USERS=null; toast('เพิ่มผู้ใช้แล้ว'); render(); }
+async function addUser(){ const d=await api('user_save',{username:document.getElementById('nuU').value.trim(),full_name:document.getElementById('nuN').value.trim(),password:document.getElementById('nuP').value,branch_id:Number(document.getElementById('nuB').value)}); if(!d.ok){toast(errMsg(d.error));return;} USERS=null; toast('เพิ่มผู้ใช้แล้ว'); render(); }
 async function resetPw(id){ const p=prompt('รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)'); if(!p) return; const d=await api('user_save',{id,password:p}); if(!d.ok){toast(errMsg(d.error));return;} toast('ตั้งรหัสใหม่แล้ว — ผู้ใช้นี้ต้องเข้าสู่ระบบใหม่'); }
 async function toggleUser(id,active){ if(!active&&!confirm('ปิดใช้ผู้ใช้นี้? จะถูกออกจากระบบทันที')) return; const d=await api('user_save',{id,active}); if(!d.ok){toast(errMsg(d.error));return;} USERS=null; render(); }
 
