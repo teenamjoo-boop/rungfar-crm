@@ -11,3 +11,7 @@ verify_jwt = false
 # 2026-10-17: storage-cleanup ตรวจ token จาก Vault เอง (x-cleanup-token) → ปิด Verify JWT
 [functions.storage-cleanup]
 verify_jwt = false
+
+# 2026-10-21: parcel-api ตรวจ session token ของระบบขนส่งเอง (หน้าเว็บไม่มีกุญแจ) → ปิด Verify JWT
+[functions.parcel-api]
+verify_jwt = false

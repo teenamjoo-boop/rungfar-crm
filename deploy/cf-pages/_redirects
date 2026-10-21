@@ -1,0 +1,10 @@
+# Cloudflare Pages (rungfa.com) — เป้าหมายไม่ใส่ .html เพราะ Pages เสิร์ฟ /ชื่อไฟล์ ให้อัตโนมัติ
+# เว็บขนส่งพัสดุ (Production): /parcel = ล็อกอิน (ไฟล์ parcel.html), /pv/<รหัส> = ลิงก์ดูอย่างเดียว
+/pv/*        /parcel           200
+# เว็บขนส่งพัสดุ (Staging): /st/parcel = ล็อกอิน, /st/pv/<รหัส> = ลิงก์ดูอย่างเดียว
+/st/parcel   /parcel-staging   200
+/st/pv/*     /parcel-staging   200
+# ลิงก์ทดสอบ (Staging): /st/s/<รหัส> → share-staging — ต้องอยู่ก่อนบรรทัด /s/*
+/st/s/*      /share-staging    200
+# ลิงก์จริง (Production): /s/<รหัส> → share
+/s/*         /share            200

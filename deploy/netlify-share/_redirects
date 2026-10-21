@@ -1,3 +1,6 @@
+# เว็บขนส่งพัสดุ (Staging): /st/parcel = ล็อกอิน, /st/pv/<รหัส> = ลิงก์ดูอย่างเดียว
+/st/parcel   /parcel-staging.html   200
+/st/pv/*   /parcel-staging.html   200
 # ลิงก์ทดสอบ (Staging): /st/s/<รหัส> → share-staging.html  — ต้องอยู่ก่อนบรรทัด /s/*
 /st/s/*   /share-staging.html   200
 # ลิงก์จริง (Production): /s/<รหัส> → share.html
