@@ -1,18 +1,580 @@
-<!doctype html>
-<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</title>
-<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด | เอกสารแรงงานต่างด้าวครบวงจร</title>
+<link rel="icon" href="/img/01-4d7f490b92.webp" />
+<meta name="description" content="รุ่งฟ้า รุ่งฟ้า จำกัด บริการ PASSPORT, VISA, WORK PERMIT, MOU 3 สัญชาติ เปลี่ยนนายจ้าง แจ้งเข้า-ออก รายงานตัว 90 วัน ตรวจสุขภาพ+เอกซเรย์เคลื่อนที่ รับ-ส่งถึงโรงงาน สำนักงานใหญ่ปทุมธานี มี 9 สาขา" />
 <style>
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f1ec;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#1d1a16}
-.c{max-width:360px;margin:24px;text-align:center;background:#fff;border:1px solid #e8e1d6;border-radius:20px;padding:28px 22px}
-img{width:110px;height:110px}
-h1{font-size:19px;margin:12px 0 4px}p{color:#7a7166;font-size:14px;margin:0 0 18px}
-a{display:block;text-decoration:none;font-weight:600;font-size:15px;padding:12px;border-radius:12px;margin-top:8px}
-.fb{background:#1877f2;color:#fff}.tel{border:1px solid #e8e1d6;color:#1d1a16}
-</style></head><body><div class="c">
-<img src="data:image/png;base64,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" alt="RUNGFAR">
-<h1>บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</h1>
-<p>ศูนย์ประสานงานแรงงานต่างด้าว MOU<br>ลูกค้าเปิดดูข้อมูลแรงงานผ่านลิงก์ที่บริษัทส่งให้</p>
-<a class="fb" href="https://www.facebook.com/rungfarungfaofficial/" target="_blank" rel="noopener">ติดตามข่าวสาร Facebook</a>
-<a class="tel" href="tel:0922566114">โทร 092-256-6114</a>
-</div></body></html>
+:root { --orange:#ff6a00; --orange2:#ff8a28; --dark:#15110e; --cream:#fff7ef; --muted:#6b625b; --line:#f1ded0; }
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;font-family:Tahoma,'Segoe UI',Arial,sans-serif;background:#fff;color:var(--dark);line-height:1.65;overflow-x:hidden} a{color:inherit} img{max-width:100%;display:block} .wrap{width:min(1180px,92%);margin:auto} 
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,106,0,.16)} .nav{height:76px;display:flex;align-items:center;justify-content:space-between;gap:18px} .brand{display:flex;align-items:center;gap:12px;font-weight:900} .brand img{width:54px;height:54px;object-fit:contain} .brand small{display:block;font-weight:700;color:var(--muted);font-size:12px;margin-top:-4px} .navlinks{display:flex;gap:18px;font-size:14px;font-weight:700;color:#4d433c} .navlinks a{text-decoration:none} .call-top{background:linear-gradient(135deg,var(--orange),#ff9d42);color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:900;box-shadow:0 10px 24px rgba(255,106,0,.25)}
+.hero{position:relative;min-height:calc(100vh - 76px);overflow:hidden;background:radial-gradient(circle at 80% 10%,#ffe1c4 0,#fff7ef 28%,#fff 58%)} .hero:before{content:"";position:absolute;inset:-120px -20px auto auto;width:520px;height:520px;background:linear-gradient(135deg,#ff6a00,#ffd3a6);border-radius:50%;opacity:.18;filter:blur(3px)} .hero-grid{display:grid;grid-template-columns:1.03fr .97fr;gap:44px;align-items:center;padding:62px 0 80px;position:relative;z-index:1} .badge{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 14px;color:#8a4a15;font-weight:900;box-shadow:0 10px 30px rgba(43,24,8,.06)} h1{font-size:clamp(36px,6vw,76px);line-height:1.04;margin:18px 0 16px;letter-spacing:-1.5px} .grad{background:linear-gradient(135deg,var(--orange),#ffb36b);-webkit-background-clip:text;background-clip:text;color:transparent} .lead{font-size:clamp(18px,2vw,24px);color:#4b413a;font-weight:700;margin:0 0 24px} .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0} .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;border-radius:18px;padding:15px 22px;font-weight:900;border:0} .btn.primary{background:linear-gradient(135deg,var(--orange),#ff8f31);color:#fff;box-shadow:0 18px 40px rgba(255,106,0,.28)} .btn.secondary{background:#fff;color:var(--dark);border:1px solid var(--line)} .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px} .stat{background:#fff;border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 18px 40px rgba(44,25,8,.07)} .stat b{font-size:25px;color:var(--orange);display:block;line-height:1} .stat span{font-weight:800;color:#5b514b;font-size:13px}
+.phone-card{position:relative;border-radius:36px;background:#111;padding:12px;box-shadow:0 28px 80px rgba(38,18,0,.25);transform:rotate(1deg)} .slider{position:relative;border-radius:28px;overflow:hidden;background:#111;aspect-ratio:4/5} .slide{position:absolute;inset:0;opacity:0;transform:scale(1.04);transition:1s ease} .slide.active{opacity:1;transform:scale(1)} .slide img{width:100%;height:100%;object-fit:cover} .slide:after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.58),rgba(0,0,0,.05) 58%)} .slide-caption{position:absolute;left:20px;right:20px;bottom:22px;color:#fff;z-index:2} .slide-caption b{font-size:24px;display:block} .dots{position:absolute;right:18px;bottom:18px;z-index:5;display:flex;gap:8px} .dot{width:10px;height:10px;border-radius:999px;border:0;background:rgba(255,255,255,.45);cursor:pointer} .dot.active{width:28px;background:#fff}
+.section{padding:84px 0} .section.alt{background:linear-gradient(180deg,#fff7ef,#fff)} .center{text-align:center} .eyebrow{color:var(--orange);font-weight:900;letter-spacing:.4px} h2{font-size:clamp(30px,4vw,48px);line-height:1.15;margin:8px 0 14px} .sub{color:var(--muted);font-size:18px;max-width:760px;margin:0 auto 34px} .service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px} .service{background:#fff;border:1px solid var(--line);border-radius:28px;padding:26px;text-align:left;box-shadow:0 18px 45px rgba(43,24,8,.07);position:relative;overflow:hidden} .service:before{content:"";position:absolute;right:-30px;top:-30px;width:95px;height:95px;border-radius:50%;background:#fff1e4} .icon{font-size:32px} .service h3{margin:10px 0 8px;font-size:22px} .service p{margin:0;color:var(--muted);font-weight:700}
+.proof-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;align-items:stretch} .proof-main,.proof-stack div{border-radius:30px;overflow:hidden;box-shadow:0 18px 45px rgba(43,24,8,.12);background:#eee} .proof-main img{height:100%;width:100%;object-fit:cover} .proof-stack{display:grid;gap:20px} .proof-stack img{height:260px;width:100%;object-fit:cover} .trust-strip{margin-top:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px} .trust{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;font-weight:900;color:#4b413a} .trust span{color:var(--orange)}
+.branch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px} .branch-card{background:#fff;border:1px solid var(--line);border-radius:26px;overflow:hidden;box-shadow:0 15px 38px rgba(43,24,8,.08)} .branch-img{aspect-ratio:1.08/1;overflow:hidden;background:#eee} .branch-img img{width:100%;height:100%;object-fit:cover;transition:.5s ease} .branch-card:hover img{transform:scale(1.05)} .branch-body{padding:18px} .pin{font-weight:900;color:var(--orange)} .branch-body p{min-height:48px;color:var(--muted);font-weight:700;margin:8px 0 14px;font-size:14px} .mini-btn{display:inline-flex;text-decoration:none;background:#fff4ea;color:#d85100;font-weight:900;padding:10px 14px;border-radius:14px;border:1px solid #ffd8bd}
+.cta{background:linear-gradient(135deg,#16100b,#2a1608 40%,#ff6a00);color:#fff;border-radius:38px;padding:40px;display:grid;grid-template-columns:1fr 260px;gap:28px;align-items:center;box-shadow:0 28px 80px rgba(255,106,0,.22)} .cta h2{margin-top:0} .cta p{font-size:19px;color:#fff0e6;font-weight:700} .qrbox{background:#fff;border-radius:28px;padding:16px;color:#111;text-align:center;font-weight:900} .qrbox img{border-radius:18px} .contact-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px} .contact-card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px;text-align:center;box-shadow:0 15px 38px rgba(43,24,8,.07)} .contact-card b{display:block;font-size:22px;color:var(--orange)}
+.float-wrap{position:fixed;right:18px;bottom:18px;z-index:80;display:flex;flex-direction:column;gap:10px} .float-btn{text-decoration:none;color:#fff;border-radius:999px;padding:15px 20px;font-weight:900;box-shadow:0 12px 30px rgba(0,0,0,.25);text-align:center} .float-btn.line{background:#06c755} .float-btn.tel{background:linear-gradient(135deg,var(--orange),#ff982f)} footer{background:#120d09;color:#fff;padding:36px 0;text-align:center} .reveal{opacity:0;transform:translateY(18px);transition:.75s ease} .reveal.show{opacity:1;transform:none}
+@media(max-width:920px){.navlinks{display:none}.hero-grid,.proof-grid,.cta{grid-template-columns:1fr}.hero-grid{padding-top:30px}.phone-card{transform:none}.service-grid,.branch-grid{grid-template-columns:1fr 1fr}.trust-strip,.contact-cards{grid-template-columns:1fr 1fr}.cta{padding:26px}.qrbox{max-width:280px;margin:auto}}
+@media(max-width:560px){.nav{height:66px}.brand img{width:44px;height:44px}.brand div{font-size:14px}.call-top{padding:10px 12px;font-size:13px}.hero{min-height:auto}h1{font-size:42px}.stats,.service-grid,.branch-grid,.trust-strip,.contact-cards{grid-template-columns:1fr}.section{padding:58px 0}.hero-actions .btn{width:100%}.float-wrap{left:12px;right:12px;bottom:12px;flex-direction:row}.float-btn{flex:1;padding:14px 8px;font-size:14px}.proof-stack img{height:210px}}
+
+/* PATCH: fixed by ChatGPT - keep original design, only image/footer fixes */
+.brand img{width:54px!important;height:54px!important;object-fit:contain!important;border-radius:50%!important;background:#fff!important;padding:4px!important;border:1px solid var(--line)!important}
+.proof-grid{align-items:stretch!important}
+.proof-main,.proof-stack div{min-height:0!important;background:#fff!important}
+.proof-main img,.proof-stack img{width:100%!important;height:100%!important;object-fit:cover!important; object-position:center top;display:block!important}
+.proof-main{min-height:620px!important}
+.proof-stack{grid-template-rows:1fr 1fr!important}
+.proof-stack div{height:300px!important}
+footer{background:linear-gradient(135deg,#fff7ef,#fff)!important;color:#211714!important;padding:46px 0 80px!important;border-top:1px solid #f1ded0!important;text-align:left!important}
+.footer-company{display:grid;grid-template-columns:1.2fr 1fr 1fr 160px;gap:22px;align-items:start}
+.footer-company h3{margin:0 0 8px;color:#ff6a00;font-size:24px}
+.footer-company b{color:#ff6a00}
+.footer-company p{margin:6px 0;color:#4b413a;font-weight:700}
+.footer-logo{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.footer-logo img{width:64px;height:64px;object-fit:contain;border-radius:50%;background:#fff;border:1px solid #f1ded0;padding:5px}
+.footer-qr{width:130px;border-radius:18px;border:8px solid #fff;box-shadow:0 10px 25px rgba(0,0,0,.08)}
+@media(max-width:920px){.footer-company{grid-template-columns:1fr 1fr}.proof-main{min-height:460px!important}}
+@media(max-width:560px){.footer-company{grid-template-columns:1fr}.proof-main{min-height:340px!important}.proof-stack div{height:260px!important}}
+
+
+/* PATCH: หน้าแรกสไลด์แนวนอนใหญ่ */
+.hero-grid{
+  grid-template-columns:0.92fr 1.28fr!important;
+  gap:44px!important;
+}
+.hero-wide-card{
+  width:100%;
+  border-radius:34px;
+  background:#fff;
+  padding:12px;
+  box-shadow:0 28px 80px rgba(38,18,0,.20);
+}
+.wide-slider{
+  position:relative;
+  width:100%;
+  height:520px;
+  border-radius:26px;
+  overflow:hidden;
+  background:#fff1e7;
+}
+.wide-slider .slide{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  transform:scale(1.025);
+  transition:opacity .8s ease, transform 1.2s ease;
+}
+.wide-slider .slide.active{
+  opacity:1;
+  transform:scale(1);
+}
+.wide-slider .slide img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.wide-slider .slide:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to top,rgba(0,0,0,.50),rgba(0,0,0,.04) 58%);
+}
+.wide-slider .slide-caption{
+  position:absolute;
+  left:24px;
+  right:24px;
+  bottom:24px;
+  color:#fff;
+  z-index:2;
+}
+.wide-slider .slide-caption b{
+  display:block;
+  font-size:28px;
+}
+.wide-slider .dots{
+  position:absolute;
+  right:24px;
+  bottom:26px;
+  z-index:5;
+  display:flex;
+  gap:8px;
+}
+.wide-slider .dot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  border:0;
+  background:rgba(255,255,255,.55);
+  cursor:pointer;
+}
+.wide-slider .dot.active{
+  width:30px;
+  background:#fff;
+}
+@media(max-width:920px){
+  .hero-grid{grid-template-columns:1fr!important}
+  .wide-slider{height:380px}
+}
+@media(max-width:560px){
+  .wide-slider{height:280px}
+  .wide-slider .slide-caption b{font-size:21px}
+  .wide-slider .slide-caption{left:16px;right:16px;bottom:18px}
+}
+
+
+/* PATCH V2: ข้อความบน + สไลด์แนวนอนใหญ่เต็มแถว */
+.hero-v2{
+  min-height:auto!important;
+  padding:68px 0 78px!important;
+  background:radial-gradient(circle at 85% 0%,#ffd4ae 0,#fff7ef 35%,#fff 72%)!important;
+}
+.hero-v2-wrap{
+  display:block!important;
+}
+.hero-v2-text{
+  max-width:980px;
+  margin:0 auto 34px;
+  text-align:center;
+}
+.hero-v2-text h1{
+  font-size:clamp(38px,4.5vw,60px)!important; line-height:1.05!important;
+  line-height:.98!important;
+  margin:20px auto 20px!important;
+  letter-spacing:-2px!important;
+}
+.hero-v2-text .lead{
+  max-width:980px;
+  margin:0 auto!important;
+  font-size:clamp(14px,1.2vw,18px)!important; line-height:1.4!important;
+  line-height:1.55!important;
+  font-weight:800!important;
+  color:#3f332d!important;
+}
+.hero-v2-actions{
+  justify-content:center!important;
+  margin:28px 0 22px!important;
+}
+.hero-v2-stats{
+  max-width:760px;
+  margin:20px auto 0!important;
+}
+.hero-big-slider{
+  width:100%;
+  max-width:1180px;
+  margin:0 auto;
+  border-radius:34px;
+  background:#fff;
+  padding:12px;
+  box-shadow:0 28px 80px rgba(38,18,0,.20);
+}
+.hero-big-slider .wide-slider{
+  height:420px!important;
+  border-radius:26px!important;
+}
+.hero-big-slider .wide-slider .slide img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important; object-position:center top;
+}
+.hero-big-slider .wide-slider .slide-caption b{
+  font-size:34px!important;
+}
+.hero-big-slider .wide-slider .slide-caption span{
+  font-size:18px!important;
+}
+@media(max-width:920px){
+  .hero-v2{padding:44px 0 56px!important}
+  .hero-v2-text h1{font-size:clamp(44px,10vw,70px)!important}
+  .hero-big-slider .wide-slider{height:390px!important}
+}
+@media(max-width:560px){
+  .hero-v2-text{text-align:left}
+  .hero-v2-text h1{font-size:44px!important}
+  .hero-v2-actions .btn{width:100%}
+  .hero-big-slider{padding:8px;border-radius:24px}
+  .hero-big-slider .wide-slider{height:280px!important;border-radius:18px!important}
+  .hero-big-slider .wide-slider .slide-caption b{font-size:21px!important}
+}
+
+
+/* PATCH V3: สไลด์ใหญ่ตรงตำแหน่งปุ่ม + รูปเห็นเต็ม */
+.hero-v3{
+  min-height:auto!important;
+  padding:38px 0 60px!important;
+}
+.hero-v3 .hero-v2-text{
+  max-width:1280px!important;
+  margin:0 auto!important;
+  text-align:center!important;
+}
+.hero-v3 .hero-v2-text h1{
+  font-size:clamp(34px,4vw,58px)!important;
+  line-height:1.08!important;
+  margin:14px auto 12px!important;
+  letter-spacing:-1px!important;
+}
+.hero-v3 .hero-v2-text .lead{
+  max-width:980px!important;
+  font-size:clamp(14px,1.15vw,18px)!important;
+  line-height:1.45!important;
+  margin:0 auto 18px!important;
+}
+.hero-v3 .hero-big-slider{
+  width:100%!important;
+  max-width:1280px!important;
+  margin:18px auto 18px!important;
+  padding:10px!important;
+  border-radius:34px!important;
+}
+.hero-v3 .wide-slider{
+  height:640px!important;
+  border-radius:26px!important;
+  background:#fff7ef!important;
+}
+.hero-v3 .wide-slider .slide img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:#fff7ef!important;
+}
+.hero-v3 .wide-slider .slide:after{
+  background:linear-gradient(to top,rgba(0,0,0,.28),rgba(0,0,0,0) 55%)!important;
+}
+.hero-v3 .wide-slider .slide-caption{
+  left:26px!important;
+  right:26px!important;
+  bottom:26px!important;
+  text-align:left!important;
+}
+.hero-v3 .wide-slider .slide-caption b{
+  font-size:30px!important;
+}
+.hero-v3 .hero-v2-actions{
+  justify-content:center!important;
+  margin:18px 0 16px!important;
+}
+.hero-v3 .hero-v2-stats{
+  max-width:760px!important;
+  margin:0 auto!important;
+}
+@media(max-width:920px){
+  .hero-v3 .wide-slider{height:440px!important}
+}
+@media(max-width:560px){
+  .hero-v3{padding:24px 0 44px!important}
+  .hero-v3 .hero-v2-text{text-align:left!important}
+  .hero-v3 .hero-v2-text h1{font-size:38px!important}
+  .hero-v3 .wide-slider{height:300px!important}
+  .hero-v3 .hero-v2-actions .btn{width:100%!important}
+  .hero-v3 .wide-slider .slide-caption b{font-size:20px!important}
+}
+
+
+/* PATCH V4: 4 slides + รูปเต็มกรอบ */
+.hero-v3 .wide-slider .slide img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  background:#fff7ef!important;
+}
+.hero-v3 .wide-slider{
+  height:620px!important;
+}
+@media(max-width:920px){
+  .hero-v3 .wide-slider{height:430px!important}
+}
+@media(max-width:560px){
+  .hero-v3 .wide-slider{height:300px!important}
+}
+
+</style>
+
+<style>
+/* ===== เนื้อหาที่รวมมาจาก Company Profile ===== */
+.sec-head{max-width:820px}
+.sec-head .eyebrow{letter-spacing:.6px}
+.sec-head h2{margin:6px 0 12px}
+.sec-head p{color:var(--muted);font-size:18px;margin:0}
+.banner{position:relative;border-radius:32px;overflow:hidden;margin:30px 0 8px;box-shadow:0 22px 55px rgba(43,24,8,.16);background:#eee}
+.banner img{width:100%;height:clamp(240px,42vw,460px);object-fit:cover;object-position:center 38%}
+.banner figcaption{position:absolute;left:0;right:0;bottom:0;padding:46px 26px 20px;color:#fff;font-weight:900;font-size:clamp(16px,2vw,22px);background:linear-gradient(180deg,transparent,rgba(12,7,3,.82))}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:26px;counter-reset:st}
+.step{background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:0 15px 38px rgba(43,24,8,.08);display:flex;flex-direction:column}
+.step .ph{aspect-ratio:4/3;overflow:hidden;background:#eee}
+.step .ph img{width:100%;height:100%;object-fit:cover}
+.step .tx{padding:16px 16px 20px}
+.step .no{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--orange),#ff9d42);color:#fff;font-weight:900;font-size:14px;margin-bottom:8px}
+.step h3{margin:0 0 6px;font-size:17px;line-height:1.3}
+.step p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.split{display:grid;grid-template-columns:.95fr 1.05fr;gap:34px;align-items:center;margin-top:26px}
+.split .shot{border-radius:30px;overflow:hidden;box-shadow:0 20px 50px rgba(43,24,8,.14);background:#eee}
+.split .shot img{width:100%;height:clamp(260px,34vw,420px);object-fit:cover}
+.ticks{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
+.ticks li{display:flex;gap:10px;align-items:flex-start;font-weight:700;color:#4b413a}
+.ticks li span{color:var(--orange);font-weight:900}
+.pgrid{display:grid;gap:16px;margin-top:24px}
+.pgrid.c3{grid-template-columns:repeat(3,1fr)}
+.pgrid.c4{grid-template-columns:repeat(4,1fr)}
+.shotcard{margin:0;position:relative;border-radius:22px;overflow:hidden;background:#eee;box-shadow:0 14px 34px rgba(43,24,8,.1)}
+.shotcard img{width:100%;aspect-ratio:4/3;object-fit:cover}
+.shotcard b{position:absolute;left:0;right:0;bottom:0;padding:30px 14px 12px;color:#fff;font-size:14px;background:linear-gradient(180deg,transparent,rgba(12,7,3,.82))}
+.logo-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:26px}
+.logo-grid div{background:#fff;border:1px solid var(--line);border-radius:20px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;padding:14px;box-shadow:0 10px 26px rgba(43,24,8,.06)}
+.logo-grid img{max-width:100%;max-height:100%;object-fit:contain}
+.logo-more{color:var(--muted);font-weight:900;font-size:14px;text-align:center;line-height:1.4}
+.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px}
+.gal img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:20px;box-shadow:0 12px 30px rgba(43,24,8,.1)}
+.office-box{background:#fff;border:1px solid var(--line);border-radius:28px;padding:28px;box-shadow:0 18px 45px rgba(43,24,8,.08)}
+.office-box h3{margin:0 0 6px;font-size:22px}
+.office-box .addr{font-weight:900;font-size:19px;line-height:1.55;margin:14px 0}
+.office-box .en{color:var(--muted);font-size:14px;margin:0 0 16px}
+.office-box .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.capnum{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+.capnum div{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;text-align:center;box-shadow:0 12px 30px rgba(43,24,8,.07)}
+.capnum b{display:block;font-size:26px;color:var(--orange)}
+.capnum span{color:var(--muted);font-weight:700;font-size:14px}
+@media(max-width:1000px){.steps{grid-template-columns:repeat(3,1fr)}.logo-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:920px){.split{grid-template-columns:1fr}.pgrid.c4{grid-template-columns:1fr 1fr}.gal{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.steps{grid-template-columns:1fr}.pgrid.c3,.pgrid.c4{grid-template-columns:1fr 1fr}.logo-grid{grid-template-columns:repeat(3,1fr)}.capnum{grid-template-columns:1fr}.banner img{height:230px}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap nav"><a class="brand" href="#top"><img src="/img/01-4d7f490b92.webp" alt="Rungfa Logo"><div>รุ่งฟ้า รุ่งฟ้า จำกัด<small>Foreign Worker Document Service</small></div></a><nav class="navlinks"><a href="#services">บริการ</a><a href="#mou">ขั้นตอน MOU</a><a href="#health">ตรวจสุขภาพ</a><a href="#proof">ผลงานจริง</a><a href="#clients">ลูกค้า</a><a href="#branches">9 สาขา</a><a href="#contact">ติดต่อ</a></nav><a class="call-top" href="tel:0968234891">โทร 096-823-4891</a></div></header>
+<main id="top">
+
+
+<section class="hero hero-v2 hero-v3">
+  <div class="wrap hero-v2-wrap">
+    <div class="hero-v2-text">
+      <span class="badge">✅ บริษัทจริง • มีสาขาจริง • ดูแลครบจบ</span>
+      <h1>เอกสารแรงงานต่างด้าว <span class="grad">ครบวงจร</span><br>จบไว งานถูกต้อง</h1>
+      <p class="lead">ผู้เชี่ยวชาญด้านเอกสารแรงงานต่างด้าว ดูแลครบ จบที่เดียว สำหรับนายจ้าง โรงงาน ผู้รับเหมา ร้านอาหาร ฟาร์ม และธุรกิจที่ต้องการแรงงานถูกกฎหมาย</p>
+
+      
+<div class="hero-big-slider">
+  <div class="wide-slider" id="slider">
+    <div class="slide active">
+      <img src="/img/02-33ead4bc16.webp" alt="บริการหน้างานจริง">
+      <div class="slide-caption"><b>บริการหน้างานจริง</b><span>ดูแลแรงงานและนายจ้างครบขั้นตอน</span></div>
+    </div>
+    <div class="slide">
+      <img loading="lazy" decoding="async" src="/img/03-93d4e6b732.webp" alt="ดูแลแรงงานจำนวนมาก">
+      <div class="slide-caption"><b>ดูแลแรงงานจำนวนมาก</b><span>ทีมงานพร้อมให้บริการทั่วประเทศ</span></div>
+    </div>
+    <div class="slide">
+      <img loading="lazy" decoding="async" src="/img/04-dd20ff5cd1.webp" alt="รับแรงงานถูกกฎหมาย">
+      <div class="slide-caption"><b>รับแรงงานถูกกฎหมาย</b><span>ประสานงานเอกสารและขั้นตอนครบถ้วน</span></div>
+    </div>
+    <div class="slide">
+      <img loading="lazy" decoding="async" src="/img/05-bfdac68f89.webp" alt="รับเอกสารจริง">
+      <div class="slide-caption"><b>รับเอกสารจริง</b><span>งานไว เอกสารถูกต้อง ติดต่อได้ทันที</span></div>
+    </div>
+    <div class="dots" id="dots"></div>
+  </div>
+</div>
+
+
+      <div class="hero-actions hero-v2-actions">
+        <a class="btn primary" href="https://lin.ee/sRRH3us" target="_blank">💬 ทัก LINE ให้เจ้าหน้าที่เช็กเอกสาร</a>
+        <a class="btn secondary" href="#branches">📍 ดูสาขาใกล้คุณ</a>
+      </div>
+
+      <div class="stats hero-v2-stats">
+        <div class="stat"><b>10+ ปี</b><span>ประสบการณ์</span></div>
+        <div class="stat"><b>100,000+</b><span>เคสทั่วประเทศ</span></div>
+        <div class="stat"><b>9 สาขา</b><span>ใกล้คุณแน่นอน</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section alt" id="services"><div class="wrap center"><div class="eyebrow">OUR SERVICES</div><h2>บริการครบทุกเรื่องแรงงานต่างด้าว</h2><p class="sub">ไม่ต้องวิ่งหลายที่ ไม่ต้องเดาเอกสารเอง ให้ทีมงานช่วยเช็กและประสานงานให้ครบทุกขั้นตอน</p><div class="service-grid"><div class="service reveal"><div class="icon">📘</div><h3>ทำ PASSPORT</h3><p>ประสานงานเล่ม หนังสือเดินทาง และเอกสารประกอบ</p></div><div class="service reveal"><div class="icon">🛂</div><h3>ต่อ VISA + WORK PERMIT</h3><p>ต่ออายุวีซ่าและใบอนุญาตทำงานให้ถูกต้อง</p></div><div class="service reveal"><div class="icon">🤝</div><h3>MOU 3 สัญชาติ</h3><p>เมียนมา ลาว กัมพูชา ดำเนินการครบขั้นตอน</p></div><div class="service reveal"><div class="icon">🏢</div><h3>เปลี่ยนนายจ้าง / แจ้งเข้า-ออก</h3><p>ดูแลเอกสารนายจ้างและแรงงานให้ตรงระบบ</p></div><div class="service reveal"><div class="icon">📅</div><h3>รายงานตัว 90 วัน</h3><p>ช่วยเตือนและดำเนินการตามรอบเอกสาร</p></div><div class="service reveal"><div class="icon">🚐</div><h3>รถรับส่ง + ที่พัก</h3><p>สะดวกสำหรับแรงงานและนายจ้างที่ต้องการบริการครบ</p></div><div class="service reveal"><div class="icon">🏠</div><h3>แจ้งที่พักอาศัย</h3><p>ดำเนินการแจ้งที่พักของแรงงานต่างด้าวให้ตรงตามกำหนด</p></div><div class="service reveal"><div class="icon">🩺</div><h3>ตรวจสุขภาพ + เอกซเรย์</h3><p>ประสานโรงพยาบาล มีรถเอกซเรย์เคลื่อนที่ถึงหน้างาน</p></div></div></div></section>
+
+<section class="section" id="mou"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">MOU RECRUITMENT</div>
+<h2>นำเข้าแรงงาน MOU 3 สัญชาติ ดูแลตั้งแต่ต้นทางถึงหน้างาน</h2>
+<p>เมียนมา ลาว กัมพูชา — ดำเนินการตามระบบ MOU ตั้งแต่ยื่นเอกสารนายจ้าง ผ่านด่านพรมแดน เข้าศูนย์แรกรับเข้าทำงาน จนถึงส่งมอบแรงงานให้นายจ้าง</p></div>
+<figure class="banner reveal"><img loading="lazy" decoding="async" src="/img/06-ef8c74c6ac.webp" alt="นำเข้าแรงงาน MOU ที่ด่านพรมแดน"><figcaption>ทีมงานเดินทางไปพร้อมแรงงานตลอดเส้นทาง ตั้งแต่จุดรวมพลต้นทางจนถึงมือนายจ้าง</figcaption></figure>
+<div class="steps"><article class="step reveal"><div class="ph"><img loading="lazy" decoding="async" src="/img/07-7de86783c0.webp" alt="ยื่นเอกสารนายจ้าง"></div><div class="tx"><span class="no">1</span><h3>ยื่นเอกสารนายจ้าง</h3><p>ตรวจเอกสารนายจ้าง จัดทำดีมานด์ และยื่นต่อกรมการจัดหางานให้ครบถูกต้อง</p></div></article><article class="step reveal"><div class="ph"><img loading="lazy" decoding="async" src="/img/08-3ed7c549b6.webp" alt="ผ่านด่านพรมแดน"></div><div class="tx"><span class="no">2</span><h3>ผ่านด่านพรมแดน</h3><p>ทีมงานรอรับที่ด่าน ดูแลจุดพักคอย คัดกรอง และพาแรงงานผ่านขั้นตอนราชการ</p></div></article><article class="step reveal"><div class="ph"><img loading="lazy" decoding="async" src="/img/09-06dd425b89.webp" alt="ศูนย์แรกรับเข้าทำงาน"></div><div class="tx"><span class="no">3</span><h3>ศูนย์แรกรับเข้าทำงาน</h3><p>พาเข้าศูนย์แรกรับ อบรมก่อนเข้างาน และรับเอกสารรับรองบุคคลครบทุกคน</p></div></article><article class="step reveal"><div class="ph"><img loading="lazy" decoding="async" src="/img/10-d39c23a5fa.webp" alt="เก็บอัตลักษณ์ + รับบัตร"></div><div class="tx"><span class="no">4</span><h3>เก็บอัตลักษณ์ + รับบัตร</h3><p>เข้าศูนย์ออกใบอนุญาตทำงาน จัดเก็บอัตลักษณ์ และรับบัตรจนครบกระบวนการ</p></div></article><article class="step reveal"><div class="ph"><img loading="lazy" decoding="async" src="/img/11-a3bd2b6ca7.webp" alt="ส่งมอบถึงนายจ้าง"></div><div class="tx"><span class="no">5</span><h3>ส่งมอบถึงนายจ้าง</h3><p>ตรวจนับและส่งมอบแรงงานพร้อมเอกสารครบชุดถึงสถานประกอบการ</p></div></article></div>
+</div></section>
+
+<section class="section alt" id="health"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">HEALTH SCREENING</div>
+<h2>ตรวจสุขภาพและเอกซเรย์ ถึงหน้างานได้</h2>
+<p>ประสานงานตรวจสุขภาพร่วมกับโรงพยาบาลและคลินิกเวชกรรมคู่ความร่วมมือ พร้อมรถเอกซเรย์เคลื่อนที่เข้าไปถึงสถานประกอบการ ลดเวลาที่แรงงานต้องหยุดงาน</p></div>
+<div class="split">
+  <div class="shot reveal"><img loading="lazy" decoding="async" src="/img/12-a41f733df7.webp" alt="รถเอกซเรย์เคลื่อนที่ถึงหน้างาน"></div>
+  <div>
+    <ul class="ticks">
+      <li><span>✔</span> จัดหน่วยตรวจสุขภาพเคลื่อนที่เข้าไปในโรงงาน พร้อมทีมพยาบาล</li>
+      <li><span>✔</span> รถเอกซเรย์ดิจิทัลเคลื่อนที่ ไม่ต้องพาแรงงานออกไปหลายรอบ</li>
+      <li><span>✔</span> ตั้งจุดชั่งน้ำหนัก วัดส่วนสูง เก็บตัวอย่าง และจัดคิวให้ครบในวันเดียว</li>
+      <li><span>✔</span> กรณีต้องเข้าโรงพยาบาล มีเจ้าหน้าที่พาไปและดูแลจนจบขั้นตอน</li>
+      <li><span>✔</span> ออกใบรับรองแพทย์และเอกสารสุขภาพให้ครบสำหรับยื่นใบอนุญาตทำงาน</li>
+    </ul>
+    <div class="hero-actions"><a class="btn primary" href="https://lin.ee/sRRH3us" target="_blank">💬 นัดหน่วยตรวจเข้าโรงงาน</a></div>
+  </div>
+</div>
+<div class="pgrid c3"><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/13-c1f8af103a.webp" alt="จุดเก็บตัวอย่างหน้างาน"><b>จุดเก็บตัวอย่างหน้างาน</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/14-6ccc3af8a7.webp" alt="ตรวจร่างกายโดยทีมพยาบาล"><b>ตรวจร่างกายโดยทีมพยาบาล</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/15-1856a70443.webp" alt="พาแรงงานเข้าโรงพยาบาล"><b>พาแรงงานเข้าโรงพยาบาล</b></figure></div>
+</div></section>
+
+<section class="section" id="transport"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">TRANSPORT</div>
+<h2>รับ–ส่งครบทุกจุด มีเจ้าหน้าที่ไปด้วยทุกเที่ยว</h2>
+<p>ด่านพรมแดน · ศูนย์แรกรับเข้าทำงาน · สนามบิน · สถานประกอบการ — จัดรถบัสและรถตู้ตามจำนวนแรงงาน พร้อมเจ้าหน้าที่ประจำรถทุกคัน</p></div>
+<div class="pgrid c4"><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/16-8e8b9e38ce.webp" alt="ด่านพรมแดนหนองคาย"><b>ด่านพรมแดนหนองคาย</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/17-40d247a01f.webp" alt="รับแรงงานที่สนามบิน"><b>รับแรงงานที่สนามบิน</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/18-3608235014.webp" alt="รวมพลก่อนออกเดินทาง"><b>รวมพลก่อนออกเดินทาง</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/19-a148080441.webp" alt="เจ้าหน้าที่ดูแลตลอดการเดินทาง"><b>เจ้าหน้าที่ดูแลตลอดการเดินทาง</b></figure></div>
+</div></section>
+
+<section class="section alt" id="onsite"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">ON SITE &amp; CAPACITY</div>
+<h2>ทีมงานเข้าไปทำงานในพื้นที่ลูกค้า และรองรับงานจำนวนมาก</h2>
+<p>ตั้งจุดบริการภายในโรงงาน ชี้แจงแรงงาน กรอกเอกสาร และจัดคิวตรวจสุขภาพให้จบหน้างาน นายจ้างไม่ต้องหยุดสายการผลิต</p></div>
+<div class="split">
+  <div class="shot reveal"><img loading="lazy" decoding="async" src="/img/20-38d0cf59fc.webp" alt="ทีมงานลงพื้นที่สถานประกอบการ"></div>
+  <div>
+    <ul class="ticks">
+      <li><span>✔</span> ตั้งโต๊ะลงทะเบียนและกรอกเอกสารในพื้นที่ลูกค้า</li>
+      <li><span>✔</span> จัดลำดับคิว ดูแลแรงงานจนเสร็จกระบวนการ</li>
+      <li><span>✔</span> รองรับการนำเข้าและดูแลแรงงานกลุ่มใหญ่พร้อมกันในครั้งเดียว</li>
+      <li><span>✔</span> ปฐมนิเทศแรงงานก่อนเข้างาน จัดแถวและตรวจนับก่อนเคลื่อนย้าย</li>
+    </ul>
+    <div class="capnum">
+      <div><b>10+ ปี</b><span>ประสบการณ์งานแรงงาน</span></div>
+      <div><b>3 สัญชาติ</b><span>เมียนมา ลาว กัมพูชา</span></div>
+      <div><b>9 สาขา</b><span>ครอบคลุมภาคกลาง</span></div>
+    </div>
+  </div>
+</div>
+<div class="pgrid c4"><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/21-9cf1fcb9d8.webp" alt="ตั้งจุดกรอกเอกสารในสถานประกอบการ"><b>ตั้งจุดกรอกเอกสารในสถานประกอบการ</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/22-0ea88d141d.webp" alt="จัดคิวและดูแลจนเสร็จกระบวนการ"><b>จัดคิวและดูแลจนเสร็จกระบวนการ</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/23-e92a86996b.webp" alt="รองรับแรงงานกลุ่มใหญ่พร้อมกัน"><b>รองรับแรงงานกลุ่มใหญ่พร้อมกัน</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/24-6a0b3d7ce8.webp" alt="จัดแถวและตรวจนับก่อนเคลื่อนย้าย"><b>จัดแถวและตรวจนับก่อนเคลื่อนย้าย</b></figure></div>
+</div></section>
+<section class="section" id="proof"><div class="wrap"><div class="center"><div class="eyebrow">REAL PROOF</div><h2>รูปจริง งานจริง สาขาจริง</h2><p class="sub">ลูกค้าดูแล้วมั่นใจ เพราะมีหลักฐานการทำงาน มีหน้าร้าน มีทีมงาน และมีบริการจริง</p></div><div class="proof-grid">
+  <div class="proof-main reveal"><img loading="lazy" decoding="async" src="/img/25-6a81db96d2.webp" alt="บริการหน้างานจริง"></div>
+  <div class="proof-stack">
+    <div class="reveal"><img loading="lazy" decoding="async" src="/img/26-6f56d3f1c4.webp" alt="ติดต่อหน่วยงานจริง"></div>
+    <div class="reveal"><img loading="lazy" decoding="async" src="/img/27-9fc19f428d.webp" alt="ดูแลแรงงานจำนวนมาก"></div>
+  </div>
+</div><div class="trust-strip"><div class="trust reveal"><span>✔</span> เอกสารถูกต้อง</div><div class="trust reveal"><span>✔</span> มีเจ้าหน้าที่ดูแล</div><div class="trust reveal"><span>✔</span> ติดต่อได้จริง</div><div class="trust reveal"><span>✔</span> เหมาะกับนายจ้างทุกขนาด</div></div></div></section>
+
+<section class="section alt" id="team"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">OUR TEAM</div>
+<h2>ทีมงานลงพื้นที่จริง ผู้บริหารดูแลเองทุกขั้นตอนสำคัญ</h2>
+<p>ตั้งแต่ประสานงานกับหน่วยงานราชการ ดูแลแรงงานหน้างาน จนถึงติดตามเอกสารจนแล้วเสร็จ</p></div>
+<div class="pgrid c4"><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/28-a019fc62d2.webp" alt="ประสานงานกรมการจัดหางาน"><b>ประสานงานกรมการจัดหางาน</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/29-41a99715e5.webp" alt="เข้าพบหน่วยงานที่เกี่ยวข้อง"><b>เข้าพบหน่วยงานที่เกี่ยวข้อง</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/30-df4af41e94.webp" alt="ผู้บริหารตรวจเอกสารร่วมกับแรงงาน"><b>ผู้บริหารตรวจเอกสารร่วมกับแรงงาน</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/31-85cc876910.webp" alt="ประชุมและวางแผนงานร่วมกัน"><b>ประชุมและวางแผนงานร่วมกัน</b></figure></div>
+</div></section>
+
+<section class="section" id="clients"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">CLIENTS</div>
+<h2>สถานประกอบการที่ไว้วางใจให้เราดูแลงานแรงงาน</h2>
+<p>โรงงาน ผู้รับเหมา งานก่อสร้าง อาหาร และธุรกิจบริการ ทั้งรายเล็กและองค์กรขนาดใหญ่</p></div>
+<div class="logo-grid"><div class="reveal"><img loading="lazy" decoding="async" src="/img/32-39bded4b5f.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/33-ae012ad057.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/34-ffa26ce369.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/35-d7f38bf10a.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/36-25791d7bb8.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/37-13c75c9bfd.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/38-74aeab75b1.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/39-44c9fbc165.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/40-d395a8c519.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/41-b12a4366e7.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/42-2d9b21bfb4.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/43-8166c5b52d.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/44-d116351828.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/45-e9809c0cee.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/46-df4b604032.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/47-324b8a95a0.webp" alt="โลโก้ลูกค้า"></div><div class="reveal"><img loading="lazy" decoding="async" src="/img/48-af44b16840.webp" alt="โลโก้ลูกค้า"></div><div class="logo-more">และอีก<br>หลายแห่ง</div></div>
+</div></section>
+
+<section class="section alt" id="gallery"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">GALLERY</div>
+<h2>ประมวลภาพการทำงานจริง</h2>
+<p>บรรยากาศการให้บริการทั้งที่สำนักงานและหน้างานของลูกค้า</p></div>
+<div class="gal"><img loading="lazy" decoding="async" class="reveal" src="/img/49-09dcdcc9ac.webp" alt="ภาพการทำงานจริง"><img loading="lazy" decoding="async" class="reveal" src="/img/50-135a8ad634.webp" alt="ภาพการทำงานจริง"><img loading="lazy" decoding="async" class="reveal" src="/img/51-1bff7240e6.webp" alt="ภาพการทำงานจริง"><img loading="lazy" decoding="async" class="reveal" src="/img/52-b5e465e655.webp" alt="ภาพการทำงานจริง"><img loading="lazy" decoding="async" class="reveal" src="/img/53-598079c3f4.webp" alt="ภาพการทำงานจริง"><img loading="lazy" decoding="async" class="reveal" src="/img/54-1d8e999622.webp" alt="ภาพการทำงานจริง"><img loading="lazy" decoding="async" class="reveal" src="/img/55-2f4afe4244.webp" alt="ภาพการทำงานจริง"><img loading="lazy" decoding="async" class="reveal" src="/img/56-ce736daa26.webp" alt="ภาพการทำงานจริง"></div>
+</div></section>
+
+<section class="section" id="office"><div class="wrap">
+<div class="sec-head"><div class="eyebrow">HEAD OFFICE</div>
+<h2>สำนักงานใหญ่ ปทุมธานี เข้ามาติดต่อด้วยตนเองได้</h2>
+<p>งานเอกสารส่วนใหญ่ดำเนินการจบได้ที่สำนักงาน ไม่ต้องให้นายจ้างหรือแรงงานเดินทางไปติดต่อหลายที่ มีเจ้าหน้าที่ประจำเคาน์เตอร์ทุกวันทำการ</p></div>
+<div class="split">
+  <div class="office-box reveal">
+    <h3>บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</h3>
+    <div class="addr">301/4 หมู่ที่ 1<br>ตำบลบ้านใหม่ อำเภอเมืองปทุมธานี<br>จังหวัดปทุมธานี</div>
+    <p class="en">301/4 Village No.1, Ban Mai Subdistrict, Mueang Pathum Thani District, Pathum Thani Province</p>
+    <ul class="ticks">
+      <li><span>📞</span> 096-823-4891 (คุณรุ่ง)</li>
+      <li><span>📞</span> 092-256-6114 (คุณน้ำฝน)</li>
+      <li><span>💬</span> LINE @rungfarungfa</li>
+      <li><span>🕗</span> เปิดบริการ จันทร์ – เสาร์ 08:00 – 18:00 น.</li>
+    </ul>
+    <div class="row"><a class="btn primary" href="https://maps.app.goo.gl/LwQo3ebG4TuSM2MEA" target="_blank" rel="noopener">📍 เปิดแผนที่สำนักงานใหญ่</a></div>
+  </div>
+  <div class="pgrid c3" style="margin-top:0;grid-template-columns:1fr 1fr"><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/57-41a1fbe432.webp" alt="เคาน์เตอร์บริการภายในสำนักงาน"><b>เคาน์เตอร์บริการภายในสำนักงาน</b></figure><figure class="shotcard reveal"><img loading="lazy" decoding="async" src="/img/58-4b45388a91.webp" alt="ผู้มาใช้บริการในแต่ละวัน"><b>ผู้มาใช้บริการในแต่ละวัน</b></figure></div>
+</div>
+</div></section>
+<section class="section alt" id="branches"><div class="wrap"><div class="center"><div class="eyebrow">BRANCHES</div><h2>9 สาขา ใกล้คุณแน่นอน</h2><p class="sub">เลือกสาขาที่สะดวก แล้วกดเปิด Google Maps ได้ทันที</p></div><div class="branch-grid"><article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/59-61c9a2ebc6.webp" alt="สาขา ปทุมธานี"></div>
+  <div class="branch-body"><span class="pin">📍 ปทุมธานี</span><p>สาขาหลัก ดูแลเอกสารแรงงานครบวงจร</p><a class="mini-btn" href="https://maps.app.goo.gl/uo4h6RGiDm4ZP1Fy9?g_st=ic" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/60-6a564f8efe.webp" alt="สาขา ลำลูกกา คลอง4"></div>
+  <div class="branch-body"><span class="pin">📍 ลำลูกกา คลอง4</span><p>ใกล้นายจ้างและแรงงานโซนลำลูกกา</p><a class="mini-btn" href="https://maps.app.goo.gl/Z1r41gRVWCZJBRiV7?g_st=ic" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/61-864b387198.webp" alt="สาขา คลอง8 ลำลูกกา"></div>
+  <div class="branch-body"><span class="pin">📍 คลอง8 ลำลูกกา</span><p>บริการปรึกษา / ถ่ายรูป / ถ่ายเอกสาร</p><a class="mini-btn" href="#" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/62-f0db697564.webp" alt="สาขา อยุธยา 1"></div>
+  <div class="branch-body"><span class="pin">📍 อยุธยา 1</span><p>รองรับโรงงาน / โกดัง / ผู้รับเหมา</p><a class="mini-btn" href="https://maps.app.goo.gl/FvwmZc5RGmu2dQUo6?g_st=ic" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/63-ef6de18d43.webp" alt="สาขา อยุธยา 2"></div>
+  <div class="branch-body"><span class="pin">📍 อยุธยา 2</span><p>ดูแลเอกสารแรงงานต่างด้าวทุกขั้นตอน</p><a class="mini-btn" href="https://maps.app.goo.gl/E29KsjzPudQyx3M9A?g_st=ic" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/64-37d4b5a2d8.webp" alt="สาขา อยุธยา 3"></div>
+  <div class="branch-body"><span class="pin">📍 อยุธยา 3</span><p>ทีมงานพร้อมให้คำปรึกษา</p><a class="mini-btn" href="https://maps.app.goo.gl/FvwmZc5RGmu2dQUo6?g_st=ic" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/65-b5ce374815.webp" alt="สาขา นครปฐม"></div>
+  <div class="branch-body"><span class="pin">📍 นครปฐม</span><p>บริการเอกสารแรงงานครบวงจร</p><a class="mini-btn" href="https://maps.app.goo.gl/FvwmZc5RGmu2dQUo6?g_st=ic" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/66-2c4a87f895.webp" alt="สาขา สระบุรี"></div>
+  <div class="branch-body"><span class="pin">📍 สระบุรี</span><p>รองรับนายจ้างและแรงงานในพื้นที่</p><a class="mini-btn" href="https://maps.app.goo.gl/FvwmZc5RGmu2dQUo6?g_st=ic" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article>
+<article class="branch-card reveal">
+  <div class="branch-img"><img loading="lazy" decoding="async" src="/img/67-ffa51a16ab.webp" alt="สาขา ระยอง"></div>
+  <div class="branch-body"><span class="pin">📍 ระยอง</span><p>ดูแลนายจ้างและแรงงานโซนภาคตะวันออก</p><a class="mini-btn" href="https://maps.app.goo.gl/iF8WSKdDgXdeQoEP7" target="_blank" rel="noopener">เปิด Google Maps</a></div>
+</article></div></div></section>
+<section class="section" id="contact"><div class="wrap"><div class="cta reveal"><div><div class="eyebrow">CONTACT NOW</div><h2>ไม่แน่ใจว่าเอกสารต้องทำอะไรบ้าง? ส่งรูปเอกสารให้เช็กก่อนได้</h2><p>ทัก LINE ตอนนี้ ให้เจ้าหน้าที่ช่วยแนะนำขั้นตอน ประเมินเอกสาร และบอกแนวทางที่ถูกต้องก่อนเริ่มทำจริง</p><div class="hero-actions"><a class="btn primary" href="https://lin.ee/sRRH3us" target="_blank">💬 แอด LINE @rungfarungfa</a><a class="btn secondary" href="tel:0968234891">📞 โทร 096-823-4891</a></div></div><div class="qrbox"><img loading="lazy" decoding="async" src="/img/68-1595f85ebc.png" alt="LINE QR"><div>สแกนเพิ่มเพื่อน LINE</div></div></div><div class="contact-cards"><div class="contact-card"><b>Facebook</b><span>บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</span></div><div class="contact-card"><b>LINE Official</b><span>@rungfarungfa</span></div><div class="contact-card"><b>เบอร์ติดต่อ</b><span>096-823-4891</span></div></div></div></section>
+</main><footer>
+  <div class="wrap footer-company">
+    <div>
+      <div class="footer-logo">
+        <img loading="lazy" decoding="async" src="/img/01-4d7f490b92.webp" alt="รุ่งฟ้า โลโก้">
+        <div><h3>บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</h3><p>Foreign Worker Document Service</p></div>
+      </div>
+      <p>บริการจัดการเอกสารแรงงานต่างด้าวครบวงจร งานไว เอกสารถูกต้อง บริการดี</p>
+      <p>ดูแลทั้งนายจ้างและแรงงานต่างด้าว ครบทุกขั้นตอน</p>
+      <p><b>สำนักงานใหญ่</b> 301/4 หมู่ที่ 1 ต.บ้านใหม่ อ.เมืองปทุมธานี จ.ปทุมธานี</p>
+    </div>
+    <div>
+      <b>บริการของเรา</b>
+      <p>ทำ PASSPORT</p>
+      <p>ต่อ VISA + WORK PERMIT</p>
+      <p>MOU 3 สัญชาติ</p>
+      <p>เปลี่ยนนายจ้าง / รายงานตัว 90 วัน</p>
+    </div>
+    <div>
+      <b>ติดต่อเรา</b>
+      <p>📞 096-823-4891 (คุณรุ่ง)</p>
+      <p>📞 092-256-6114 (คุณน้ำฝน)</p>
+      <p>LINE: @rungfarungfa</p>
+      <p>Facebook: บริษัท รุ่งฟ้า รุ่งฟ้า จำกัด</p>
+      <p>เปิดบริการ จันทร์ - เสาร์ 08:00 - 18:00 น.</p>
+    </div>
+    <div>
+      <img loading="lazy" decoding="async" class="footer-qr" src="/img/68-1595f85ebc.png" alt="LINE QR">
+      <p><b>สแกนเพิ่มเพื่อน LINE</b></p>
+    </div>
+  </div>
+</footer>
+<div class="float-wrap"><a class="float-btn tel" href="tel:0968234891">📞 โทรทันที</a><a class="float-btn line" href="https://lin.ee/sRRH3us" target="_blank">💬 แชททันที</a></div>
+<script>
+const slides=[...document.querySelectorAll('.slide')]; const dotsBox=document.getElementById('dots'); let current=0,timer;
+slides.forEach((_,i)=>{const b=document.createElement('button');b.className='dot'+(i===0?' active':'');b.onclick=()=>go(i);dotsBox.appendChild(b)}); const dots=[...document.querySelectorAll('.dot')];
+function go(i){slides[current].classList.remove('active');dots[current].classList.remove('active');current=i;slides[current].classList.add('active');dots[current].classList.add('active');clearInterval(timer);timer=setInterval(()=>go((current+1)%slides.length),3000)} timer=setInterval(()=>go((current+1)%slides.length),3000);
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('show')}),{threshold:.15}); document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script></body></html>

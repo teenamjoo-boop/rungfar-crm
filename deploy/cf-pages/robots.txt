@@ -1,2 +1,8 @@
+# หน้าแรก (เว็บบริษัท) ให้ Google ค้นเจอได้ · ลิงก์ลูกค้า/ระบบภายใน ห้ามเก็บ
 User-agent: *
-Disallow: /
+Disallow: /s/
+Disallow: /st/
+Disallow: /pv/
+Disallow: /parcel
+Disallow: /share
+Allow: /
