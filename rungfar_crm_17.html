@@ -1900,6 +1900,14 @@ html[data-theme="dark"] #loginScreen .theme-btn{background:var(--lcream2);border
 </div></div>
 
 <!-- MODAL: LINK PAYMENT PROOF DOCUMENT (Stage 54A-6A) — ผูกเอกสารเดิมเท่านั้น ไม่มีอัปโหลดใหม่ -->
+<!-- MODAL: ดูตัวอย่างข้อความแจ้งเตือน LINE (Stage LINE-DOC-ALERT) -->
+<div class="mo" id="lineAlertPvModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:440px">
+  <div class="mh"><div class="mt" id="lineAlertPvTitle">ตัวอย่างข้อความ</div><button class="xbtn" onclick="document.getElementById('lineAlertPvModal').style.display='none'">×</button></div>
+  <div class="mbody" style="background:#8CABD9"><div id="lineAlertPvBody" style="max-height:62vh;overflow-y:auto"></div></div>
+  <div class="mfoo"><button class="btn btn-g" onclick="document.getElementById('lineAlertPvModal').style.display='none'">ปิด</button></div>
+</div></div>
+
 <div class="mo" id="payProofModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
 <div class="mb mb-sm" onclick="event.stopPropagation()" style="max-width:560px">
   <div class="mh"><div class="mt">ผูกหลักฐานการชำระเงิน</div><button class="xbtn" onclick="document.getElementById('payProofModal').style.display='none'">×</button></div>
@@ -7526,7 +7534,131 @@ function renderSettings(){
       </div>
       <div id="phchkResults" style="font-size:12px;color:var(--g5)">กดปุ่ม “เริ่มตรวจระบบ” เพื่อตรวจสอบ (บาง รายการต้องใช้รหัส ADMIN)</div>
     </div>`;
-  document.getElementById('settingsContent').innerHTML='<div style="font-size:12px;margin:0 0 10px;padding:7px 11px;border-radius:8px;'+(_alertSrc==='db'?'background:#f0fdf4;color:#15803d">✅ ค่านี้ใช้ร่วมกันทุกเครื่อง และใช้ในหน้าลิงก์ที่ส่งให้นายจ้าง':'background:#fffbeb;color:#92400e">⚠️ ตอนนี้ค่าเตือนบันทึกเฉพาะเครื่องนี้ (ยังเชื่อมฐานข้อมูลไม่ได้)')+'</div>'+notifyHtml+readiness;
+  document.getElementById('settingsContent').innerHTML='<div style="font-size:12px;margin:0 0 10px;padding:7px 11px;border-radius:8px;'+(_alertSrc==='db'?'background:#f0fdf4;color:#15803d">✅ ค่านี้ใช้ร่วมกันทุกเครื่อง และใช้ในหน้าลิงก์ที่ส่งให้นายจ้าง':'background:#fffbeb;color:#92400e">⚠️ ตอนนี้ค่าเตือนบันทึกเฉพาะเครื่องนี้ (ยังเชื่อมฐานข้อมูลไม่ได้)')+'</div>'+notifyHtml+(curUser&&curUser.role==='admin'?'<div id="lineAlertBox" style="margin-top:22px"></div>':'')+readiness;
+  if(curUser&&curUser.role==='admin')loadLineAlert(); // Stage LINE-DOC-ALERT
+}
+// ── Stage LINE-DOC-ALERT: แจ้งเตือนเอกสารใกล้หมดอายุ เข้ากลุ่ม LINE ของนายจ้าง (admin) ── (+ Stage LINE-DOC-ALERT-CARD: ส่งเป็นการ์ด)
+//   กลุ่ม LINE ที่บอทมีตังอยู่ → ผูกกับนายจ้าง/กลุ่ม → เปิดแจ้งเตือน · ส่งทุกวัน 09:00 น. (pg_cron → Edge Function line-doc-alert)
+//   เอกสาร 1 ชิ้นเตือนครั้งเดียว · ใช้วันแจ้งเตือนล่วงหน้าด้านบน · ข้อความสร้างที่ฐานข้อมูล (ตัวอย่าง = ข้อความจริง)
+let _lineAlert=null;
+function _laShareBase(){return (typeof SHARE_SITE_URL==='string'&&SHARE_SITE_URL)?SHARE_SITE_URL.replace(/\/+$/,''):'https://rungfa.com';}
+async function loadLineAlert(){
+  const box=document.getElementById('lineAlertBox');if(!box)return;
+  if(!_lineAlert)box.innerHTML=_laCard('<div style="font-size:12px;color:var(--g5)">กำลังโหลด…</div>');
+  const r=await _shareRpc('app_line_alert_groups',{});
+  if(r.status==='missing'){box.innerHTML=_laCard('<div style="font-size:12px;color:#92400e">ยังไม่ได้รัน SQL แจ้งเตือน LINE (20261022c_line_doc_alert.sql)</div>');return;}
+  if(r.status!=='ok'){box.innerHTML=_laCard('<div style="font-size:12px;color:var(--r)">โหลดรายชื่อกลุ่ม LINE ไม่สำเร็จ</div>');return;}
+  _lineAlert=Array.isArray(r.data)?r.data:[];
+  renderLineAlert();
+}
+function _laCard(inner){
+  return `<div style="background:#fff;border:1px solid var(--g2);border-radius:var(--rl);padding:16px 18px">
+    <div style="font-size:15px;font-weight:800;color:var(--g9);margin-bottom:3px">แจ้งเตือนเอกสารเข้า LINE กลุ่มนายจ้าง</div>
+    <div style="font-size:12px;color:var(--g5);margin-bottom:12px;line-height:1.6">บอทมีตังส่งให้ทุกวัน 09:00 น. เฉพาะกลุ่มที่เปิดไว้ และมีเอกสารเข้าช่วงแจ้งเตือนด้านบน · เอกสาร 1 ชิ้นเตือนครั้งเดียว (ต่ออายุแล้วจะเตือนรอบใหม่) · ไม่มีรายการ = ไม่ส่ง · กลุ่มจะขึ้นที่นี่เมื่อเชิญบอทมีตังเข้ากลุ่ม</div>${inner}</div>`;
+}
+function renderLineAlert(){
+  const box=document.getElementById('lineAlertBox');if(!box)return;
+  const L=_lineAlert||[];
+  const emps=(employers||[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'th'));
+  const grps=(groups||[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'th'));
+  const fdt=s=>{if(!s)return'';const d=new Date(s);return isNaN(d)?'':d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});};
+  const rows=L.map((g,i)=>{
+    const cur=g.employer_id?('e:'+g.employer_id):g.group_id?('g:'+g.group_id):'';
+    const opts=`<option value="">— ยังไม่ผูก —</option>`+
+      (emps.length?`<optgroup label="นายจ้าง">${emps.map(e=>`<option value="e:${e.id}"${cur==='e:'+e.id?' selected':''}>${esc(e.name||'-')}</option>`).join('')}</optgroup>`:'')+
+      (grps.length?`<optgroup label="กลุ่ม (หลายนายจ้าง)">${grps.map(x=>`<option value="g:${x.id}"${cur==='g:'+x.id?' selected':''}>${esc(x.name||'-')}</option>`).join('')}</optgroup>`:'');
+    const bound=!!cur;
+    const st=!bound?'<span style="color:var(--g5)">ยังไม่ผูกกับนายจ้าง</span>'
+      :`<span style="color:${g.enabled?'#15803d':'var(--g5)'};font-weight:700">${g.enabled?'● เปิดแจ้งเตือน':'○ ปิดอยู่'}</span> · รอเตือน <b>${Number(g.pending)||0}</b> รายการ${g.last_sent?' · ส่งล่าสุด '+fdt(g.last_sent):''}`;
+    return `<div style="border:1.5px solid var(--g2);border-radius:var(--rl);padding:12px 14px;margin-bottom:9px">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap"><div style="font-size:13.5px;font-weight:700">💬 ${esc(g.name||'-')}</div><div style="font-size:11.5px;color:var(--g5)">${g.joined_at?'บอทเข้ากลุ่ม '+fdt(g.joined_at):''}</div></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <select id="laSel${i}" onchange="laSave(${i})" style="flex:1;min-width:180px;border:1.5px solid var(--g2);border-radius:var(--r);padding:7px 9px;font-size:13px;background:#fff;color:var(--g9)">${opts}</select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:${bound?'pointer':'not-allowed'};opacity:${bound?1:.5}"><input type="checkbox" id="laOn${i}" ${g.enabled?'checked':''} ${bound?'':'disabled'} onchange="laSave(${i})"> เปิดแจ้งเตือน</label>
+      </div>
+      <div style="font-size:12px;margin-top:8px">${st}</div>
+      ${bound?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px">
+        <button class="btn btn-g btn-sm" onclick="laPreview(${i})">👀 ดูตัวอย่างการ์ด</button>
+        ${g.enabled&&Number(g.pending)?`<button class="btn btn-p btn-sm" onclick="laSendNow(${i})">📤 ส่งตอนนี้</button>`:''}
+        ${Number(g.pending)?`<button class="btn btn-g btn-sm" onclick="laSkip(${i})">ข้ามรายการที่ค้างอยู่</button>`:''}
+      </div>`:''}
+    </div>`;}).join('');
+  box.innerHTML=_laCard(rows||'<div style="font-size:12.5px;color:var(--g5);padding:10px 0">ยังไม่มีกลุ่ม LINE — เชิญบอทมีตังเข้ากลุ่มนายจ้างก่อน แล้วกดรีเฟรชหน้านี้</div>');
+}
+async function laSave(i){
+  const g=(_lineAlert||[])[i];if(!g)return;
+  const v=(document.getElementById('laSel'+i)||{}).value||'';
+  const on=!!(document.getElementById('laOn'+i)||{}).checked&&!!v;
+  const r=await _shareRpc('app_line_alert_save',{p_line_group_id:g.line_group_id,p_employer_id:v.startsWith('e:')?Number(v.slice(2)):null,p_group_id:v.startsWith('g:')?Number(v.slice(2)):null,p_enabled:on});
+  const d=r.status==='ok'?r.data:null;
+  if(!d||!d.ok){toast('บันทึกไม่สำเร็จ'+(d&&d.error?' ('+d.error+')':''),'err');}
+  else toast(!v?'เลิกผูกกลุ่มแล้ว':on?'เปิดแจ้งเตือนแล้ว — ส่งรอบถัดไป 09:00 น.':'บันทึกแล้ว (ยังปิดแจ้งเตือนอยู่)');
+  await loadLineAlert();
+}
+async function laPreview(i){
+  const g=(_lineAlert||[])[i];if(!g)return;
+  const r=await _shareRpc('app_line_alert_preview',{p_line_group_id:g.line_group_id,p_share_base:_laShareBase()});
+  if(r.status!=='ok'||!r.data){toast('โหลดตัวอย่างไม่สำเร็จ','err');return;}
+  // Stage LINE-DOC-ALERT-CARD2: แสดงเป็นการ์ดแบบเดียวกับใน LINE (การ์ดละไม่เกิน 6 คน เลื่อนดูใบถัดไปได้)
+  const c=r.data.card, ws=(c&&Array.isArray(c.workers))?c.workers:[];
+  document.getElementById('lineAlertPvTitle').textContent='ตัวอย่างการ์ด LINE · '+(g.name||'');
+  const IC={bell:['none','<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2H4.5z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'],
+    passport:['#1D64B0','<rect x="6" y="3.5" width="12" height="17" rx="1.8"/><circle cx="12" cy="10.5" r="3"/><path d="M9 10.5h6M12 7.5c1.2 1.6 1.2 4.4 0 6M12 7.5c-1.2 1.6-1.2 4.4 0 6M9.5 16.5h5"/>'],
+    visa:['#7C3AED','<rect x="3.5" y="6" width="17" height="12" rx="1.8"/><path d="M3.5 10h17"/><path d="M7 14.5h4M14.5 14.5h2.5"/>'],
+    wp:['#16A34A','<rect x="3.5" y="5.5" width="17" height="13" rx="1.8"/><circle cx="9" cy="11" r="2"/><path d="M6 15.5c.6-1.6 1.7-2.3 3-2.3s2.4.7 3 2.3M14 10h3.5M14 13h3.5"/>'],
+    d90:['#EA580C','<rect x="4" y="5.5" width="16" height="14" rx="1.8"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path d="M9 14.5l2 2 4-4"/>'],
+    mou:['#0D9488','<path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5v4h4M9 12h6M9 15.5h4"/>']};
+  // Stage LINE-DOC-ALERT-CARD3
+  const bellBox=(px,bg,fg)=>`<span style="display:inline-grid;place-items:center;width:${px}px;height:${px}px;border-radius:${Math.round(px*.27)}px;background:${bg};flex:none"><svg width="${Math.round(px*.65)}" height="${Math.round(px*.65)}" viewBox="0 0 24 24" fill="none" stroke="${fg}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">${IC.bell[1]}</svg></span>`;
+  // Stage LINE-DOC-ALERT-CARD4: พื้นสีอ่อน + กรอบอ่อน + เส้นสีเข้ม (ตรงกับไอคอนที่ส่งเข้า LINE)
+  const LC={bell:['#E0620B','#FFF0E3','#FFD9BF'],passport:['#1D64B0','#E6F0FB','#C9DDF5'],visa:['#6A4A9C','#EFE8F8','#DDD0F1'],wp:['#17804A','#E2F4E9','#BFE3CC'],d90:['#E0620B','#FFF0E3','#FFD9BF'],mou:['#0F7A70','#DCF3EF','#B5E3DB']};
+  const ico=(k,px)=>{const x=IC[k],c=LC[k];if(!x||!c)return'';return `<span style="box-sizing:border-box;display:inline-grid;place-items:center;width:${px}px;height:${px}px;border-radius:${Math.round(px*.27)}px;background:${c[1]};border:${px>=30?2:1}px solid ${c[2]};flex:none"><svg width="${Math.round(px*.6)}" height="${Math.round(px*.6)}" viewBox="0 0 24 24" fill="none" stroke="${c[0]}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${x[1]}</svg></span>`;};
+  const chip=dy=>{const[bg,fg]=dy<=7?['#FDE8E8','#C62828']:dy<=30?['#FFF1DE','#B45309']:['#E5F4EA','#1F8A4C'];return `<span style="background:${bg};color:${fg};font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:99px;white-space:nowrap">${dy<=0?'วันนี้':dy+' วัน'}</span>`;};
+  const pages=[];for(let i=0;i<ws.length;i+=6)pages.push(ws.slice(i,i+6));
+  const title=()=>`<div style="font-size:15px;font-weight:400;color:#fff;line-height:1.35">${esc(c.target||'-')}</div>`;
+  const label=`<div style="font-size:10.5px;color:#FFE9DB;text-align:right;margin-top:2px">แจ้งเตือนเอกสารใกล้หมดอายุ</div>`;
+  // Stage LINE-DOC-ALERT-CARD6: หัวการ์ด = รูป 1024×512 (ย่อแสดง 260px) ตรงกับที่ส่งเข้า LINE
+  const _s=260/1024, px=v=>(v*_s).toFixed(1)+'px';
+  const _sv=(path,size,stroke)=>`<svg width="${px(size)}" height="${px(size)}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+  const head=(pi)=>`<div class="laHero" style="position:relative;aspect-ratio:2/1;background:linear-gradient(135deg,#F26B1D,#F7A44A) center/cover no-repeat;font-family:Prompt,var(--font),sans-serif;overflow:hidden">
+    <div class="laShade" style="position:absolute;inset:0;background:radial-gradient(circle at 92% 8%,rgba(255,255,255,.1) 0 37%,transparent 37%)"></div>
+    <div style="position:absolute;left:${px(36)};top:${px(36)};width:${px(116)};height:${px(116)};box-sizing:border-box;border-radius:${px(32)};background:#FFF0E3;border:${px(3)} solid #FFD9BF;display:grid;place-items:center">${_sv(IC.bell[1],68,'#E0620B')}</div>
+    <div style="position:absolute;left:${px(36)};bottom:${px(74)};max-width:calc(100% - ${px(72)});box-sizing:border-box;padding:${px(14)} ${px(28)};border-radius:${px(26)};background:rgba(255,255,255,.16);border:${px(2.5)} solid rgba(255,255,255,.5);color:#fff;font-weight:600;font-size:${px(c.target&&c.target.length>28?52:58)};line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(c.target||'-')}</div>
+    <div style="position:absolute;right:${px(36)};bottom:${px(20)};color:#fff;opacity:.95;font-size:${px(36)}">แจ้งเตือนเอกสารใกล้หมดอายุ</div>
+  </div>`;
+  const cnt=(pi)=>`<div style="text-align:center;font-size:13.5px;font-weight:700;color:#F26B1D;margin-bottom:8px">${Number(c.count)||0} รายการ${pages.length>1?' · หน้า '+(pi+1)+'/'+pages.length:''}</div>`;
+  document.getElementById('lineAlertPvBody').innerHTML=!ws.length
+    ?'<div style="background:#fff;border-radius:14px;padding:16px;font-size:13px;color:var(--g7)">ตอนนี้ไม่มีเอกสารที่ต้องเตือน (หรือเตือนไปแล้วทั้งหมด) — วันนี้จะไม่ส่งข้อความเข้ากลุ่มนี้</div>'
+    :`<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${pages.map((pg,pi)=>`<div style="flex:none;width:260px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.12)">${head(pi)}
+      <div style="padding:10px 12px">${cnt(pi)}${pg.map((w,wi)=>`<div style="border-top:1px solid #f0f0f0;${wi?'margin-top:9px;':''}padding-top:9px"><div style="font-size:12px;font-weight:700;color:#222">${pi*6+wi+1}. ${esc(w.name||'-')}</div>${w.employer?`<div style="font-size:10px;color:#9a9a9a">${esc(w.employer)}</div>`:''}
+        ${(w.docs||[]).map(d=>`<div style="display:flex;align-items:center;gap:6px;margin-top:5px">${ico(d.kind,20)}<span style="flex:1;font-size:11.5px;color:#4a4a4a">${esc(d.label||'')}</span><span style="font-size:11.5px;font-weight:700;color:#222">${esc(d.date||'')}</span>${chip(Number(d.days)||0)}</div>`).join('')}</div>`).join('')}</div>
+      ${c.url?`<div style="padding:0 10px 10px"><a href="${esc(c.url)}" target="_blank" rel="noopener" style="display:block;text-align:center;background:#F26B1D;color:#fff;border-radius:7px;padding:8px;font-size:12.5px;font-weight:700;text-decoration:none">ดูรายละเอียดเอกสาร</a></div>`:'<div style="font-size:10.5px;color:#b45309;text-align:center;padding:0 10px 10px">ยังไม่มีลิงก์นายจ้าง — สร้างลิงก์ก่อน ปุ่ม "ดูรายละเอียด" ถึงจะขึ้น</div>'}</div>`).join('')}</div>`;
+  document.getElementById('lineAlertPvModal').style.display='flex';
+  // รูปพื้นหลังของนายจ้าง (ถ้ามี) — แสดงแบบเดียวกับการ์ดจริง
+  if(ws.length&&c.banner&&c.banner.id&&typeof CUST_DOC_SIGN_URL==='string'){
+    try{const res=await fetch(CUST_DOC_SIGN_URL,{method:'POST',mode:'cors',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+        body:JSON.stringify({document_id:Number(c.banner.id),user_id:curUser&&curUser.id!=null?String(curUser.id):'',username:curUser&&curUser.username||''})});
+      const d=await res.json();
+      if(d&&d.ok&&d.url)document.querySelectorAll('#lineAlertPvBody .laHero').forEach(h=>{
+        h.style.backgroundImage=`url("${String(d.url).replace(/"/g,'%22')}")`;
+        const sh=h.querySelector('.laShade');if(sh)sh.style.background='linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.08) 50%,rgba(0,0,0,.55))';});}catch(_){}
+  }
+}
+async function laSendNow(i){
+  const g=(_lineAlert||[])[i];if(!g)return;
+  if(!confirm('ส่งแจ้งเตือน '+(Number(g.pending)||0)+' รายการ เข้ากลุ่ม "'+(g.name||'')+'" ตอนนี้?'))return;
+  const r=await _shareRpc('app_line_alert_send_now',{p_line_group_id:g.line_group_id});
+  const d=r.status==='ok'?r.data:null;
+  if(!d||!d.ok){toast('ส่งไม่สำเร็จ'+(d&&d.error?' ('+d.error+')':''),'err');return;}
+  toast('กำลังส่งเข้ากลุ่ม LINE…');setTimeout(loadLineAlert,4000);
+}
+async function laSkip(i){
+  const g=(_lineAlert||[])[i];if(!g)return;
+  if(!confirm('ข้าม '+(Number(g.pending)||0)+' รายการที่ค้างอยู่ของกลุ่ม "'+(g.name||'')+'"?\nรายการเหล่านี้จะไม่ถูกส่งเข้ากลุ่ม (เอกสารที่เข้าช่วงเตือนหลังจากนี้ยังเตือนตามปกติ)'))return;
+  const r=await _shareRpc('app_line_alert_skip',{p_line_group_id:g.line_group_id});
+  const d=r.status==='ok'?r.data:null;
+  if(!d||!d.ok){toast('ไม่สำเร็จ','err');return;}
+  toast('ข้ามแล้ว '+(d.skipped||0)+' รายการ');await loadLineAlert();
 }
 // ── Stage ALERT-SETTINGS-DB: ค่าแจ้งเตือนล่วงหน้าเก็บในฐานข้อมูล (app_alert_settings) ──
 let _alertSrc='local';

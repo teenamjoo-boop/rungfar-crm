@@ -15,3 +15,7 @@ verify_jwt = false
 # 2026-10-21: parcel-api ตรวจ session token ของระบบขนส่งเอง (หน้าเว็บไม่มีกุญแจ) → ปิด Verify JWT
 [functions.parcel-api]
 verify_jwt = false
+
+# 2026-10-22: line-doc-alert ตรวจ token จาก Vault เอง (x-alert-token) → ปิด Verify JWT
+[functions.line-doc-alert]
+verify_jwt = false
